@@ -1,0 +1,12 @@
+{
+  "configurations": [​
+    {​
+      "name": "Debug index.ts",​
+      "type": "node",​
+      "request": "launch",​
+      "cwd": "${workspaceRoot}",​
+      "runtimeArgs": ["-r", "ts-node/register"],​
+      "args": ["${workspaceRoot}/index.ts"]​
+    }​
+  ]
+}
