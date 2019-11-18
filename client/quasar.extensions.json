@@ -1,0 +1,8 @@
+{
+  "@quasar/graphql": {
+    "options": [
+      "server",
+      "apollo"
+    ]
+  }
+}
