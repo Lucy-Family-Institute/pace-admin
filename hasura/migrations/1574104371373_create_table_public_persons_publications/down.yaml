@@ -1,0 +1,3 @@
+- args:
+    sql: DROP TABLE "public"."persons_publications"
+  type: run_sql

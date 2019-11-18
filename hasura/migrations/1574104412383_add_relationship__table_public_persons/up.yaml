@@ -1,0 +1,12 @@
+- args:
+    name: persons_publications
+    table:
+      name: persons
+      schema: public
+    using:
+      foreign_key_constraint_on:
+        column: person_id
+        table:
+          name: persons_publications
+          schema: public
+  type: create_array_relationship
