@@ -1,0 +1,19 @@
+{
+  "dependencies": {
+    "apollo-cache-inmemory": "^1.6.3",
+    "apollo-client": "^2.6.4",
+    "apollo-link": "^1.2.13",
+    "apollo-link-http": "^1.5.16",
+    "graphql": "^14.5.8",
+    "graphql-tag": "^2.10.1",
+    "lodash": "^4.17.15",
+    "node-fetch": "^2.6.0",
+    "papaparse": "^5.1.0"
+  },
+  
+    "name": "ingest2",
+    "version": "1.0.0",
+    "main": "index.js",
+    "license": "MIT",
+    "type": "module"
+}
