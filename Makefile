@@ -1,4 +1,4 @@
-.PHONY: install dev
+.PHONY: install docker client
 
 install_hasura_cli:
 	curl -L https://github.com/hasura/graphql-engine/raw/master/cli/get.sh | bash
