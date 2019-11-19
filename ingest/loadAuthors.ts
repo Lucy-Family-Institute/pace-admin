@@ -1,12 +1,32 @@
 
-import { ApolloClient } from 'apollo-client';
-import { InMemoryCache } from 'apollo-cache-inmemory';
-import { createHttpLink } from 'apollo-link-http';
-import gql from 'graphql-tag';
-import fetch from 'node-fetch';
+import { ApolloClient } from 'apollo-client'
+import { InMemoryCache } from 'apollo-cache-inmemory'
+import { createHttpLink } from 'apollo-link-http'
+import gql from 'graphql-tag'
+import fetch from 'node-fetch'
 
-const _ = require('lodash');
-const loadCsv = require('./units/loadCsv').command;
+//import _ from 'lodash'
+const _ = require('lodash')
+import { command as loadCsv } from './units/loadCsv'
+
+const INSTITUTION = "University of Notre Dame"
+
+const INSERT_INSTITUTION_MUTATION = gql`
+
+    mutation InsertInstitutionMutation ($institutions:[institutions_insert_input!]!){
+    __typename
+
+    insert_institutions(
+      objects: $institutions
+    ) {
+      returning {
+        id
+        name
+      }
+    }
+  }`
+
+
 
 const client = new ApolloClient({
     link: createHttpLink({ 
@@ -21,8 +41,31 @@ const client = new ApolloClient({
 
 async function go() {
     const authors = await loadCsv({
-        path: './data/hcri_researchers_10_24_19.csv',
+        path: '../data/hcri_researchers_10_24_19.csv',
     });
+
+    console.log(authors);
+
+    //insert institutions first
+    const institutions = _.uniq(_.map(authors, 'INSTITUTION'))
+    console.log(institutions)
+
+    const result = await client.mutate({
+        mutation: INSERT_INSTITUTION_MUTATION,
+        variables: {
+            institutions: _.map(institutions, i => ({ name: i}))
+        }
+    });
+
+    console.log(result);
+
+    //get indexed id's for institutions, and update author list with id's for inserts
+
+    //console.log(result.data.returning)
+
+    //now add auth
+
+    //console.log(result)
 }
 
 go();

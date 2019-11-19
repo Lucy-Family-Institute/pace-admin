@@ -8,12 +8,11 @@
     "graphql-tag": "^2.10.1",
     "lodash": "^4.17.15",
     "node-fetch": "^2.6.0",
-    "papaparse": "^5.1.0"
+    "papaparse": "^5.1.0",
+    "ts-node": "^8.5.2"
   },
-  
-    "name": "ingest2",
-    "version": "1.0.0",
-    "main": "index.js",
-    "license": "MIT",
-    "type": "module"
+  "name": "ingest2",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT"
 }
