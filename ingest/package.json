@@ -1,18 +1,32 @@
 {
   "dependencies": {
+    "@types/lodash": "^4.14.149",
+    "@types/node-fetch": "^2.5.3",
+    "@typescript-eslint/eslint-plugin": "^2.8.0",
+    "@typescript-eslint/parser": "^2.8.0",
     "apollo-cache-inmemory": "^1.6.3",
     "apollo-client": "^2.6.4",
     "apollo-link": "^1.2.13",
     "apollo-link-http": "^1.5.16",
+    "eslint": "^6.6.0",
+    "eslint-config-standard-with-typescript": "^11.0.1",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-node": "^10.0.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
     "graphql": "^14.5.8",
     "graphql-tag": "^2.10.1",
     "lodash": "^4.17.15",
     "node-fetch": "^2.6.0",
     "papaparse": "^5.1.0",
-    "ts-node": "^8.5.2"
+    "ts-node": "^8.5.2",
+    "typescript": "^3.7.2"
   },
   "name": "ingest2",
   "version": "1.0.0",
   "main": "index.js",
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "lint": "./node_modules/.bin/eslint loadAuthors.ts --fix"
+  }
 }
