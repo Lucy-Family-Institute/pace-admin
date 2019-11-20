@@ -10,3 +10,15 @@
     <vue-friendly-iframe v-if="url" :src="url"></vue-friendly-iframe>
   </q-scroll-area>
 </template>
+
+<script>
+export default {
+  name: 'PageIndex',
+  props: ['person', 'publication'],
+  data: () => ({
+    links: [],
+    url: undefined,
+    unpaywall: undefined
+  })
+}
+</script>
