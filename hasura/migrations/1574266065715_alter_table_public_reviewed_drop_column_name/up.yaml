@@ -1,0 +1,3 @@
+- args:
+    sql: ALTER TABLE "public"."reviewed" DROP COLUMN "name" CASCADE
+  type: run_sql
