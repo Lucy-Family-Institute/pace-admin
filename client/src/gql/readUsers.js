@@ -6,9 +6,10 @@ export default function readUsers () {
       query MyQuery {
         persons {
           id
-          first_name
-          last_name
+          given_name
+          family_name
         }
       }
     `
+  }
 }

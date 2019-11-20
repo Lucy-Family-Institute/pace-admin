@@ -8,7 +8,8 @@ module.exports = function (ctx) {
     // https://quasar.dev/quasar-cli/cli-documentation/boot-files
     boot: [
       'axios',
-      'graphql'
+      'graphql',
+      'iframes'
     ],
 
     // https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-css
