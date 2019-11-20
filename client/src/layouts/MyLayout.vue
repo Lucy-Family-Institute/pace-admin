@@ -16,7 +16,7 @@
         </q-toolbar-title>
 
         <q-btn stretch flat label="Review" />
-        <q-btn stretch flat label="Logs" />
+        <q-btn stretch flat label="Logs">&nbsp;<q-badge color="orange" text-color="black">{{ $store.getters['admin/logCount'] }}</q-badge></q-btn>
         <q-space />
         <q-toggle v-model="isBulkEditing" color="red" label="Bulk Edit" left-label />
         <q-btn-group unelevated spread>
