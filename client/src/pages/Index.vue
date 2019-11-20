@@ -25,7 +25,7 @@
                 </q-item-section>
 
                 <q-item-section>
-                  <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }}</q-item-label>
+                  <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.persons_publications_aggregate.aggregate.count }})</q-item-label>
                   <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
                 </q-item-section>
 
@@ -99,7 +99,7 @@
 
 <script>
 import { dom, date } from 'quasar'
-import readUsers from '../gql/readUsers'
+import readPersons from '../gql/readPersons'
 import readPublicationsByPerson from '../gql/readPublicationsByPerson'
 // import * as service from '@porter/osf.io';
 
@@ -126,7 +126,7 @@ export default {
   },
   methods: {
     async fetchData () {
-      const result = await this.$apollo.query(readUsers())
+      const result = await this.$apollo.query(readPersons())
       this.people = result.data.persons
     },
     async loadPublications (id) {

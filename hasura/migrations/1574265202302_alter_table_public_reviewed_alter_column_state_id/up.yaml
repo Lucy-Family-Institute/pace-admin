@@ -1,0 +1,9 @@
+- args:
+    sql: ALTER TABLE "public"."reviewed" ALTER COLUMN "state_id" TYPE int4;
+  type: run_sql
+- args:
+    sql: COMMENT ON COLUMN "public"."reviewed"."state_id" IS E''
+  type: run_sql
+- args:
+    sql: alter table "public"."reviewed" rename column "state_id" to "reviewed_id";
+  type: run_sql
