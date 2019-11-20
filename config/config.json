@@ -1,0 +1,15 @@
+{
+    "development": {
+        "config_id": "development",
+        "app_name": "PACE",
+        "els_api_key": "[INSERT YOUR API KEY HERE]",
+        "affiliation_id": "[INSERT YOUR AFFILIATION ID HERE]"
+    },
+    "testing": {
+        "config_id": "testing"
+    },
+    "staging": {
+    },
+    "production": {
+    }
+}
