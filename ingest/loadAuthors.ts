@@ -64,7 +64,8 @@ async function main (): Promise<void> {
       position_title: author.position_title
     }
     if (institutionNameIdMap[author.institution]) {
-      obj['institution_id'] = institutionNameIdMap[author.institution]
+      // eslint-disable-next-line 
+      obj["institution_id"] = institutionNameIdMap[author.institution]
     }
     return obj
   })
