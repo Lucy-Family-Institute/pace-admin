@@ -43,8 +43,14 @@ async function main() {
           if(_.lowerCase(author.family) === person.lastName && 
             _.startsWith(_.lowerCase(author.given), person.firstInitial)
           ) {
-            const mutateResult = await client.mutate(insertPaper(person.id, item.title[0], item.DOI))
-            console.log('Added!')
+            let confidence = .50
+            if(!_.isEmpty(author.affiliation)) {
+              if(/notre dame/gi.test(author.affiliation[0].name)) {
+                confidence = .80
+              }
+            }
+            // const mutateResult = await client.mutate(insertPaper(person.id, item.title[0], item.DOI))
+            console.log(confidence)
           }
         })
       }
