@@ -5,7 +5,7 @@ import { InMemoryCache } from 'apollo-cache-inmemory'
 import { createHttpLink } from 'apollo-link-http'
 import fetch from 'node-fetch'
 import pEachSeries from 'p-each-series'
-import readUsers from '../client/src/gql/readUsers'
+import readUsers from '../client/src/gql/readPersons'
 import insertPaper from './gql/insertPaper'
 
 const client = new ApolloClient({
