@@ -21,6 +21,9 @@ ifeq (,$(shell which quasar))
 	npm -g install quasar
 endif
 
+cleardb:
+	docker rm pace-admin_postgres_1 && docker volume rm pace-admin_postgres_data
+
 install: install_docker_compose install_hasura_cli install_yarn install_quasar
 	cd client && yarn && cd ..
 
