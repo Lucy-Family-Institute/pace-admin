@@ -1,0 +1,4 @@
+- args:
+    sql: ALTER TABLE "public"."persons_publications" ADD COLUMN "confidence" float8
+      NULL;
+  type: run_sql
