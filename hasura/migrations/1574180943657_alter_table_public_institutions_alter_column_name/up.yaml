@@ -1,6 +1,0 @@
-- args:
-    sql: ALTER TABLE "public"."institutions" DROP CONSTRAINT "institutions_name_key"
-  type: run_sql
-- args:
-    sql: COMMENT ON COLUMN "public"."institutions"."name" IS E''
-  type: run_sql

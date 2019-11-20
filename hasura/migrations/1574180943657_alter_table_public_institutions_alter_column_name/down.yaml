@@ -1,7 +1,0 @@
-- args:
-    sql: ALTER TABLE "public"."institutions" ADD CONSTRAINT "institutions_name_key"
-      UNIQUE ("name")
-  type: run_sql
-- args:
-    sql: COMMENT ON COLUMN "public"."institutions"."name" IS E'null'
-  type: run_sql
