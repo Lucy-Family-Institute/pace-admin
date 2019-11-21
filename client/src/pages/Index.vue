@@ -49,7 +49,13 @@
                 :style="{height: ($q.screen.height-50)+'px'}"
               >
                 <q-list>
-                  <q-item-label header>Publications</q-item-label>
+                  <q-item-label header>
+                    <q-input v-if="person" v-model="search" label="" :dense="dense">
+                      <template v-slot:append>
+                        <q-icon name="search" />
+                      </template>
+                    </q-input>
+                  </q-item-label>
                   <q-expansion-item
                     v-for="item in publications"
                     :key="item.id"
@@ -59,7 +65,7 @@
                     :active="publication !== undefined && item.id === publication.id"
                     active-class="bg-teal-1 text-grey-8"
                   >
-                    <template v-slot:header>
+                    <template v-slot:header v-if="item.title.includes(search)">
 
                       <q-item-section avatar top>
                         <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.id" />
@@ -72,7 +78,10 @@
                       </q-item-section>
 
                       <q-item-section side>
-                        <q-badge label="99%" />
+                        <q-badge
+                          :label="item.persons_publications[0].confidence*100+'%'"
+                          :color="item.persons_publications[0].confidence*100 <= 50 ? 'orange' : 'green'"
+                        />
                       </q-item-section>
 
                       <!-- <q-item-section side>
@@ -197,6 +206,7 @@ import _ from 'lodash'
 export default {
   name: 'PageIndex',
   data: () => ({
+    search: '',
     dom,
     date,
     firstModel: 33,
@@ -279,10 +289,10 @@ export default {
       this.loadPublication(this.publications[index])
     },
     reject () {
-      this.$store.dispatch('admin/incrementLogCount')
+      this.accept()
     },
     unsure () {
-      this.$store.dispatch('admin/incrementLogCount')
+      this.accept()
     }
   }
 }

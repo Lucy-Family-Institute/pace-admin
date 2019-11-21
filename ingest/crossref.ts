@@ -49,8 +49,10 @@ async function main() {
                 confidence = .80
               }
             }
-            // const mutateResult = await client.mutate(insertPaper(person.id, item.title[0], item.DOI))
-            console.log(confidence)
+            const mutateResult = await client.mutate(
+              insertPaper(person.id, item.title[0], item.DOI, confidence)
+            )
+            console.log('added!')
           }
         })
       }
