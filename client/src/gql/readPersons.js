@@ -8,7 +8,7 @@ export default function readPersons () {
           id
           given_name
           family_name
-          person_publication_aggregate {
+          persons_publications_aggregate {
             aggregate {
               count
             }

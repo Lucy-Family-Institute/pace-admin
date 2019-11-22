@@ -21,7 +21,7 @@ const client = new ApolloClient({
 
 async function main() {
   const queryResult = await client.query(readUsers())
-  const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
+  const simplifiedPersons = _.map(queryResult.data.person, (person) => {
     return {
       id: person.id,
       lastName: _.lowerCase(person.family_name),
