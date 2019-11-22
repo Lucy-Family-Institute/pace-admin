@@ -5,7 +5,7 @@ export default function insertPaper (personId, title, doi, confidence) {
     mutation: gql`
       mutation MyMutation($person_id: Int!, $title: String!, $doi: String!, $confidence: float8!) {
         insert_publications(objects: {doi: $doi, title: $title, 
-          persons_publications: {
+          person_publication: {
             data: {
               person_id: $person_id
               confidence: $confidence

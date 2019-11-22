@@ -1,4 +1,0 @@
-- args:
-    sql: ALTER TABLE "public"."persons_publications_reviewed" ADD COLUMN "reviewer_id"
-      integer NOT NULL;
-  type: run_sql
