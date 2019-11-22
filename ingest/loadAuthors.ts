@@ -28,8 +28,8 @@ async function main (): Promise<void> {
 
   const result = await client.mutate({
     mutation: gql`
-      mutation InsertInstitutionMutation ($institutions:[institutions_insert_input!]!){
-        insert_institutions(
+      mutation InsertInstitutionMutation ($institutions:[institution_insert_input!]!){
+        insert_institution(
           objects: $institutions
           on_conflict: {constraint: institutions_name_key, update_columns: name}
         ) {
@@ -47,7 +47,7 @@ async function main (): Promise<void> {
   console.log(JSON.stringify(result.data))
   // get indexed id's for institutions, and update author list with id's for inserts
 
-  const insertedInstitutions = result.data.insert_institutions.returning || []
+  const insertedInstitutions = result.data.insert_institution.returning || []
   const institutionNameIdMap = _.reduce(insertedInstitutions, (obj, inst) => {
     if (inst.name && inst.id) { obj[inst.name] = inst.id }
     return obj
@@ -73,8 +73,8 @@ async function main (): Promise<void> {
 
   const resultInsertAuthors = await client.mutate({
     mutation: gql`
-      mutation InsertPersonMutation ($persons:[persons_insert_input!]!){
-        insert_persons(
+      mutation InsertPersonMutation ($persons:[person_insert_input!]!){
+        insert_person(
           objects: $persons
         ) {
           returning {

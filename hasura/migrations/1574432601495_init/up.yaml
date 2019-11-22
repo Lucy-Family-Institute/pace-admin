@@ -21,6 +21,25 @@
       is_enum: false
       object_relationships: []
       select_permissions: []
+      table: data
+      update_permissions: []
+    - array_relationships: []
+      computed_fields: []
+      configuration:
+        custom_column_names: {}
+        custom_root_fields:
+          delete: null
+          insert: null
+          select: null
+          select_aggregate: null
+          select_by_pk: null
+          update: null
+      delete_permissions: []
+      event_triggers: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships: []
+      select_permissions: []
       table: harvest
       update_permissions: []
     - array_relationships:
@@ -47,6 +66,44 @@
       object_relationships: []
       select_permissions: []
       table: institution
+      update_permissions: []
+    - array_relationships: []
+      computed_fields: []
+      configuration:
+        custom_column_names: {}
+        custom_root_fields:
+          delete: null
+          insert: null
+          select: null
+          select_aggregate: null
+          select_by_pk: null
+          update: null
+      delete_permissions: []
+      event_triggers: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships: []
+      select_permissions: []
+      table: letter
+      update_permissions: []
+    - array_relationships: []
+      computed_fields: []
+      configuration:
+        custom_column_names: {}
+        custom_root_fields:
+          delete: null
+          insert: null
+          select: null
+          select_aggregate: null
+          select_by_pk: null
+          update: null
+      delete_permissions: []
+      event_triggers: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships: []
+      select_permissions: []
+      table: letter_word
       update_permissions: []
     - array_relationships:
       - comment: null
@@ -205,5 +262,24 @@
       object_relationships: []
       select_permissions: []
       table: user
+      update_permissions: []
+    - array_relationships: []
+      computed_fields: []
+      configuration:
+        custom_column_names: {}
+        custom_root_fields:
+          delete: null
+          insert: null
+          select: null
+          select_aggregate: null
+          select_by_pk: null
+          update: null
+      delete_permissions: []
+      event_triggers: []
+      insert_permissions: []
+      is_enum: false
+      object_relationships: []
+      select_permissions: []
+      table: word
       update_permissions: []
   type: replace_metadata

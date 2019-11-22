@@ -50,14 +50,14 @@
               >
                 <q-list>
                   <q-item-label header>
-                    <q-input v-if="person" v-model="search" label="" :dense="dense">
+                    <q-input v-if="person" v-model="search" label="">
                       <template v-slot:append>
                         <q-icon name="search" />
                       </template>
                     </q-input>
                   </q-item-label>
                   <q-expansion-item
-                    v-for="item in publications"
+                    v-for="item in filteredPublications"
                     :key="item.id"
                     clickable
                     @click="loadPublication(item)"
@@ -65,7 +65,7 @@
                     :active="publication !== undefined && item.id === publication.id"
                     active-class="bg-teal-1 text-grey-8"
                   >
-                    <template v-slot:header v-if="item.title.includes(search)">
+                    <template v-slot:header>
 
                       <q-item-section avatar top>
                         <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.id" />
@@ -231,13 +231,13 @@ export default {
   methods: {
     async fetchData () {
       const result = await this.$apollo.query(readPersons())
-      this.people = result.data.persons
+      this.people = result.data.person
     },
     async loadPublications (item) {
       this.clearPublication()
       this.person = item
       const result = await this.$apollo.query(readPublicationsByPerson(item.id))
-      this.publications = result.data.publications
+      this.publications = result.data.publication
     },
     async loadPublication (publication) {
       this.clearPublication()
@@ -293,6 +293,13 @@ export default {
     },
     unsure () {
       this.accept()
+    }
+  },
+  computed: {
+    filteredPublications () {
+      return this.publications.filter(item => {
+        return _.lowerCase(item.title).includes(this.search)
+      })
     }
   }
 }
