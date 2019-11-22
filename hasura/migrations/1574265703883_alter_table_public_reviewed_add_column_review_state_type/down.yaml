@@ -1,3 +1,0 @@
-- args:
-    sql: ALTER TABLE "public"."reviewed" DROP COLUMN "review_state_type";
-  type: run_sql

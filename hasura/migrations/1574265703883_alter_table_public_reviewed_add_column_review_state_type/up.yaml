@@ -1,3 +1,0 @@
-- args:
-    sql: ALTER TABLE "public"."reviewed" ADD COLUMN "review_state_type" text NOT NULL;
-  type: run_sql

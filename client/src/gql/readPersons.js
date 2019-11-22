@@ -4,11 +4,11 @@ export default function readPersons () {
   return {
     query: gql`
       query MyQuery {
-        persons (order_by: {persons_publications_aggregate: {count: desc}}){
+        person (order_by: {persons_publications_aggregate: {count: desc}}){
           id
           given_name
           family_name
-          persons_publications_aggregate {
+          person_publication_aggregate {
             aggregate {
               count
             }
