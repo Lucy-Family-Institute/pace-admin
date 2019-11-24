@@ -22,10 +22,15 @@ ifeq (,$(shell which quasar))
 endif
 
 cleardb:
-	docker-compose down && docker rm pace-admin_postgres_1 && docker volume rm pace-admin_postgres_data
+	docker-compose down -v
 
 install: install_docker_compose install_hasura_cli install_yarn install_quasar
 	cd client && yarn && cd ..
+
+start_docker:
+	docker-compose up -d
+stop_docker:
+	docker-compose down
 
 client:
 	cd client && quasar dev && cd ..
