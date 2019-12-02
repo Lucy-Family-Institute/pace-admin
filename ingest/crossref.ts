@@ -33,7 +33,7 @@ async function main() {
     const result = await axios({
       method: 'get',
       url: `https://api.crossref.org/works?query.author=${person.lastName}`,
-      headers: {
+      headers: { // TODO @rickjohnson change email address 
         'User-Agent': 'GroovyBib/1.1 (https://example.org/GroovyBib/; mailto:GroovyBib@example.org) BasedOnFunkyLib/1.4'
       }
     })
