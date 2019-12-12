@@ -1,0 +1,6 @@
+- args:
+    relationship: datum
+    table:
+      name: publications
+      schema: public
+  type: drop_relationship

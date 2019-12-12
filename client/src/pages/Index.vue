@@ -231,13 +231,13 @@ export default {
   methods: {
     async fetchData () {
       const result = await this.$apollo.query(readPersons())
-      this.people = result.data.person
+      this.people = result.data.persons
     },
     async loadPublications (item) {
       this.clearPublication()
       this.person = item
       const result = await this.$apollo.query(readPublicationsByPerson(item.id))
-      this.publications = result.data.publication
+      this.publications = result.data.publications
     },
     async loadPublication (publication) {
       this.clearPublication()
