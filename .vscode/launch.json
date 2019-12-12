@@ -1,12 +1,14 @@
 {
-  "configurations": [​
+  "configurations": [
+
+  ​
     {​
-      "name": "Debug index.ts",​
+      "name": "Debug loadAuthors.ts",​
       "type": "node",​
       "request": "launch",​
-      "cwd": "${workspaceRoot}",​
+      "cwd": "${workspaceRoot}/ingest",​
       "runtimeArgs": ["-r", "ts-node/register"],​
-      "args": ["${workspaceRoot}/index.ts"]​
+      "args": ["${workspaceRoot}/ingest/loadAuthors.ts"]​
     }​
   ]
 }

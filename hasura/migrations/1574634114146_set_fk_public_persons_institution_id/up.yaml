@@ -1,0 +1,6 @@
+- args:
+    sql: "\n           alter table \"public\".\"persons\"\n           add constraint
+      \"persons_institution_id_fkey\"\n           foreign key (\"institution_id\")\n
+      \          references \"public\".\"institutions\"\n           (\"id\") on update
+      no action on delete no action;\n      "
+  type: run_sql

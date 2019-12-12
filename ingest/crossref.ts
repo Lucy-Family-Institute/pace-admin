@@ -21,13 +21,15 @@ const client = new ApolloClient({
 
 async function main() {
   const queryResult = await client.query(readUsers())
-  const simplifiedPersons = _.map(queryResult.data.person, (person) => {
+  const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
     return {
       id: person.id,
       lastName: _.lowerCase(person.family_name),
       firstInitial: _.lowerCase(person.given_name[0])
     }
   })
+
+  console.log(simplifiedPersons)
 
   pEachSeries(simplifiedPersons, async (person) => {
     const result = await axios({
