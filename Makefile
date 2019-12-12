@@ -1,4 +1,4 @@
-.PHONY: install client docker migrate 
+.PHONY: install client
 
 install_hasura_cli:
 ifeq (,$(shell which hasura))
@@ -23,6 +23,11 @@ endif
 
 cleardb:
 	docker-compose down -v
+migrate:
+	cd hasura && hasura migrate apply && cd ..
+newdb:
+	cd ingest && ts-node loadAuthors.ts && cd ..
+	cd ingest && ts-node crossref.ts && cd ..
 
 install: install_docker_compose install_hasura_cli install_yarn install_quasar
 	cd client && yarn && cd ..
@@ -36,5 +41,6 @@ client:
 	cd client && quasar dev && cd ..
 docker:
 	docker-compose up
-migrate:
-	cd hasura && hasura migrate apply && hasura console && cd ..
+
+migration_console:
+	cd hasura && && hasura console && cd ..
