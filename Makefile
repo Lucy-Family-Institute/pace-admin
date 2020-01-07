@@ -43,4 +43,4 @@ docker:
 	docker-compose up
 
 migration_console:
-	cd hasura && && hasura console && cd ..
+	cd hasura && hasura console && cd ..

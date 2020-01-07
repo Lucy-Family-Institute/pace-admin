@@ -282,14 +282,19 @@ export default {
       this.links = []
       this.url = undefined
     },
-    accept () {
+    review () {
       this.$store.dispatch('admin/incrementLogCount')
       const index = _.findIndex(this.publications, { id: this.publication.id })
       Vue.delete(this.publications, index)
       this.loadPublication(this.publications[index])
     },
+    accept () {
+      this.$store.dispatch('admin/incrementAcceptedCount')
+      this.review()
+    },
     reject () {
-      this.accept()
+      this.$store.dispatch('admin/incrementRejectedCount')
+      this.review()
     },
     unsure () {
       this.accept()
