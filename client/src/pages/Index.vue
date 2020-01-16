@@ -90,7 +90,7 @@
                     </template>
                     <q-card>
                       <q-card-section class="text-center">
-                        <q-btn color="green" label="Accept" class="on-left" @click="accept" />
+                        <q-btn color="green" label="Accept" class="on-left" @click="reviewAccepted(person,publication)" />
                         <q-btn color="red" label="Reject" @click="reject" />
                         <q-btn color="grey" label="Unsure" class="on-right" @click="unsure" />
                       </q-card-section>
@@ -200,6 +200,7 @@ import Vue from 'vue'
 import { dom, date } from 'quasar'
 import readPersons from '../gql/readPersons'
 import readPublicationsByPerson from '../gql/readPublicationsByPerson'
+import insertReview from '../gql/insertReview'
 import _ from 'lodash'
 // import * as service from '@porter/osf.io';
 
@@ -254,6 +255,19 @@ export default {
       } finally {
       }
     },
+    async reviewAccepted (person, publication) {
+      this.clearPublication()
+      this.person = person
+      this.publication = publication
+      try {
+        const result = await this.$apollo.mutate(insertReview('reviewer1', person.id, publication.id, 'ACC'))
+        if (result.status === 200) {
+        }
+      } catch (error) {
+        console.log(error)
+      } finally {
+      }
+    },
     google1 () {
       const query = _.trim(`${this.person.family_name} ${this.publication.title}`)
       this.url = `https://www.google.com/search?igu=1&q=${_.replace(query, / +/, '+')}`
@@ -282,7 +296,7 @@ export default {
       this.links = []
       this.url = undefined
     },
-    review () {
+    reviewed () {
       this.$store.dispatch('admin/incrementLogCount')
       const index = _.findIndex(this.publications, { id: this.publication.id })
       Vue.delete(this.publications, index)
@@ -290,11 +304,11 @@ export default {
     },
     accept () {
       this.$store.dispatch('admin/incrementAcceptedCount')
-      this.review()
+      this.reviewed()
     },
     reject () {
       this.$store.dispatch('admin/incrementRejectedCount')
-      this.review()
+      this.reviewed()
     },
     unsure () {
       this.accept()
