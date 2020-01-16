@@ -1,0 +1,7 @@
+- args:
+    cascade: false
+    sql: |-
+      INSERT INTO users (username, email) VALUES
+          ('reviewer1', 'rick.johnson@nd.edu'),
+          ('reviewer2', 'jeff@221b.io');
+  type: run_sql
