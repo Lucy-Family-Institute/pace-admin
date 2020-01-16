@@ -1,0 +1,8 @@
+- args:
+    cascade: false
+    sql: |-
+      INSERT INTO reviewstates (abbrev, name) VALUES
+          ('ACC', 'Accepted'),
+          ('REJ', 'Rejected'),
+          ('UNS', 'Unsure');
+  type: run_sql
