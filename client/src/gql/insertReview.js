@@ -1,22 +1,13 @@
 import gql from 'graphql-tag'
 
-export default function insertReview (username, personId, publicationId, reviewStateAbbrev) {
+export default function insertReview (userId, personPublicationId, reviewStateAbbrev) {
   return {
     mutation: gql`
-      mutation MyMutation($username: String!, $person_id: Int!, $publication_id: Int!, $reviewstate_abbrev: String!) {
+      mutation MyMutation($user_id: Int!, $persons_publication_id: Int!, $reviewstate_abbrev: String!) {
         insert_reviews(objects: {
-          persons_publication: {
-            data: {
-              person_id: $person_id, 
-              publication_id: $publication_id
-          }}, 
-          reviewstate: {
-            data: {
-              abbrev: "ACC"}},
-              user: {
-                data: {
-                  username: "reviewer1"
-        }}}) {
+          reviewstate_abbrev: $reviewstate_abbrev, 
+          user_id: $user_id, 
+          persons_publications_id: $persons_publication_id}) {
           returning {
             id
           }
@@ -24,9 +15,8 @@ export default function insertReview (username, personId, publicationId, reviewS
       }
     `,
     variables: {
-      username: username,
-      person_id: personId,
-      publication_id: publicationId,
+      user_id: userId,
+      persons_publication_id: personPublicationId,
       reviewstate_abbrev: reviewStateAbbrev
     }
   }

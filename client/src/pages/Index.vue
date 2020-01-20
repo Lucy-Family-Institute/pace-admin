@@ -260,8 +260,12 @@ export default {
       this.person = person
       this.publication = publication
       try {
-        const result = await this.$apollo.mutate(insertReview('reviewer1', person.id, publication.id, 'ACC'))
-        if (result.status === 200) {
+        console.log(person.id)
+        const mutateResult = await this.$apollo.mutate(
+          insertReview(2, publication.persons_publications[0].id, 'ACC')
+        )
+        if (mutateResult) {
+          this.accept()
         }
       } catch (error) {
         console.log(error)

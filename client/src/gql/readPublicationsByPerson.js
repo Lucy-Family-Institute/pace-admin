@@ -14,7 +14,8 @@ export default function readPublicationsByPerson (id) {
           title
           doi
           persons_publications {
-            confidence
+            confidence,
+            id
           }
         }
       }
