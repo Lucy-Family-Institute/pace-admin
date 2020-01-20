@@ -91,7 +91,7 @@
                     <q-card>
                       <q-card-section class="text-center">
                         <q-btn color="green" label="Accept" class="on-left" @click="reviewAccepted(person,publication)" />
-                        <q-btn color="red" label="Reject" @click="reject" />
+                        <q-btn color="red" label="Reject" @click="reviewRejected(person,publication)" />
                         <q-btn color="grey" label="Unsure" class="on-right" @click="unsure" />
                       </q-card-section>
                     </q-card>
@@ -266,6 +266,22 @@ export default {
         )
         if (mutateResult) {
           this.accept()
+        }
+      } catch (error) {
+        console.log(error)
+      } finally {
+      }
+    },
+    async reviewRejected (person, publication) {
+      this.clearPublication()
+      this.person = person
+      this.publication = publication
+      try {
+        const mutateResult = await this.$apollo.mutate(
+          insertReview(2, publication.persons_publications[0].id, 'REJ')
+        )
+        if (mutateResult) {
+          this.reject()
         }
       } catch (error) {
         console.log(error)
