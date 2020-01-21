@@ -13,7 +13,7 @@
             <q-list>
               <q-item-label header>People</q-item-label>
 
-              <q-item
+              <q-expansion-item
                 v-for="item in people"
                 :key="item.id"
                 :active="person!==undefined && item.id === person.id"
@@ -22,19 +22,25 @@
                 @click="loadPublications(item)"
                 active-class="bg-teal-1 text-grey-8"
               >
-                <q-item-section avatar top>
-                  <q-avatar icon="person" color="primary" text-color="white" />
-                </q-item-section>
+                <template v-slot:header>
+                  <q-item-section avatar top>
+                    <q-avatar icon="person" color="primary" text-color="white" />
+                  </q-item-section>
 
+                  <q-item-section>
+                    <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.persons_publications_aggregate.aggregate.count }})</q-item-label>
+                    <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
+                  </q-item-section>
+
+                  <q-item-section side>
+                    <q-icon name="keyboard_arrow_right" color="green" />
+                  </q-item-section>
+                </template>
                 <q-item-section>
-                  <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.persons_publications_aggregate.aggregate.count }})</q-item-label>
-                  <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
+                    <q-item-side right>Institution: {{ item.institution ? item.institution.name : 'undefined'}}</q-item-side>
+                    <q-item-side right>Name Variants: {{ getNameVariants(item) }}</q-item-side>
                 </q-item-section>
-
-                <q-item-section side>
-                  <q-icon name="keyboard_arrow_right" color="green" />
-                </q-item-section>
-              </q-item>
+              </q-expansion-item>
             </q-list>
           </q-scroll-area>
         </template>
@@ -342,6 +348,12 @@ export default {
       const index = _.findIndex(this.publications, { id: this.publication.id })
       Vue.delete(this.publications, index)
       this.loadPublication(this.publications[index])
+    },
+    getNameVariants (person) {
+      var variants = []
+      variants[0] = `${person.family_name}, ${person.given_name.charAt(0)}`
+      variants[1] = `${person.family_name}, ${person.given_name}`
+      return variants
     }
   },
   computed: {
