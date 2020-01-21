@@ -8,6 +8,9 @@ export default function readPersons () {
           id
           given_name
           family_name
+          institution {
+            name
+          }
           persons_publications_aggregate {
             aggregate {
               count
