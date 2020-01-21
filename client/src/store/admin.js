@@ -13,7 +13,8 @@ export default {
     isBulkEditing: state => state.isBulkEditing,
     logCount: state => state.logCount,
     acceptedCount: state => state.acceptedCount,
-    rejectedCount: state => state.rejectedCount
+    rejectedCount: state => state.rejectedCount,
+    unsureCount: state => state.unsureCount
   },
   mutations: {
     changeState: (state, stateArray) => {
@@ -30,6 +31,9 @@ export default {
     },
     incrementRejectedCount: (state) => {
       state.rejectedCount += 1
+    },
+    incrementUnsureCount: (state) => {
+      state.unsureCount += 1
     }
   },
   actions: {
@@ -55,6 +59,12 @@ export default {
       return new Promise(async (resolve, reject) => {
         commit('incrementRejectedCount')
         resolve(getters.rejectedCount)
+      })
+    },
+    incrementUnsureCount: ({ getters, commit }) => {
+      return new Promise(async (resolve, reject) => {
+        commit('incrementUnsureCount')
+        resolve(getters.unsureCount)
       })
     }
   }

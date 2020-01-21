@@ -18,6 +18,7 @@
         <q-btn stretch flat label="Review" />
         <q-btn stretch flat label="Accepted">&nbsp;<q-badge color="orange" text-color="black">{{ $store.getters['admin/acceptedCount'] }}</q-badge></q-btn>
         <q-btn stretch flat label="Rejected">&nbsp;<q-badge color="orange" text-color="black">{{ $store.getters['admin/rejectedCount'] }}</q-badge></q-btn>
+        <q-btn stretch flat label="Unsure">&nbsp;<q-badge color="orange" text-color="black">{{ $store.getters['admin/unsureCount'] }}</q-badge></q-btn>
         <q-btn stretch flat label="Logs">&nbsp;<q-badge color="orange" text-color="black">{{ $store.getters['admin/logCount'] }}</q-badge></q-btn>
         <q-space />
         <q-toggle v-model="isBulkEditing" color="red" label="Bulk Edit" left-label />
