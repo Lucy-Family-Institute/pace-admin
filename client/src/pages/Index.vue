@@ -201,6 +201,7 @@ import { dom, date } from 'quasar'
 import readPersons from '../gql/readPersons'
 import readPublicationsByPerson from '../gql/readPublicationsByPerson'
 import insertReview from '../gql/insertReview'
+import readUser from '../gql/readUser'
 import _ from 'lodash'
 // import * as service from '@porter/osf.io';
 
@@ -221,7 +222,9 @@ export default {
     unpaywall: undefined,
     dialog: false,
     maximizedToggle: true,
-    person: undefined
+    person: undefined,
+    user: undefined,
+    username: undefined
   }),
   async created () {
     this.fetchData()
@@ -231,8 +234,16 @@ export default {
   },
   methods: {
     async fetchData () {
-      const result = await this.$apollo.query(readPersons())
-      this.people = result.data.persons
+      this.username = 'reviewer1'
+      const userResult = await this.$apollo.query(readUser(this.username))
+      if (userResult.data.users.length > 0) {
+        this.user = userResult.data.users[0]
+        console.log(`Loaded user: ${this.username}`)
+      } else {
+        console.error(`Could not load user ${this.username}`)
+      }
+      const personResult = await this.$apollo.query(readPersons())
+      this.people = personResult.data.persons
     },
     async loadPublications (item) {
       this.clearPublication()
@@ -262,7 +273,7 @@ export default {
       try {
         console.log(person.id)
         const mutateResult = await this.$apollo.mutate(
-          insertReview(2, publication.persons_publications[0].id, reviewAbbrev)
+          insertReview(this.user.id, publication.persons_publications[0].id, reviewAbbrev)
         )
         console.log(mutateResult)
         if (mutateResult) {
