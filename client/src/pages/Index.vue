@@ -92,7 +92,7 @@
                       <q-card-section class="text-center">
                         <q-btn color="green" label="Accept" class="on-left" @click="reviewAccepted(person,publication)" />
                         <q-btn color="red" label="Reject" @click="reviewRejected(person,publication)" />
-                        <q-btn color="grey" label="Unsure" class="on-right" @click="unsure" />
+                        <q-btn color="grey" label="Unsure" class="on-right" @click="reviewUnsure(person,publication)" />
                       </q-card-section>
                     </q-card>
                   </q-expansion-item>
@@ -255,37 +255,47 @@ export default {
       } finally {
       }
     },
-    async reviewAccepted (person, publication) {
+    async addReview (person, publication, reviewAbbrev) {
       this.clearPublication()
       this.person = person
       this.publication = publication
       try {
         console.log(person.id)
         const mutateResult = await this.$apollo.mutate(
-          insertReview(2, publication.persons_publications[0].id, 'ACC')
+          insertReview(2, publication.persons_publications[0].id, reviewAbbrev)
         )
+        console.log(mutateResult)
         if (mutateResult) {
-          this.accept()
+          this.reviewed()
+          return mutateResult
         }
       } catch (error) {
         console.log(error)
       } finally {
       }
     },
+    async reviewAccepted (person, publication) {
+      const mutateResult = this.addReview(person, publication, 'ACC')
+      if (mutateResult) {
+        console.log(`Incrementing accepted count for person id: ${person.id}`)
+        this.$store.dispatch('admin/incrementAcceptedCount')
+        console.log(`Accepted count is: ${this.$store.getters['admin/acceptedCount']}`)
+      }
+    },
     async reviewRejected (person, publication) {
-      this.clearPublication()
-      this.person = person
-      this.publication = publication
-      try {
-        const mutateResult = await this.$apollo.mutate(
-          insertReview(2, publication.persons_publications[0].id, 'REJ')
-        )
-        if (mutateResult) {
-          this.reject()
-        }
-      } catch (error) {
-        console.log(error)
-      } finally {
+      const mutateResult = this.addReview(person, publication, 'REJ')
+      if (mutateResult) {
+        console.log(`Incrementing rejected count for person id: ${person.id}`)
+        this.$store.dispatch('admin/incrementRejectedCount')
+        console.log(`Rejected count is: ${this.$store.getters['admin/rejectedCount']}`)
+      }
+    },
+    async reviewUnsure (person, publication) {
+      const mutateResult = this.addReview(person, publication, 'UNS')
+      if (mutateResult) {
+        console.log(`Incrementing unsure count for person id: ${person.id}`)
+        this.$store.dispatch('admin/incrementUnsureCount')
+        console.log(`Unsure count is: ${this.$store.getters['admin/unsureCount']}`)
       }
     },
     google1 () {
@@ -321,17 +331,6 @@ export default {
       const index = _.findIndex(this.publications, { id: this.publication.id })
       Vue.delete(this.publications, index)
       this.loadPublication(this.publications[index])
-    },
-    accept () {
-      this.$store.dispatch('admin/incrementAcceptedCount')
-      this.reviewed()
-    },
-    reject () {
-      this.$store.dispatch('admin/incrementRejectedCount')
-      this.reviewed()
-    },
-    unsure () {
-      this.accept()
     }
   },
   computed: {
