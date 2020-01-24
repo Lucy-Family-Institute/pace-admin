@@ -6,7 +6,9 @@ import { createHttpLink } from 'apollo-link-http'
 import fetch from 'node-fetch'
 import pEachSeries from 'p-each-series'
 import readUsers from '../client/src/gql/readPersons'
-import insertPaper from './gql/insertPaper'
+import insertPublication from './gql/insertPublication'
+import insertPersonPublication from './gql/insertPersonPublication'
+import insertPubAuthor from './gql/insertPubAuthor'
 
 const client = new ApolloClient({
   link: createHttpLink({
@@ -18,6 +20,8 @@ const client = new ApolloClient({
   }),
   cache: new InMemoryCache()
 })
+
+// var publicationId= undefined;
 
 async function main() {
   const queryResult = await client.query(readUsers())
@@ -39,9 +43,37 @@ async function main() {
         'User-Agent': 'GroovyBib/1.1 (https://example.org/GroovyBib/; mailto:GroovyBib@example.org) BasedOnFunkyLib/1.4'
       }
     })
+
+    let authorMap = new Map()
+    // for now assuming each paper unique and not already in DB
     _.map(result.data.message.items, (item) => {
-      if(item.type === 'journal-article') {
+
+      if(item.type === 'journal-article' && item.title) {
+
+        authorMap.set(item.title[0], {
+          firstAuthors : [],
+          otherAuthors : []
+        })
+        let authorCount = 0;
+        let publicationId;
+        
         _.each(item.author, async (author) => {
+          authorCount += 1
+          
+          if (_.lowerCase(author.sequence) === 'first' ) {
+            console.log(`found first author ${ JSON.stringify(author) }`)
+            authorMap.get(item.title[0]).firstAuthors.push(author)
+          } else {
+            console.log(`found add\'l author ${ JSON.stringify(author) }`)
+            authorMap.get(item.title[0]).otherAuthors.push(author)
+          }
+        })
+
+        console.log(`Title: ${ item.title[0] }, First Authors: ${ JSON.stringify(authorMap.get(item.title[0]).firstAuthors) }`)
+        console.log(`Title: ${ item.title[0] }, Other Authors: ${ JSON.stringify(authorMap.get(item.title[0]).otherAuthors) }`)
+        
+        _.each(item.author, async (author) => {
+          authorCount += 1
           if(_.lowerCase(author.family) === person.lastName && 
             _.startsWith(_.lowerCase(author.given), person.firstInitial)
           ) {
@@ -51,10 +83,39 @@ async function main() {
                 confidence = .80
               }
             }
+            
+            // if paper undefined it is not inserted yet, and only insert if a name match within author set
+            console.log(`item title ${ item.title[0] }, publication id: ${ JSON.stringify(authorMap.get(item.title[0])) })`)
+            if (publicationId === undefined) { 
+              const mutatePubResult = await client.mutate(
+                insertPublication (item.title[0], item.DOI)
+              )
+              publicationId = 0+parseInt(`${ mutatePubResult.data.insert_publications.returning[0].id }`);
+              console.log(`publication id found: ${ publicationId }`)
+            
+              var authorPosition = 0
+              _.forEach(authorMap.get(item.title[0]).firstAuthors, async (firstAuthor) => {
+                authorPosition += 1
+                console.log(`publication id: ${ publicationId } inserting first author: ${ JSON.stringify(firstAuthor) }`)
+                const mutateFirstAuthorResult = await client.mutate(
+                  insertPubAuthor(publicationId, firstAuthor.given, firstAuthor.family, authorPosition)
+                )
+              })
+              _.forEach(authorMap.get(item.title[0]).otherAuthors, async (otherAuthor) => {
+                authorPosition += 1
+                console.log(`publication id: ${ publicationId } inserting other author: ${ JSON.stringify(otherAuthor) }`)
+                const mutateOtherAuthorResult = await client.mutate(
+                  insertPubAuthor(publicationId, otherAuthor.given, otherAuthor.family, authorPosition)
+                )
+              })
+            }
+            
+            // console.log(`2: publication id: ${ JSON.stringify(publicationId) }, ${ JSON.stringify(author.family) }`)
+            // now insert a person publication record
             const mutateResult = await client.mutate(
-              insertPaper(person.id, item.title[0], item.DOI, confidence)
+              insertPersonPublication(person.id, publicationId, confidence)
             )
-            console.log('added!')
+            console.log(`added person publication id: ${ mutateResult.data.insert_persons_publications.returning[0].id }`)
           }
         })
       }
