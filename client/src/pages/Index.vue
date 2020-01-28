@@ -105,10 +105,11 @@
                       </q-item-section> -->
                     </template>
                     <q-card>
-                      <q-card-section class="text-center">
-                        <!--<ul>
+                      <q-card-section>
+                        <b>Authors</b>
+                        <ol>
                           <li v-bind:key="author.id" v-for="author in publicationAuthors">{{ author.family_name }},&nbsp;{{ author.given_name}}</li>
-                        </ul>-->
+                        </ol>
                       </q-card-section>
                       <q-card-section class="text-center">
                         <q-btn color="green" label="Accept" class="on-left" @click="reviewAccepted(person,publication)" />
