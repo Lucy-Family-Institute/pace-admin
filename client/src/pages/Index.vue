@@ -19,8 +19,10 @@
                 :active="person!==undefined && item.id === person.id"
                 clickable
                 v-ripple
-                @click="loadPublications(item)"
+                group="expansion_group_person"
+                @click="loadPublications(item); setNameVariants(item)"
                 active-class="bg-teal-1 text-grey-8"
+                expand-icon="keyboard_arrow_rights"
               >
                 <template v-slot:header>
                   <q-item-section avatar top>
@@ -33,13 +35,21 @@
                   </q-item-section>
 
                   <q-item-section side>
-                    <q-icon name="keyboard_arrow_right" color="green" />
+                    <!-- <q-icon name="keyboard_arrow_right" color="green" /> -->
                   </q-item-section>
                 </template>
-                <q-item-section>
-                    <q-item-side right>Institution: {{ item.institution ? item.institution.name : 'undefined'}}</q-item-side>
-                    <q-item-side right>Name Variants: {{ getNameVariants(item) }}</q-item-side>
-                </q-item-section>
+                <q-card side>
+                    <q-card-section>
+                      <p>Institution: {{ item.institution ? item.institution.name : 'undefined'}}</p>
+                      <p>Name Variants:</p>
+                      <p>
+                        <ul>
+                          <li v-bind:key="name" v-for="name in nameVariants">{{ name }}</li>
+                        </ul>
+                      </p>
+                      <!--<p>Common Co-authors (expandable list): {{ getCommonCoauthors(item) }}</p>-->
+                    </q-card-section>
+                </q-card>
               </q-expansion-item>
             </q-list>
           </q-scroll-area>
@@ -95,6 +105,11 @@
                       </q-item-section> -->
                     </template>
                     <q-card>
+                      <q-card-section class="text-center">
+                        <!--<ul>
+                          <li v-bind:key="author.id" v-for="author in publicationAuthors">{{ author.family_name }},&nbsp;{{ author.given_name}}</li>
+                        </ul>-->
+                      </q-card-section>
                       <q-card-section class="text-center">
                         <q-btn color="green" label="Accept" class="on-left" @click="reviewAccepted(person,publication)" />
                         <q-btn color="red" label="Reject" @click="reviewRejected(person,publication)" />
@@ -206,6 +221,7 @@ import Vue from 'vue'
 import { dom, date } from 'quasar'
 import readPersons from '../gql/readPersons'
 import readPublicationsByPerson from '../gql/readPublicationsByPerson'
+import readAuthorsByPublication from '../gql/readAuthorsByPublication'
 import insertReview from '../gql/insertReview'
 import readUser from '../gql/readUser'
 import _ from 'lodash'
@@ -230,7 +246,9 @@ export default {
     maximizedToggle: true,
     person: undefined,
     user: undefined,
-    username: undefined
+    username: undefined,
+    nameVariants: [],
+    publicationAuthors: []
   }),
   async created () {
     this.fetchData()
@@ -251,6 +269,12 @@ export default {
       const personResult = await this.$apollo.query(readPersons())
       this.people = personResult.data.persons
     },
+    async loadPublicationAuthors (item) {
+      this.publicationAuthors = []
+      const result = await this.$apollo.query(readAuthorsByPublication(item.id))
+      this.publicationAuthors = result.data.authors_publications
+      console.log(`Loaded Publication Authors: ${JSON.stringify(this.publicationAuthors)}`)
+    },
     async loadPublications (item) {
       this.clearPublication()
       this.person = item
@@ -260,6 +284,7 @@ export default {
     async loadPublication (publication) {
       this.clearPublication()
       this.publication = publication
+      this.loadPublicationAuthors(publication)
       try {
         const result = await this.$axios(`https://api.unpaywall.org/v2/${publication.doi}?email=testing@unpaywall.org`)
         if (result.status === 200) {
@@ -340,6 +365,7 @@ export default {
     clearPublication () {
       this.unpaywall = undefined
       this.publication = undefined
+      this.publicationAuthors = []
       this.links = []
       this.url = undefined
     },
@@ -349,11 +375,11 @@ export default {
       Vue.delete(this.publications, index)
       this.loadPublication(this.publications[index])
     },
-    getNameVariants (person) {
-      var variants = []
-      variants[0] = `${person.family_name}, ${person.given_name.charAt(0)}`
-      variants[1] = `${person.family_name}, ${person.given_name}`
-      return variants
+    setNameVariants (person) {
+      this.nameVariants = []
+      this.nameVariants[0] = `${person.family_name}, ${person.given_name.charAt(0)}`
+      this.nameVariants[1] = `${person.family_name}, ${person.given_name}`
+      // return variants
     }
   },
   computed: {
