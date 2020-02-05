@@ -12,7 +12,22 @@
           >
             <q-list>
               <q-item-label header>People</q-item-label>
-
+              <q-btn-dropdown
+                split color="primary"
+                label="Institution"
+                @click="loadPersonsByInstitution(1)"
+                clickable
+                >
+                <q-option-group class="q-pr-md"
+                  v-model="institutionGroup"
+                  :options="institutionOptions"
+                  color="primary"
+                  type="checkbox"
+                  clickable
+                  @click="loadPersonsByInstitution(1)"
+                >
+                </q-option-group>
+              </q-btn-dropdown>
               <q-expansion-item
                 v-for="item in people"
                 :key="item.id"
@@ -221,10 +236,12 @@
 import Vue from 'vue'
 import { dom, date } from 'quasar'
 import readPersons from '../gql/readPersons'
+import readPersonsByInstitution from '../gql/readPersonsByInstitution'
 import readPublicationsByPerson from '../gql/readPublicationsByPerson'
 import readAuthorsByPublication from '../gql/readAuthorsByPublication'
 import insertReview from '../gql/insertReview'
 import readUser from '../gql/readUser'
+import readInstitutions from '../gql/readInstitutions'
 import _ from 'lodash'
 // import * as service from '@porter/osf.io';
 
@@ -238,6 +255,9 @@ export default {
     secondModel: 50,
     people: [],
     publications: [],
+    institutions: [],
+    institutionOptions: [],
+    institutionGroup: [],
     publication: undefined,
     links: [],
     checkedPublications: [],
@@ -248,6 +268,7 @@ export default {
     person: undefined,
     user: undefined,
     username: undefined,
+    institutionId: undefined,
     nameVariants: [],
     publicationAuthors: []
   }),
@@ -258,6 +279,41 @@ export default {
     $route: 'fetchData'
   },
   methods: {
+    async loadInstitutionDropDown () {
+      // group: ['op1','op2'],
+      this.institutionOptions = []
+      let options = []
+      let group = []
+      _.forEach(this.institutions, function (institution, i) {
+        if (institution) {
+          group.push(`${institution.id}`)
+          options.push({
+            label: `${institution.name}`,
+            value: `${institution.id}`
+          })
+        }
+      })
+
+      this.institutionOptions = options
+      this.institutionGroup = group
+      this.institutionGroup = ['2']
+      console.log(`Institution Options are: ${JSON.stringify(this.institutionOptions)} Group is: ${JSON.stringify(this.institutionGroup)}`)
+    },
+    async loadPersonsByInstitution (institutionId) {
+      console.log('here')
+      const personResult = await this.$apollo.query(readPersonsByInstitution(institutionId))
+      this.people = personResult.data.persons
+    },
+    async loadPersons () {
+      const personResult = await this.$apollo.query(readPersons())
+      this.people = personResult.data.persons
+    },
+    async loadPublicationAuthors (item) {
+      this.publicationAuthors = []
+      const result = await this.$apollo.query(readAuthorsByPublication(item.id))
+      this.publicationAuthors = result.data.authors_publications
+      console.log(`Loaded Publication Authors: ${JSON.stringify(this.publicationAuthors)}`)
+    },
     async fetchData () {
       this.username = 'reviewer1'
       const userResult = await this.$apollo.query(readUser(this.username))
@@ -267,14 +323,11 @@ export default {
       } else {
         console.error(`Could not load user ${this.username}`)
       }
-      const personResult = await this.$apollo.query(readPersons())
+      const institutionResult = await this.$apollo.query(readInstitutions())
+      this.institutions = institutionResult.data.institutions
+      this.loadInstitutionDropDown()
+      const personResult = await this.$apollo.query(readPersonsByInstitution(1))
       this.people = personResult.data.persons
-    },
-    async loadPublicationAuthors (item) {
-      this.publicationAuthors = []
-      const result = await this.$apollo.query(readAuthorsByPublication(item.id))
-      this.publicationAuthors = result.data.authors_publications
-      console.log(`Loaded Publication Authors: ${JSON.stringify(this.publicationAuthors)}`)
     },
     async loadPublications (item) {
       this.clearPublication()
