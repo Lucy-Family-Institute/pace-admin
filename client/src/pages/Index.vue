@@ -77,7 +77,8 @@
             <template v-slot:before>
               <q-scroll-area
                 v-if="pendingPublications"
-                :style="{height: ($q.screen.height-50)+'px'}"
+                ref="pendingPubsScroll"
+                :style="{height: ($q.screen.height-50)/4+'px'}"
               >
                 <q-list>
                   <q-item-label header>
@@ -87,7 +88,7 @@
                       </template>
                     </q-input>
                   </q-item-label>
-                  <q-item-label header>Pending</q-item-label>
+                  <q-item-label header>Pending ({{ pendingPublications.length }})</q-item-label>
                   <q-expansion-item
                     v-for="item in filteredPendingPublications"
                     :key="item.id"
@@ -138,7 +139,8 @@
               </q-scroll-area>
               <q-scroll-area
                 v-if="acceptedPublications"
-                :style="{height: ($q.screen.height-50)+'px'}"
+                ref="acceptedPubsScroll"
+                :style="{height: ($q.screen.height-50)/4+'px'}"
               >
                 <q-list>
                   <q-item-label header>
@@ -148,7 +150,7 @@
                       </template>
                     </q-input>
                   </q-item-label>
-                  <q-item-label header>Accepted</q-item-label>
+                  <q-item-label header>Accepted ({{ acceptedPublications.length }})</q-item-label>
                   <q-expansion-item
                     v-for="item in filteredAcceptedPublications"
                     :key="item.id"
@@ -199,7 +201,8 @@
               </q-scroll-area>
               <q-scroll-area
                 v-if="rejectedPublications"
-                :style="{height: ($q.screen.height-50)+'px'}"
+                ref="rejectedPubsScroll"
+                :style="{height: ($q.screen.height-50)/4+'px'}"
               >
                 <q-list>
                   <q-item-label header>
@@ -209,7 +212,7 @@
                       </template>
                     </q-input>
                   </q-item-label>
-                  <q-item-label header>Rejected</q-item-label>
+                  <q-item-label header>Rejected ({{ rejectedPublications.length }})</q-item-label>
                   <q-expansion-item
                     v-for="item in filteredRejectedPublications"
                     :key="item.id"
@@ -260,7 +263,8 @@
               </q-scroll-area>
               <q-scroll-area
                 v-if="unsurePublications"
-                :style="{height: ($q.screen.height-50)+'px'}"
+                ref="unsurePubsScroll"
+                :style="{height: ($q.screen.height-50)/4+'px'}"
               >
                 <q-list>
                   <q-item-label header>
@@ -270,7 +274,7 @@
                       </template>
                     </q-input>
                   </q-item-label>
-                  <q-item-label header>Unsure</q-item-label>
+                  <q-item-label header>Unsure ({{ unsurePublications.length }})</q-item-label>
                   <q-expansion-item
                     v-for="item in filteredUnsurePublications"
                     :key="item.id"
@@ -468,6 +472,12 @@ export default {
     $route: 'fetchData'
   },
   methods: {
+    async resetScrolls () {
+      this.$refs.pendingPubsScroll.setScrollPosition(0)
+      this.$refs.acceptedPubsScroll.setScrollPosition(0)
+      this.$refs.rejectedPubsScroll.setScrollPosition(0)
+      this.$refs.unsurePubsScroll.setScrollPosition(0)
+    },
     async loadInstitutionDropDown () {
       // group: ['op1','op2'],
       this.institutionOptions = []
@@ -519,6 +529,7 @@ export default {
       this.people = personResult.data.persons
     },
     async loadPublications (item) {
+      this.resetScrolls()
       this.clearPublication()
       this.person = item
       // const result = await this.$apollo.query(readPublicationsByPerson(item.id))
