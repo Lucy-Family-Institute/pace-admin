@@ -9,6 +9,7 @@ export default function readPublicationsByPersonReview (personId, userId) {
           person_id
           publication_id
           publication {
+            id
             title
             doi
           }
