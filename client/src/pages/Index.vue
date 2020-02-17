@@ -6,54 +6,55 @@
         :style="{height: ($q.screen.height-50)+'px'}"
       >
         <template v-slot:before>
-          <q-scroll-area
-            v-if="people"
-            :style="{height: ($q.screen.height-50)+'px'}"
+          <q-item-label header>Filter</q-item-label>
+          <PeopleFilter />
+          <q-item-label header>People</q-item-label>
+          <!-- TODO calculate exact height below -->
+          <q-virtual-scroll
+            :style="{'max-height': ($q.screen.height-50-200)+'px'}"
+            :items="people"
+            separator
           >
-            <q-list>
-              <q-item-label header>Filter</q-item-label>
-              <PeopleFilter />
-              <q-item-label header>People</q-item-label>
+            <template v-slot="{ item, index }">
               <q-expansion-item
-                v-for="item in people"
-                :key="item.id"
-                :active="person!==undefined && item.id === person.id"
-                clickable
-                v-ripple
-                group="expansion_group_person"
-                @click="loadPublications(item); setNameVariants(item)"
-                active-class="bg-teal-1 text-grey-8"
-                expand-icon="keyboard_arrow_rights"
-              >
-                <template v-slot:header>
-                  <q-item-section avatar top>
-                    <q-avatar icon="person" color="primary" text-color="white" />
-                  </q-item-section>
+                  :key="index"
+                  :active="person!==undefined && item.id === person.id"
+                  clickable
+                  v-ripple
+                  group="expansion_group_person"
+                  @click="loadPublications(item); setNameVariants(item)"
+                  active-class="bg-teal-1 text-grey-8"
+                  expand-icon="keyboard_arrow_rights"
+                >
+                  <template v-slot:header>
+                    <q-item-section avatar top>
+                      <q-avatar icon="person" color="primary" text-color="white" />
+                    </q-item-section>
 
-                  <q-item-section>
-                    <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.persons_publications_aggregate.aggregate.count }})</q-item-label>
-                    <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
-                  </q-item-section>
+                    <q-item-section>
+                      <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.persons_publications_aggregate.aggregate.count }})</q-item-label>
+                      <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
+                    </q-item-section>
 
-                  <q-item-section side>
-                    <!-- <q-icon name="keyboard_arrow_right" color="green" /> -->
-                  </q-item-section>
-                </template>
-                <q-card side>
-                    <q-card-section>
-                      <p>Institution: {{ item.institution ? item.institution.name : 'undefined'}}</p>
-                      <p>Name Variants:</p>
-                      <p>
-                        <ul>
-                          <li v-bind:key="name" v-for="name in nameVariants">{{ name }}</li>
-                        </ul>
-                      </p>
-                      <!--<p>Common Co-authors (expandable list): {{ getCommonCoauthors(item) }}</p>-->
-                    </q-card-section>
-                </q-card>
-              </q-expansion-item>
-            </q-list>
-          </q-scroll-area>
+                    <q-item-section side>
+                      <!-- <q-icon name="keyboard_arrow_right" color="green" /> -->
+                    </q-item-section>
+                  </template>
+                  <q-card side>
+                      <q-card-section>
+                        <p>Institution: {{ item.institution ? item.institution.name : 'undefined'}}</p>
+                        <p>Name Variants:</p>
+                        <p>
+                          <ul>
+                            <li v-bind:key="name" v-for="name in nameVariants">{{ name }}</li>
+                          </ul>
+                        </p>
+                        <!--<p>Common Co-authors (expandable list): {{ getCommonCoauthors(item) }}</p>-->
+                      </q-card-section>
+                  </q-card>
+                </q-expansion-item>
+            </template>
+          </q-virtual-scroll>
         </template>
         <template v-slot:after>
           <q-splitter
@@ -442,7 +443,10 @@ export default {
     this.fetchData()
   },
   watch: {
-    $route: 'fetchData'
+    $route: 'fetchData',
+    selectedInstitutions: function () {
+      this.loadPersonsWithFilter()
+    }
   },
   methods: {
     async resetScrolls () {
@@ -451,11 +455,13 @@ export default {
       this.$refs.rejectedPubsScroll.setScrollPosition(0)
       this.$refs.unsurePubsScroll.setScrollPosition(0)
     },
-    async loadPersonsByInstitution (institutionId) {
+    async loadPersonsWithFilter () {
+      console.log('filtering', this.selectedInstitutions)
+      this.people = []
       const personResult = await this.$apollo.query({
         query: readPersonsByInstitution,
         variables: {
-          institution_id: institutionId
+          names: this.selectedInstitutions
         }
       })
       this.people = personResult.data.persons
@@ -471,7 +477,7 @@ export default {
       console.log(`Loaded Publication Authors: ${JSON.stringify(this.publicationAuthors)}`)
     },
     async fetchData () {
-      await this.loadPersonsByInstitution(1)
+      await this.loadPersonsWithFilter()
     },
     async loadPublications (item) {
       this.resetScrolls()
@@ -614,6 +620,7 @@ export default {
   },
   computed: {
     userId: get('auth/userId'),
+    selectedInstitutions: get('filter/selectedInstitutions'),
     filteredPendingPublications: function () {
       return this.pendingPublications.filter(item => {
         return _.lowerCase(item.title).includes(this.search)

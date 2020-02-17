@@ -1,15 +1,5 @@
-query MyQuery ($institution_id: Int!){
-  persons (
-    where: {
-      institution: {
-        id: { _eq: $institution_id}
-      }
-    }
-    order_by: {
-      persons_publications_aggregate: {count: desc}
-    }
-  )
-  {
+query MyQuery($names: [String!]) {
+  persons(where: {institution: {name: {_in: $names}}}, order_by: {persons_publications_aggregate: {count: desc}}) {
     id
     given_name
     family_name
