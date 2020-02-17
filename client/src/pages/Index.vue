@@ -61,19 +61,19 @@
             :style="{height: ($q.screen.height-50)+'px'}"
           >
             <template v-slot:before>
+              <q-item-label header>
+                <q-input v-if="person" v-model="search" label="">
+                  <template v-slot:append>
+                    <q-icon name="search" />
+                  </template>
+                </q-input>
+              </q-item-label>
               <q-scroll-area
                 v-if="pendingPublications"
                 ref="pendingPubsScroll"
                 :style="{height: ($q.screen.height-50)/4+'px'}"
               >
                 <q-list>
-                  <q-item-label header>
-                    <q-input v-if="person" v-model="search" label="">
-                      <template v-slot:append>
-                        <q-icon name="search" />
-                      </template>
-                    </q-input>
-                  </q-item-label>
                   <q-item-label header>Pending ({{ pendingPublications.length }})</q-item-label>
                   <q-expansion-item
                     v-for="item in filteredPendingPublications"
@@ -129,13 +129,6 @@
                 :style="{height: ($q.screen.height-50)/4+'px'}"
               >
                 <q-list>
-                  <q-item-label header>
-                    <q-input v-if="person" v-model="search" label="">
-                      <template v-slot:append>
-                        <q-icon name="search" />
-                      </template>
-                    </q-input>
-                  </q-item-label>
                   <q-item-label header>Accepted ({{ acceptedPublications.length }})</q-item-label>
                   <q-expansion-item
                     v-for="item in filteredAcceptedPublications"
@@ -191,13 +184,6 @@
                 :style="{height: ($q.screen.height-50)/4+'px'}"
               >
                 <q-list>
-                  <q-item-label header>
-                    <q-input v-if="person" v-model="search" label="">
-                      <template v-slot:append>
-                        <q-icon name="search" />
-                      </template>
-                    </q-input>
-                  </q-item-label>
                   <q-item-label header>Rejected ({{ rejectedPublications.length }})</q-item-label>
                   <q-expansion-item
                     v-for="item in filteredRejectedPublications"
@@ -253,13 +239,6 @@
                 :style="{height: ($q.screen.height-50)/4+'px'}"
               >
                 <q-list>
-                  <q-item-label header>
-                    <q-input v-if="person" v-model="search" label="">
-                      <template v-slot:append>
-                        <q-icon name="search" />
-                      </template>
-                    </q-input>
-                  </q-item-label>
                   <q-item-label header>Unsure ({{ unsurePublications.length }})</q-item-label>
                   <q-expansion-item
                     v-for="item in filteredUnsurePublications"
