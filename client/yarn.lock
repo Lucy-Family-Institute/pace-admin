@@ -4072,6 +4072,11 @@ graphql-tag@^2.10.1:
   resolved "https://registry.yarnpkg.com/graphql-tag/-/graphql-tag-2.10.1.tgz#10aa41f1cd8fae5373eaf11f1f67260a3cad5e02"
   integrity sha512-jApXqWBzNXQ8jYa/HLkZJaVw9jgwNqZkywa2zfFn16Iv1Zb7ELNHkJaXHR7Quvd5SIGsy6Ny7SUKATgnu05uEg==
 
+graphql-tag@^2.10.3:
+  version "2.10.3"
+  resolved "https://registry.yarnpkg.com/graphql-tag/-/graphql-tag-2.10.3.tgz#ea1baba5eb8fc6339e4c4cf049dabe522b0edf03"
+  integrity sha512-4FOv3ZKfA4WdOKJeHdz6B3F/vxBLSgmBcGeAFPf4n1F64ltJUvOOerNj0rsJxONQGdhUMynQIvd6LzB+1J5oKA==
+
 graphql@^14.1.1:
   version "14.5.8"
   resolved "https://registry.yarnpkg.com/graphql/-/graphql-14.5.8.tgz#504f3d3114cb9a0a3f359bbbcf38d9e5bf6a6b3c"
@@ -8692,6 +8697,15 @@ vue-apollo@^3.0.0-beta.28:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/vue-apollo/-/vue-apollo-3.0.0.tgz#e252130b18cbd7b0d060fc3dd9616813e4a65acf"
   integrity sha512-ByeKajmgItICrOkUl2j/XzqWjv2FOdQYAPsuGyry4yrQBCU641gSoZZn1TjHiR9rAsR2aycGsY9vuV0sN14Mbg==
+  dependencies:
+    chalk "^2.4.2"
+    serialize-javascript "^2.1.0"
+    throttle-debounce "^2.1.0"
+
+vue-apollo@^3.0.3:
+  version "3.0.3"
+  resolved "https://registry.yarnpkg.com/vue-apollo/-/vue-apollo-3.0.3.tgz#7f29558df76eec0f03251847eef153816a261827"
+  integrity sha512-WJaQ1v/i46/oIPlKv7J0Tx6tTlbuaeCdhrAbL06h+Zca2gzr5ywjUFpl8ijMTGJsQ+Ph/U4xEpBFBOMxQmL+7g==
   dependencies:
     chalk "^2.4.2"
     serialize-javascript "^2.1.0"

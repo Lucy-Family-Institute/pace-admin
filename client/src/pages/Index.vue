@@ -424,14 +424,16 @@
 import Vue from 'vue'
 import { dom, date } from 'quasar'
 import readPersons from '../gql/readPersons'
-import readPersonsByInstitution from '../gql/readPersonsByInstitution'
+// import readPersonsByInstitution from '../gql/readPersonsByInstitution'
 // import readPublicationsByPerson from '../gql/readPublicationsByPerson'
 import readPublicationsByPersonByReview from '../gql/readPublicationsByPersonByReview'
 import readAuthorsByPublication from '../gql/readAuthorsByPublication'
 import insertReview from '../gql/insertReview'
-import readUser from '../gql/readUser'
-import readInstitutions from '../gql/readInstitutions'
+// import readUser from '../gql/readUser'
+// import readInstitutions from '../gql/readInstitutions'
 import _ from 'lodash'
+
+import readPersonsByInstitution from '../../../gql/readPersonsByInstitution.gql'
 // import * as service from '@porter/osf.io';
 
 export default {
@@ -499,8 +501,12 @@ export default {
       console.log(`Institution Options are: ${JSON.stringify(this.institutionOptions)} Group is: ${JSON.stringify(this.institutionGroup)}`)
     },
     async loadPersonsByInstitution (institutionId) {
-      console.log('here')
-      const personResult = await this.$apollo.query(readPersonsByInstitution(institutionId))
+      const personResult = await this.$apollo.query({
+        query: readPersonsByInstitution,
+        variables: {
+          institution_id: institutionId
+        }
+      })
       this.people = personResult.data.persons
     },
     async loadPersons () {
@@ -514,19 +520,20 @@ export default {
       console.log(`Loaded Publication Authors: ${JSON.stringify(this.publicationAuthors)}`)
     },
     async fetchData () {
-      this.username = 'reviewer1'
-      const userResult = await this.$apollo.query(readUser(this.username))
-      if (userResult.data.users.length > 0) {
-        this.user = userResult.data.users[0]
-        console.log(`Loaded user: ${this.username}`)
-      } else {
-        console.error(`Could not load user ${this.username}`)
-      }
-      const institutionResult = await this.$apollo.query(readInstitutions())
-      this.institutions = institutionResult.data.institutions
-      this.loadInstitutionDropDown()
-      const personResult = await this.$apollo.query(readPersonsByInstitution(1))
-      this.people = personResult.data.persons
+      await this.loadPersonsByInstitution(1)
+      // this.username = 'reviewer1'
+      // const userResult = await this.$apollo.query(readUser(this.username))
+      // if (userResult.data.users.length > 0) {
+      //   this.user = userResult.data.users[0]
+      //   console.log(`Loaded user: ${this.username}`)
+      // } else {
+      //   console.error(`Could not load user ${this.username}`)
+      // }
+      // const institutionResult = await this.$apollo.query(readInstitutions())
+      // this.institutions = institutionResult.data.institutions
+      // this.loadInstitutionDropDown()
+      // const personResult = await this.$apollo.query(readPersonsByInstitution(1))
+      // this.people = personResult.data.persons
     },
     async loadPublications (item) {
       this.resetScrolls()
