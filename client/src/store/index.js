@@ -5,6 +5,7 @@ import pathify from './pathify'
 
 import admin from './admin'
 import auth from './auth'
+import filter from './filter'
 
 Vue.use(Vuex)
 
@@ -19,7 +20,8 @@ export default function (/* { ssrContext } */) {
 
     modules: {
       admin,
-      auth
+      auth,
+      filter
     },
 
     // enable strict mode (adds overhead!)
