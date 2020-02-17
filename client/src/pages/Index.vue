@@ -422,6 +422,7 @@
 
 <script>
 import Vue from 'vue'
+import { get } from 'vuex-pathify'
 import { dom, date } from 'quasar'
 import readPersons from '../gql/readPersons'
 // import readPersonsByInstitution from '../gql/readPersonsByInstitution'
@@ -677,22 +678,23 @@ export default {
     }
   },
   computed: {
-    filteredPendingPublications () {
+    userId: get('auth/userId'),
+    filteredPendingPublications: () => {
       return this.pendingPublications.filter(item => {
         return _.lowerCase(item.title).includes(this.search)
       })
     },
-    filteredAcceptedPublications () {
+    filteredAcceptedPublications: () => {
       return this.acceptedPublications.filter(item => {
         return _.lowerCase(item.title).includes(this.search)
       })
     },
-    filteredRejectedPublications () {
+    filteredRejectedPublications: () => {
       return this.rejectedPublications.filter(item => {
         return _.lowerCase(item.title).includes(this.search)
       })
     },
-    filteredUnsurePublications () {
+    filteredUnsurePublications: () => {
       return this.unsurePublications.filter(item => {
         return _.lowerCase(item.title).includes(this.search)
       })
