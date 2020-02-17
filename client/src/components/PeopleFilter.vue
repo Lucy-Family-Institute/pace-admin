@@ -42,6 +42,7 @@ export default {
         query: readInstitutions
       })
       this.institutionOptions = _.compact(_.map(results.data.institutions, 'name'))
+      this.selectedInstitutions = _.clone(this.institutionOptions)
     }
   }
 }
