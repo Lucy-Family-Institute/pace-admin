@@ -11,6 +11,8 @@
             :style="{height: ($q.screen.height-50)+'px'}"
           >
             <q-list>
+              <q-item-label header>Filter</q-item-label>
+              <PeopleFilter />
               <q-item-label header>People</q-item-label>
               <!--<q-btn-dropdown
                 split color="primary"
@@ -437,8 +439,13 @@ import _ from 'lodash'
 import readPersonsByInstitution from '../../../gql/readPersonsByInstitution.gql'
 // import * as service from '@porter/osf.io';
 
+import PeopleFilter from '../components/PeopleFilter.vue'
+
 export default {
   name: 'PageIndex',
+  components: {
+    PeopleFilter
+  },
   data: () => ({
     search: '',
     dom,
