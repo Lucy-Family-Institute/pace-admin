@@ -14,22 +14,6 @@
               <q-item-label header>Filter</q-item-label>
               <PeopleFilter />
               <q-item-label header>People</q-item-label>
-              <!--<q-btn-dropdown
-                split color="primary"
-                label="Institution"
-                @click="loadPersonsByInstitution(1)"
-                clickable
-                >
-                <q-option-group class="q-pr-md"
-                  v-model="institutionGroup"
-                  :options="institutionOptions"
-                  color="primary"
-                  type="checkbox"
-                  clickable
-                  @click="loadPersonsByInstitution(1)"
-                >
-                </q-option-group>
-              </q-btn-dropdown>-->
               <q-expansion-item
                 v-for="item in people"
                 :key="item.id"
@@ -488,26 +472,6 @@ export default {
       this.$refs.rejectedPubsScroll.setScrollPosition(0)
       this.$refs.unsurePubsScroll.setScrollPosition(0)
     },
-    async loadInstitutionDropDown () {
-      // group: ['op1','op2'],
-      this.institutionOptions = []
-      let options = []
-      let group = []
-      _.forEach(this.institutions, function (institution, i) {
-        if (institution) {
-          group.push(`${institution.id}`)
-          options.push({
-            label: `${institution.name}`,
-            value: `${institution.id}`
-          })
-        }
-      })
-
-      this.institutionOptions = options
-      this.institutionGroup = group
-      this.institutionGroup = ['2']
-      console.log(`Institution Options are: ${JSON.stringify(this.institutionOptions)} Group is: ${JSON.stringify(this.institutionGroup)}`)
-    },
     async loadPersonsByInstitution (institutionId) {
       const personResult = await this.$apollo.query({
         query: readPersonsByInstitution,
@@ -529,19 +493,6 @@ export default {
     },
     async fetchData () {
       await this.loadPersonsByInstitution(1)
-      // this.username = 'reviewer1'
-      // const userResult = await this.$apollo.query(readUser(this.username))
-      // if (userResult.data.users.length > 0) {
-      //   this.user = userResult.data.users[0]
-      //   console.log(`Loaded user: ${this.username}`)
-      // } else {
-      //   console.error(`Could not load user ${this.username}`)
-      // }
-      // const institutionResult = await this.$apollo.query(readInstitutions())
-      // this.institutions = institutionResult.data.institutions
-      // this.loadInstitutionDropDown()
-      // const personResult = await this.$apollo.query(readPersonsByInstitution(1))
-      // this.people = personResult.data.persons
     },
     async loadPublications (item) {
       this.resetScrolls()
@@ -549,8 +500,9 @@ export default {
       this.person = item
       // const result = await this.$apollo.query(readPublicationsByPerson(item.id))
       // this.publications = result.data.publications
-
-      const pubsWithReviewResult = await this.$apollo.query(readPublicationsByPersonByReview(item.id, this.user.id))
+      console.log(item.id)
+      const pubsWithReviewResult = await this.$apollo.query(readPublicationsByPersonByReview(item.id, this.userId))
+      console.log('***', pubsWithReviewResult)
       const pubsGroupedByReview = _.groupBy(pubsWithReviewResult.data.persons_publications, function (pub) {
         if (pub.reviews.length > 0) {
           return pub.reviews[0].reviewstate.abbrev
@@ -563,9 +515,6 @@ export default {
       this.acceptedPublications = pubsGroupedByReview.ACC ? pubsGroupedByReview.ACC : []
       this.rejectedPublications = pubsGroupedByReview.REJ ? pubsGroupedByReview.REJ : []
       this.unsurePublications = pubsGroupedByReview.UNS ? pubsGroupedByReview.UNS : []
-
-      console.log(JSON.stringify(pubsGroupedByReview))
-      console.log(`Keys are: ${_.keys(pubsGroupedByReview)}`)
     },
     async loadPublication (personPublication) {
       this.clearPublication()
@@ -686,22 +635,22 @@ export default {
   },
   computed: {
     userId: get('auth/userId'),
-    filteredPendingPublications: () => {
+    filteredPendingPublications: function () {
       return this.pendingPublications.filter(item => {
         return _.lowerCase(item.title).includes(this.search)
       })
     },
-    filteredAcceptedPublications: () => {
+    filteredAcceptedPublications: function () {
       return this.acceptedPublications.filter(item => {
         return _.lowerCase(item.title).includes(this.search)
       })
     },
-    filteredRejectedPublications: () => {
+    filteredRejectedPublications: function () {
       return this.rejectedPublications.filter(item => {
         return _.lowerCase(item.title).includes(this.search)
       })
     },
-    filteredUnsurePublications: () => {
+    filteredUnsurePublications: function () {
       return this.unsurePublications.filter(item => {
         return _.lowerCase(item.title).includes(this.search)
       })
