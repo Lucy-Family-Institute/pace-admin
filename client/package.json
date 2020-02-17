@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@quasar/extras": "^1.0.0",
+    "apollo-link-context": "^1.0.19",
     "axios": "^0.18.1",
     "graphql-tag": "^2.10.1",
     "node-fetch": "^2.6.0",
