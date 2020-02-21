@@ -69,17 +69,18 @@
                   </template>
                 </q-input>
               </q-item-label>
-              <q-scroll-area
-                v-if="pendingPublications"
+              <q-item-label header>Pending ({{ filteredPendingPublications.length }})</q-item-label>
+              <q-virtual-scroll
+                :items="filteredPendingPublications"
+                separator
                 ref="pendingPubsScroll"
                 :style="{height: ($q.screen.height-50)/4+'px'}"
               >
-                <q-list>
-                  <q-item-label header>Pending ({{ pendingPublications.length }})</q-item-label>
+                <template v-slot="{ item, index }">
                   <q-expansion-item
-                    v-for="item in filteredPendingPublications"
-                    :key="item.id"
+                    :key="index"
                     clickable
+                    v-ripple
                     @click="loadPublication(item)"
                     group="expansion_group"
                     :active="personPublication !== undefined && item.id === personPublication.id"
@@ -122,19 +123,20 @@
                       </q-card-section>
                     </q-card>
                   </q-expansion-item>
-                </q-list>
-              </q-scroll-area>
-              <q-scroll-area
-                v-if="acceptedPublications"
+                </template>
+              </q-virtual-scroll>
+              <q-item-label header>Accepted ({{ filteredAcceptedPublications.length }})</q-item-label>
+              <q-virtual-scroll
+                :items="filteredAcceptedPublications"
                 ref="acceptedPubsScroll"
                 :style="{height: ($q.screen.height-50)/4+'px'}"
+                separator
               >
-                <q-list>
-                  <q-item-label header>Accepted ({{ acceptedPublications.length }})</q-item-label>
+                <template v-slot="{ item, index }">
                   <q-expansion-item
-                    v-for="item in filteredAcceptedPublications"
-                    :key="item.id"
+                    :key="index"
                     clickable
+                    v-ripple
                     @click="loadPublication(item)"
                     group="expansion_group"
                     :active="personPublication !== undefined && item.id === personPublication.id"
@@ -177,19 +179,20 @@
                       </q-card-section>
                     </q-card>
                   </q-expansion-item>
-                </q-list>
-              </q-scroll-area>
-              <q-scroll-area
-                v-if="rejectedPublications"
+                </template>
+              </q-virtual-scroll>
+              <q-item-label header>Rejected ({{ filteredRejectedPublications.length }})</q-item-label>
+              <q-virtual-scroll
+                :items="filteredRejectedPublications"
+                separator
                 ref="rejectedPubsScroll"
                 :style="{height: ($q.screen.height-50)/4+'px'}"
               >
-                <q-list>
-                  <q-item-label header>Rejected ({{ rejectedPublications.length }})</q-item-label>
+                <template v-slot=" {item, index } ">
                   <q-expansion-item
-                    v-for="item in filteredRejectedPublications"
-                    :key="item.id"
+                    :key="index"
                     clickable
+                    v-ripple
                     @click="loadPublication(item)"
                     group="expansion_group"
                     :active="personPublication !== undefined && item.id === personPublication.id"
@@ -232,19 +235,20 @@
                       </q-card-section>
                     </q-card>
                   </q-expansion-item>
-                </q-list>
-              </q-scroll-area>
-              <q-scroll-area
-                v-if="unsurePublications"
+                </template>
+              </q-virtual-scroll>
+              <q-item-label header>Unsure ({{ filteredUnsurePublications.length }})</q-item-label>
+              <q-virtual-scroll
+                :items="filteredUnsurePublications"
+                separator
                 ref="unsurePubsScroll"
                 :style="{height: ($q.screen.height-50)/4+'px'}"
               >
-                <q-list>
-                  <q-item-label header>Unsure ({{ unsurePublications.length }})</q-item-label>
+                <template v-slot="{ item, index }">
                   <q-expansion-item
-                    v-for="item in filteredUnsurePublications"
-                    :key="item.id"
+                   :key="index"
                     clickable
+                    v-ripple
                     @click="loadPublication(item)"
                     group="expansion_group"
                     :active="personPublication !== undefined && item.id === personPublication.id"
@@ -287,8 +291,8 @@
                       </q-card-section>
                     </q-card>
                   </q-expansion-item>
-                </q-list>
-              </q-scroll-area>
+                </template>
+              </q-virtual-scroll>
             </template>
             <template v-slot:after>
               <q-scroll-area
@@ -450,10 +454,10 @@ export default {
   },
   methods: {
     async resetScrolls () {
-      this.$refs.pendingPubsScroll.setScrollPosition(0)
-      this.$refs.acceptedPubsScroll.setScrollPosition(0)
-      this.$refs.rejectedPubsScroll.setScrollPosition(0)
-      this.$refs.unsurePubsScroll.setScrollPosition(0)
+      // this.$refs.pendingPubsScroll.setScrollPosition(0)
+      // this.$refs.acceptedPubsScroll.setScrollPosition(0)
+      // this.$refs.rejectedPubsScroll.setScrollPosition(0)
+      // this.$refs.unsurePubsScroll.setScrollPosition(0)
     },
     async loadPersonsWithFilter () {
       console.log('filtering', this.selectedInstitutions)
@@ -524,7 +528,7 @@ export default {
       try {
         console.log(person.id)
         const mutateResult = await this.$apollo.mutate(
-          insertReview(this.user.id, personPublication.id, reviewAbbrev)
+          insertReview(this.userId, personPublication.id, reviewAbbrev)
         )
         console.log(mutateResult)
         if (mutateResult) {
