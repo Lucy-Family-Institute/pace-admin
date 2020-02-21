@@ -69,7 +69,13 @@
                   </template>
                 </q-input>
               </q-item-label>
-              <q-item-label header>Pending ({{ filteredPendingPublications.length }})</q-item-label>
+              <!--<q-expansion-item
+                :active=""
+                clickable
+              >-->
+              <!--<q-item-section> --> 
+                <q-item-label header>Pending ({{ filteredPendingPublications.length }})</q-item-label>
+              <!-- </q-item-section> -->
               <q-virtual-scroll
                 :items="filteredPendingPublications"
                 separator
@@ -441,7 +447,8 @@ export default {
     username: undefined,
     institutionId: undefined,
     nameVariants: [],
-    publicationAuthors: []
+    publicationAuthors: [],
+    reviewSelected: undefined
   }),
   async created () {
     this.fetchData()
