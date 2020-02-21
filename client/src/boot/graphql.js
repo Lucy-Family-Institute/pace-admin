@@ -3,20 +3,33 @@ import VueApollo from 'vue-apollo'
 import { createHttpLink } from 'apollo-link-http'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import fetch from 'node-fetch'
+import { setContext } from 'apollo-link-context'
 
 export default ({ Vue, app }) => {
   const uri = process.env.API_END_POINT || 'http://localhost:8002/v1/graphql'
   const httpLink = createHttpLink({
     uri,
-    fetch,
-    headers: {
-      'x-hasura-admin-secret': 'mysecret'
+    fetch
+  })
+
+  // We're using apollo-link-context to dynamically set the header
+  const authLink = setContext((_) => {
+    return {
+      headers: {
+        'x-hasura-admin-secret': 'mysecret'
+      }
     }
+    // Eventually this will like this
+    // return {
+    //   headers: {
+    //     sessionID: store.getters['app/sessionId']
+    //   }
+    // }
   })
 
   // Create the apollo client
   const defaultClient = new ApolloClient({
-    link: httpLink,
+    link: authLink.concat(httpLink),
     cache: new InMemoryCache()
   })
 

@@ -1,0 +1,6 @@
+query MyQuery {
+  institutions {
+    id
+    name
+  }
+}

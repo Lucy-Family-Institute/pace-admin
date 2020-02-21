@@ -75,6 +75,10 @@ module.exports = function (ctx) {
             formatter: require('eslint').CLIEngine.getFormatter('stylish')
           }
         })
+        cfg.module.rules.push({
+          test: /\.(graphql|gql)$/,
+          use: ['graphql-tag/loader']
+        })
       }
     },
 
