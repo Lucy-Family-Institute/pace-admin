@@ -6,68 +6,55 @@
         :style="{height: ($q.screen.height-50)+'px'}"
       >
         <template v-slot:before>
-          <q-scroll-area
-            v-if="people"
-            :style="{height: ($q.screen.height-50)+'px'}"
+          <q-item-label header>Filter</q-item-label>
+          <PeopleFilter />
+          <q-item-label header>People</q-item-label>
+          <!-- TODO calculate exact height below -->
+          <q-virtual-scroll
+            :style="{'max-height': ($q.screen.height-50-200)+'px'}"
+            :items="people"
+            separator
           >
-            <q-list>
-              <q-item-label header>People</q-item-label>
-              <!--<q-btn-dropdown
-                split color="primary"
-                label="Institution"
-                @click="loadPersonsByInstitution(1)"
-                clickable
-                >
-                <q-option-group class="q-pr-md"
-                  v-model="institutionGroup"
-                  :options="institutionOptions"
-                  color="primary"
-                  type="checkbox"
-                  clickable
-                  @click="loadPersonsByInstitution(1)"
-                >
-                </q-option-group>
-              </q-btn-dropdown>-->
+            <template v-slot="{ item, index }">
               <q-expansion-item
-                v-for="item in people"
-                :key="item.id"
-                :active="person!==undefined && item.id === person.id"
-                clickable
-                v-ripple
-                group="expansion_group_person"
-                @click="loadPublications(item); setNameVariants(item)"
-                active-class="bg-teal-1 text-grey-8"
-                expand-icon="keyboard_arrow_rights"
-              >
-                <template v-slot:header>
-                  <q-item-section avatar top>
-                    <q-avatar icon="person" color="primary" text-color="white" />
-                  </q-item-section>
+                  :key="index"
+                  :active="person!==undefined && item.id === person.id"
+                  clickable
+                  v-ripple
+                  group="expansion_group_person"
+                  @click="loadPublications(item); setNameVariants(item)"
+                  active-class="bg-teal-1 text-grey-8"
+                  expand-icon="keyboard_arrow_rights"
+                >
+                  <template v-slot:header>
+                    <q-item-section avatar top>
+                      <q-avatar icon="person" color="primary" text-color="white" />
+                    </q-item-section>
 
-                  <q-item-section>
-                    <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.persons_publications_aggregate.aggregate.count }})</q-item-label>
-                    <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
-                  </q-item-section>
+                    <q-item-section>
+                      <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.persons_publications_aggregate.aggregate.count }})</q-item-label>
+                      <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
+                    </q-item-section>
 
-                  <q-item-section side>
-                    <!-- <q-icon name="keyboard_arrow_right" color="green" /> -->
-                  </q-item-section>
-                </template>
-                <q-card side>
-                    <q-card-section>
-                      <p>Institution: {{ item.institution ? item.institution.name : 'undefined'}}</p>
-                      <p>Name Variants:</p>
-                      <p>
-                        <ul>
-                          <li v-bind:key="name" v-for="name in nameVariants">{{ name }}</li>
-                        </ul>
-                      </p>
-                      <!--<p>Common Co-authors (expandable list): {{ getCommonCoauthors(item) }}</p>-->
-                    </q-card-section>
-                </q-card>
-              </q-expansion-item>
-            </q-list>
-          </q-scroll-area>
+                    <q-item-section side>
+                      <!-- <q-icon name="keyboard_arrow_right" color="green" /> -->
+                    </q-item-section>
+                  </template>
+                  <q-card side>
+                      <q-card-section>
+                        <p>Institution: {{ item.institution ? item.institution.name : 'undefined'}}</p>
+                        <p>Name Variants:</p>
+                        <p>
+                          <ul>
+                            <li v-bind:key="name" v-for="name in nameVariants">{{ name }}</li>
+                          </ul>
+                        </p>
+                        <!--<p>Common Co-authors (expandable list): {{ getCommonCoauthors(item) }}</p>-->
+                      </q-card-section>
+                  </q-card>
+                </q-expansion-item>
+            </template>
+          </q-virtual-scroll>
         </template>
         <template v-slot:after>
           <q-splitter
@@ -75,19 +62,19 @@
             :style="{height: ($q.screen.height-50)+'px'}"
           >
             <template v-slot:before>
+              <q-item-label header>
+                <q-input v-if="person" v-model="search" label="">
+                  <template v-slot:append>
+                    <q-icon name="search" />
+                  </template>
+                </q-input>
+              </q-item-label>
               <q-scroll-area
                 v-if="pendingPublications"
                 ref="pendingPubsScroll"
                 :style="{height: ($q.screen.height-50)/4+'px'}"
               >
                 <q-list>
-                  <q-item-label header>
-                    <q-input v-if="person" v-model="search" label="">
-                      <template v-slot:append>
-                        <q-icon name="search" />
-                      </template>
-                    </q-input>
-                  </q-item-label>
                   <q-item-label header>Pending ({{ pendingPublications.length }})</q-item-label>
                   <q-expansion-item
                     v-for="item in filteredPendingPublications"
@@ -143,13 +130,6 @@
                 :style="{height: ($q.screen.height-50)/4+'px'}"
               >
                 <q-list>
-                  <q-item-label header>
-                    <q-input v-if="person" v-model="search" label="">
-                      <template v-slot:append>
-                        <q-icon name="search" />
-                      </template>
-                    </q-input>
-                  </q-item-label>
                   <q-item-label header>Accepted ({{ acceptedPublications.length }})</q-item-label>
                   <q-expansion-item
                     v-for="item in filteredAcceptedPublications"
@@ -205,13 +185,6 @@
                 :style="{height: ($q.screen.height-50)/4+'px'}"
               >
                 <q-list>
-                  <q-item-label header>
-                    <q-input v-if="person" v-model="search" label="">
-                      <template v-slot:append>
-                        <q-icon name="search" />
-                      </template>
-                    </q-input>
-                  </q-item-label>
                   <q-item-label header>Rejected ({{ rejectedPublications.length }})</q-item-label>
                   <q-expansion-item
                     v-for="item in filteredRejectedPublications"
@@ -267,13 +240,6 @@
                 :style="{height: ($q.screen.height-50)/4+'px'}"
               >
                 <q-list>
-                  <q-item-label header>
-                    <q-input v-if="person" v-model="search" label="">
-                      <template v-slot:append>
-                        <q-icon name="search" />
-                      </template>
-                    </q-input>
-                  </q-item-label>
                   <q-item-label header>Unsure ({{ unsurePublications.length }})</q-item-label>
                   <q-expansion-item
                     v-for="item in filteredUnsurePublications"
@@ -422,20 +388,28 @@
 
 <script>
 import Vue from 'vue'
+import { get } from 'vuex-pathify'
 import { dom, date } from 'quasar'
 import readPersons from '../gql/readPersons'
-import readPersonsByInstitution from '../gql/readPersonsByInstitution'
+// import readPersonsByInstitution from '../gql/readPersonsByInstitution'
 // import readPublicationsByPerson from '../gql/readPublicationsByPerson'
 import readPublicationsByPersonByReview from '../gql/readPublicationsByPersonByReview'
 import readAuthorsByPublication from '../gql/readAuthorsByPublication'
 import insertReview from '../gql/insertReview'
-import readUser from '../gql/readUser'
-import readInstitutions from '../gql/readInstitutions'
+// import readUser from '../gql/readUser'
+// import readInstitutions from '../gql/readInstitutions'
 import _ from 'lodash'
+
+import readPersonsByInstitution from '../../../gql/readPersonsByInstitution.gql'
 // import * as service from '@porter/osf.io';
+
+import PeopleFilter from '../components/PeopleFilter.vue'
 
 export default {
   name: 'PageIndex',
+  components: {
+    PeopleFilter
+  },
   data: () => ({
     search: '',
     dom,
@@ -469,7 +443,10 @@ export default {
     this.fetchData()
   },
   watch: {
-    $route: 'fetchData'
+    $route: 'fetchData',
+    selectedInstitutions: function () {
+      this.loadPersonsWithFilter()
+    }
   },
   methods: {
     async resetScrolls () {
@@ -478,29 +455,15 @@ export default {
       this.$refs.rejectedPubsScroll.setScrollPosition(0)
       this.$refs.unsurePubsScroll.setScrollPosition(0)
     },
-    async loadInstitutionDropDown () {
-      // group: ['op1','op2'],
-      this.institutionOptions = []
-      let options = []
-      let group = []
-      _.forEach(this.institutions, function (institution, i) {
-        if (institution) {
-          group.push(`${institution.id}`)
-          options.push({
-            label: `${institution.name}`,
-            value: `${institution.id}`
-          })
+    async loadPersonsWithFilter () {
+      console.log('filtering', this.selectedInstitutions)
+      this.people = []
+      const personResult = await this.$apollo.query({
+        query: readPersonsByInstitution,
+        variables: {
+          names: this.selectedInstitutions
         }
       })
-
-      this.institutionOptions = options
-      this.institutionGroup = group
-      this.institutionGroup = ['2']
-      console.log(`Institution Options are: ${JSON.stringify(this.institutionOptions)} Group is: ${JSON.stringify(this.institutionGroup)}`)
-    },
-    async loadPersonsByInstitution (institutionId) {
-      console.log('here')
-      const personResult = await this.$apollo.query(readPersonsByInstitution(institutionId))
       this.people = personResult.data.persons
     },
     async loadPersons () {
@@ -514,19 +477,7 @@ export default {
       console.log(`Loaded Publication Authors: ${JSON.stringify(this.publicationAuthors)}`)
     },
     async fetchData () {
-      this.username = 'reviewer1'
-      const userResult = await this.$apollo.query(readUser(this.username))
-      if (userResult.data.users.length > 0) {
-        this.user = userResult.data.users[0]
-        console.log(`Loaded user: ${this.username}`)
-      } else {
-        console.error(`Could not load user ${this.username}`)
-      }
-      const institutionResult = await this.$apollo.query(readInstitutions())
-      this.institutions = institutionResult.data.institutions
-      this.loadInstitutionDropDown()
-      const personResult = await this.$apollo.query(readPersonsByInstitution(1))
-      this.people = personResult.data.persons
+      await this.loadPersonsWithFilter()
     },
     async loadPublications (item) {
       this.resetScrolls()
@@ -534,8 +485,9 @@ export default {
       this.person = item
       // const result = await this.$apollo.query(readPublicationsByPerson(item.id))
       // this.publications = result.data.publications
-
-      const pubsWithReviewResult = await this.$apollo.query(readPublicationsByPersonByReview(item.id, this.user.id))
+      console.log(item.id)
+      const pubsWithReviewResult = await this.$apollo.query(readPublicationsByPersonByReview(item.id, this.userId))
+      console.log('***', pubsWithReviewResult)
       const pubsGroupedByReview = _.groupBy(pubsWithReviewResult.data.persons_publications, function (pub) {
         if (pub.reviews.length > 0) {
           return pub.reviews[0].reviewstate.abbrev
@@ -548,9 +500,6 @@ export default {
       this.acceptedPublications = pubsGroupedByReview.ACC ? pubsGroupedByReview.ACC : []
       this.rejectedPublications = pubsGroupedByReview.REJ ? pubsGroupedByReview.REJ : []
       this.unsurePublications = pubsGroupedByReview.UNS ? pubsGroupedByReview.UNS : []
-
-      console.log(JSON.stringify(pubsGroupedByReview))
-      console.log(`Keys are: ${_.keys(pubsGroupedByReview)}`)
     },
     async loadPublication (personPublication) {
       this.clearPublication()
@@ -670,22 +619,24 @@ export default {
     }
   },
   computed: {
-    filteredPendingPublications () {
+    userId: get('auth/userId'),
+    selectedInstitutions: get('filter/selectedInstitutions'),
+    filteredPendingPublications: function () {
       return this.pendingPublications.filter(item => {
         return _.lowerCase(item.title).includes(this.search)
       })
     },
-    filteredAcceptedPublications () {
+    filteredAcceptedPublications: function () {
       return this.acceptedPublications.filter(item => {
         return _.lowerCase(item.title).includes(this.search)
       })
     },
-    filteredRejectedPublications () {
+    filteredRejectedPublications: function () {
       return this.rejectedPublications.filter(item => {
         return _.lowerCase(item.title).includes(this.search)
       })
     },
-    filteredUnsurePublications () {
+    filteredUnsurePublications: function () {
       return this.unsurePublications.filter(item => {
         return _.lowerCase(item.title).includes(this.search)
       })

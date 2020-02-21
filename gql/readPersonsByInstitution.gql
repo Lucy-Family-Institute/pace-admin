@@ -1,0 +1,15 @@
+query MyQuery($names: [String!]) {
+  persons(where: {institution: {name: {_in: $names}}}, order_by: {persons_publications_aggregate: {count: desc}}) {
+    id
+    given_name
+    family_name
+    institution {
+      name
+    }
+    persons_publications_aggregate {
+      aggregate {
+        count
+      }
+    }
+  }
+}
