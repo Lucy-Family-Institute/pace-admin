@@ -69,233 +69,78 @@
                   </template>
                 </q-input>
               </q-item-label>
-              <!--<q-expansion-item
-                :active=""
-                clickable
-              >-->
-              <!--<q-item-section> --> 
-                <q-item-label header>Pending ({{ filteredPendingPublications.length }})</q-item-label>
-              <!-- </q-item-section> -->
               <q-virtual-scroll
-                :items="filteredPendingPublications"
+                :items="reviewStates"
                 separator
-                ref="pendingPubsScroll"
-                :style="{height: ($q.screen.height-50)/4+'px'}"
+                ref="pubsScroll"
+                :style="{height: ($q.screen.height-50)+'px'}"
               >
-                <template v-slot="{ item, index }">
+                <template v-slot=" {item, index} ">
                   <q-expansion-item
                     :key="index"
                     clickable
-                    v-ripple
-                    @click="loadPublication(item)"
-                    group="expansion_group"
-                    :active="personPublication !== undefined && item.id === personPublication.id"
+                    group="reviewed_pubs_group"
                     active-class="bg-teal-1 text-grey-8"
-                  >
+                    :title="item.label">
                     <template v-slot:header>
-
-                      <q-item-section avatar top>
-                        <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.id" />
-                        <q-avatar icon="description" color="primary" text-color="white" v-else />
-                      </q-item-section>
-
                       <q-item-section>
-                        <q-item-label lines="1">{{ item.publication.title }}</q-item-label>
-                        <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
+                        <q-item-label lines="1">{{ item.name}} ({{ (publicationsGroupedByReview[item.abbrev] ? publicationsGroupedByReview[item.abbrev].length : 0) }})</q-item-label>
                       </q-item-section>
-
-                      <q-item-section side>
-                        <q-badge
-                          :label="item.confidence*100+'%'"
-                          :color="item.confidence*100 <= 50 ? 'orange' : 'green'"
-                        />
-                      </q-item-section>
-
-                      <!-- <q-item-section side>
-                        <q-icon name="keyboard_arrow_right" color="green" />
-                      </q-item-section> -->
                     </template>
-                    <q-card>
-                      <q-card-section>
-                        <b>Authors</b>
-                        <ol>
-                          <li v-bind:key="author.id" v-for="author in publicationAuthors">{{ author.family_name }},&nbsp;{{ author.given_name}}</li>
-                        </ol>
-                      </q-card-section>
-                      <q-card-section class="text-center">
-                        <q-btn color="green" label="Accept" class="on-left" @click="reviewAccepted(person,personPublication)" />
-                        <q-btn color="red" label="Reject" @click="reviewRejected(person,personPublication)" />
-                        <q-btn color="grey" label="Unsure" class="on-right" @click="reviewUnsure(person,personPublication)" />
-                      </q-card-section>
-                    </q-card>
-                  </q-expansion-item>
-                </template>
-              </q-virtual-scroll>
-              <q-item-label header>Accepted ({{ filteredAcceptedPublications.length }})</q-item-label>
-              <q-virtual-scroll
-                :items="filteredAcceptedPublications"
-                ref="acceptedPubsScroll"
-                :style="{height: ($q.screen.height-50)/4+'px'}"
-                separator
-              >
-                <template v-slot="{ item, index }">
-                  <q-expansion-item
-                    :key="index"
-                    clickable
-                    v-ripple
-                    @click="loadPublication(item)"
-                    group="expansion_group"
-                    :active="personPublication !== undefined && item.id === personPublication.id"
-                    active-class="bg-teal-1 text-grey-8"
-                  >
-                    <template v-slot:header>
+                    <q-virtual-scroll
+                      separator
+                      :style="{height: ($q.screen.height-350)+'px'}"
+                      :items="publicationsGroupedByReview[item.abbrev]"
+                    >
+                      <template v-slot="{ item, index }">
+                      <q-expansion-item
+                        :key="index"
+                        clickable
+                        v-ripple
+                        @click="loadPublication(item)"
+                        group="expansion_group"
+                        :active="personPublication !== undefined && item.id === personPublication.id"
+                        active-class="bg-teal-1 text-grey-8"
+                    >
+                        <template v-slot:header>
 
-                      <q-item-section avatar top>
-                        <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.id" />
-                        <q-avatar icon="description" color="primary" text-color="white" v-else />
-                      </q-item-section>
+                          <q-item-section avatar top>
+                            <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.id" />
+                            <q-avatar icon="description" color="primary" text-color="white" v-else />
+                          </q-item-section>
 
-                      <q-item-section>
-                        <q-item-label lines="1">{{ item.publication.title }}</q-item-label>
-                        <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
-                      </q-item-section>
+                          <q-item-section>
+                            <q-item-label lines="1">{{ item.publication.title }}</q-item-label>
+                            <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
+                         </q-item-section>
 
-                      <q-item-section side>
-                        <q-badge
-                          :label="item.confidence*100+'%'"
-                          :color="item.confidence*100 <= 50 ? 'orange' : 'green'"
-                        />
-                      </q-item-section>
+                          <q-item-section side>
+                            <q-badge
+                              :label="item.confidence*100+'%'"
+                              :color="item.confidence*100 <= 50 ? 'orange' : 'green'"
+                            />
+                         </q-item-section>
 
-                      <!-- <q-item-section side>
-                        <q-icon name="keyboard_arrow_right" color="green" />
-                      </q-item-section> -->
+                          <!-- <q-item-section side>
+                            <q-icon name="keyboard_arrow_right" color="green" />
+                          </q-item-section> -->
+                        </template>
+                        <q-card>
+                          <q-card-section>
+                            <b>Authors</b>
+                           <ol>
+                              <li v-bind:key="author.id" v-for="author in publicationAuthors">{{ author.family_name }},&nbsp;{{ author.given_name}}</li>
+                            </ol>
+                          </q-card-section>
+                          <q-card-section class="text-center">
+                           <q-btn color="green" label="Accept" class="on-left" @click="reviewAccepted(person,personPublication)" />
+                            <q-btn color="red" label="Reject" @click="reviewRejected(person,personPublication)" />
+                            <q-btn color="grey" label="Unsure" class="on-right" @click="reviewUnsure(person,personPublication)" />
+                          </q-card-section>
+                        </q-card>
+                     </q-expansion-item>
                     </template>
-                    <q-card>
-                      <q-card-section>
-                        <b>Authors</b>
-                        <ol>
-                          <li v-bind:key="author.id" v-for="author in publicationAuthors">{{ author.family_name }},&nbsp;{{ author.given_name}}</li>
-                        </ol>
-                      </q-card-section>
-                      <q-card-section class="text-center">
-                        <q-btn color="green" label="Accept" class="on-left" @click="reviewAccepted(person,personPublication)" />
-                        <q-btn color="red" label="Reject" @click="reviewRejected(person,personPublication)" />
-                        <q-btn color="grey" label="Unsure" class="on-right" @click="reviewUnsure(person,personPublication)" />
-                      </q-card-section>
-                    </q-card>
-                  </q-expansion-item>
-                </template>
-              </q-virtual-scroll>
-              <q-item-label header>Rejected ({{ filteredRejectedPublications.length }})</q-item-label>
-              <q-virtual-scroll
-                :items="filteredRejectedPublications"
-                separator
-                ref="rejectedPubsScroll"
-                :style="{height: ($q.screen.height-50)/4+'px'}"
-              >
-                <template v-slot=" {item, index } ">
-                  <q-expansion-item
-                    :key="index"
-                    clickable
-                    v-ripple
-                    @click="loadPublication(item)"
-                    group="expansion_group"
-                    :active="personPublication !== undefined && item.id === personPublication.id"
-                    active-class="bg-teal-1 text-grey-8"
-                  >
-                    <template v-slot:header>
-
-                      <q-item-section avatar top>
-                        <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.id" />
-                        <q-avatar icon="description" color="primary" text-color="white" v-else />
-                      </q-item-section>
-
-                      <q-item-section>
-                        <q-item-label lines="1">{{ item.publication.title }}</q-item-label>
-                        <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
-                      </q-item-section>
-
-                      <q-item-section side>
-                        <q-badge
-                          :label="item.confidence*100+'%'"
-                          :color="item.confidence*100 <= 50 ? 'orange' : 'green'"
-                        />
-                      </q-item-section>
-
-                      <!-- <q-item-section side>
-                        <q-icon name="keyboard_arrow_right" color="green" />
-                      </q-item-section> -->
-                    </template>
-                    <q-card>
-                      <q-card-section>
-                        <b>Authors</b>
-                        <ol>
-                          <li v-bind:key="author.id" v-for="author in publicationAuthors">{{ author.family_name }},&nbsp;{{ author.given_name}}</li>
-                        </ol>
-                      </q-card-section>
-                      <q-card-section class="text-center">
-                        <q-btn color="green" label="Accept" class="on-left" @click="reviewAccepted(person,personPublication)" />
-                        <q-btn color="red" label="Reject" @click="reviewRejected(person,personPublication)" />
-                        <q-btn color="grey" label="Unsure" class="on-right" @click="reviewUnsure(person,personPublication)" />
-                      </q-card-section>
-                    </q-card>
-                  </q-expansion-item>
-                </template>
-              </q-virtual-scroll>
-              <q-item-label header>Unsure ({{ filteredUnsurePublications.length }})</q-item-label>
-              <q-virtual-scroll
-                :items="filteredUnsurePublications"
-                separator
-                ref="unsurePubsScroll"
-                :style="{height: ($q.screen.height-50)/4+'px'}"
-              >
-                <template v-slot="{ item, index }">
-                  <q-expansion-item
-                   :key="index"
-                    clickable
-                    v-ripple
-                    @click="loadPublication(item)"
-                    group="expansion_group"
-                    :active="personPublication !== undefined && item.id === personPublication.id"
-                    active-class="bg-teal-1 text-grey-8"
-                  >
-                    <template v-slot:header>
-
-                      <q-item-section avatar top>
-                        <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.id" />
-                        <q-avatar icon="description" color="primary" text-color="white" v-else />
-                      </q-item-section>
-
-                      <q-item-section>
-                        <q-item-label lines="1">{{ item.publication.title }}</q-item-label>
-                        <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
-                      </q-item-section>
-
-                      <q-item-section side>
-                        <q-badge
-                          :label="item.confidence*100+'%'"
-                          :color="item.confidence*100 <= 50 ? 'orange' : 'green'"
-                        />
-                      </q-item-section>
-
-                      <!-- <q-item-section side>
-                        <q-icon name="keyboard_arrow_right" color="green" />
-                      </q-item-section> -->
-                    </template>
-                    <q-card>
-                      <q-card-section>
-                        <b>Authors</b>
-                        <ol>
-                          <li v-bind:key="author.id" v-for="author in publicationAuthors">{{ author.family_name }},&nbsp;{{ author.given_name}}</li>
-                        </ol>
-                      </q-card-section>
-                      <q-card-section class="text-center">
-                        <q-btn color="green" label="Accept" class="on-left" @click="reviewAccepted(person,personPublication)" />
-                        <q-btn color="red" label="Reject" @click="reviewRejected(person,personPublication)" />
-                        <q-btn color="grey" label="Unsure" class="on-right" @click="reviewUnsure(person,personPublication)" />
-                      </q-card-section>
-                    </q-card>
+                    </q-virtual-scroll>
                   </q-expansion-item>
                 </template>
               </q-virtual-scroll>
@@ -411,6 +256,7 @@ import insertReview from '../gql/insertReview'
 import _ from 'lodash'
 
 import readPersonsByInstitution from '../../../gql/readPersonsByInstitution.gql'
+import readReviewStates from '../../../gql/readReviewStates.gql'
 // import * as service from '@porter/osf.io';
 
 import PeopleFilter from '../components/PeopleFilter.vue'
@@ -421,12 +267,14 @@ export default {
     PeopleFilter
   },
   data: () => ({
+    reviewStates: undefined,
     search: '',
     dom,
     date,
     firstModel: 33,
     secondModel: 50,
     people: [],
+    publicationsGroupedByReview: {},
     pendingPublications: [],
     acceptedPublications: [],
     rejectedPublications: [],
@@ -447,8 +295,7 @@ export default {
     username: undefined,
     institutionId: undefined,
     nameVariants: [],
-    publicationAuthors: [],
-    reviewSelected: undefined
+    publicationAuthors: []
   }),
   async created () {
     this.fetchData()
@@ -477,6 +324,13 @@ export default {
       })
       this.people = personResult.data.persons
     },
+    async loadReviewStates () {
+      console.log('loading review states')
+      const reviewStatesResult = await this.$apollo.query({
+        query: readReviewStates
+      })
+      this.reviewStates = reviewStatesResult.data.reviewstates
+    },
     async loadPersons () {
       const personResult = await this.$apollo.query(readPersons())
       this.people = personResult.data.persons
@@ -488,6 +342,7 @@ export default {
       console.log(`Loaded Publication Authors: ${JSON.stringify(this.publicationAuthors)}`)
     },
     async fetchData () {
+      await this.loadReviewStates()
       await this.loadPersonsWithFilter()
     },
     async loadPublications (item) {
@@ -499,18 +354,18 @@ export default {
       console.log(item.id)
       const pubsWithReviewResult = await this.$apollo.query(readPublicationsByPersonByReview(item.id, this.userId))
       console.log('***', pubsWithReviewResult)
-      const pubsGroupedByReview = _.groupBy(pubsWithReviewResult.data.persons_publications, function (pub) {
+      this.publicationsGroupedByReview = _.groupBy(pubsWithReviewResult.data.persons_publications, function (pub) {
         if (pub.reviews.length > 0) {
           return pub.reviews[0].reviewstate.abbrev
         } else {
-          return 'pending'
+          return 'PEN'
         }
       })
 
-      this.pendingPublications = pubsGroupedByReview.pending ? pubsGroupedByReview.pending : []
-      this.acceptedPublications = pubsGroupedByReview.ACC ? pubsGroupedByReview.ACC : []
-      this.rejectedPublications = pubsGroupedByReview.REJ ? pubsGroupedByReview.REJ : []
-      this.unsurePublications = pubsGroupedByReview.UNS ? pubsGroupedByReview.UNS : []
+      this.pendingPublications = this.publicationsGroupedByReview.PEN ? this.publicationsGroupedByReview.pending : []
+      this.acceptedPublications = this.publicationsGroupedByReview.ACC ? this.publicationsGroupedByReview.ACC : []
+      this.rejectedPublications = this.publicationsGroupedByReview.REJ ? this.publicationsGroupedByReview.REJ : []
+      this.unsurePublications = this.publicationsGroupedByReview.UNS ? this.publicationsGroupedByReview.UNS : []
     },
     async loadPublication (personPublication) {
       this.clearPublication()
@@ -539,7 +394,8 @@ export default {
         )
         console.log(mutateResult)
         if (mutateResult) {
-          this.reviewed()
+          this.reviewed(reviewAbbrev)
+          this.loadPublications(person)
           return mutateResult
         }
       } catch (error) {
@@ -600,23 +456,23 @@ export default {
       this.links = []
       this.url = undefined
     },
-    reviewed () {
+    reviewed (reviewAbbrev) {
       this.$store.dispatch('admin/incrementLogCount')
-      let index = _.findIndex(this.pendingPublications, { id: this.personPublication.id })
+      let index = _.findIndex(this.publicationsGroupedByReview['PEN'], { id: this.personPublication.id })
       if (index >= 0) {
-        Vue.delete(this.pendingPublications, index)
+        Vue.delete(this.publicationsGroupedByReview['PEN'], index)
       } else {
-        index = _.findIndex(this.acceptedPublications, { id: this.personPublication.id })
+        index = _.findIndex(this.publicationsGroupedByReview['ACC'], { id: this.personPublication.id })
         if (index >= 0) {
-          Vue.delete(this.acceptedPublications, index)
+          Vue.delete(this.publicationsGroupedByReview['ACC'], index)
         } else {
-          index = _.findIndex(this.rejectedPublications, { id: this.personPublication.id })
+          index = _.findIndex(this.publicationsGroupedByReview['REJ'], { id: this.personPublication.id })
           if (index >= 0) {
-            Vue.delete(this.rejectedPublications, index)
+            Vue.delete(this.publicationsGroupedByReview['REJ'], index)
           } else {
-            index = _.findIndex(this.unsurePublications, { id: this.personPublication.id })
+            index = _.findIndex(this.publicationsGroupedByReview['UNS'], { id: this.personPublication.id })
             if (index >= 0) {
-              Vue.delete(this.unsurePublications, index)
+              Vue.delete(this.publicationsGroupedByReview['UNS'], index)
             }
           }
         }
