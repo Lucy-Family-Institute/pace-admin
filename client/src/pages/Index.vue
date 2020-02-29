@@ -72,8 +72,8 @@
               <q-virtual-scroll
                 :items="reviewStates"
                 separator
-                ref="pubsScroll"
                 :style="{height: ($q.screen.height-50)+'px'}"
+                :key="reviewQueueKey"
               >
                 <template v-slot=" {item, index} ">
                   <q-expansion-item
@@ -81,7 +81,8 @@
                     clickable
                     group="reviewed_pubs_group"
                     active-class="bg-teal-1 text-grey-8"
-                    :title="item.label">
+                    :title="item.label"
+                    @click="setSelectedReviewState(item.abbrev)">
                     <template v-slot:header>
                       <q-item-section>
                         <q-item-label lines="1">{{ item.name}} ({{ (publicationsGroupedByReview[item.abbrev] ? publicationsGroupedByReview[item.abbrev].length : 0) }})</q-item-label>
@@ -90,20 +91,23 @@
                     <q-virtual-scroll
                       separator
                       :style="{height: ($q.screen.height-350)+'px'}"
-                      :items="publicationsGroupedByReview[item.abbrev]"
+                      :items="publicationsGroupedByReview[item.abbrev] === undefined ? []: publicationsGroupedByReview[item.abbrev]"
+                      :ref="item.abbrev"
                     >
                       <template v-slot="{ item, index }">
                       <q-expansion-item
                         :key="index"
                         clickable
-                        v-ripple
-                        @click="loadPublication(item)"
+                        @click="loadPublication(item);scrollToPublication(index+4)"
                         group="expansion_group"
                         :active="personPublication !== undefined && item.id === personPublication.id"
                         active-class="bg-teal-1 text-grey-8"
+                        :ref="`personPub${index}`"
                     >
-                        <template v-slot:header>
-
+                        <template
+                          v-if="item.publication !== undefined"
+                          v-slot:header
+                        >
                           <q-item-section avatar top>
                             <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.id" />
                             <q-avatar icon="description" color="primary" text-color="white" v-else />
@@ -125,17 +129,17 @@
                             <q-icon name="keyboard_arrow_right" color="green" />
                           </q-item-section> -->
                         </template>
-                        <q-card>
+                        <q-card v-if="item.publication !== undefined">
+                          <q-card-section class="text-center">
+                           <q-btn color="green" label="Accept" class="on-left" @click="$refs[`personPub${index}`].hide();reviewAccepted(person,personPublication);" />
+                            <q-btn color="red" label="Reject" @click="$refs[`personPub${index}`].hide();reviewRejected(person,personPublication);" />
+                            <q-btn color="grey" label="Unsure" class="on-right" @click="$refs[`personPub${index}`].hide();reviewUnsure(person,personPublication);" />
+                          </q-card-section>
                           <q-card-section>
                             <b>Authors</b>
                            <ol>
                               <li v-bind:key="author.id" v-for="author in publicationAuthors">{{ author.family_name }},&nbsp;{{ author.given_name}}</li>
                             </ol>
-                          </q-card-section>
-                          <q-card-section class="text-center">
-                           <q-btn color="green" label="Accept" class="on-left" @click="reviewAccepted(person,personPublication)" />
-                            <q-btn color="red" label="Reject" @click="reviewRejected(person,personPublication)" />
-                            <q-btn color="grey" label="Unsure" class="on-right" @click="reviewUnsure(person,personPublication)" />
                           </q-card-section>
                         </q-card>
                      </q-expansion-item>
@@ -245,6 +249,7 @@
 import Vue from 'vue'
 import { get } from 'vuex-pathify'
 import { dom, date } from 'quasar'
+// const { getScrollPosition, setScrollPosition } = scroll
 import readPersons from '../gql/readPersons'
 // import readPersonsByInstitution from '../gql/readPersonsByInstitution'
 // import readPublicationsByPerson from '../gql/readPublicationsByPerson'
@@ -268,6 +273,7 @@ export default {
   },
   data: () => ({
     reviewStates: undefined,
+    selectedReviewState: undefined,
     search: '',
     dom,
     date,
@@ -275,11 +281,6 @@ export default {
     secondModel: 50,
     people: [],
     publicationsGroupedByReview: {},
-    pendingPublications: [],
-    acceptedPublications: [],
-    rejectedPublications: [],
-    unsurePublications: [],
-    // publications: [],
     institutions: [],
     institutionOptions: [],
     institutionGroup: [],
@@ -295,7 +296,8 @@ export default {
     username: undefined,
     institutionId: undefined,
     nameVariants: [],
-    publicationAuthors: []
+    publicationAuthors: [],
+    reviewQueueKey: 0
   }),
   async created () {
     this.fetchData()
@@ -304,9 +306,21 @@ export default {
     $route: 'fetchData',
     selectedInstitutions: function () {
       this.loadPersonsWithFilter()
+    },
+    publicationsGroupedByView: function () {
+      this.loadPublications(this.person)
     }
   },
   methods: {
+    async setSelectedReviewState (reviewAbbrev) {
+      this.selectedReviewState = reviewAbbrev
+    },
+    async scrollToPublication (index) {
+      console.log(`updating scroll ${index} for ${this.selectedReviewState} ${this.$refs[this.selectedReviewState].toString}`)
+      this.$refs[this.selectedReviewState].scrollTo(index)
+      // console.log(`scroll position is ${scrollPosition}`)
+      // setScrollPosition(this.$refs.pubScrollArea, scrollPosition + offset)
+    },
     async resetScrolls () {
       // this.$refs.pendingPubsScroll.setScrollPosition(0)
       // this.$refs.acceptedPubsScroll.setScrollPosition(0)
@@ -361,11 +375,11 @@ export default {
           return 'PEN'
         }
       })
-
-      this.pendingPublications = this.publicationsGroupedByReview.PEN ? this.publicationsGroupedByReview.pending : []
-      this.acceptedPublications = this.publicationsGroupedByReview.ACC ? this.publicationsGroupedByReview.ACC : []
-      this.rejectedPublications = this.publicationsGroupedByReview.REJ ? this.publicationsGroupedByReview.REJ : []
-      this.unsurePublications = this.publicationsGroupedByReview.UNS ? this.publicationsGroupedByReview.UNS : []
+      // add empty arrays to initialize empty list
+      if (this.publicationsGroupedByReview['ACC'] === undefined) this.publicationsGroupedByReview['ACC'] = []
+      if (this.publicationsGroupedByReview['PEN'] === undefined) this.publicationsGroupedByReview['PEN'] = []
+      if (this.publicationsGroupedByReview['REJ'] === undefined) this.publicationsGroupedByReview['REJ'] = []
+      if (this.publicationsGroupedByReview['UNS'] === undefined) this.publicationsGroupedByReview['UNS'] = []
     },
     async loadPublication (personPublication) {
       this.clearPublication()
@@ -383,8 +397,10 @@ export default {
       } finally {
       }
     },
+    async refreshReviewQueue () {
+      this.reviewQueueKey += 1
+    },
     async addReview (person, personPublication, reviewAbbrev) {
-      this.clearPublication()
       this.person = person
       this.personPublication = personPublication
       try {
@@ -395,7 +411,7 @@ export default {
         console.log(mutateResult)
         if (mutateResult) {
           this.reviewed(reviewAbbrev)
-          this.loadPublications(person)
+          this.refreshReviewQueue()
           return mutateResult
         }
       } catch (error) {
@@ -459,6 +475,7 @@ export default {
     reviewed (reviewAbbrev) {
       this.$store.dispatch('admin/incrementLogCount')
       let index = _.findIndex(this.publicationsGroupedByReview['PEN'], { id: this.personPublication.id })
+      // remove item from current review state list
       if (index >= 0) {
         Vue.delete(this.publicationsGroupedByReview['PEN'], index)
       } else {
@@ -477,6 +494,8 @@ export default {
           }
         }
       }
+      // add item into new review state list
+      Vue.set(this.publicationsGroupedByReview[reviewAbbrev], this.publicationsGroupedByReview[reviewAbbrev].length, this.personPublication)
     },
     setNameVariants (person) {
       this.nameVariants = []
@@ -487,27 +506,12 @@ export default {
   },
   computed: {
     userId: get('auth/userId'),
-    selectedInstitutions: get('filter/selectedInstitutions'),
-    filteredPendingPublications: function () {
-      return this.pendingPublications.filter(item => {
-        return _.lowerCase(item.title).includes(this.search)
-      })
-    },
-    filteredAcceptedPublications: function () {
-      return this.acceptedPublications.filter(item => {
-        return _.lowerCase(item.title).includes(this.search)
-      })
-    },
-    filteredRejectedPublications: function () {
-      return this.rejectedPublications.filter(item => {
-        return _.lowerCase(item.title).includes(this.search)
-      })
-    },
-    filteredUnsurePublications: function () {
-      return this.unsurePublications.filter(item => {
-        return _.lowerCase(item.title).includes(this.search)
-      })
-    }
+    selectedInstitutions: get('filter/selectedInstitutions')
+    // filteredPersonPublications: function (personPublications) {
+    //   return personPublications.filter(item => {
+    //     return _.lowerCase(item.publication.title).includes(this.search)
+    //   })
+    // }
   }
 }
 </script>
