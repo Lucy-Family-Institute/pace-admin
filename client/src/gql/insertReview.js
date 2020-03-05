@@ -9,7 +9,8 @@ export default function insertReview (userId, personPublicationId, reviewStateAb
           user_id: $user_id, 
           persons_publications_id: $persons_publication_id}) {
           returning {
-            id
+            id,
+            person_publications_id
           }
         }
       }
