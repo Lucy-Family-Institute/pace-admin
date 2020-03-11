@@ -59,30 +59,39 @@ function getSimpleName (lastName, firstInitial){
   return `${lastName}, ${firstInitial}`
 }
 
-async function insertPublicationAndAuthors (item, authorMap) {
-  console.log(`trying to insert pub: ${JSON.stringify(item.title,null,2)}, ${JSON.stringify(item.DOI,null,2)}`)
+async function insertPublicationAndAuthors (title, doi, csl, authorMap) {
+  console.log(`trying to insert pub: ${JSON.stringify(title,null,2)}, ${JSON.stringify(doi,null,2)}`)
   const mutatePubResult = await client.mutate(
-    insertPublication (item.title, item.DOI)
+    insertPublication (title, doi)
   )
-  console.log(`Insert mutate pub result ${JSON.stringify(mutatePubResult.data,null,2)}`)
+  //console.log(`Insert mutate pub result ${JSON.stringify(mutatePubResult.data,null,2)}`)
   const publicationId = 0+parseInt(`${ mutatePubResult.data.insert_publications.returning[0].id }`);
-  console.log(`publication id found: ${ publicationId }`)
+  console.log(`Added publication with id: ${ publicationId }`)
   
-  // var authorPosition = 0
-  // _.forEach(authorMap.get(item.title[0]).firstAuthors, async (firstAuthor) => {
-  //   authorPosition += 1
-  //   console.log(`publication id: ${ publicationId } inserting first author: ${ JSON.stringify(firstAuthor) }`)
-  //   const mutateFirstAuthorResult = await client.mutate(
-  //     insertPubAuthor(publicationId, firstAuthor.given, firstAuthor.family, authorPosition)
-  //   )
-  // })
-  // _.forEach(authorMap.get(item.title[0]).otherAuthors, async (otherAuthor) => {
-  //   authorPosition += 1
-  //   console.log(`publication id: ${ publicationId } inserting other author: ${ JSON.stringify(otherAuthor) }`)
-  //   const mutateOtherAuthorResult = await client.mutate(
-  //     insertPubAuthor(publicationId, otherAuthor.given, otherAuthor.family, authorPosition)
-  //   )
-  // })
+  console.log(`Pub Id: ${publicationId} Adding ${authorMap.firstAuthors.length + authorMap.otherAuthors.length} total authors`)
+  var authorPosition = 0
+  _.forEach(authorMap.firstAuthors, async (firstAuthor) => {
+    authorPosition += 1
+    try {
+      console.log(`publication id: ${ publicationId } inserting first author: ${ JSON.stringify(firstAuthor) }`)
+      const mutateFirstAuthorResult = await client.mutate(
+        insertPubAuthor(publicationId, firstAuthor.given, firstAuthor.family, authorPosition)
+      )
+    } catch (error){
+      console.log(`Error on insert of Doi: ${doi} first author: ${JSON.stringify(firstAuthor,null,2)}`)
+    }
+  })
+  _.forEach(authorMap.otherAuthors, async (otherAuthor) => {
+    authorPosition += 1
+    try {
+      console.log(`publication id: ${ publicationId } inserting other author: ${ JSON.stringify(otherAuthor) }`)
+      const mutateOtherAuthorResult = await client.mutate(
+        insertPubAuthor(publicationId, otherAuthor.given, otherAuthor.family, authorPosition)
+      )
+    } catch (error){
+      console.log(`Error on insert of Doi: ${doi} other author: ${JSON.stringify(otherAuthor,null,2)}`)
+    }
+  })
   return publicationId
 }
 
@@ -153,7 +162,7 @@ async function matchPeopleToPaperAuthors(personMap, authorMap){
     
     //check if persons last name in author list, if so mark a match
     if(_.has(personMap, _.lowerCase(author.family))){
-      console.log(`Matching last name found: ${author.family}`)
+      //console.log(`Matching last name found: ${author.family}`)
 
       let firstInitialFound = false
       let affiliationFound = false
@@ -178,7 +187,7 @@ async function matchPeopleToPaperAuthors(personMap, authorMap){
         if (confidenceVal > 0) {
           console.log(`Match found for Author: ${author.family}, ${author.given}`)
           matchedPersonMap[testPerson.id] = {'person': testPerson, 'confidence': confidenceVal}
-          console.log(`After add matched persons map is: ${JSON.stringify(matchedPersonMap,null,2)}`)
+          //console.log(`After add matched persons map is: ${JSON.stringify(matchedPersonMap,null,2)}`)
         } 
       })
     } else {
@@ -186,7 +195,7 @@ async function matchPeopleToPaperAuthors(personMap, authorMap){
     }
   })
 
-  console.log(`After tests matchedPersonMap is: ${JSON.stringify(matchedPersonMap,null,2)}`)
+  //console.log(`After tests matchedPersonMap is: ${JSON.stringify(matchedPersonMap,null,2)}`)
   return matchedPersonMap
 }
 
@@ -212,19 +221,40 @@ async function main() {
   _.forEach(papersByDoi, async function(inputPaper, doi) {
     //get CSL (citation style language) record by doi from dx.dio.org
     const cslRecords = await Cite.inputAsync(doi)
-    // console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
+    //console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
 
+    const csl = cslRecords[0]
     //retrieve the authors from the record and put in a map, returned above in array, but really just one element
-    const authorMap = await getAuthorMap(cslRecords[0])
-    // console.log(`Author Map found: ${JSON.stringify(authorMap,null,2)}`)
+    const authorMap = await getAuthorMap(csl)
+    //console.log(`Author Map found: ${JSON.stringify(authorMap,null,2)}`)
 
     //match paper authors to people
-    console.log(`Testing for Author Matches for DOI: ${doi}`)
+    //console.log(`Testing for Author Matches for DOI: ${doi}`)
     const matchedPersons = await matchPeopleToPaperAuthors(personMap, authorMap)
-    console.log(`Person to Paper Matches: ${JSON.stringify(matchedPersons,null,2)}`)
+    //console.log(`Person to Paper Matches: ${JSON.stringify(matchedPersons,null,2)}`)
 
-    //if at least one author, add the paper, and related personpub objects
-    //push in csl record to jsonb blob
+    // if at least one author, add the paper, and related personpub objects
+    if(csl['type'] === 'article-journal' && csl.title && _.keys(matchedPersons).length > 0) {
+      //push in csl record to jsonb blob
+      //console.log(`Trying to insert for for DOI:${doi}, Title: ${csl.title}`)
+      const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authorMap)
+      //console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
+
+      console.log(`Publication Id: ${publicationId} Matched Persons count: ${_.keys(matchedPersons).length}`)
+      // now insert a person publication record for each matched Person
+      _.forEach(matchedPersons, async function (person, id){
+        try {
+          const mutateResult = await client.mutate(
+            insertPersonPublication(id, publicationId, person['confidence'])        
+          )
+          console.log(`added person publication id: ${ mutateResult.data.insert_persons_publications.returning[0].id }`)
+        } catch (error) {
+          console.log(`Error on add person ${JSON.stringify(person,null,2)} to publication id: ${publicationId}`)
+        }
+      })
+      
+
+    }
   })
 
   
