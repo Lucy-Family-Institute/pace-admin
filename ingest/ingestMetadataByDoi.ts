@@ -62,7 +62,8 @@ function getSimpleName (lastName, firstInitial){
 async function insertPublicationAndAuthors (title, doi, csl, authorMap) {
   console.log(`trying to insert pub: ${JSON.stringify(title,null,2)}, ${JSON.stringify(doi,null,2)}`)
   const mutatePubResult = await client.mutate(
-    insertPublication (title, doi)
+    //for now convert csl json object to a string when storing in DB
+    insertPublication (title, doi, JSON.stringify(csl))
   )
   //console.log(`Insert mutate pub result ${JSON.stringify(mutatePubResult.data,null,2)}`)
   const publicationId = 0+parseInt(`${ mutatePubResult.data.insert_publications.returning[0].id }`);
@@ -252,46 +253,17 @@ async function main() {
           console.log(`Error on add person ${JSON.stringify(person,null,2)} to publication id: ${publicationId}`)
         }
       })
-      
-
+    } else {
+      if (_.keys(matchedPersons).length <= 0){
+        console.log(`No author match found for ${doi} and not added to DB`)
+      } else {
+        console.log(`${doi} and not added to DB because not an article or no title defined in DOI csl record`)
+      }
     }
   })
 
   
-  //     if(item['type'] === 'article-journal' && item.title) {
-  //       console.log(`Adding DOI ${doi} paper to DB for title: ${item.title}`)
-
-
-  //       let authorCount = 0
-  //       let publicationId
-         
-  //       _.each(item.author, async (author) => {
-  //         authorCount += 1
-  //         const simpleName = getSimpleName(_.lowerCase(author.family), _.lowerCase(author.given)[0])
-  //         console.log(`Checking for Author Match: ${simpleName} for DOI: ${doi}`)
-  //         if(_.has(personMap, simpleName)) {
-  //           console.log(`Found matching author ${simpleName} for DOI: ${doi}`)
-  //           let confidence = .50
-  //           if(!_.isEmpty(author.affiliation)) {
-  //             if(/notre dame/gi.test(author.affiliation[0].name)) {
-  //               confidence = .80
-  //             }
-  //           }
-            
-  //           // if paper undefined it is not inserted yet, and only insert if a name match within author set
-  //           //console.log(`item title ${ item.title }, publication author: ${ JSON.stringify(authorMap.get(item.title)) })`)
-  //           if (publicationId === undefined) { 
-  //             publicationId = insertPublicationAndAuthors(item,authorMap)
-  //             console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
-  //           }
-            
-  //           // // now insert a person publication record
-  //           // const mutateResult = await client.mutate(
-  //           //   insertPersonPublication(personMap[simpleName]['id'], publicationId, confidence)
-  //           // )
-  //           // console.log(`added person publication id: ${ mutateResult.data.insert_persons_publications.returning[0].id }`)
-  //         } 
-  //       })
+ 
 
   //       if (publicationId === undefined){
   //         console.log(`No author match found for ${doi}`)

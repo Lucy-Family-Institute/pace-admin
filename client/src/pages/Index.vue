@@ -90,7 +90,7 @@
                     </template>
                     <q-virtual-scroll
                       separator
-                      :style="{height: ($q.screen.height-350)+'px'}"
+                      :style="{height: ($q.screen.height-200)+'px'}"
                       :items="publicationsGroupedByReview[item.abbrev] === undefined ? []: publicationsGroupedByReview[item.abbrev]"
                       :ref="item.abbrev"
                     >
@@ -98,7 +98,7 @@
                       <q-expansion-item
                         :key="index"
                         clickable
-                        @click="loadPublication(item);scrollToPublication(index+4)"
+                        @click="loadPublication(item);scrollToPublication(index)"
                         group="expansion_group"
                         :active="personPublication !== undefined && item.id === personPublication.id"
                         active-class="bg-teal-1 text-grey-8"
@@ -134,6 +134,9 @@
                            <q-btn color="green" label="Accept" class="on-left" @click="$refs[`personPub${index}`].hide();reviewAccepted(person,personPublication);" />
                             <q-btn color="red" label="Reject" @click="$refs[`personPub${index}`].hide();reviewRejected(person,personPublication);" />
                             <q-btn color="grey" label="Unsure" class="on-right" @click="$refs[`personPub${index}`].hide();reviewUnsure(person,personPublication);" />
+                          </q-card-section>
+                          <q-card-section>
+                            <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
                           </q-card-section>
                           <q-card-section>
                             <b>Authors</b>
@@ -259,6 +262,7 @@ import insertReview from '../gql/insertReview'
 // import readUser from '../gql/readUser'
 // import readInstitutions from '../gql/readInstitutions'
 import _ from 'lodash'
+import Cite from 'citation-js'
 
 import readPersonsByInstitution from '../../../gql/readPersonsByInstitution.gql'
 import readReviewStates from '../../../gql/readReviewStates.gql'
@@ -297,7 +301,8 @@ export default {
     institutionId: undefined,
     nameVariants: [],
     publicationAuthors: [],
-    reviewQueueKey: 0
+    reviewQueueKey: 0,
+    publicationCitation: undefined
   }),
   async created () {
     this.fetchData()
@@ -385,6 +390,7 @@ export default {
       this.clearPublication()
       this.personPublication = personPublication
       this.loadPublicationAuthors(personPublication.publication)
+      this.publicationCitation = this.getCitationApa(personPublication.publication.csl)
       try {
         const result = await this.$axios(`https://api.unpaywall.org/v2/${personPublication.publication.doi}?email=testing@unpaywall.org`)
         if (result.status === 200) {
@@ -471,6 +477,7 @@ export default {
       this.publicationAuthors = []
       this.links = []
       this.url = undefined
+      this.publicationCitation = undefined
     },
     reviewed (reviewAbbrev) {
       this.$store.dispatch('admin/incrementLogCount')
@@ -502,6 +509,17 @@ export default {
       this.nameVariants[0] = `${person.family_name}, ${person.given_name.charAt(0)}`
       this.nameVariants[1] = `${person.family_name}, ${person.given_name}`
       // return variants
+    },
+    getCitationApa (cslString) {
+      const csl = JSON.parse(cslString)
+      const citeObj = new Cite(csl)
+
+      // create formatted citation as test
+      const apaCitation = citeObj.format('bibliography', {
+        template: 'apa'
+      })
+      console.log(`Converted to citation: ${apaCitation}`)
+      return apaCitation
     }
   },
   computed: {
