@@ -24,6 +24,18 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 })
 
+async function wait(ms){
+  return new Promise((resolve, reject)=> {
+    setTimeout(() => resolve(true), ms );
+  });
+}
+
+async function randomWait(seedTime, index){
+  const waitTime = 1000 * (index % 5)
+  //console.log(`Thread Waiting for ${waitTime} ms`)
+  await wait(waitTime)
+}
+
 // var publicationId= undefined;
 
 // async function getDoiPaperData (doi) {
@@ -61,6 +73,7 @@ function getSimpleName (lastName, firstInitial){
 
 async function insertPublicationAndAuthors (title, doi, csl, authorMap) {
   console.log(`trying to insert pub: ${JSON.stringify(title,null,2)}, ${JSON.stringify(doi,null,2)}`)
+  
   const mutatePubResult = await client.mutate(
     //for now convert csl json object to a string when storing in DB
     insertPublication (title, doi, JSON.stringify(csl))
@@ -73,8 +86,12 @@ async function insertPublicationAndAuthors (title, doi, csl, authorMap) {
   var authorPosition = 0
   _.forEach(authorMap.firstAuthors, async (firstAuthor) => {
     authorPosition += 1
+
+    //have each wait a pseudo-random amount of time between 1-5 seconds
+    await randomWait(1000, authorPosition)
+
     try {
-      console.log(`publication id: ${ publicationId } inserting first author: ${ JSON.stringify(firstAuthor) }`)
+      //console.log(`publication id: ${ publicationId } inserting first author: ${ JSON.stringify(firstAuthor) }`)
       const mutateFirstAuthorResult = await client.mutate(
         insertPubAuthor(publicationId, firstAuthor.given, firstAuthor.family, authorPosition)
       )
@@ -84,8 +101,12 @@ async function insertPublicationAndAuthors (title, doi, csl, authorMap) {
   })
   _.forEach(authorMap.otherAuthors, async (otherAuthor) => {
     authorPosition += 1
+
+    //have each wait a pseudo-random amount of time between 1-5 seconds
+    await randomWait(1000, authorPosition)
+
     try {
-      console.log(`publication id: ${ publicationId } inserting other author: ${ JSON.stringify(otherAuthor) }`)
+      //console.log(`publication id: ${ publicationId } inserting other author: ${ JSON.stringify(otherAuthor) }`)
       const mutateOtherAuthorResult = await client.mutate(
         insertPubAuthor(publicationId, otherAuthor.given, otherAuthor.family, authorPosition)
       )
@@ -110,13 +131,23 @@ async function getSimplifiedPersons() {
 }
 
 async function getPapersByDoi (csvPath) {
+  console.log(`Loading Papers from path: ${csvPath}`)
   // ingest list of DOI's from CSV and relevant center author name
-  const authorPapers: any = await loadCsv({
-    path: csvPath
-  })
+  try {
+    const authorPapers: any = await loadCsv({
+     path: csvPath
+    })
 
-  const papersByDoi = _.keyBy(authorPapers, 'DOI')
-  return papersByDoi
+    //console.log(`Getting Keys for author papers`)
+    const papersByDoi = _.keyBy(authorPapers, function(paper) {
+      //strip off 'doi:' if present
+      return _.replace(paper['DOI'], 'doi:', '') 
+    })
+    return papersByDoi
+  } catch (error){
+    console.log(`Error on paper load for path ${csvPath}, error: ${error}`)
+    return undefined
+  }
 } 
 
 async function getAuthorMap(paperCsl){
@@ -158,7 +189,7 @@ async function matchPeopleToPaperAuthors(personMap, authorMap){
 
   // console.log(`Testing PersonMap: ${JSON.stringify(personMap,null,2)} to AuthorMap: ${JSON.stringify(authorMap,null,2)}`)
   _.each(testAuthorMap, async (author) => {
-    console.log(`Testing Author for match: ${author.family}, ${author.given}`)
+    //console.log(`Testing Author for match: ${author.family}, ${author.given}`)
 
     
     //check if persons last name in author list, if so mark a match
@@ -192,7 +223,7 @@ async function matchPeopleToPaperAuthors(personMap, authorMap){
         } 
       })
     } else {
-      console.log(`No match found for Author: ${author.family}, ${author.given}`)
+      //console.log(`No match found for Author: ${author.family}, ${author.given}`)
     }
   })
 
@@ -200,6 +231,98 @@ async function matchPeopleToPaperAuthors(personMap, authorMap){
   return matchedPersonMap
 }
 
+//returns a map of three arrays: 'addedDOIs','failedDOIs', 'errorMessages'
+async function loadPersonPapersFromCSV (personMap, path) {
+  const papersByDoi = await getPapersByDoi(path)
+
+  //console.log(`Papers by DOI: ${JSON.stringify(papersByDoi,null,2)}`)
+
+  //initalize the doi query and citation engine
+  Cite.async()
+
+  let loopCounter = 0
+
+  let doiStatus = {
+    'addedDOIs': [],
+    'failedDOIs': [],
+    'errorMessages': []
+  }
+
+  _.forEach(papersByDoi, async function(inputPaper, doi) {
+    try {
+      loopCounter += 1
+      //have each wait a pseudo-random amount of time between 1-5 seconds
+      await randomWait(1000, loopCounter)
+
+      //get CSL (citation style language) record by doi from dx.dio.org
+      const cslRecords = await Cite.inputAsync(doi)
+      //console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
+
+      const csl = cslRecords[0]
+      //retrieve the authors from the record and put in a map, returned above in array, but really just one element
+      const authorMap = await getAuthorMap(csl)
+      //console.log(`Author Map found: ${JSON.stringify(authorMap,null,2)}`)
+
+      //match paper authors to people
+      //console.log(`Testing for Author Matches for DOI: ${doi}`)
+      const matchedPersons = await matchPeopleToPaperAuthors(personMap, authorMap)
+      //console.log(`Person to Paper Matches: ${JSON.stringify(matchedPersons,null,2)}`)
+
+      // if at least one author, add the paper, and related personpub objects
+      if(csl['type'] === 'article-journal' && csl.title && _.keys(matchedPersons).length > 0) {
+        //push in csl record to jsonb blob
+        //console.log(`Trying to insert for for DOI:${doi}, Title: ${csl.title}`)
+        const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authorMap)
+        //console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
+
+        console.log(`Publication Id: ${publicationId} Matched Persons count: ${_.keys(matchedPersons).length}`)
+        // now insert a person publication record for each matched Person
+        let loopCounter2 = 0
+        _.forEach(matchedPersons, async function (person, id){
+          try {
+            loopCounter2 += 1
+           //have each wait a pseudo-random amount of time between 1-5 seconds
+            await randomWait(1000, loopCounter2)
+            const mutateResult = await client.mutate(
+              insertPersonPublication(id, publicationId, person['confidence'])        
+            )
+           //console.log(`added person publication id: ${ mutateResult.data.insert_persons_publications.returning[0].id }`)
+          } catch (error) {
+            const errorMessage = `Error on add person ${JSON.stringify(person,null,2)} to publication id: ${publicationId}`
+            console.log(errorMessage)
+            doiStatus.errorMessages.push(errorMessage)
+          }
+        })
+        //if we make it this far succeeded
+        doiStatus.addedDOIs.push(doi)
+        console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
+        console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
+      } else {
+        if (_.keys(matchedPersons).length <= 0){
+          const errorMessage = `No author match found for ${doi} and not added to DB` 
+          console.log(errorMessage)
+          doiStatus.errorMessages.push(errorMessage)
+        } else {
+          const errorMessage = `${doi} and not added to DB because not an article or no title defined in DOI csl record`
+          console.log(errorMessage)
+          doiStatus.errorMessages.push(errorMessage)
+        }
+        doiStatus.failedDOIs.push(doi)
+        console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
+        console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
+      }
+    } catch (error) {
+      doiStatus.failedDOIs.push(doi)
+      console.log(`Error on add DOI: ${doi} error: ${error}`)
+      console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
+      console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
+    }
+  })
+
+  return doiStatus
+}
+
+//returns status map of what was done
 async function main() {
   const simplifiedPersons = await getSimplifiedPersons()
   //console.log(`Simplified persons are: ${JSON.stringify(simplifiedPersons,null,2)}`)
@@ -211,66 +334,21 @@ async function main() {
 
   //console.log(`Person Map used was: ${JSON.stringify(personMap,null,2)}`)
 
-  const path = '../data/HCRI-pubs-2010-2019_-_Faculty_Selected.csv'
-  const papersByDoi = await getPapersByDoi(path)
+  console.log(`Loading 2019 Publication Data`)
+  //load 2019 data
+  const path2019 = '../data/HCRI-pubs-2010-2019_-_Faculty_Selected.csv'
+  const doiStatus2019 = await loadPersonPapersFromCSV(personMap, path2019)
 
-  //console.log(`Papers by DOI: ${JSON.stringify(papersByDoi,null,2)}`)
+  console.log(`Loading 2018 Publication Data`)
 
-  //initalize the doi query and citation engine
-  Cite.async()
-
-  _.forEach(papersByDoi, async function(inputPaper, doi) {
-    //get CSL (citation style language) record by doi from dx.dio.org
-    const cslRecords = await Cite.inputAsync(doi)
-    //console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
-
-    const csl = cslRecords[0]
-    //retrieve the authors from the record and put in a map, returned above in array, but really just one element
-    const authorMap = await getAuthorMap(csl)
-    //console.log(`Author Map found: ${JSON.stringify(authorMap,null,2)}`)
-
-    //match paper authors to people
-    //console.log(`Testing for Author Matches for DOI: ${doi}`)
-    const matchedPersons = await matchPeopleToPaperAuthors(personMap, authorMap)
-    //console.log(`Person to Paper Matches: ${JSON.stringify(matchedPersons,null,2)}`)
-
-    // if at least one author, add the paper, and related personpub objects
-    if(csl['type'] === 'article-journal' && csl.title && _.keys(matchedPersons).length > 0) {
-      //push in csl record to jsonb blob
-      //console.log(`Trying to insert for for DOI:${doi}, Title: ${csl.title}`)
-      const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authorMap)
-      //console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
-
-      console.log(`Publication Id: ${publicationId} Matched Persons count: ${_.keys(matchedPersons).length}`)
-      // now insert a person publication record for each matched Person
-      _.forEach(matchedPersons, async function (person, id){
-        try {
-          const mutateResult = await client.mutate(
-            insertPersonPublication(id, publicationId, person['confidence'])        
-          )
-          console.log(`added person publication id: ${ mutateResult.data.insert_persons_publications.returning[0].id }`)
-        } catch (error) {
-          console.log(`Error on add person ${JSON.stringify(person,null,2)} to publication id: ${publicationId}`)
-        }
-      })
-    } else {
-      if (_.keys(matchedPersons).length <= 0){
-        console.log(`No author match found for ${doi} and not added to DB`)
-      } else {
-        console.log(`${doi} and not added to DB because not an article or no title defined in DOI csl record`)
-      }
-    }
-  })
-
+  //load 2018 data, need to use 2018 person list - add start and end date to person?
+  const path2018 = '../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv'
+  const doiStatus2018 = await loadPersonPapersFromCSV(personMap, path2018)
   
- 
-
-  //       if (publicationId === undefined){
-  //         console.log(`No author match found for ${doi}`)
-  //       }
-  //     }
-  //   })
-  // })
+  console.log(`Loading 2017 Publication Data`)
+  //load 2017 data, need to use 2017 person list
+  const path2017 = '../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv'
+  const doiStatus2017 = await loadPersonPapersFromCSV(personMap, path2017)
 }
 
 main()
