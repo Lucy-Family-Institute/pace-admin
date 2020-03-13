@@ -19,7 +19,7 @@ const client = new ApolloClient({
 
 async function main (): Promise<void> {
   const authors: any = await loadCsv({
-    path: '../data/hcri_researchers_10_24_19.csv'
+    path: '../data/hcri_researchers_11_1_19_3.csv'
   })
 
   // insert institutions first
