@@ -138,11 +138,13 @@ async function getPapersByDoi (csvPath) {
      path: csvPath
     })
 
-    //console.log(`Getting Keys for author papers`)
+    console.log(`Getting Keys for author papers`)
     const papersByDoi = _.keyBy(authorPapers, function(paper) {
       //strip off 'doi:' if present
+      console.log('in loop')
       return _.replace(paper['DOI'], 'doi:', '') 
     })
+    console.log('Finished load')
     return papersByDoi
   } catch (error){
     console.log(`Error on paper load for path ${csvPath}, error: ${error}`)
@@ -158,7 +160,7 @@ async function getAuthorMap(paperCsl){
   }
   
   let authorCount = 0
-        
+  //console.log(`Before author loop paper csl: ${paperCsl}`)
   _.each(paperCsl.author, async (author) => {
     authorCount += 1
           
@@ -170,7 +172,7 @@ async function getAuthorMap(paperCsl){
       authMap.otherAuthors.push(author)
     }
   })
-  //console.log(`Author Map found: ${JSON.stringify(authorMap,null,2)}`)
+  console.log(`Author Map found: ${JSON.stringify(authMap,null,2)}`)
   return authMap
 }
 
@@ -248,6 +250,7 @@ async function loadPersonPapersFromCSV (personMap, path) {
     'errorMessages': []
   }
 
+  console.log(`here ${JSON.stringify(papersByDoi, null, 2)}`)
   _.forEach(papersByDoi, async function(inputPaper, doi) {
     try {
       loopCounter += 1
@@ -256,7 +259,7 @@ async function loadPersonPapersFromCSV (personMap, path) {
 
       //get CSL (citation style language) record by doi from dx.dio.org
       const cslRecords = await Cite.inputAsync(doi)
-      //console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
+      console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
 
       const csl = cslRecords[0]
       //retrieve the authors from the record and put in a map, returned above in array, but really just one element
@@ -269,7 +272,7 @@ async function loadPersonPapersFromCSV (personMap, path) {
       //console.log(`Person to Paper Matches: ${JSON.stringify(matchedPersons,null,2)}`)
 
       // if at least one author, add the paper, and related personpub objects
-      if(csl['type'] === 'article-journal' && csl.title && _.keys(matchedPersons).length > 0) {
+      if((csl['type'] === 'article-journal' || csl['type'] === 'paper-conference' || csl['type'] === 'chapter') && csl.title && _.keys(matchedPersons).length > 0) {
         //push in csl record to jsonb blob
         //console.log(`Trying to insert for for DOI:${doi}, Title: ${csl.title}`)
         const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authorMap)

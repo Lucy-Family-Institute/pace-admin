@@ -1,0 +1,7 @@
+- args:
+    sql: ALTER TABLE "public"."persons" ALTER COLUMN "end_date" TYPE timestamp with
+      time zone;
+  type: run_sql
+- args:
+    sql: COMMENT ON COLUMN "public"."persons"."end_date" IS E'null'
+  type: run_sql

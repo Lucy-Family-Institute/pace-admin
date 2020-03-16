@@ -19,7 +19,7 @@ const client = new ApolloClient({
 
 async function main (): Promise<void> {
   const authors: any = await loadCsv({
-    path: '../data/hcri_researchers_11_1_19_3.csv'
+    path: '../data/hcri_researchers_2017-2019.csv'
   })
 
   // insert institutions first
@@ -56,6 +56,14 @@ async function main (): Promise<void> {
       // eslint-disable-next-line 
       obj["institution_id"] = institutionNameIdMap[author.institution]
     }
+    if (institutionNameIdMap[author.start_date]) {
+      // eslint-disable-next-line 
+      obj["start_date"] = new Date(institutionNameIdMap[author.start_date])
+    }
+    if (institutionNameIdMap[author.end_date]) {
+      // eslint-disable-next-line 
+      obj["end_date"] = new Date(institutionNameIdMap[author.end_date])
+    }
     return obj
   })
   console.log(authorsWithIds[0])
@@ -72,6 +80,8 @@ async function main (): Promise<void> {
             family_name,
             email,
             position_title,
+            start_date,
+            end_date,
             institution {
               name
             }
