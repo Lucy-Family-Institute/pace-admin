@@ -1,0 +1,6 @@
+- args:
+    sql: ALTER TABLE "public"."persons" ALTER COLUMN "start_date" TYPE date;
+  type: run_sql
+- args:
+    sql: COMMENT ON COLUMN "public"."persons"."start_date" IS E''
+  type: run_sql
