@@ -24,6 +24,25 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 })
 
+var runningThreads = 0
+var startedThreads = 0
+var finishedThreads = 0
+
+const maxThreads = 50
+
+function nextThread() {
+  runningThreads--
+}
+
+function queueUpThread() {
+  // Run as many uploads as possible while not exceeding the given limit.
+  while (runningThreads > maxThreads) {
+    console.log("Waiting for new thread available")
+    wait(1000)
+  }
+  runningThreads++
+}
+
 async function wait(ms){
   return new Promise((resolve, reject)=> {
     setTimeout(() => resolve(true), ms );
@@ -72,7 +91,7 @@ function getSimpleName (lastName, firstInitial){
 }
 
 async function insertPublicationAndAuthors (title, doi, csl, authorMap) {
-  console.log(`trying to insert pub: ${JSON.stringify(title,null,2)}, ${JSON.stringify(doi,null,2)}`)
+  //console.log(`trying to insert pub: ${JSON.stringify(title,null,2)}, ${JSON.stringify(doi,null,2)}`)
   
   const mutatePubResult = await client.mutate(
     //for now convert csl json object to a string when storing in DB
@@ -82,7 +101,7 @@ async function insertPublicationAndAuthors (title, doi, csl, authorMap) {
   const publicationId = 0+parseInt(`${ mutatePubResult.data.insert_publications.returning[0].id }`);
   console.log(`Added publication with id: ${ publicationId }`)
   
-  console.log(`Pub Id: ${publicationId} Adding ${authorMap.firstAuthors.length + authorMap.otherAuthors.length} total authors`)
+  //console.log(`Pub Id: ${publicationId} Adding ${authorMap.firstAuthors.length + authorMap.otherAuthors.length} total authors`)
   var authorPosition = 0
   _.forEach(authorMap.firstAuthors, async (firstAuthor) => {
     authorPosition += 1
@@ -97,6 +116,7 @@ async function insertPublicationAndAuthors (title, doi, csl, authorMap) {
       )
     } catch (error){
       console.log(`Error on insert of Doi: ${doi} first author: ${JSON.stringify(firstAuthor,null,2)}`)
+      console.log(error)
     }
   })
   _.forEach(authorMap.otherAuthors, async (otherAuthor) => {
@@ -112,6 +132,7 @@ async function insertPublicationAndAuthors (title, doi, csl, authorMap) {
       )
     } catch (error){
       console.log(`Error on insert of Doi: ${doi} other author: ${JSON.stringify(otherAuthor,null,2)}`)
+      console.log(error)
     }
   })
   return publicationId
@@ -138,19 +159,21 @@ async function getPapersByDoi (csvPath) {
      path: csvPath
     })
 
-    console.log(`Getting Keys for author papers`)
+    //console.log(`Getting Keys for author papers`)
     const papersByDoi = _.keyBy(authorPapers, function(paper) {
       //strip off 'doi:' if present
-      console.log('in loop')
+      //console.log('in loop')
       return _.replace(paper['DOI'], 'doi:', '') 
     })
-    console.log('Finished load')
+    //console.log('Finished load')
     return papersByDoi
   } catch (error){
     console.log(`Error on paper load for path ${csvPath}, error: ${error}`)
     return undefined
   }
 } 
+
+
 
 async function getAuthorMap(paperCsl){
 
@@ -164,6 +187,9 @@ async function getAuthorMap(paperCsl){
   _.each(paperCsl.author, async (author) => {
     authorCount += 1
           
+    //if given name empty change to empty string instead of null, so that insert completes
+    if (author.given === undefined) author.given = ''
+
     if (_.lowerCase(author.sequence) === 'first' ) {
       //console.log(`found first author ${ JSON.stringify(author) }`)
       authMap.firstAuthors.push(author)
@@ -172,7 +198,7 @@ async function getAuthorMap(paperCsl){
       authMap.otherAuthors.push(author)
     }
   })
-  console.log(`Author Map found: ${JSON.stringify(authMap,null,2)}`)
+  //console.log(`Author Map found: ${JSON.stringify(authMap,null,2)}`)
   return authMap
 }
 
@@ -250,7 +276,7 @@ async function loadPersonPapersFromCSV (personMap, path) {
     'errorMessages': []
   }
 
-  console.log(`here ${JSON.stringify(papersByDoi, null, 2)}`)
+  //console.log(`here ${JSON.stringify(papersByDoi, null, 2)}`)
   _.forEach(papersByDoi, async function(inputPaper, doi) {
     try {
       loopCounter += 1
@@ -259,7 +285,7 @@ async function loadPersonPapersFromCSV (personMap, path) {
 
       //get CSL (citation style language) record by doi from dx.dio.org
       const cslRecords = await Cite.inputAsync(doi)
-      console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
+      //console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
 
       const csl = cslRecords[0]
       //retrieve the authors from the record and put in a map, returned above in array, but really just one element
@@ -275,10 +301,19 @@ async function loadPersonPapersFromCSV (personMap, path) {
       if((csl['type'] === 'article-journal' || csl['type'] === 'paper-conference' || csl['type'] === 'chapter') && csl.title && _.keys(matchedPersons).length > 0) {
         //push in csl record to jsonb blob
         //console.log(`Trying to insert for for DOI:${doi}, Title: ${csl.title}`)
+
+        
+        randomWait(1000, loopCounter)
+        
+        // console.log('Starting thread')
+        // queueUpThread()
         const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authorMap)
+        console.log('Finished Running Insert and starting next thread')
+        // nextThread()
+        // runningInserts = runningInserts - 1
         //console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
 
-        console.log(`Publication Id: ${publicationId} Matched Persons count: ${_.keys(matchedPersons).length}`)
+        //console.log(`Publication Id: ${publicationId} Matched Persons count: ${_.keys(matchedPersons).length}`)
         // now insert a person publication record for each matched Person
         let loopCounter2 = 0
         _.forEach(matchedPersons, async function (person, id){
@@ -345,7 +380,7 @@ async function main() {
   console.log(`Loading 2018 Publication Data`)
 
   //load 2018 data, need to use 2018 person list - add start and end date to person?
-  const path2018 = '../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv'
+  const path2018 = '../data/HCRI-pubs-2018_-_Faculty_Selected_3.csv'
   const doiStatus2018 = await loadPersonPapersFromCSV(personMap, path2018)
   
   console.log(`Loading 2017 Publication Data`)
