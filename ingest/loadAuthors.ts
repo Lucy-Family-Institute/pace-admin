@@ -56,13 +56,13 @@ async function main (): Promise<void> {
       // eslint-disable-next-line 
       obj["institution_id"] = institutionNameIdMap[author.institution]
     }
-    if (institutionNameIdMap[author.start_date]) {
+    if (author.start_date) {
       // eslint-disable-next-line 
-      obj["start_date"] = new Date(institutionNameIdMap[author.start_date])
+      obj["start_date"] = new Date(author.start_date)
     }
-    if (institutionNameIdMap[author.end_date]) {
+    if (author.end_date) {
       // eslint-disable-next-line 
-      obj["end_date"] = new Date(institutionNameIdMap[author.end_date])
+      obj["end_date"] = new Date(`12/31/${author.end_date}`)
     }
     return obj
   })
