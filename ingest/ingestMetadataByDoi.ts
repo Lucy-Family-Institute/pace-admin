@@ -6,6 +6,7 @@ import { createHttpLink } from 'apollo-link-http'
 import fetch from 'node-fetch'
 import pEachSeries from 'p-each-series'
 import readUsers from '../client/src/gql/readPersons'
+import readPersonsByYear from '../client/src/gql/readPersonsByYear'
 import insertPublication from './gql/insertPublication'
 import insertPersonPublication from './gql/insertPersonPublication'
 import insertPubAuthor from './gql/insertPubAuthor'
@@ -24,25 +25,6 @@ const client = new ApolloClient({
   }),
   cache: new InMemoryCache()
 })
-
-var runningThreads = 0
-var startedThreads = 0
-var finishedThreads = 0
-
-const maxThreads = 50
-
-function nextThread() {
-  runningThreads--
-}
-
-function queueUpThread() {
-  // Run as many uploads as possible while not exceeding the given limit.
-  while (runningThreads > maxThreads) {
-    console.log("Waiting for new thread available")
-    wait(1000)
-  }
-  runningThreads++
-}
 
 async function wait(ms){
   return new Promise((resolve, reject)=> {
@@ -126,16 +108,16 @@ async function insertPublicationAndAuthors (title, doi, csl, authors) {
   return publicationId
 }
 
-async function getSimplifiedPersons() {
-  const queryResult = await client.query(readUsers())
+async function getSimplifiedPersons(year) {
+  const queryResult = await client.query(readPersonsByYear(year))
 
   const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
     return {
       id: person.id,
       lastName: _.lowerCase(person.family_name),
       firstInitial: _.lowerCase(person.given_name[0]),
-      startYear: new Date(person.start_date).getFullYear(),
-      endYear: new Date(person.end_date).getFullYear() 
+      startYear: person.start_date,
+      endYear: person.end_date
     }
   })
   return simplifiedPersons
@@ -356,23 +338,23 @@ async function loadPersonPapersFromCSV (personMap, path) {
 
 //returns status map of what was done
 async function main() {
-  const simplifiedPersons = await getSimplifiedPersons()
-  //console.log(`Simplified persons are: ${JSON.stringify(simplifiedPersons,null,2)}`)
 
-  //create map of last name to array of related persons with same last name
-  const personMap = _.transform(simplifiedPersons, function (result, value) {
-    (result[value.lastName] || (result[value.lastName] = [])).push(value)
-  }, {})
-
-  //console.log(`Person Map used was: ${JSON.stringify(personMap,null,2)}`)
   const pathsByYear = {
-    '2019': '../data/HCRI-pubs-2010-2019_-_Faculty_Selected.csv',
-    '2018': '../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv',
-    '2017': '../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv'
+    2019: '../data/HCRI-pubs-2010-2019_-_Faculty_Selected.csv',
+    2018: '../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv',
+    2017: '../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv'
   }
 
   let doiStatus = new Map()
   await pMap(_.keys(pathsByYear), async (year) => {
+    const simplifiedPersons = await getSimplifiedPersons(year)
+    console.log(`Simplified persons for ${year} are: ${JSON.stringify(simplifiedPersons,null,2)}`)
+
+    //create map of last name to array of related persons with same last name
+    const personMap = _.transform(simplifiedPersons, function (result, value) {
+      (result[value.lastName] || (result[value.lastName] = [])).push(value)
+    }, {})
+
     console.log(`Loading ${year} Publication Data`)
     //load data
     const doiStatusByYear = await loadPersonPapersFromCSV(personMap, pathsByYear[year])
