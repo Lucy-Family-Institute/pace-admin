@@ -12,6 +12,7 @@ import insertPubAuthor from './gql/insertPubAuthor'
 import { command as loadCsv } from './units/loadCsv'
 import { responsePathAsArray } from 'graphql'
 import Cite from 'citation-js'
+import pMap from 'p-map'
 
 const client = new ApolloClient({
   link: createHttpLink({
@@ -119,6 +120,7 @@ async function insertPublicationAndAuthors (title, doi, csl, authors) {
   } catch (error){
     console.log(`Error on insert of Doi: ${doi} insert authors: ${JSON.stringify(insertAuthors,null,2)}`)
     console.log(error)
+    throw error
   }
 
   return publicationId
@@ -131,7 +133,9 @@ async function getSimplifiedPersons() {
     return {
       id: person.id,
       lastName: _.lowerCase(person.family_name),
-      firstInitial: _.lowerCase(person.given_name[0])
+      firstInitial: _.lowerCase(person.given_name[0]),
+      startYear: new Date(person.start_date).getFullYear(),
+      endYear: new Date(person.end_date).getFullYear() 
     }
   })
   return simplifiedPersons
@@ -169,10 +173,10 @@ async function getCSLAuthors(paperCsl){
   }
   
   let authorCount = 0
-  console.log(`Before author loop paper csl: ${JSON.stringify(paperCsl,null,2)}`)
+  //console.log(`Before author loop paper csl: ${JSON.stringify(paperCsl,null,2)}`)
   _.each(paperCsl.author, async (author) => {
-    // skip if familuy_name undefined
-    
+    // skip if family_name undefined
+    if (author.family != undefined){
       console.log(`Adding author ${JSON.stringify(author,null,2)}`)
       authorCount += 1
             
@@ -186,7 +190,7 @@ async function getCSLAuthors(paperCsl){
         //console.log(`found add\'l author ${ JSON.stringify(author) }`)
         authMap.otherAuthors.push(author)
       }
-    //}
+    }
   })
 
   //add author positions
@@ -276,13 +280,8 @@ async function loadPersonPapersFromCSV (personMap, path) {
     'errorMessages': []
   }
 
-  //console.log(`here ${JSON.stringify(papersByDoi, null, 2)}`)
-  _.forEach(papersByDoi, async function(inputPaper, doi) {
+  await pMap(_.keys(papersByDoi), async (doi) => {
     try {
-      loopCounter += 1
-      //have each wait a pseudo-random amount of time between 1-5 seconds
-      await randomWait(1000, loopCounter)
-
       //get CSL (citation style language) record by doi from dx.dio.org
       const cslRecords = await Cite.inputAsync(doi)
       //console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
@@ -301,16 +300,9 @@ async function loadPersonPapersFromCSV (personMap, path) {
       if((csl['type'] === 'article-journal' || csl['type'] === 'paper-conference' || csl['type'] === 'chapter') && csl.title && _.keys(matchedPersons).length > 0) {
         //push in csl record to jsonb blob
         //console.log(`Trying to insert for for DOI:${doi}, Title: ${csl.title}`)
-
         
-        randomWait(1000, loopCounter)
-        
-        // console.log('Starting thread')
-        // queueUpThread()
         const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authors)
         console.log('Finished Running Insert and starting next thread')
-        // nextThread()
-        // runningInserts = runningInserts - 1
         //console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
 
         //console.log(`Publication Id: ${publicationId} Matched Persons count: ${_.keys(matchedPersons).length}`)
@@ -351,11 +343,13 @@ async function loadPersonPapersFromCSV (personMap, path) {
       }
     } catch (error) {
       doiStatus.failedDOIs.push(doi)
-      console.log(`Error on add DOI: ${doi} error: ${error}`)
+      const errorMessage = `Error on add DOI: ${doi} error: ${error}` 
+      doiStatus.errorMessages.push(errorMessage)
+      console.log(errorMessage)
       console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
       console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
     }
-  })
+  }, { concurrency: 30 })
 
   return doiStatus
 }
@@ -371,22 +365,21 @@ async function main() {
   }, {})
 
   //console.log(`Person Map used was: ${JSON.stringify(personMap,null,2)}`)
+  const pathsByYear = {
+    '2019': '../data/HCRI-pubs-2010-2019_-_Faculty_Selected.csv',
+    '2018': '../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv',
+    '2017': '../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv'
+  }
 
-  console.log(`Loading 2019 Publication Data`)
-  //load 2019 data
-  const path2019 = '../data/HCRI-pubs-2010-2019_-_Faculty_Selected.csv'
-  const doiStatus2019 = await loadPersonPapersFromCSV(personMap, path2019)
+  let doiStatus = new Map()
+  await pMap(_.keys(pathsByYear), async (year) => {
+    console.log(`Loading ${year} Publication Data`)
+    //load data
+    const doiStatusByYear = await loadPersonPapersFromCSV(personMap, pathsByYear[year])
+    doiStatus[year] = doiStatusByYear
+  }, { concurrency: 1 })
 
-  console.log(`Loading 2018 Publication Data`)
-
-  //load 2018 data, need to use 2018 person list - add start and end date to person?
-  const path2018 = '../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv'
-  const doiStatus2018 = await loadPersonPapersFromCSV(personMap, path2018)
-  
-  console.log(`Loading 2017 Publication Data`)
-  //load 2017 data, need to use 2017 person list
-  const path2017 = '../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv'
-  const doiStatus2017 = await loadPersonPapersFromCSV(personMap, path2017)
+  console.log(`DOI Status: ${JSON.stringify(doiStatus,null,2)}`)
 }
 
 main()
