@@ -4,7 +4,7 @@ Publication Activity Collection Environment Admin Tools and DB
 # Starting from scratch
 
   make cleardb
-  make docker_start
+  make start_docker
   make migrate
   make newdb
 
