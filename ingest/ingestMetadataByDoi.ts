@@ -380,7 +380,7 @@ async function main() {
   console.log(`Loading 2018 Publication Data`)
 
   //load 2018 data, need to use 2018 person list - add start and end date to person?
-  const path2018 = '../data/HCRI-pubs-2018_-_Faculty_Selected_3.csv'
+  const path2018 = '../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv'
   const doiStatus2018 = await loadPersonPapersFromCSV(personMap, path2018)
   
   console.log(`Loading 2017 Publication Data`)
