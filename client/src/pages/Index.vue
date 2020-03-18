@@ -196,7 +196,7 @@
                   </q-card>
 
                   <q-card class="my-card col-xs-4" style="width:200px; min-height:300px" v-if="unpaywall">
-                    <img src="~/assets/Icon-pdf.svg" class="q-pa-lg">
+                    <img :src="unpaywall_thumbnail" onerror="this.src='~/assets/Icon-pdf.svg';" class="q-pa-lg">
 
                     <q-card-actions align="around">
                       <q-btn flat round color="primary" icon="link" @click="pdf()"/>
@@ -269,6 +269,7 @@ import readReviewStates from '../../../gql/readReviewStates.gql'
 // import * as service from '@porter/osf.io';
 
 import PeopleFilter from '../components/PeopleFilter.vue'
+import sanitize from 'sanitize-filename'
 
 export default {
   name: 'PageIndex',
@@ -392,11 +393,12 @@ export default {
       this.loadPublicationAuthors(personPublication.publication)
       this.publicationCitation = this.getCitationApa(personPublication.publication.csl)
       try {
-        const result = await this.$axios(`https://api.unpaywall.org/v2/${personPublication.publication.doi}?email=testing@unpaywall.org`)
+        const result = await this.$axios.head(`http://localhost:8000/pdfs/${sanitize(personPublication.publication.doi, { replacement: '_' })}.pdf`)
         if (result.status === 200) {
           // this.results.title = result.data.title
           // this.$set(this.results, 'downloads', result.data.oa_locations[0])
-          this.unpaywall = result.data.oa_locations[0].url_for_pdf
+          this.unpaywall = `http://localhost:8000/pdfs/${sanitize(personPublication.publication.doi, { replacement: '_' })}.pdf` // result.data.oa_locations[0].url_for_pdf
+          this.unpaywall_thumbnail = `http://localhost:8000/thumbnails/${sanitize(personPublication.publication.doi, { replacement: '_' })}.pdf_1.png`
         }
       } catch (error) {
         console.log(error)
