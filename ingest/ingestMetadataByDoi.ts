@@ -6,12 +6,16 @@ import { createHttpLink } from 'apollo-link-http'
 import fetch from 'node-fetch'
 import pEachSeries from 'p-each-series'
 import readUsers from '../client/src/gql/readPersons'
+import readPersonsByYear from '../client/src/gql/readPersonsByYear'
 import insertPublication from './gql/insertPublication'
 import insertPersonPublication from './gql/insertPersonPublication'
 import insertPubAuthor from './gql/insertPubAuthor'
 import { command as loadCsv } from './units/loadCsv'
 import { responsePathAsArray } from 'graphql'
 import Cite from 'citation-js'
+import pMap from 'p-map'
+import { command as nameParser } from './units/nameParser'
+import humanparser from 'humanparser'
 
 const client = new ApolloClient({
   link: createHttpLink({
@@ -23,25 +27,6 @@ const client = new ApolloClient({
   }),
   cache: new InMemoryCache()
 })
-
-var runningThreads = 0
-var startedThreads = 0
-var finishedThreads = 0
-
-const maxThreads = 50
-
-function nextThread() {
-  runningThreads--
-}
-
-function queueUpThread() {
-  // Run as many uploads as possible while not exceeding the given limit.
-  while (runningThreads > maxThreads) {
-    console.log("Waiting for new thread available")
-    wait(1000)
-  }
-  runningThreads++
-}
 
 async function wait(ms){
   return new Promise((resolve, reject)=> {
@@ -90,7 +75,7 @@ function getSimpleName (lastName, firstInitial){
   return `${lastName}, ${firstInitial}`
 }
 
-async function insertPublicationAndAuthors (title, doi, csl, authorMap) {
+async function insertPublicationAndAuthors (title, doi, csl, authors) {
   //console.log(`trying to insert pub: ${JSON.stringify(title,null,2)}, ${JSON.stringify(doi,null,2)}`)
   
   const mutatePubResult = await client.mutate(
@@ -102,50 +87,40 @@ async function insertPublicationAndAuthors (title, doi, csl, authorMap) {
   console.log(`Added publication with id: ${ publicationId }`)
   
   //console.log(`Pub Id: ${publicationId} Adding ${authorMap.firstAuthors.length + authorMap.otherAuthors.length} total authors`)
-  var authorPosition = 0
-  _.forEach(authorMap.firstAuthors, async (firstAuthor) => {
-    authorPosition += 1
-
-    //have each wait a pseudo-random amount of time between 1-5 seconds
-    await randomWait(1000, authorPosition)
-
-    try {
-      //console.log(`publication id: ${ publicationId } inserting first author: ${ JSON.stringify(firstAuthor) }`)
-      const mutateFirstAuthorResult = await client.mutate(
-        insertPubAuthor(publicationId, firstAuthor.given, firstAuthor.family, authorPosition)
-      )
-    } catch (error){
-      console.log(`Error on insert of Doi: ${doi} first author: ${JSON.stringify(firstAuthor,null,2)}`)
-      console.log(error)
+  const insertAuthors = _.map(authors, (author) => {
+    return {
+      publication_id: publicationId,
+      family_name: author.family, 
+      given_name: author.given, 
+      position: author.position
     }
   })
-  _.forEach(authorMap.otherAuthors, async (otherAuthor) => {
-    authorPosition += 1
 
-    //have each wait a pseudo-random amount of time between 1-5 seconds
-    await randomWait(1000, authorPosition)
+  try {
+    //console.log(`publication id: ${ publicationId } inserting first author: ${ JSON.stringify(firstAuthor) }`)
+    const mutateFirstAuthorResult = await client.mutate(
+      insertPubAuthor(insertAuthors)
+    )
+  } catch (error){
+    console.log(`Error on insert of Doi: ${doi} insert authors: ${JSON.stringify(insertAuthors,null,2)}`)
+    console.log(error)
+    throw error
+  }
 
-    try {
-      //console.log(`publication id: ${ publicationId } inserting other author: ${ JSON.stringify(otherAuthor) }`)
-      const mutateOtherAuthorResult = await client.mutate(
-        insertPubAuthor(publicationId, otherAuthor.given, otherAuthor.family, authorPosition)
-      )
-    } catch (error){
-      console.log(`Error on insert of Doi: ${doi} other author: ${JSON.stringify(otherAuthor,null,2)}`)
-      console.log(error)
-    }
-  })
   return publicationId
 }
 
-async function getSimplifiedPersons() {
-  const queryResult = await client.query(readUsers())
+async function getSimplifiedPersons(year) {
+  const queryResult = await client.query(readPersonsByYear(year))
 
   const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
     return {
       id: person.id,
       lastName: _.lowerCase(person.family_name),
-      firstInitial: _.lowerCase(person.given_name[0])
+      firstInitial: _.lowerCase(person.given_name[0]),
+      firstName: _.lowerCase(person.given_name),
+      startYear: person.start_date,
+      endYear: person.end_date
     }
   })
   return simplifiedPersons
@@ -160,7 +135,7 @@ async function getPapersByDoi (csvPath) {
     })
 
     //console.log(`Getting Keys for author papers`)
-    const papersByDoi = _.keyBy(authorPapers, function(paper) {
+    const papersByDoi = _.groupBy(authorPapers, function(paper) {
       //strip off 'doi:' if present
       //console.log('in loop')
       return _.replace(paper['DOI'], 'doi:', '') 
@@ -173,9 +148,21 @@ async function getPapersByDoi (csvPath) {
   }
 } 
 
+async function getConfirmedAuthorsByDoi (papersByDoi, csvColumn) {
+  const confirmedAuthorsByDoi = _.mapValues(papersByDoi, function (papers) {
+    //console.log(`Parsing names from papers ${JSON.stringify(papers,null,2)}`)
+    return _.mapValues(papers, function (paper) {
+      const unparsedName = paper[csvColumn]
+      //console.log(`Parsing name: ${unparsedName}`)
+      const parsedName =  humanparser.parseName(unparsedName)
+      //console.log(`Parsed Name is: ${JSON.stringify(parsedName,null,2)}`)
+      return parsedName
+    })
+  })
+  return confirmedAuthorsByDoi
+}
 
-
-async function getAuthorMap(paperCsl){
+async function getCSLAuthors(paperCsl){
 
   const authMap = {
     firstAuthors : [],
@@ -183,43 +170,56 @@ async function getAuthorMap(paperCsl){
   }
   
   let authorCount = 0
-  //console.log(`Before author loop paper csl: ${paperCsl}`)
+  //console.log(`Before author loop paper csl: ${JSON.stringify(paperCsl,null,2)}`)
   _.each(paperCsl.author, async (author) => {
-    authorCount += 1
-          
-    //if given name empty change to empty string instead of null, so that insert completes
-    if (author.given === undefined) author.given = ''
+    // skip if family_name undefined
+    if (author.family != undefined){
+      console.log(`Adding author ${JSON.stringify(author,null,2)}`)
+      authorCount += 1
+            
+      //if given name empty change to empty string instead of null, so that insert completes
+      if (author.given === undefined) author.given = ''
 
-    if (_.lowerCase(author.sequence) === 'first' ) {
-      //console.log(`found first author ${ JSON.stringify(author) }`)
-      authMap.firstAuthors.push(author)
-    } else {
-      //console.log(`found add\'l author ${ JSON.stringify(author) }`)
-      authMap.otherAuthors.push(author)
+      if (_.lowerCase(author.sequence) === 'first' ) {
+        //console.log(`found first author ${ JSON.stringify(author) }`)
+        authMap.firstAuthors.push(author)
+      } else {
+        //console.log(`found add\'l author ${ JSON.stringify(author) }`)
+        authMap.otherAuthors.push(author)
+      }
     }
   })
+
+  //add author positions
+  authMap.firstAuthors = _.forEach(authMap.firstAuthors, function (author, index){
+    author.position = index + 1
+  })
+
+  authMap.otherAuthors = _.forEach(authMap.otherAuthors, function (author, index){
+    author.position = index + 1 + authMap.firstAuthors.length
+  })
+
+  //concat author arrays together
+  const authors = _.concat(authMap.firstAuthors, authMap.otherAuthors)
+
   //console.log(`Author Map found: ${JSON.stringify(authMap,null,2)}`)
-  return authMap
+  return authors
 }
 
 // person map assumed to be a map of simplename to simpleperson object
 // author map assumed to be doi mapped to two arrays: first authors and other authors
 // returns a map of person ids to the person object and confidence value for any persons that matched coauthor attributes
 // example: {1: {person: simplepersonObject, confidence: 0.5}, 51: {person: simplepersonObject, confidence: 0.8}}
-async function matchPeopleToPaperAuthors(personMap, authorMap){
-
-  //for this test merge the first and other authors together
-  const testAuthorMap = _.concat(authorMap.firstAuthors,authorMap.otherAuthors)
+async function matchPeopleToPaperAuthors(personMap, authors, confirmedAuthors){
 
   //match to last name
   //match to first initial (increase confidence)
   let matchedPersonMap = new Map()
 
   // console.log(`Testing PersonMap: ${JSON.stringify(personMap,null,2)} to AuthorMap: ${JSON.stringify(authorMap,null,2)}`)
-  _.each(testAuthorMap, async (author) => {
+  _.each(authors, async (author) => {
     //console.log(`Testing Author for match: ${author.family}, ${author.given}`)
 
-    
     //check if persons last name in author list, if so mark a match
     if(_.has(personMap, _.lowerCase(author.family))){
       //console.log(`Matching last name found: ${author.family}`)
@@ -241,8 +241,21 @@ async function matchPeopleToPaperAuthors(personMap, authorMap){
             affiliationFound = true
           }
         }
-        if (firstInitialFound) confidenceVal += 0.3
+
         if (affiliationFound) confidenceVal += 0.2
+        if (firstInitialFound) {
+          confidenceVal += 0.3
+
+          //check if author in confirmed list and change confidence to 0.99 if found
+          _.each(confirmedAuthors, function (confirmedAuthor){
+            if (_.lowerCase(confirmedAuthor.lastName) === testPerson.lastName &&
+            _.lowerCase(confirmedAuthor.firstName) === testPerson.firstName){
+              console.log(`Confirmed author found: ${JSON.stringify(testPerson,null,2)}, making confidence 0.99`)
+              confidenceVal = 0.99
+            }
+          })
+        }
+
         //add person to map with confidence value > 0
         if (confidenceVal > 0) {
           console.log(`Match found for Author: ${author.family}, ${author.given}`)
@@ -262,8 +275,11 @@ async function matchPeopleToPaperAuthors(personMap, authorMap){
 //returns a map of three arrays: 'addedDOIs','failedDOIs', 'errorMessages'
 async function loadPersonPapersFromCSV (personMap, path) {
   const papersByDoi = await getPapersByDoi(path)
-
   //console.log(`Papers by DOI: ${JSON.stringify(papersByDoi,null,2)}`)
+
+  //get map of DOI's to an array of confirmed authors from the load table
+  const confirmedAuthorsByDoi = await getConfirmedAuthorsByDoi(papersByDoi, 'ND author (last, first)')
+  console.log(`Confirmed Authors By Doi are: ${JSON.stringify(confirmedAuthorsByDoi,null,2)}`)
 
   //initalize the doi query and citation engine
   Cite.async()
@@ -276,41 +292,34 @@ async function loadPersonPapersFromCSV (personMap, path) {
     'errorMessages': []
   }
 
-  //console.log(`here ${JSON.stringify(papersByDoi, null, 2)}`)
-  _.forEach(papersByDoi, async function(inputPaper, doi) {
+  await pMap(_.keys(papersByDoi), async (doi) => {
     try {
+
       loopCounter += 1
       //have each wait a pseudo-random amount of time between 1-5 seconds
       await randomWait(1000, loopCounter)
-
+      
       //get CSL (citation style language) record by doi from dx.dio.org
       const cslRecords = await Cite.inputAsync(doi)
       //console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
 
       const csl = cslRecords[0]
       //retrieve the authors from the record and put in a map, returned above in array, but really just one element
-      const authorMap = await getAuthorMap(csl)
+      const authors = await getCSLAuthors(csl)
       //console.log(`Author Map found: ${JSON.stringify(authorMap,null,2)}`)
 
       //match paper authors to people
       //console.log(`Testing for Author Matches for DOI: ${doi}`)
-      const matchedPersons = await matchPeopleToPaperAuthors(personMap, authorMap)
+      const matchedPersons = await matchPeopleToPaperAuthors(personMap, authors, confirmedAuthorsByDoi[doi])
       //console.log(`Person to Paper Matches: ${JSON.stringify(matchedPersons,null,2)}`)
 
       // if at least one author, add the paper, and related personpub objects
       if((csl['type'] === 'article-journal' || csl['type'] === 'paper-conference' || csl['type'] === 'chapter') && csl.title && _.keys(matchedPersons).length > 0) {
         //push in csl record to jsonb blob
         //console.log(`Trying to insert for for DOI:${doi}, Title: ${csl.title}`)
-
         
-        randomWait(1000, loopCounter)
-        
-        // console.log('Starting thread')
-        // queueUpThread()
-        const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authorMap)
+        const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authors)
         console.log('Finished Running Insert and starting next thread')
-        // nextThread()
-        // runningInserts = runningInserts - 1
         //console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
 
         //console.log(`Publication Id: ${publicationId} Matched Persons count: ${_.keys(matchedPersons).length}`)
@@ -351,42 +360,43 @@ async function loadPersonPapersFromCSV (personMap, path) {
       }
     } catch (error) {
       doiStatus.failedDOIs.push(doi)
-      console.log(`Error on add DOI: ${doi} error: ${error}`)
+      const errorMessage = `Error on add DOI: ${doi} error: ${error}` 
+      doiStatus.errorMessages.push(errorMessage)
+      console.log(errorMessage)
       console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
       console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
     }
-  })
+  }, { concurrency: 30 })
 
   return doiStatus
 }
 
 //returns status map of what was done
 async function main() {
-  const simplifiedPersons = await getSimplifiedPersons()
-  //console.log(`Simplified persons are: ${JSON.stringify(simplifiedPersons,null,2)}`)
 
-  //create map of last name to array of related persons with same last name
-  const personMap = _.transform(simplifiedPersons, function (result, value) {
-    (result[value.lastName] || (result[value.lastName] = [])).push(value)
-  }, {})
+  const pathsByYear = {
+    2019: '../data/HCRI-pubs-2010-2019_-_Faculty_Selected.csv',
+    2018: '../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv',
+    2017: '../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv'
+  }
 
-  //console.log(`Person Map used was: ${JSON.stringify(personMap,null,2)}`)
+  let doiStatus = new Map()
+  await pMap(_.keys(pathsByYear), async (year) => {
+    const simplifiedPersons = await getSimplifiedPersons(year)
+    console.log(`Simplified persons for ${year} are: ${JSON.stringify(simplifiedPersons,null,2)}`)
 
-  console.log(`Loading 2019 Publication Data`)
-  //load 2019 data
-  const path2019 = '../data/HCRI-pubs-2010-2019_-_Faculty_Selected.csv'
-  const doiStatus2019 = await loadPersonPapersFromCSV(personMap, path2019)
+    //create map of last name to array of related persons with same last name
+    const personMap = _.transform(simplifiedPersons, function (result, value) {
+      (result[value.lastName] || (result[value.lastName] = [])).push(value)
+    }, {})
 
-  console.log(`Loading 2018 Publication Data`)
+    console.log(`Loading ${year} Publication Data`)
+    //load data
+    const doiStatusByYear = await loadPersonPapersFromCSV(personMap, pathsByYear[year])
+    doiStatus[year] = doiStatusByYear
+  }, { concurrency: 1 })
 
-  //load 2018 data, need to use 2018 person list - add start and end date to person?
-  const path2018 = '../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv'
-  const doiStatus2018 = await loadPersonPapersFromCSV(personMap, path2018)
-  
-  console.log(`Loading 2017 Publication Data`)
-  //load 2017 data, need to use 2017 person list
-  const path2017 = '../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv'
-  const doiStatus2017 = await loadPersonPapersFromCSV(personMap, path2017)
+  console.log(`DOI Status: ${JSON.stringify(doiStatus,null,2)}`)
 }
 
 main()
