@@ -14,6 +14,8 @@ import { command as loadCsv } from './units/loadCsv'
 import { responsePathAsArray } from 'graphql'
 import Cite from 'citation-js'
 import pMap from 'p-map'
+import { command as nameParser } from './units/nameParser'
+import humanparser from 'humanparser'
 
 const client = new ApolloClient({
   link: createHttpLink({
@@ -116,6 +118,7 @@ async function getSimplifiedPersons(year) {
       id: person.id,
       lastName: _.lowerCase(person.family_name),
       firstInitial: _.lowerCase(person.given_name[0]),
+      firstName: _.lowerCase(person.given_name),
       startYear: person.start_date,
       endYear: person.end_date
     }
@@ -132,7 +135,7 @@ async function getPapersByDoi (csvPath) {
     })
 
     //console.log(`Getting Keys for author papers`)
-    const papersByDoi = _.keyBy(authorPapers, function(paper) {
+    const papersByDoi = _.groupBy(authorPapers, function(paper) {
       //strip off 'doi:' if present
       //console.log('in loop')
       return _.replace(paper['DOI'], 'doi:', '') 
@@ -145,7 +148,19 @@ async function getPapersByDoi (csvPath) {
   }
 } 
 
-
+async function getConfirmedAuthorsByDoi (papersByDoi, csvColumn) {
+  const confirmedAuthorsByDoi = _.mapValues(papersByDoi, function (papers) {
+    //console.log(`Parsing names from papers ${JSON.stringify(papers,null,2)}`)
+    return _.mapValues(papers, function (paper) {
+      const unparsedName = paper[csvColumn]
+      //console.log(`Parsing name: ${unparsedName}`)
+      const parsedName =  humanparser.parseName(unparsedName)
+      //console.log(`Parsed Name is: ${JSON.stringify(parsedName,null,2)}`)
+      return parsedName
+    })
+  })
+  return confirmedAuthorsByDoi
+}
 
 async function getCSLAuthors(paperCsl){
 
@@ -195,7 +210,7 @@ async function getCSLAuthors(paperCsl){
 // author map assumed to be doi mapped to two arrays: first authors and other authors
 // returns a map of person ids to the person object and confidence value for any persons that matched coauthor attributes
 // example: {1: {person: simplepersonObject, confidence: 0.5}, 51: {person: simplepersonObject, confidence: 0.8}}
-async function matchPeopleToPaperAuthors(personMap, authors){
+async function matchPeopleToPaperAuthors(personMap, authors, confirmedAuthors){
 
   //match to last name
   //match to first initial (increase confidence)
@@ -205,7 +220,6 @@ async function matchPeopleToPaperAuthors(personMap, authors){
   _.each(authors, async (author) => {
     //console.log(`Testing Author for match: ${author.family}, ${author.given}`)
 
-    
     //check if persons last name in author list, if so mark a match
     if(_.has(personMap, _.lowerCase(author.family))){
       //console.log(`Matching last name found: ${author.family}`)
@@ -227,8 +241,21 @@ async function matchPeopleToPaperAuthors(personMap, authors){
             affiliationFound = true
           }
         }
-        if (firstInitialFound) confidenceVal += 0.3
+
         if (affiliationFound) confidenceVal += 0.2
+        if (firstInitialFound) {
+          confidenceVal += 0.3
+
+          //check if author in confirmed list and change confidence to 0.99 if found
+          _.each(confirmedAuthors, function (confirmedAuthor){
+            if (_.lowerCase(confirmedAuthor.lastName) === testPerson.lastName &&
+            _.lowerCase(confirmedAuthor.firstName) === testPerson.firstName){
+              console.log(`Confirmed author found: ${JSON.stringify(testPerson,null,2)}, making confidence 0.99`)
+              confidenceVal = 0.99
+            }
+          })
+        }
+
         //add person to map with confidence value > 0
         if (confidenceVal > 0) {
           console.log(`Match found for Author: ${author.family}, ${author.given}`)
@@ -248,8 +275,11 @@ async function matchPeopleToPaperAuthors(personMap, authors){
 //returns a map of three arrays: 'addedDOIs','failedDOIs', 'errorMessages'
 async function loadPersonPapersFromCSV (personMap, path) {
   const papersByDoi = await getPapersByDoi(path)
-
   //console.log(`Papers by DOI: ${JSON.stringify(papersByDoi,null,2)}`)
+
+  //get map of DOI's to an array of confirmed authors from the load table
+  const confirmedAuthorsByDoi = await getConfirmedAuthorsByDoi(papersByDoi, 'ND author (last, first)')
+  console.log(`Confirmed Authors By Doi are: ${JSON.stringify(confirmedAuthorsByDoi,null,2)}`)
 
   //initalize the doi query and citation engine
   Cite.async()
@@ -264,6 +294,11 @@ async function loadPersonPapersFromCSV (personMap, path) {
 
   await pMap(_.keys(papersByDoi), async (doi) => {
     try {
+
+      loopCounter += 1
+      //have each wait a pseudo-random amount of time between 1-5 seconds
+      await randomWait(1000, loopCounter)
+      
       //get CSL (citation style language) record by doi from dx.dio.org
       const cslRecords = await Cite.inputAsync(doi)
       //console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
@@ -275,7 +310,7 @@ async function loadPersonPapersFromCSV (personMap, path) {
 
       //match paper authors to people
       //console.log(`Testing for Author Matches for DOI: ${doi}`)
-      const matchedPersons = await matchPeopleToPaperAuthors(personMap, authors)
+      const matchedPersons = await matchPeopleToPaperAuthors(personMap, authors, confirmedAuthorsByDoi[doi])
       //console.log(`Person to Paper Matches: ${JSON.stringify(matchedPersons,null,2)}`)
 
       // if at least one author, add the paper, and related personpub objects
