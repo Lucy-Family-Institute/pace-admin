@@ -18,6 +18,13 @@
     esutils "^2.0.2"
     js-tokens "^4.0.0"
 
+"@babel/runtime@^7.8.7":
+  version "7.8.7"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.8.7.tgz#8fefce9802db54881ba59f90bb28719b4996324d"
+  integrity sha512-+AATMUFppJDw6aiR5NVPHqIQBlV/Pj8wY/EZH+lmvRdUo9xBaz/rF3alAwFJQavvKfeOlPE7oaaDHVbcySbCsg==
+  dependencies:
+    regenerator-runtime "^0.13.4"
+
 "@citation-js/cli@0.5.0-alpha.4":
   version "0.5.0-alpha.4"
   resolved "https://registry.yarnpkg.com/@citation-js/cli/-/cli-0.5.0-alpha.4.tgz#3d890b32735d9aeb77b0d5f34014db2381a410be"
@@ -970,7 +977,12 @@ globals@^11.7.0:
   resolved "https://registry.yarnpkg.com/globals/-/globals-11.12.0.tgz#ab8795338868a0babd8525758018c2a7eb95c42e"
   integrity sha512-WOBp/EEGUiIsJSp7wcv/y6MO+lV9UoncWqxuFfm8eBwzWNgyfBd6Gz+IeKQ9jCmyhoH99g15M3T+QaVHFjizVA==
 
-gm@^1.23.1:
+gm-base64@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/gm-base64/-/gm-base64-1.1.1.tgz#9321c07be569e2d9c6373acb83330524ce091bca"
+  integrity sha1-kyHAe+Vp4tnGNzrLgzMFJM4JG8o=
+
+gm@^1.23.0, gm@^1.23.1:
   version "1.23.1"
   resolved "https://registry.yarnpkg.com/gm/-/gm-1.23.1.tgz#2edeeb958084d0f8ea7988e5d995b1c7dfc14777"
   integrity sha1-Lt7rlYCE0PjqeYjl2ZWxx9/BR3c=
@@ -1489,6 +1501,16 @@ pdf-thumbnail@^1.0.6:
     gm "^1.23.1"
     promise.waterfall "^3.2.0"
 
+pdf2pic@^1.3.13:
+  version "1.3.13"
+  resolved "https://registry.yarnpkg.com/pdf2pic/-/pdf2pic-1.3.13.tgz#5f7a71d14d697fb38c39179ab6bf74d7a10446bc"
+  integrity sha512-OIdUdhI7uQLNDZVpgaS8pruojbMoQnPIbHxyLm+VtQ//zaW14xrail8/QrvPxmJwE/2GPhKetf5PfFcvzfodDg==
+  dependencies:
+    "@babel/runtime" "^7.8.7"
+    fs-extra "^8.1.0"
+    gm "^1.23.0"
+    gm-base64 "^1.1.1"
+
 pify@^2.0.0:
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/pify/-/pify-2.3.0.tgz#ed141a6ac043a849ea588498e7dca8b15330e90c"
@@ -1542,6 +1564,11 @@ read-pkg@^2.0.0:
     load-json-file "^2.0.0"
     normalize-package-data "^2.3.2"
     path-type "^2.0.0"
+
+regenerator-runtime@^0.13.4:
+  version "0.13.5"
+  resolved "https://registry.yarnpkg.com/regenerator-runtime/-/regenerator-runtime-0.13.5.tgz#d878a1d094b4306d10b9096484b33ebd55e26697"
+  integrity sha512-ZS5w8CpKFinUzOwW3c83oPeVXoNsrLsaCoLtJvAClH135j/R77RuymhiSErhm2lKcwSCIpmvIWSbDkIfAqKQlA==
 
 regexpp@^2.0.1:
   version "2.0.1"

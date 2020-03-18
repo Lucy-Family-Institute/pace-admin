@@ -42,5 +42,9 @@ client:
 docker:
 	docker-compose up
 
+clear_pdfs:
+	rm data/pdfs/*
+	rm data/thumbnails/*
+
 migration_console:
 	cd hasura && hasura console && cd ..

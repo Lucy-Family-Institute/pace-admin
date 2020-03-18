@@ -19,6 +19,7 @@
     "graphql-tag": "^2.10.3",
     "node-fetch": "^2.6.0",
     "quasar": "^1.0.0",
+    "sanitize-filename": "^1.6.3",
     "vue-apollo": "^3.0.3",
     "vue-friendly-iframe": "^0.16.0",
     "vuex-pathify": "^1.4.1"
