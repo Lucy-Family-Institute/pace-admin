@@ -4,7 +4,8 @@ export default function readPublicationsByPersonReview (personId, userId) {
   return {
     query: gql`
       query MyQuery ($person_id: Int!, $user_id: Int!){
-        persons_publications(where: {person_id: {_eq: $person_id}}) {
+        persons_publications(where: {person_id: {_eq: $person_id}},
+                            order_by: {confidence: desc}) {
           id
           person_id
           publication_id
