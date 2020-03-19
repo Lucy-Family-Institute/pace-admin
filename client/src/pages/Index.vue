@@ -196,7 +196,7 @@
                   </q-card>
 
                   <q-card class="my-card col-xs-4" style="width:200px; min-height:300px" v-if="unpaywall">
-                    <img :src="unpaywall_thumbnail" class="q-pa-lg">
+                    <img :src="unpaywallThumbnail" class="q-pa-lg">
 
                     <q-card-actions align="around">
                       <q-btn flat round color="primary" icon="link" @click="pdf()"/>
@@ -294,6 +294,7 @@ export default {
     checkedPublications: [],
     url: undefined,
     unpaywall: undefined,
+    unpaywallThumbnail: undefined,
     dialog: false,
     maximizedToggle: true,
     person: undefined,
@@ -393,16 +394,17 @@ export default {
       this.loadPublicationAuthors(personPublication.publication)
       this.publicationCitation = this.getCitationApa(personPublication.publication.csl)
       try {
-        const result = await this.$axios.head(`http://localhost:8000/pdfs/${sanitize(personPublication.publication.doi, { replacement: '_' })}.pdf`)
+        const sanitizedDoi = sanitize(personPublication.publication.doi, { replacement: '_' })
+        const result = await this.$axios.head(`http://localhost:8000/pdfs/${sanitizedDoi}.pdf`)
         if (result.status === 200) {
           // this.results.title = result.data.title
           // this.$set(this.results, 'downloads', result.data.oa_locations[0])
-          this.unpaywall = `http://localhost:8000/pdfs/${sanitize(personPublication.publication.doi, { replacement: '_' })}.pdf` // result.data.oa_locations[0].url_for_pdf
-          const thumbnail = await this.$axios.head(`http://localhost:8000/pdfs/${sanitize(personPublication.publication.doi, { replacement: '_' })}.pdf`)
-          if (thumbnail.status === 200) {
-            this.unpaywall_thumbnail = `http://localhost:8000/thumbnails/${sanitize(personPublication.publication.doi, { replacement: '_' })}.pdf_1.png`
+          this.unpaywall = `http://localhost:8000/pdfs/${sanitizedDoi}.pdf` // result.data.oa_locations[0].url_for_pdf
+          const thumbnailResult = await this.$axios.head(`http://localhost:8000/pdfs/${sanitizedDoi}.pdf`)
+          if (thumbnailResult.status === 200) {
+            this.unpaywallThumbnail = `http://localhost:8000/thumbnails/${sanitizedDoi}.pdf_1.png`
           } else {
-            this.unpaywall_thumbnail = '~/assets/Icon-pdf.svg'
+            this.unpaywallThumbnail = '~/assets/Icon-pdf.svg'
           }
         }
       } catch (error) {

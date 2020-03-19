@@ -8,16 +8,13 @@ import axios from 'axios'
 import _ from 'lodash'
 import pMap from 'p-map'
 import sanitize from 'sanitize-filename'
-import jshashes from 'jshashes'
-import pdf from 'pdf-thumbnail'
 import fs from 'fs'
 import PDF2Pic from 'pdf2pic'
-import { pathToArray } from 'graphql/jsutils/Path'
 import path from 'path'
-// import crypto from 'crypto'
 
 const EMAIL = `pace@nd.edu`
 
+// import crypto from 'crypto'
 // export function hashStream ( dataStream ) {
 //   return new Promise((resolve, reject) => {
 //     const hashSha256 = crypto.createHash('sha256')
@@ -119,16 +116,25 @@ async function downloadFromUnpaywall (doi, directory, filename) {
     if (result.status === 200) {
       const downloadUrl = _.get(result, 'data.oa_locations[0].url_for_pdf', null)
       if (downloadUrl !== null) {
+        console.log(`Download ${downloadUrl}`)
         // const MD5 = new jshashes.MD5
         // const hash = MD5.hex(doi)        
         await downloadFile(downloadUrl, directory, {
           fileName: filename
         })
+        const filePath = path.join(directory, filename)
+        const fileBuffer = fs.readFileSync(filePath)
+        const isPdf = Buffer.isBuffer(fileBuffer) && fileBuffer.lastIndexOf("%PDF-") === 0 && fileBuffer.lastIndexOf("%%EOF") > -1
+        if ( !isPdf ) {
+          console.error(`${doi} is not a PDF`)
+          fs.unlinkSync(filePath)
+          return null
+        }
         return {
           // md5OfDoi: hash,
           filename,
           directory: directory,
-          path: path.join(directory, filename)
+          path: filePath
         }
       }
     }
@@ -152,7 +158,6 @@ const client = new ApolloClient({
 async function main() {
   const objectsWithDois = await getDois(client)
   await pMap(objectsWithDois, async (value: any) => {
-    console.log(`Downloading doi ${value.doi}`)
     const filename = makeFileNameFromDoi(value.doi)
     if (!fs.existsSync(path.join('../data/pdfs', filename))) {
       const downloadInfo = await downloadFromUnpaywall(value.doi, '../data/pdfs', filename)
