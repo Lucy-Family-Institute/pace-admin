@@ -1,7 +1,13 @@
 import { make } from 'vuex-pathify'
 
 const state = {
-  selectedInstitutions: []
+  selectedInstitutions: [],
+  yearMin: 1972,
+  yearMax: 2020,
+  years: {
+    min: 1972,
+    max: 2020
+  }
 }
 
 const getters = {
