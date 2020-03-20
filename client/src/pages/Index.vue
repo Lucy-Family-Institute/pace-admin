@@ -7,7 +7,9 @@
       >
         <template v-slot:before>
           <q-item-label header>Filter</q-item-label>
+                    <YearFilter />
           <PeopleFilter />
+
           <q-item-label header>People</q-item-label>
           <!-- TODO calculate exact height below -->
           <q-virtual-scroll
@@ -269,12 +271,14 @@ import readReviewStates from '../../../gql/readReviewStates.gql'
 // import * as service from '@porter/osf.io';
 
 import PeopleFilter from '../components/PeopleFilter.vue'
+import YearFilter from '../components/YearFilter.vue'
 import sanitize from 'sanitize-filename'
 
 export default {
   name: 'PageIndex',
   components: {
-    PeopleFilter
+    PeopleFilter,
+    YearFilter
   },
   data: () => ({
     reviewStates: undefined,
