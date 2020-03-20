@@ -80,8 +80,7 @@ async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName
   
   const mutatePubResult = await client.mutate(
     //for now convert csl json object to a string when storing in DB
-    insertPublication (title, doi, JSON.stringify(csl))
-    //insertPublication (title, doi, JSON.stringify(csl), sourceName, JSON.stringify(sourceMetadata))
+    insertPublication (title, doi, JSON.stringify(csl), sourceName, JSON.stringify(sourceMetadata))
   )
   //console.log(`Insert mutate pub result ${JSON.stringify(mutatePubResult.data,null,2)}`)
   const publicationId = 0+parseInt(`${ mutatePubResult.data.insert_publications.returning[0].id }`);
@@ -343,10 +342,13 @@ async function loadPersonPapersFromCSV (personMap, path) {
           let sourceName = 'CrossRef'
           let sourceMetadata= csl
           //check for SCOPUS
-          if (papersByDoi[doi]['scopus_record']){
+          //console.log(`Checking paper if from scopus: ${JSON.stringify(papersByDoi[doi],null,2)}`)
+          //there may be more than one author match with same paper, and just grab first one
+          if (papersByDoi[doi].length > 1 && papersByDoi[doi][0]['scopus_record']){
             sourceName = 'Scopus'
-            sourceMetadata = papersByDoi[doi]['scopus_record']
+            sourceMetadata = papersByDoi[doi][0]['scopus_record']
           }
+          console.log(`Inserting Publication DOI: ${doi} from source: ${sourceName}`)
           const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authors, sourceName, sourceMetadata)
           console.log('Finished Running Insert and starting next thread')
           //console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
