@@ -18,9 +18,9 @@ export function parseCsl (cslString){
   return new Cite(JSON.parse(cslString))
 }
 
-module.exports = {
-  command: (input) => fetchByDoi(input.doi),
-};
+// module.exports = {
+//   command: (input) => fetchByDoi(input.name),
+// };
 // module.exports = {
 //   fetchByDoi,
 //   parseCsl
