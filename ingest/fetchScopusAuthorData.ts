@@ -10,6 +10,8 @@ import readPublicationsByPersonByConfidence from '../client/src/gql/readPublicat
 import { command as loadCsv } from './units/loadCsv'
 import { split } from 'apollo-link'
 import cslParser from './utils/cslParser' 
+import { command as writeCsv } from './units/writeCsv'
+import moment from 'moment'
 
 const axios = require('axios');
 const elsApiKey = "[INSERT API KEY HERE]"
@@ -64,13 +66,6 @@ async function randomWait(seedTime, index){
 async function getScopusAuthorData(authorGivenName, authorFamilyName, year, scopusAffiliationId, pageSize, offset){
     const baseUrl = 'https://api.elsevier.com/content/search/scopus'
     
-    //const affiliationId = "60021508"
-
-    //const authorQuery = (query) {
-    //  return {
-    //    "AF-ID("+ affiliationId + ")"
-    //  }
-    //}
     const authorQuery = "AUTHFIRST("+ authorGivenName +") and AUTHLASTNAME("+ authorFamilyName+")" + " and AF-ID(" + scopusAffiliationId + ")"
       
     console.log(`Querying scopus with date: ${year}, offset: ${offset}, and query: ${authorQuery}`)
@@ -208,7 +203,7 @@ async function getScopusAuthorPapers(person, year, scopusAffiliationId) {
       const totalResults = parseInt(authorSearchResult['search-results']['opensearch:totalResults'])
       console.log(`Author Search Result Total Results: ${totalResults}`)
       if (totalResults > 0 && authorSearchResult['search-results']['entry']){
-        console.log(`Author ${person.lastName}, ${person.firstName} adding ${authorSearchResult['search-results']['entry'].length} results`)
+        //console.log(`Author ${person.lastName}, ${person.firstName} adding ${authorSearchResult['search-results']['entry'].length} results`)
         searchPageResults.push(authorSearchResult['search-results']['entry'])
         if (totalResults > pageSize){
           let numberOfRequests = parseInt(`${totalResults / pageSize}`) //convert to an integer to drop any decimal
@@ -226,8 +221,9 @@ async function getScopusAuthorPapers(person, year, scopusAffiliationId) {
               offset += totalResults - offset
             }
             const authorSearchResultNext = await getScopusAuthorData(person.firstInitial, person.lastName, year, scopusAffiliationId, pageSize, offset)
-            //console.log(`Author Search Result page ${index+2}: ${JSON.stringify(authorSearchResult,null,2)}`)
+            
             if (authorSearchResultNext['search-results']['entry']) {
+              //console.log(`Getting Author Search Result page ${index+2}: ${authorSearchResultNext['search-results']['entry'].length} objects`)
               searchPageResults.push(authorSearchResultNext['search-results']['entry'])
             }
           }, { concurrency: 3})
@@ -236,32 +232,35 @@ async function getScopusAuthorPapers(person, year, scopusAffiliationId) {
         }
       }
     }
+    
     //flatten the search results page as currently results one per page, and then keyBy scopus id
-    let searchResults = _.keyBy(_.flatten(searchPageResults), function (page) {
-      //strip off the SCOPUS_ID prefix if it is there
-      return _.replace(page['dc:identifier'], 'SCOPUS_ID:', '')
-    })
-    return searchResults
+    return _.flattenDepth(searchPageResults, 1)
   } catch (error) {
     console.log(`Error on get info for person: ${error}`)
   }
 }
 
+//
+// Takes in an array of scopus records and returns a hash of scopus id to object:
+// 'year', 'title', 'journal', 'doi', 'scopus_id', 'scopus_record'
+//
+// scopus_record is the original json object
+async function getSimplifliedScopusPapers(scopusPapers, simplifiedPerson){
+  return _.map(scopusPapers, (paper) => {
+    return {
+      search_family_name : simplifiedPerson.lastName,
+      search_given_name : simplifiedPerson.firstInitial,
+      title: paper['dc:title'],
+      journal: paper['prism:publicationName'],
+      doi: paper['prism:doi'] ? paper['prism:doi'] : '',
+      scopus_id: _.replace(paper['dc:identifier'], 'SCOPUS_ID:', ''),
+      scopus_record : paper
+    }
+  })
+}
+
 async function main (): Promise<void> {
     
-  // ingest list of DOI's from CSV and relevant center author name
-  // const authorPapers: any = await loadCsv({
-  //   path: '../data/HCRI-pubs-2010-2019_-_Faculty_Selected.csv'
-  // })
-
-  // console.log(authorPapers)
-
-  // const papersByDoi = _.keyBy(authorPapers, 'DOI')
-  // console.log(papersByDoi)
-
-  // const confirmedDOIsByPerson = await getConfirmedDOIsByPerson()
-  // console.log(`Confirmed DOI by persons: ${JSON.stringify(confirmedDOIsByPerson,null,2)}`)
-
   const years = [ 2019 ]
   const scopusAffiliationId = "60021508"
   await pMap(years, async (year) => {
@@ -285,71 +284,39 @@ async function main (): Promise<void> {
         randomWait(1000,personCounter)
         
         const authorPapers = await getScopusAuthorPapers(person, year, scopusAffiliationId)
-        console.log(`Author Papers Found for ${person.lastName}, ${person.firstName}: ${JSON.stringify(_.keys(authorPapers),null,2)}`)
+        //console.log(`Author Papers Found for ${person.lastName}, ${person.firstName}: ${JSON.stringify(authorPapers,null,2)}`)
         console.log(`Author papers total for ${person.lastName}, ${person.firstName}: ${JSON.stringify(_.keys(authorPapers).length,null,2)}`)
         
-        //get additional metadata to have DOI
-        const scopusIds = _.keys(authorPapers)
-        //get scopus id to doi
-        const scopusIdsToDois = _.mapValues(authorPapers, function (paper, scopusId) {
-          //console.log(`Getting DOI from paper: ${JSON.stringify(paper,null,2)}`)
-          const doi =  paper['prism:doi'] ? paper['prism:doi'] : ''
-          console.log(`DOI: ${doi} found for scopus id: ${scopusId}`)
-          return doi
-        })
+        //get simplified scopus papers
+        const simplifiedAuthorPapers = await getSimplifliedScopusPapers(authorPapers, person)
+        //console.log(`Simplified Scopus Author ${person.lastName}, ${person.firstName} Papers: ${JSON.stringify(simplifiedAuthorPapers,null,2)}`)
 
-        console.log(`Scopus IDs to DOIs: ${JSON.stringify(scopusIdsToDois,null,2)}`)
-        
-        //Cite.async()
-        //get doi metadata in form of CSL (citation style language) json
-        let counter = 0
-        let scopusIdsToCsl = new Map()
-        await pMap(_.keys(scopusIdsToDois), async function (scopusId) {
-          try {
-            counter += 1
-            randomWait(1000,counter)
-            
-            // //get CSL (citation style language) record by doi from dx.dio.org
-            // const cslRecords = await Cite.inputAsync(doi)
-            // //console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
-          
-            // return cslRecords[0]
-            const doi = scopusIdsToDois[scopusId]
-            //log this paper and doi combination
+        //push in whole array for now and flatten later
+        succeededScopusPapers.push(simplifiedAuthorPapers)
 
-            console.log(`Getting CSL for DOI: ${doi} ${person.lastName}, ${person.firstName}`)
-            const csl = await fetchByDoi(doi)
-            scopusIdsToCsl[scopusId] = csl
-            const succeededMessage = `Getting CSL for DOI: ${doi} ${person.lastName}, ${person.firstName}`
-            succeededScopusPapers.push(succeededMessage)
-          } catch (error) {
-            const  errorMessage = `Error on get CSL with Scopus Id: ${scopusId} ${person.lastName}, ${person.firstName}: ${error}`
-            failedScopusPapers.push(errorMessage)
-            console.log(errorMessage)
-          }
-        }, { concurrency: 15})
-
-        // const scopusIdsToCSL = _.mapValues(scopusIdsToDois, async function (doi, scopusId, index) {
-        //   randomWait(3000,index)
-        //   const csl = fetchByDoi(doi)
-        //   return csl
-        // })
-        
-        //console.log(`CSL for SCOPUS ID: ${JSON.stringify(scopusIdsToCsl,null,2)}`)
-        // if (scopusIds.length > 0){
-        //   const scopusAbstractMetadata = getScopusPaperAbstractData(authorPapers[scopusIds[0]])
-        //   //console.log(`Abstract metadata for ${person.lastName}, ${person.firstName} scopus id ${scopusIds[0]}: ${JSON.stringify(scopusAbstractMetadata,null,2)}`)
-        //   //push in harvested SCOPUS metadata and DOI metadata
-        // }
+      
       } catch (error) {
-        console.log(`Error on get scopus papers for author: ${person.lastName}, ${person.firstName}: ${error}`)
+        const errorMessage = `Error on get scopus papers for author: ${person.lastName}, ${person.firstName}: ${error}`
+        failedScopusPapers.push(errorMessage)
+        console.log(errorMessage)
       }
     }, {concurrency: 3})
 
-    console.log(`Total Succeeded Papers: ${succeededScopusPapers.length}`)
-    console.log(`Get CSL error messages: ${JSON.stringify(failedScopusPapers,null,2)}`)
-    // const doiStatusByYear = await loadPersonPapersFromCSV(personMap, pathsByYear[year])
-    // doiStatus[year] = doiStatusByYear
+    //flatten out succeedScopusPaperArray for data for csv and change scopus json object to string
+    const outputScopusPapers = _.map(_.flatten(succeededScopusPapers), paper => {
+      paper['scopus_record'] = JSON.stringify(paper['scopus_record'])
+      return paper
+    })
+
+    //write data out to csv
+    //console.log(outputScopusPapers)
+    await writeCsv({
+      path: `../data/scopus.${year}.${moment().format('YYYYMMDDHHmmss')}.csv`,
+      data: outputScopusPapers,
+    });
+    console.log(`Total Succeeded Papers: ${outputScopusPapers.length}`)
+    console.log(`Get error messages: ${JSON.stringify(failedScopusPapers,null,2)}`)
+   
   }, { concurrency: 1 })
   
   // let loopCounter = 0
