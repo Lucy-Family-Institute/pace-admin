@@ -397,7 +397,7 @@ async function loadPersonPapersFromCSV (personMap, path) {
         console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
         console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
       }
-    }, { concurrency: 30 })
+    }, { concurrency: 5 })
 
     return doiStatus
   } catch (error){
