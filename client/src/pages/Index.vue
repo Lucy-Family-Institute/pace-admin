@@ -523,8 +523,9 @@ export default {
       this.nameVariants[1] = `${person.family_name}, ${person.given_name}`
       // return variants
     },
-    getCitationApa (cslString) {
-      const csl = JSON.parse(cslString)
+    // assumes getting csl as json object from DB
+    getCitationApa (csl) {
+      // const csl = JSON.parse(cslString)
       const citeObj = new Cite(csl)
 
       // create formatted citation as test
