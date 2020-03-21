@@ -1,10 +1,10 @@
 import gql from 'graphql-tag'
 
-export default function insertPublication (title, doi, csl, sourceName, sourceMetadata) {
+export default function insertPublication (publications) {
   return {
     mutation: gql`
-      mutation MyMutation($title: String!, $doi: String!, $csl: String!, $source_name: String!, $source_metadata: String!) {
-        insert_publications(objects: {doi: $doi, title: $title, csl: $csl, source_name: $source_name, source_metadata: $source_metadata}) {
+      mutation MyMutation($objects: [publications_insert_input!]!) {
+        insert_publications(objects: $objects) {
           returning {
             id
           }
@@ -12,11 +12,7 @@ export default function insertPublication (title, doi, csl, sourceName, sourceMe
       }
     `,
     variables: {
-      title,
-      doi,
-      csl,
-      source_name: sourceName,
-      source_metadata: sourceMetadata
+      objects: publications
     }
   }
 }

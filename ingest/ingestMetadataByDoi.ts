@@ -78,9 +78,16 @@ function getSimpleName (lastName, firstInitial){
 async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName, sourceMetadata) {
   //console.log(`trying to insert pub: ${JSON.stringify(title,null,2)}, ${JSON.stringify(doi,null,2)}`)
   
+  const publication = {
+    title: title,
+    doi: doi,
+    csl: csl,  // put these in as JSONB
+    source_name: sourceName,  
+    source_metadata: sourceMetadata // put these in as JSONB
+  }
   const mutatePubResult = await client.mutate(
     //for now convert csl json object to a string when storing in DB
-    insertPublication (title, doi, JSON.stringify(csl), sourceName, JSON.stringify(sourceMetadata))
+    insertPublication ([publication])
   )
   //console.log(`Insert mutate pub result ${JSON.stringify(mutatePubResult.data,null,2)}`)
   const publicationId = 0+parseInt(`${ mutatePubResult.data.insert_publications.returning[0].id }`);
