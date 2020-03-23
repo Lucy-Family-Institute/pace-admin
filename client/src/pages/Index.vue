@@ -367,7 +367,6 @@ export default {
       console.log(`Loaded Publication Authors: ${JSON.stringify(this.publicationAuthors)}`)
     },
     async fetchData () {
-      console.log(process.env.POSTGRES_PORT)
       await this.loadReviewStates()
       await this.loadPersonsWithFilter()
     },
