@@ -6,7 +6,7 @@ import fetch from 'node-fetch'
 import { setContext } from 'apollo-link-context'
 
 export default ({ Vue, app }) => {
-  const uri = process.env.API_END_POINT || 'http://localhost:8002/v1/graphql'
+  const uri = process.env.GRAPHQL_END_POINT
   const httpLink = createHttpLink({
     uri,
     fetch

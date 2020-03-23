@@ -367,6 +367,7 @@ export default {
       console.log(`Loaded Publication Authors: ${JSON.stringify(this.publicationAuthors)}`)
     },
     async fetchData () {
+      console.log(process.env.POSTGRES_PORT)
       await this.loadReviewStates()
       await this.loadPersonsWithFilter()
     },
@@ -399,14 +400,15 @@ export default {
       this.publicationCitation = this.getCitationApa(personPublication.publication.csl)
       try {
         const sanitizedDoi = sanitize(personPublication.publication.doi, { replacement: '_' })
-        const result = await this.$axios.head(`http://localhost:8000/pdfs/${sanitizedDoi}.pdf`)
+        const imageHostBase = process.env.IMAGE_HOST_URL
+        const result = await this.$axios.head(`http://${imageHostBase}/pdfs/${sanitizedDoi}.pdf`)
         if (result.status === 200) {
           // this.results.title = result.data.title
           // this.$set(this.results, 'downloads', result.data.oa_locations[0])
-          this.unpaywall = `http://localhost:8000/pdfs/${sanitizedDoi}.pdf` // result.data.oa_locations[0].url_for_pdf
-          const thumbnailResult = await this.$axios.head(`http://localhost:8000/pdfs/${sanitizedDoi}.pdf`)
+          this.unpaywall = `http://${imageHostBase}/pdfs/${sanitizedDoi}.pdf` // result.data.oa_locations[0].url_for_pdf
+          const thumbnailResult = await this.$axios.head(`http://${imageHostBase}/pdfs/${sanitizedDoi}.pdf`)
           if (thumbnailResult.status === 200) {
-            this.unpaywallThumbnail = `http://localhost:8000/thumbnails/${sanitizedDoi}.pdf_1.png`
+            this.unpaywallThumbnail = `http://${imageHostBase}/thumbnails/${sanitizedDoi}.pdf_1.png`
           } else {
             this.unpaywallThumbnail = '~/assets/Icon-pdf.svg'
           }
