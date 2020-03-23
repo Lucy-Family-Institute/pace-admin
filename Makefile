@@ -45,7 +45,7 @@ stop_docker:
 client:
 	cd client && quasar dev && cd ..
 server:
-	cd server && ts-node index.tx && cd ..
+	cd server && ts-node index.ts && cd ..
 docker:
 	docker-compose up
 
