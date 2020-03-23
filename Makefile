@@ -21,6 +21,11 @@ ifeq (,$(shell which quasar))
 	npm -g install quasar
 endif
 
+install_js:
+	cd client && yarn && cd ..
+	cd server && yarn && cd ..
+	cd ingest && yarn && cd ..
+
 cleardb:
 	docker-compose down -v
 migrate:
@@ -29,8 +34,8 @@ newdb:
 	cd ingest && ts-node loadAuthors.ts && cd ..
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
 
-install: install_docker_compose install_hasura_cli install_yarn install_quasar
-	cd client && yarn && cd ..
+install: install_docker_compose install_hasura_cli install_yarn install_quasar install_js
+	echo 'Installing'
 
 start_docker:
 	docker-compose up -d
@@ -39,6 +44,8 @@ stop_docker:
 
 client:
 	cd client && quasar dev && cd ..
+server:
+	cd server && ts-node index.tx && cd ..
 docker:
 	docker-compose up
 
