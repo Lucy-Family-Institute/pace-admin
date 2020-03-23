@@ -3,6 +3,7 @@ Publication Activity Collection Environment Admin Tools and DB
 
 # Starting from scratch
 
+    cp .env.default .env
     make cleardb
     make start_docker
     make migrate
