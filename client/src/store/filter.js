@@ -2,6 +2,8 @@ import { make } from 'vuex-pathify'
 
 const state = {
   selectedInstitutions: [],
+  filterReviewStates: [],
+  selectedPersonSort: undefined,
   yearMin: 1972,
   yearMax: 2020,
   years: {

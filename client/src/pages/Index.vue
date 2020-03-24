@@ -15,6 +15,8 @@
           <q-virtual-scroll
             :style="{'max-height': ($q.screen.height-50-200)+'px'}"
             :items="people"
+            bordered
+            round-borders
             separator
           >
             <template v-slot="{ item, index }">
@@ -70,8 +72,10 @@
                   </template>
                 </q-input>
               </q-item-label>
+              <q-item-label header>Filter</q-item-label>
+                <PublicationFilter />
               <q-virtual-scroll
-                :items="reviewStates"
+                :items="showReviewStates"
                 separator
                 :style="{'max-height': ($q.screen.height-50)+'px'}"
                 :key="reviewQueueKey"
@@ -154,6 +158,12 @@
                   <q-card>
                 <q-card-section>
                   <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
+                </q-card-section>
+                <q-card-section>
+                  <b>Authors</b>
+                    <ol>
+                      <li v-bind:key="author.id" v-for="author in publicationAuthors">{{ author.family_name }},&nbsp;{{ author.given_name}}</li>
+                    </ol>
                 </q-card-section>
               </q-card>
                   <q-card class="my-card col-xs-4" style="width:200px; min-height:300px">
@@ -268,6 +278,7 @@ import readReviewStates from '../../../gql/readReviewStates.gql'
 
 import PeopleFilter from '../components/PeopleFilter.vue'
 import YearFilter from '../components/YearFilter.vue'
+import PublicationFilter from '../components/PublicationFilter.vue'
 import sanitize from 'sanitize-filename'
 import moment from 'moment'
 
@@ -275,7 +286,8 @@ export default {
   name: 'PageIndex',
   components: {
     PeopleFilter,
-    YearFilter
+    YearFilter,
+    PublicationFilter
   },
   data: () => ({
     reviewStates: undefined,
@@ -305,15 +317,21 @@ export default {
     nameVariants: [],
     publicationAuthors: [],
     reviewQueueKey: 0,
-    publicationCitation: undefined
+    publicationCitation: undefined,
+    showReviewStates: []
   }),
   async created () {
-    this.fetchData()
+    await this.fetchData()
   },
   watch: {
     $route: 'fetchData',
     selectedInstitutions: function () {
       this.loadPersonsWithFilter()
+    },
+    filterReviewStates: function () {
+      // update review states selected
+      this.refreshReviewQueue()
+      this.loadReviewStates()
     },
     selectedPersonSort: function () {
       // re-sort people
@@ -324,6 +342,11 @@ export default {
     }
   },
   methods: {
+    showReviewState (reviewState) {
+      const test = _.includes(this.filterReviewStates, reviewState.name)
+      console.log(`checking show review state for: ${reviewState.name} result is: ${test}, filter review states are: ${JSON.stringify(this.filterReviewStates, null, 2)}`)
+      return test
+    },
     async setSelectedReviewState (reviewAbbrev) {
       this.selectedReviewState = reviewAbbrev
     },
@@ -353,7 +376,9 @@ export default {
       const reviewStatesResult = await this.$apollo.query({
         query: readReviewStates
       })
-      this.reviewStates = reviewStatesResult.data.reviewstates
+      this.reviewStates = await reviewStatesResult.data.reviewstates
+      this.showReviewStates = _.filter(this.reviewStates, (value) => { return this.showReviewState(value) })
+      console.log(`Show Review states initialized to: ${this.showReviewStates} Review states are: ${this.reviewStates}`)
     },
     async loadPersons () {
       const personResult = await this.$apollo.query(readPersons())
@@ -422,6 +447,7 @@ export default {
       }
     },
     async refreshReviewQueue () {
+      console.log('Refreshing review queue')
       this.reviewQueueKey += 1
     },
     async addReview (person, personPublication, reviewAbbrev) {
@@ -544,7 +570,8 @@ export default {
   computed: {
     userId: get('auth/userId'),
     selectedInstitutions: get('filter/selectedInstitutions'),
-    selectedPersonSort: get('filter/selectedPersonSort')
+    selectedPersonSort: get('filter/selectedPersonSort'),
+    filterReviewStates: get('filter/filterReviewStates')
     // filteredPersonPublications: function (personPublications) {
     //   return personPublications.filter(item => {
     //     return _.lowerCase(item.publication.title).includes(this.search)
