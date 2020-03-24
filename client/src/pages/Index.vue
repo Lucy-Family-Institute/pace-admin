@@ -315,6 +315,10 @@ export default {
     selectedInstitutions: function () {
       this.loadPersonsWithFilter()
     },
+    selectedPersonSort: function () {
+      // re-sort people
+      this.loadPersonsWithFilter()
+    },
     publicationsGroupedByView: function () {
       this.loadPublications(this.person)
     }
@@ -337,6 +341,12 @@ export default {
         }
       })
       this.people = personResult.data.persons
+
+      // apply any sorting applied
+      console.log('filtering', this.selectedPersonSort)
+      if (this.selectedPersonSort === 'Name') {
+        this.people = _.sortBy(this.people, ['family_name', 'given_name'])
+      }
     },
     async loadReviewStates () {
       console.log('loading review states')
@@ -533,7 +543,8 @@ export default {
   },
   computed: {
     userId: get('auth/userId'),
-    selectedInstitutions: get('filter/selectedInstitutions')
+    selectedInstitutions: get('filter/selectedInstitutions'),
+    selectedPersonSort: get('filter/selectedPersonSort')
     // filteredPersonPublications: function (personPublications) {
     //   return personPublications.filter(item => {
     //     return _.lowerCase(item.publication.title).includes(this.search)
