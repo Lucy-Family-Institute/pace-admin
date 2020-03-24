@@ -273,6 +273,7 @@ import readReviewStates from '../../../gql/readReviewStates.gql'
 import PeopleFilter from '../components/PeopleFilter.vue'
 import YearFilter from '../components/YearFilter.vue'
 import sanitize from 'sanitize-filename'
+import moment from 'moment'
 
 export default {
   name: 'PageIndex',
@@ -367,7 +368,6 @@ export default {
       console.log(`Loaded Publication Authors: ${JSON.stringify(this.publicationAuthors)}`)
     },
     async fetchData () {
-      console.log(process.env.POSTGRES_PORT)
       await this.loadReviewStates()
       await this.loadPersonsWithFilter()
     },
@@ -378,8 +378,11 @@ export default {
       // const result = await this.$apollo.query(readPublicationsByPerson(item.id))
       // this.publications = result.data.publications
       console.log(item.id)
+      console.log(`Starting query publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
       const pubsWithReviewResult = await this.$apollo.query(readPublicationsByPersonByReview(item.id, this.userId))
       console.log('***', pubsWithReviewResult)
+      console.log(`Finished query publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
+      console.log(`Starting group by publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
       this.publicationsGroupedByReview = _.groupBy(pubsWithReviewResult.data.persons_publications, function (pub) {
         if (pub.reviews.length > 0) {
           return pub.reviews[0].reviewstate.abbrev
@@ -387,11 +390,14 @@ export default {
           return 'PEN'
         }
       })
+      console.log(`Finished group by publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
+      console.log(`Starting add empty arrays publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
       // add empty arrays to initialize empty list
       if (this.publicationsGroupedByReview['ACC'] === undefined) this.publicationsGroupedByReview['ACC'] = []
       if (this.publicationsGroupedByReview['PEN'] === undefined) this.publicationsGroupedByReview['PEN'] = []
       if (this.publicationsGroupedByReview['REJ'] === undefined) this.publicationsGroupedByReview['REJ'] = []
       if (this.publicationsGroupedByReview['UNS'] === undefined) this.publicationsGroupedByReview['UNS'] = []
+      console.log(`Finished add empty arrays publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
     },
     async loadPublication (personPublication) {
       this.clearPublication()
