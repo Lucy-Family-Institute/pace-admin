@@ -22,7 +22,6 @@
                   :key="index"
                   :active="person!==undefined && item.id === person.id"
                   clickable
-                  v-ripple
                   group="expansion_group_person"
                   @click="loadPublications(item); setNameVariants(item)"
                   active-class="bg-teal-1 text-grey-8"
@@ -137,15 +136,6 @@
                             <q-btn color="red" label="Reject" @click="$refs[`personPub${index}`].hide();reviewRejected(person,personPublication);" />
                             <q-btn color="grey" label="Unsure" class="on-right" @click="$refs[`personPub${index}`].hide();reviewUnsure(person,personPublication);" />
                           </q-card-section>
-                          <q-card-section>
-                            <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
-                          </q-card-section>
-                          <q-card-section>
-                            <b>Authors</b>
-                           <ol>
-                              <li v-bind:key="author.id" v-for="author in publicationAuthors">{{ author.family_name }},&nbsp;{{ author.given_name}}</li>
-                            </ol>
-                          </q-card-section>
                         </q-card>
                      </q-expansion-item>
                     </template>
@@ -159,7 +149,13 @@
                 v-if="personPublication"
                 :style="{height: ($q.screen.height-50)+'px'}"
               >
+
                 <div class="q-pa-lg row items-start q-gutter-md">
+                  <q-card>
+                <q-card-section>
+                  <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
+                </q-card-section>
+              </q-card>
                   <q-card class="my-card col-xs-4" style="width:200px; min-height:300px">
                     <img src="~assets/google_logo.svg" class="q-pa-md" style="padding-top:50px;">
 
