@@ -325,15 +325,7 @@ export default {
     },
     async scrollToPublication (index) {
       console.log(`updating scroll ${index} for ${this.selectedReviewState} ${this.$refs[this.selectedReviewState].toString}`)
-      this.$refs[this.selectedReviewState].scrollTo(index)
-      // console.log(`scroll position is ${scrollPosition}`)
-      // setScrollPosition(this.$refs.pubScrollArea, scrollPosition + offset)
-    },
-    async resetScrolls () {
-      // this.$refs.pendingPubsScroll.setScrollPosition(0)
-      // this.$refs.acceptedPubsScroll.setScrollPosition(0)
-      // this.$refs.rejectedPubsScroll.setScrollPosition(0)
-      // this.$refs.unsurePubsScroll.setScrollPosition(0)
+      this.$refs[this.selectedReviewState].scrollTo(index + 1)
     },
     async loadPersonsWithFilter () {
       console.log('filtering', this.selectedInstitutions)
@@ -368,7 +360,6 @@ export default {
       await this.loadPersonsWithFilter()
     },
     async loadPublications (item) {
-      this.resetScrolls()
       this.clearPublication()
       this.person = item
       // const result = await this.$apollo.query(readPublicationsByPerson(item.id))
