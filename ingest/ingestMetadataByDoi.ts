@@ -296,12 +296,14 @@ async function loadPersonPapersFromCSV (personMap, path) {
   try {
     const papersByDoi = await getPapersByDoi(path)
     const dois = _.keys(papersByDoi)
-    console.log(`Papers by DOI: ${JSON.stringify(dois.length,null,2)}`)
-
+    console.log(`Papers by DOI Count: ${JSON.stringify(dois.length,null,2)}`)
+   
     const confirmedAuthorColumn = 'nd author (last, first)'
+    const firstDoiConfirmedList = papersByDoi[dois[0]]
+  
     //check if confirmed column exists first, if not ignore this step
     let confirmedAuthorsByDoi = {}
-    if (papersByDoi && dois.length > 0 && papersByDoi[dois[0]][confirmedAuthorColumn]){
+    if (papersByDoi && dois.length > 0 && firstDoiConfirmedList && firstDoiConfirmedList.length > 0 && firstDoiConfirmedList[0][confirmedAuthorColumn]){
       //get map of DOI's to an array of confirmed authors from the load table
       confirmedAuthorsByDoi = await getConfirmedAuthorsByDoi(papersByDoi, confirmedAuthorColumn)
      
@@ -354,6 +356,8 @@ async function loadPersonPapersFromCSV (personMap, path) {
           if (papersByDoi[doi].length > 1 && papersByDoi[doi][0]['scopus_record']){
             sourceName = 'Scopus'
             sourceMetadata = papersByDoi[doi][0]['scopus_record']
+            if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
+            console.log(`Scopus Source metadata is: ${JSON.stringify(sourceMetadata,null,2)}`)
           }
           console.log(`Inserting Publication DOI: ${doi} from source: ${sourceName}`)
           const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authors, sourceName, sourceMetadata)
@@ -416,6 +420,7 @@ async function loadPersonPapersFromCSV (personMap, path) {
 async function main() {
 
   const pathsByYear = {
+    // 2019: ['../data/scopus.2019.20200320103319.csv']
     2019: ['../data/HCRI-pubs-2019_-_Faculty_Selected_2.csv', '../data/scopus.2019.20200320103319.csv'],
     2018: ['../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv'],
     2017: ['../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv']
