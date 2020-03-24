@@ -73,7 +73,7 @@
               <q-virtual-scroll
                 :items="reviewStates"
                 separator
-                :style="{height: ($q.screen.height-50)+'px'}"
+                :style="{'max-height': ($q.screen.height-50)+'px'}"
                 :key="reviewQueueKey"
               >
                 <template v-slot=" {item, index} ">
@@ -91,7 +91,7 @@
                     </template>
                     <q-virtual-scroll
                       separator
-                      :style="{height: ($q.screen.height-200)+'px'}"
+                      :style="{'max-height': ($q.screen.height-350)+'px'}"
                       :items="publicationsGroupedByReview[item.abbrev] === undefined ? []: publicationsGroupedByReview[item.abbrev]"
                       :ref="item.abbrev"
                     >
