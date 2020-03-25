@@ -58,7 +58,7 @@
             </template>
           </q-virtual-scroll>
         </template>
-        <template v-slot:after>
+        <template v-slot:after v-if="person">
           <q-splitter
             v-model="secondModel"
             :style="{height: ($q.screen.height-50)+'px'}"
