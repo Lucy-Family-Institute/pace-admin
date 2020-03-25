@@ -83,7 +83,8 @@ async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName
     doi: doi,
     csl: csl,  // put these in as JSONB
     source_name: sourceName,  
-    source_metadata: sourceMetadata // put these in as JSONB
+    source_metadata: sourceMetadata, // put these in as JSONB,
+    csl_string: JSON.stringify(csl)
   }
   const mutatePubResult = await client.mutate(
     //for now convert csl json object to a string when storing in DB
