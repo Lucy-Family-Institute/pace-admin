@@ -24,7 +24,7 @@
                   :active="person!==undefined && item.id === person.id"
                   clickable
                   group="expansion_group_person"
-                  @click="loadPublications(item); setNameVariants(item)"
+                  @click="startProgressBar();loadPublications(item); setNameVariants(item)"
                   active-class="bg-teal-1 text-grey-8"
                   expand-icon="keyboard_arrow_rights"
                 >
@@ -73,6 +73,12 @@
               </q-item-label>
               <q-item-label header>Filter</q-item-label>
                 <PublicationFilter />
+              <q-linear-progress
+                stripe
+                size="10px"
+                :value="progress"
+                :buffer="buffer"
+                color="secondary"/>
               <q-virtual-scroll
                 :items="showReviewStates"
                 separator
@@ -318,8 +324,17 @@ export default {
     publicationAuthors: [],
     reviewQueueKey: 0,
     publicationCitation: undefined,
-    showReviewStates: []
+    showReviewStates: [],
+    // for progress bar
+    progress: 0,
+    buffer: 0,
+    publicationsLoaded: false
   }),
+
+  beforeDestroy () {
+    clearInterval(this.interval)
+    clearInterval(this.bufferInterval)
+  },
   async created () {
     await this.fetchData()
   },
@@ -342,6 +357,38 @@ export default {
     }
   },
   methods: {
+    async startProgressBar () {
+      this.publicationsLoaded = false
+      this.resetProgressBar()
+      await this.runProgressBar()
+    },
+    async resetProgressBar () {
+      this.buffer = 0
+      this.progress = 0
+      clearInterval(this.interval)
+      clearInterval(this.bufferInterval)
+    },
+    async runProgressBar () {
+      this.interval = setInterval(() => {
+        if (this.publicationsLoaded && this.progress > 0) {
+          this.progress = 1
+          return
+        }
+        if (this.progress >= 1) {
+          this.progress = 0.01
+          this.buffer = 0.01
+          return
+        }
+
+        this.progress = Math.min(1, this.buffer, this.progress + 0.1)
+      }, 700 + Math.random() * 1000)
+
+      this.bufferInterval = setInterval(() => {
+        if (this.buffer < 1) {
+          this.buffer = Math.min(1, this.buffer + Math.random() * 0.2)
+        }
+      }, 700)
+    },
     showReviewState (reviewState) {
       const test = _.includes(this.filterReviewStates, reviewState.name)
       console.log(`checking show review state for: ${reviewState.name} result is: ${test}, filter review states are: ${JSON.stringify(this.filterReviewStates, null, 2)}`)
@@ -394,8 +441,14 @@ export default {
       await this.loadReviewStates()
       await this.loadPersonsWithFilter()
     },
-    async loadPublications (item) {
+    async clearPublications () {
       this.clearPublication()
+      this.publicationsGroupedByReview = {}
+      this.refreshReviewQueue()
+    },
+    async loadPublications (item) {
+      // clear any previous publications in list
+      this.clearPublications()
       this.person = item
       // const result = await this.$apollo.query(readPublicationsByPerson(item.id))
       // this.publications = result.data.publications
@@ -420,6 +473,7 @@ export default {
       if (this.publicationsGroupedByReview['REJ'] === undefined) this.publicationsGroupedByReview['REJ'] = []
       if (this.publicationsGroupedByReview['UNS'] === undefined) this.publicationsGroupedByReview['UNS'] = []
       console.log(`Finished add empty arrays publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
+      this.publicationsLoaded = true
     },
     async loadPublication (personPublication) {
       this.clearPublication()
