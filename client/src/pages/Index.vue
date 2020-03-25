@@ -16,7 +16,6 @@
             :style="{'max-height': ($q.screen.height-50-200)+'px'}"
             :items="people"
             bordered
-            round-borders
             separator
           >
             <template v-slot="{ item, index }">
@@ -98,6 +97,7 @@
                       :style="{'max-height': ($q.screen.height-350)+'px'}"
                       :items="publicationsGroupedByReview[item.abbrev] === undefined ? []: publicationsGroupedByReview[item.abbrev]"
                       :ref="item.abbrev"
+                      bordered
                     >
                       <template v-slot="{ item, index }">
                       <q-expansion-item
