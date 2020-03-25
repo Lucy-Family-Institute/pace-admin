@@ -73,6 +73,15 @@
               </q-item-label>
               <q-item-label header>Filter</q-item-label>
                 <PublicationFilter />
+              <q-btn
+                dense
+                v-bind:key="reviewState.abbrev"
+                v-for="reviewState in showReviewStates"
+                :label="reviewState.name"
+                @click="expandReviewState(reviewState.abbrev)"
+                >
+               &nbsp;<q-badge color="orange" text-color="black">{{ publicationsGroupedByReview[reviewState.abbrev] ? publicationsGroupedByReview[reviewState.abbrev].length : 0 }}</q-badge>
+              </q-btn>
               <q-linear-progress
                 stripe
                 size="10px"
@@ -88,6 +97,7 @@
                 <template v-slot=" {item, index} ">
                   <q-expansion-item
                     :key="index"
+                    :ref="`reviewList${item.abbrev}`"
                     clickable
                     group="reviewed_pubs_group"
                     active-class="bg-teal-1 text-grey-8"
@@ -154,7 +164,7 @@
                 </template>
               </q-virtual-scroll>
             </template>
-            <template v-slot:after>
+            <template v-slot:after v-if="personPublication">
               <q-scroll-area
                 v-if="personPublication"
                 :style="{height: ($q.screen.height-50)+'px'}"
@@ -357,6 +367,10 @@ export default {
     }
   },
   methods: {
+    async expandReviewState (abbrev) {
+      console.log(`refs are: ${_.keys(this.$refs)}`)
+      this.$refs[`reviewList${abbrev}`].show()
+    },
     async startProgressBar () {
       this.publicationsLoaded = false
       this.resetProgressBar()
@@ -515,6 +529,7 @@ export default {
         console.log(mutateResult)
         if (mutateResult) {
           this.reviewed(reviewAbbrev)
+          this.clearPublication()
           this.refreshReviewQueue()
           return mutateResult
         }
