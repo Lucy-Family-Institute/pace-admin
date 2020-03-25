@@ -13,7 +13,7 @@ export default function readPublicationsByPersonReview (personId, userId) {
             id
             title
             doi
-            csl
+            csl_string
           }
           confidence
           reviews(order_by: {datetime: desc}, limit: 1, , where: {user_id: {_eq: $user_id}}) {

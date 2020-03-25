@@ -368,7 +368,6 @@ export default {
   },
   methods: {
     async expandReviewState (abbrev) {
-      console.log(`refs are: ${_.keys(this.$refs)}`)
       this.$refs[`reviewList${abbrev}`].show()
     },
     async startProgressBar () {
@@ -493,7 +492,7 @@ export default {
       this.clearPublication()
       this.personPublication = personPublication
       this.loadPublicationAuthors(personPublication.publication)
-      this.publicationCitation = this.getCitationApa(personPublication.publication.csl)
+      this.publicationCitation = this.getCitationApa(personPublication.publication.csl_string)
       try {
         const sanitizedDoi = sanitize(personPublication.publication.doi, { replacement: '_' })
         const imageHostBase = process.env.IMAGE_HOST_URL
@@ -624,8 +623,8 @@ export default {
       // return variants
     },
     // assumes getting csl as json object from DB
-    getCitationApa (csl) {
-      // const csl = JSON.parse(cslString)
+    getCitationApa (cslString) {
+      const csl = JSON.parse(cslString)
       const citeObj = new Cite(csl)
 
       // create formatted citation as test
