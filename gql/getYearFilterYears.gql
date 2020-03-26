@@ -1,0 +1,12 @@
+query MyQuery {
+  publications_aggregate {
+    aggregate {
+      max {
+        year
+      }
+      min {
+        year
+      }
+    }
+  }
+}

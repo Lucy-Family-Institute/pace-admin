@@ -4,8 +4,6 @@ const state = {
   selectedInstitutions: [],
   filterReviewStates: [],
   selectedPersonSort: undefined,
-  yearMin: 1972,
-  yearMax: 2020,
   years: {
     min: 1972,
     max: 2020
