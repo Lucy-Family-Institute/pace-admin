@@ -77,10 +77,14 @@ function getSimpleName (lastName, firstInitial){
 
 async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName, sourceMetadata) {
   //console.log(`trying to insert pub: ${JSON.stringify(title,null,2)}, ${JSON.stringify(doi,null,2)}`)
-  
   const publication = {
     title: title,
     doi: doi,
+    year: _.get(csl, 'journal-issue.published-print.date-parts[0][0]',
+      _.get(csl, 'issued.date-parts[0][0]', 
+        _.get(csl, 'created.date-parts[0][0]', null)
+      )
+    ),
     csl: csl,  // put these in as JSONB
     source_name: sourceName,  
     source_metadata: sourceMetadata, // put these in as JSONB,
