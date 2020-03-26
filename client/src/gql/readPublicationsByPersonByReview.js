@@ -15,6 +15,11 @@ export default function readPublicationsByPersonReview (personId, userId) {
             doi
             csl_string
           }
+          person {
+            id
+            family_name
+            given_name
+          }
           confidence
           reviews(order_by: {datetime: desc}, limit: 1, , where: {user_id: {_eq: $user_id}}) {
             id

@@ -100,6 +100,7 @@
                     :ref="`reviewList${item.abbrev}`"
                     clickable
                     group="reviewed_pubs_group"
+                    :active="selectedReviewState === item.abbrev"
                     active-class="bg-teal-1 text-grey-8"
                     :title="item.label"
                     @click="setSelectedReviewState(item.abbrev)">
@@ -176,10 +177,27 @@
                   <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
                 </q-card-section>
                 <q-card-section>
-                  <b>Authors</b>
-                    <ol>
-                      <li v-bind:key="author.id" v-for="author in publicationAuthors">{{ author.family_name }},&nbsp;{{ author.given_name}}</li>
-                    </ol>
+                  <div class="q-pa-md">
+                    <q-table
+                      title="Author Matches"
+                      :data="matchedPublicationAuthors"
+                      :columns="authorColumns"
+                      row-key="position"
+                      :rows-per-page-options="[0]"
+                      :pagination.sync="pagination"
+                      hide-bottom
+                    />
+                  </div>
+                </q-card-section>
+                <q-card-section>
+                  <div class="q-pa-md">
+                    <q-table
+                      title="Full Author List"
+                      :data="publicationAuthors"
+                      :columns="authorColumns"
+                      row-key="position"
+                    />
+                  </div>
                 </q-card-section>
               </q-card>
                   <q-card class="my-card col-xs-4" style="width:200px; min-height:300px">
@@ -332,15 +350,24 @@ export default {
     institutionId: undefined,
     nameVariants: [],
     publicationAuthors: [],
+    matchedPublicationAuthors: [],
     reviewQueueKey: 0,
     publicationCitation: undefined,
     showReviewStates: [],
     // for progress bar
     progress: 0,
     buffer: 0,
-    publicationsLoaded: false
+    publicationsLoaded: false,
+    authorColumns: [
+      { name: 'position', align: 'left', label: 'Position', field: 'position', sortable: true },
+      { name: 'family_name', align: 'left', label: 'Family Name', field: 'family_name', sortable: true },
+      { name: 'given_name', align: 'left', label: 'Given Name', field: 'given_name', sortable: true }
+    ],
+    pagination: {
+      page: 1,
+      rowsPerPage: 0 // 0 means all rows
+    }
   }),
-
   beforeDestroy () {
     clearInterval(this.interval)
     clearInterval(this.bufferInterval)
@@ -444,11 +471,17 @@ export default {
       const personResult = await this.$apollo.query(readPersons())
       this.people = personResult.data.persons
     },
-    async loadPublicationAuthors (item) {
+    async loadPublicationAuthors (personPublication) {
       this.publicationAuthors = []
-      const result = await this.$apollo.query(readAuthorsByPublication(item.id))
+      const publicationId = personPublication.publication.id
+      const result = await this.$apollo.query(readAuthorsByPublication(publicationId))
       this.publicationAuthors = result.data.authors_publications
       console.log(`Loaded Publication Authors: ${JSON.stringify(this.publicationAuthors)}`)
+      // load up author positions of possible matches
+      this.matchedPublicationAuthors = _.filter(this.publicationAuthors, function (author) {
+        return _.lowerCase(author.family_name) === _.lowerCase(personPublication.person.family_name)
+      })
+      console.log(`Matched authors are: ${JSON.stringify(this.matchedPublicationAuthors, null, 2)}`)
     },
     async fetchData () {
       await this.loadReviewStates()
@@ -491,19 +524,19 @@ export default {
     async loadPublication (personPublication) {
       this.clearPublication()
       this.personPublication = personPublication
-      this.loadPublicationAuthors(personPublication.publication)
+      this.loadPublicationAuthors(personPublication)
       this.publicationCitation = this.getCitationApa(personPublication.publication.csl_string)
       try {
         const sanitizedDoi = sanitize(personPublication.publication.doi, { replacement: '_' })
         const imageHostBase = process.env.IMAGE_HOST_URL
-        const result = await this.$axios.head(`http://${imageHostBase}/pdfs/${sanitizedDoi}.pdf`)
+        const result = await this.$axios.head(`${imageHostBase}/pdfs/${sanitizedDoi}.pdf`)
         if (result.status === 200) {
           // this.results.title = result.data.title
           // this.$set(this.results, 'downloads', result.data.oa_locations[0])
-          this.unpaywall = `http://${imageHostBase}/pdfs/${sanitizedDoi}.pdf` // result.data.oa_locations[0].url_for_pdf
-          const thumbnailResult = await this.$axios.head(`http://${imageHostBase}/pdfs/${sanitizedDoi}.pdf`)
+          this.unpaywall = `${imageHostBase}/pdfs/${sanitizedDoi}.pdf` // result.data.oa_locations[0].url_for_pdf
+          const thumbnailResult = await this.$axios.head(`${imageHostBase}/pdfs/${sanitizedDoi}.pdf`)
           if (thumbnailResult.status === 200) {
-            this.unpaywallThumbnail = `http://${imageHostBase}/thumbnails/${sanitizedDoi}.pdf_1.png`
+            this.unpaywallThumbnail = `${imageHostBase}/thumbnails/${sanitizedDoi}.pdf_1.png`
           } else {
             this.unpaywallThumbnail = '~/assets/Icon-pdf.svg'
           }
