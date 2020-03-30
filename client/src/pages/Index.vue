@@ -558,13 +558,13 @@ export default {
       console.log('Refreshing review queue')
       this.reviewQueueKey += 1
     },
-    async addReview (person, personPublication, reviewAbbrev) {
+    async addReview (person, personPublication, reviewType, reviewAbbrev) {
       this.person = person
       this.personPublication = personPublication
       try {
         console.log(person.id)
         const mutateResult = await this.$apollo.mutate(
-          insertReview(this.userId, personPublication.id, reviewAbbrev)
+          insertReview(this.userId, personPublication.id, reviewType, reviewAbbrev)
         )
         console.log(mutateResult)
         if (mutateResult) {
@@ -579,7 +579,7 @@ export default {
       }
     },
     async reviewAccepted (person, personPublication) {
-      const mutateResult = this.addReview(person, personPublication, 'ACC')
+      const mutateResult = this.addReview(person, personPublication, 'accepted', 'ACC')
       if (mutateResult) {
         console.log(`Incrementing accepted count for person id: ${person.id}`)
         this.$store.dispatch('admin/incrementAcceptedCount')
@@ -587,7 +587,7 @@ export default {
       }
     },
     async reviewRejected (person, personPublication) {
-      const mutateResult = this.addReview(person, personPublication, 'REJ')
+      const mutateResult = this.addReview(person, personPublication, 'rejected', 'REJ')
       if (mutateResult) {
         console.log(`Incrementing rejected count for person id: ${person.id}`)
         this.$store.dispatch('admin/incrementRejectedCount')
@@ -595,7 +595,7 @@ export default {
       }
     },
     async reviewUnsure (person, personPublication) {
-      const mutateResult = this.addReview(person, personPublication, 'UNS')
+      const mutateResult = this.addReview(person, personPublication, 'unsure', 'UNS')
       if (mutateResult) {
         console.log(`Incrementing unsure count for person id: ${person.id}`)
         this.$store.dispatch('admin/incrementUnsureCount')
