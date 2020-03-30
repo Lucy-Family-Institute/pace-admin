@@ -21,7 +21,7 @@ export default function readPublicationsByPersonReview (personId, userId) {
             given_name
           }
           confidence
-          reviews(order_by: {datetime: desc}, limit: 1, , where: {user_id: {_eq: $user_id}}) {
+          reviews(order_by: {datetime: desc}, limit: 1, where: {user_id: {_eq: $user_id}}) {
             id
             reviewstate {
               abbrev,
