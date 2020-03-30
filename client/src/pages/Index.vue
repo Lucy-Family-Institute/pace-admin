@@ -87,7 +87,7 @@
                 size="10px"
                 :value="progress"
                 :buffer="buffer"
-                color="secondary"/>
+                :color="publicationsLoadedError ? 'red' : 'secondary'"/>
               <q-virtual-scroll
                 :items="showReviewStates"
                 separator
@@ -179,7 +179,7 @@
                 <q-card-section>
                   <div class="q-pa-md">
                     <q-table
-                      title="Author Matches"
+                      title="Possible Author Matches"
                       :data="matchedPublicationAuthors"
                       :columns="authorColumns"
                       row-key="position"
@@ -358,6 +358,7 @@ export default {
     progress: 0,
     buffer: 0,
     publicationsLoaded: false,
+    publicationsLoadedError: false,
     authorColumns: [
       { name: 'position', align: 'left', label: 'Position', field: 'position', sortable: true },
       { name: 'family_name', align: 'left', label: 'Family Name', field: 'family_name', sortable: true },
@@ -399,6 +400,7 @@ export default {
     },
     async startProgressBar () {
       this.publicationsLoaded = false
+      this.publicationsLoadedError = false
       this.resetProgressBar()
       await this.runProgressBar()
     },
@@ -500,25 +502,31 @@ export default {
       // this.publications = result.data.publications
       console.log(item.id)
       console.log(`Starting query publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
-      const pubsWithReviewResult = await this.$apollo.query(readPublicationsByPersonByReview(item.id, this.userId))
-      console.log('***', pubsWithReviewResult)
-      console.log(`Finished query publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
-      console.log(`Starting group by publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
-      this.publicationsGroupedByReview = _.groupBy(pubsWithReviewResult.data.persons_publications, function (pub) {
-        if (pub.reviews.length > 0) {
-          return pub.reviews[0].reviewstate.abbrev
-        } else {
-          return 'PEN'
-        }
-      })
-      console.log(`Finished group by publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
-      console.log(`Starting add empty arrays publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
-      // add empty arrays to initialize empty list
-      if (this.publicationsGroupedByReview['ACC'] === undefined) this.publicationsGroupedByReview['ACC'] = []
-      if (this.publicationsGroupedByReview['PEN'] === undefined) this.publicationsGroupedByReview['PEN'] = []
-      if (this.publicationsGroupedByReview['REJ'] === undefined) this.publicationsGroupedByReview['REJ'] = []
-      if (this.publicationsGroupedByReview['UNS'] === undefined) this.publicationsGroupedByReview['UNS'] = []
-      console.log(`Finished add empty arrays publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
+      try {
+        const pubsWithReviewResult = await this.$apollo.query(readPublicationsByPersonByReview(item.id, this.userId))
+        console.log('***', pubsWithReviewResult)
+        console.log(`Finished query publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
+        console.log(`Starting group by publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
+        this.publicationsGroupedByReview = _.groupBy(pubsWithReviewResult.data.persons_publications, function (pub) {
+          if (pub.reviews.length > 0) {
+            return pub.reviews[0].reviewstate.abbrev
+          } else {
+            return 'PEN'
+          }
+        })
+        console.log(`Finished group by publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
+        console.log(`Starting add empty arrays publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
+        // add empty arrays to initialize empty list
+        if (this.publicationsGroupedByReview['ACC'] === undefined) this.publicationsGroupedByReview['ACC'] = []
+        if (this.publicationsGroupedByReview['PEN'] === undefined) this.publicationsGroupedByReview['PEN'] = []
+        if (this.publicationsGroupedByReview['REJ'] === undefined) this.publicationsGroupedByReview['REJ'] = []
+        if (this.publicationsGroupedByReview['UNS'] === undefined) this.publicationsGroupedByReview['UNS'] = []
+        console.log(`Finished add empty arrays publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
+      } catch (error) {
+        this.publicationsLoaded = true
+        this.publicationsLoadedError = true
+        throw error
+      }
       this.publicationsLoaded = true
     },
     async loadPublication (personPublication) {
