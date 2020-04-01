@@ -1,0 +1,26 @@
+query MyQuery ($personId: Int!, $userId: Int!) {
+  persons_publications(
+    where: {
+      person_id: {_eq: $personId},
+      _not: {
+        reviews: {user_id: {_eq: $userId}}
+      }
+    }
+  ) {
+    id
+    person_id
+    publication_id
+    publication {
+      id
+      title
+      doi
+      csl_string
+    }
+    person {
+      id
+      family_name
+      given_name
+    }
+    confidence
+  }
+}
