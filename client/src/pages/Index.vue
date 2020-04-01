@@ -1,19 +1,20 @@
 <template>
   <div>
     <div class="q-pa-md">
+      <!-- TODO calculate exact height below -->
       <q-splitter
         v-model="firstModel"
-        :style="{height: ($q.screen.height-50)+'px'}"
+        :style="{height: ($q.screen.height-56-16)+'px'}"
       >
         <template v-slot:before>
           <q-item-label header>Filter</q-item-label>
-                    <YearFilter />
-          <PeopleFilter />
+            <YearFilter />
+            <PeopleFilter />
 
           <q-item-label header>People</q-item-label>
           <!-- TODO calculate exact height below -->
           <q-virtual-scroll
-            :style="{'max-height': ($q.screen.height-50-200)+'px'}"
+            :style="{'max-height': ($q.screen.height-56-16-48-72-65-60-48)+'px'}"
             :items="people"
             bordered
             separator
@@ -61,7 +62,7 @@
         <template v-slot:after v-if="person">
           <q-splitter
             v-model="secondModel"
-            :style="{height: ($q.screen.height-50)+'px'}"
+            :style="{height: ($q.screen.height-56-16)+'px'}"
           >
             <template v-slot:before>
               <q-item-label header>
@@ -71,17 +72,15 @@
                   </template>
                 </q-input>
               </q-item-label>
-              <q-item-label header>Filter</q-item-label>
-                <PublicationFilter />
-              <q-btn
+              <q-tabs
+                v-model="reviewTypeFilter"
                 dense
-                v-bind:key="reviewState.abbrev"
-                v-for="reviewState in showReviewStates"
-                :label="reviewState.name"
-                @click="expandReviewState(reviewState.abbrev)"
-                >
-               &nbsp;<q-badge color="orange" text-color="black">{{ publicationsGroupedByReview[reviewState.abbrev] ? publicationsGroupedByReview[reviewState.abbrev].length : 0 }}</q-badge>
-              </q-btn>
+              >
+                <q-tab name="pending" label="Pending" />
+                <q-tab name="accepted" label="Accepted" />
+                <q-tab name="rejected" label="Rejected" />
+                <q-tab name="unsure" label="Unsure" />
+              </q-tabs>
               <q-linear-progress
                 stripe
                 size="10px"
@@ -89,86 +88,61 @@
                 :buffer="buffer"
                 :color="publicationsLoadedError ? 'red' : 'secondary'"/>
               <q-virtual-scroll
-                :items="showReviewStates"
+                :items="publications"
                 separator
-                :style="{'max-height': ($q.screen.height-50)+'px'}"
-                :key="reviewQueueKey"
+                :style="{'max-height': ($q.screen.height-50-16-88-36-2-10-4)+'px'}"
+                :key="id"
               >
-                <template v-slot=" {item, index} ">
+                <template v-slot="{ item, index }">
                   <q-expansion-item
                     :key="index"
-                    :ref="`reviewList${item.abbrev}`"
                     clickable
-                    group="reviewed_pubs_group"
-                    :active="selectedReviewState === item.abbrev"
+                    @click="loadPublication(item);scrollToPublication(index)"
+                    group="expansion_group"
+                    :active="personPublication !== undefined && item.id === personPublication.id"
                     active-class="bg-teal-1 text-grey-8"
-                    :title="item.label"
-                    @click="setSelectedReviewState(item.abbrev)">
-                    <template v-slot:header>
-                      <q-item-section>
-                        <q-item-label lines="1">{{ item.name}} ({{ (publicationsGroupedByReview[item.abbrev] ? publicationsGroupedByReview[item.abbrev].length : 0) }})</q-item-label>
+                    :ref="`personPub${index}`"
+                  >
+                    <template
+                      v-if="item.publication !== undefined"
+                      v-slot:header
+                    >
+                      <q-item-section avatar top>
+                        <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.id" />
+                        <q-avatar icon="description" color="primary" text-color="white" v-else />
                       </q-item-section>
+
+                      <q-item-section>
+                        <q-item-label lines="1">{{ item.publication.title }}</q-item-label>
+                        <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
+                      </q-item-section>
+
+                      <q-item-section side>
+                        <q-badge
+                          :label="item.confidence*100+'%'"
+                          :color="item.confidence*100 <= 50 ? 'orange' : 'green'"
+                        />
+                      </q-item-section>
+
+                <!-- <q-item-section side>
+                  <q-icon name="keyboard_arrow_right" color="green" />
+                </q-item-section> -->
                     </template>
-                    <q-virtual-scroll
-                      separator
-                      :style="{'max-height': ($q.screen.height-350)+'px'}"
-                      :items="publicationsGroupedByReview[item.abbrev] === undefined ? []: publicationsGroupedByReview[item.abbrev]"
-                      :ref="item.abbrev"
-                      bordered
-                    >
-                      <template v-slot="{ item, index }">
-                      <q-expansion-item
-                        :key="index"
-                        clickable
-                        @click="loadPublication(item);scrollToPublication(index)"
-                        group="expansion_group"
-                        :active="personPublication !== undefined && item.id === personPublication.id"
-                        active-class="bg-teal-1 text-grey-8"
-                        :ref="`personPub${index}`"
-                    >
-                        <template
-                          v-if="item.publication !== undefined"
-                          v-slot:header
-                        >
-                          <q-item-section avatar top>
-                            <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.id" />
-                            <q-avatar icon="description" color="primary" text-color="white" v-else />
-                          </q-item-section>
-
-                          <q-item-section>
-                            <q-item-label lines="1">{{ item.publication.title }}</q-item-label>
-                            <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
-                         </q-item-section>
-
-                          <q-item-section side>
-                            <q-badge
-                              :label="item.confidence*100+'%'"
-                              :color="item.confidence*100 <= 50 ? 'orange' : 'green'"
-                            />
-                         </q-item-section>
-
-                          <!-- <q-item-section side>
-                            <q-icon name="keyboard_arrow_right" color="green" />
-                          </q-item-section> -->
-                        </template>
-                        <q-card v-if="item.publication !== undefined">
-                          <q-card-section class="text-center">
-                           <q-btn color="green" label="Accept" class="on-left" @click="$refs[`personPub${index}`].hide();reviewAccepted(person,personPublication);" />
-                            <q-btn color="red" label="Reject" @click="$refs[`personPub${index}`].hide();reviewRejected(person,personPublication);" />
-                            <q-btn color="grey" label="Unsure" class="on-right" @click="$refs[`personPub${index}`].hide();reviewUnsure(person,personPublication);" />
-                          </q-card-section>
-                        </q-card>
-                     </q-expansion-item>
-                    </template>
-                    </q-virtual-scroll>
+                    <q-card v-if="item.publication !== undefined">
+                      <q-card-section class="text-center">
+                        <q-btn color="green" label="Accept" class="on-left" @click="clickReviewAccepted(index, person, personPublication);" />
+                        <q-btn color="red" label="Reject" @click="clickReviewRejected(index, person, personPublication);" />
+                        <q-btn color="grey" label="Unsure" class="on-right" @click="clickReviewUnsure(index, person, personPublication);" />
+                      </q-card-section>
+                    </q-card>
                   </q-expansion-item>
                 </template>
               </q-virtual-scroll>
             </template>
             <template v-slot:after v-if="personPublication">
-              <q-scroll-area
+              <div
                 v-if="personPublication"
-                :style="{height: ($q.screen.height-50)+'px'}"
+                :style="{height: ($q.screen.height-50-16)+'px'}"
               >
                 <div class="q-pa-md row items-start q-gutter-md">
                   <q-card>
@@ -285,7 +259,7 @@
                     </q-card-section>
                   </q-card>
                 </q-dialog>
-              </q-scroll-area>
+              </div>
             </template>
           </q-splitter>
         </template>
@@ -311,7 +285,7 @@ import { dom, date } from 'quasar'
 import readPersons from '../gql/readPersons'
 // import readPersonsByInstitution from '../gql/readPersonsByInstitution'
 // import readPublicationsByPerson from '../gql/readPublicationsByPerson'
-import readPublicationsByPersonByReview from '../gql/readPublicationsByPersonByReview'
+// import readPublicationsByPersonByReview from '../gql/readPublicationsByPersonByReview'
 import readAuthorsByPublication from '../gql/readAuthorsByPublication'
 import insertReview from '../gql/insertReview'
 // import readUser from '../gql/readUser'
@@ -320,21 +294,21 @@ import _ from 'lodash'
 import Cite from 'citation-js'
 
 import readPersonsByInstitution from '../../../gql/readPersonsByInstitution.gql'
-import readReviewStates from '../../../gql/readReviewStates.gql'
+// import readReviewStates from '../../../gql/readReviewStates.gql'
+import readPendingPublications from '../../../gql/readPendingPublications.gql'
+import readPublicationsByReviewState from '../../../gql/readPublicationsByReviewState.gql'
 // import * as service from '@porter/osf.io';
 
 import PeopleFilter from '../components/PeopleFilter.vue'
 import YearFilter from '../components/YearFilter.vue'
-import PublicationFilter from '../components/PublicationFilter.vue'
 import sanitize from 'sanitize-filename'
-import moment from 'moment'
+// import moment from 'moment'
 
 export default {
   name: 'PageIndex',
   components: {
     PeopleFilter,
-    YearFilter,
-    PublicationFilter
+    YearFilter
   },
   data: () => ({
     reviewStates: undefined,
@@ -345,6 +319,7 @@ export default {
     firstModel: 33,
     secondModel: 50,
     people: [],
+    publications: [],
     publicationsGroupedByReview: {},
     institutions: [],
     institutionOptions: [],
@@ -380,7 +355,8 @@ export default {
     pagination: {
       page: 1,
       rowsPerPage: 0 // 0 means all rows
-    }
+    },
+    reviewTypeFilter: 'pending'
   }),
   beforeDestroy () {
     clearInterval(this.interval)
@@ -394,23 +370,25 @@ export default {
     selectedInstitutions: function () {
       this.loadPersonsWithFilter()
     },
-    filterReviewStates: function () {
-      // update review states selected
-      this.refreshReviewQueue()
-      this.loadReviewStates()
-    },
     selectedPersonSort: function () {
       // re-sort people
       this.loadPersonsWithFilter()
     },
     publicationsGroupedByView: function () {
       this.loadPublications(this.person)
+    },
+    reviewTypeFilter: function () {
+      switch (this.reviewTypeFilter) {
+        case 'pending':
+          this.loadPublications(this.person)
+          break
+        default:
+          this.loadPublicationsByReviewState(this.person, this.reviewTypeFilter)
+          break
+      }
     }
   },
   methods: {
-    async expandReviewState (abbrev) {
-      this.$refs[`reviewList${abbrev}`].show()
-    },
     async startProgressBar () {
       this.publicationsLoaded = false
       this.publicationsLoadedError = false
@@ -473,15 +451,15 @@ export default {
         this.people = _.sortBy(this.people, ['family_name', 'given_name'])
       }
     },
-    async loadReviewStates () {
-      console.log('loading review states')
-      const reviewStatesResult = await this.$apollo.query({
-        query: readReviewStates
-      })
-      this.reviewStates = await reviewStatesResult.data.reviewstates
-      this.showReviewStates = _.filter(this.reviewStates, (value) => { return this.showReviewState(value) })
-      console.log(`Show Review states initialized to: ${this.showReviewStates} Review states are: ${this.reviewStates}`)
-    },
+    // async loadReviewStates () {
+    //   console.log('loading review states')
+    //   const reviewStatesResult = await this.$apollo.query({
+    //     query: readReviewStates
+    //   })
+    //   this.reviewStates = await reviewStatesResult.data.reviewstates
+    //   this.showReviewStates = _.filter(this.reviewStates, (value) => { return this.showReviewState(value) })
+    //   console.log(`Show Review states initialized to: ${this.showReviewStates} Review states are: ${this.reviewStates}`)
+    // },
     async loadPersons () {
       const personResult = await this.$apollo.query(readPersons())
       this.people = personResult.data.persons
@@ -499,42 +477,50 @@ export default {
       console.log(`Matched authors are: ${JSON.stringify(this.matchedPublicationAuthors, null, 2)}`)
     },
     async fetchData () {
-      await this.loadReviewStates()
+      // await this.loadReviewStates()
       await this.loadPersonsWithFilter()
     },
     async clearPublications () {
       this.clearPublication()
-      this.publicationsGroupedByReview = {}
-      this.refreshReviewQueue()
+      this.publications = []
     },
-    async loadPublications (item) {
+    async loadPublicationsByReviewState (person, reviewState) {
+      this.publicationsLoaded = false
+      this.clearPublications()
+      this.person = person
+      const pubsWithReviewResult = await this.$apollo.query({
+        query: readPublicationsByReviewState,
+        variables: {
+          personId: this.person.id,
+          userId: this.userId,
+          reviewType: reviewState
+        },
+        fetchPolicy: 'network-only'
+      })
+      this.publications = pubsWithReviewResult.data.persons_publications
+      this.publicationsLoaded = true
+    },
+    async loadPublications (person) {
+      this.publicationsLoaded = false
       // clear any previous publications in list
       this.clearPublications()
-      this.person = item
+      this.person = person
       // const result = await this.$apollo.query(readPublicationsByPerson(item.id))
       // this.publications = result.data.publications
-      console.log(item.id)
-      console.log(`Starting query publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
       try {
-        const pubsWithReviewResult = await this.$apollo.query(readPublicationsByPersonByReview(item.id, this.userId))
-        console.log('***', pubsWithReviewResult)
-        console.log(`Finished query publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
-        console.log(`Starting group by publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
-        this.publicationsGroupedByReview = _.groupBy(pubsWithReviewResult.data.persons_publications, function (pub) {
-          if (pub.reviews.length > 0) {
-            return pub.reviews[0].reviewstate.abbrev
-          } else {
-            return 'PEN'
-          }
+        // console.log(`Starting query publications for person id: ${person.id} ${moment().format('HH:mm:ss:SSS')}`)
+        const pubsWithReviewResult = await this.$apollo.query({
+          query: readPendingPublications,
+          variables: {
+            personId: this.person.id,
+            userId: this.userId
+          },
+          fetchPolicy: 'network-only'
         })
-        console.log(`Finished group by publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
-        console.log(`Starting add empty arrays publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
-        // add empty arrays to initialize empty list
-        if (this.publicationsGroupedByReview['ACC'] === undefined) this.publicationsGroupedByReview['ACC'] = []
-        if (this.publicationsGroupedByReview['PEN'] === undefined) this.publicationsGroupedByReview['PEN'] = []
-        if (this.publicationsGroupedByReview['REJ'] === undefined) this.publicationsGroupedByReview['REJ'] = []
-        if (this.publicationsGroupedByReview['UNS'] === undefined) this.publicationsGroupedByReview['UNS'] = []
-        console.log(`Finished add empty arrays publications for person id: ${item.id} ${moment().format('HH:mm:ss:SSS')}`)
+        // console.log('***', pubsWithReviewResult)
+        // console.log(`Finished query publications for person id: ${this.person.id} ${moment().format('HH:mm:ss:SSS')}`)
+        // console.log(`Starting group by publications for person id: ${this.person.id} ${moment().format('HH:mm:ss:SSS')}`)
+        this.publications = pubsWithReviewResult.data.persons_publications
       } catch (error) {
         this.publicationsLoaded = true
         this.publicationsLoadedError = true
@@ -567,53 +553,41 @@ export default {
       } finally {
       }
     },
-    async refreshReviewQueue () {
-      console.log('Refreshing review queue')
-      this.reviewQueueKey += 1
-    },
-    async addReview (person, personPublication, reviewType, reviewAbbrev) {
+    // async refreshReviewQueue () {
+    //   console.log('Refreshing review queue')
+    //   this.reviewQueueKey += 1
+    // },
+    async addReview (index, person, personPublication, reviewType) {
+      if (reviewType === this.reviewTypeFilter) {
+        // If the reviewType we're adding is the same as the current filter, don't do anything
+        // TODO deselect buttons that are the same as the current filter
+        return null
+      }
       this.person = person
       this.personPublication = personPublication
       try {
-        console.log(person.id)
         const mutateResult = await this.$apollo.mutate(
-          insertReview(this.userId, personPublication.id, reviewType, reviewAbbrev)
+          insertReview(this.userId, personPublication.id, reviewType)
         )
-        console.log(mutateResult)
+        console.log('&&', reviewType, this.reviewTypeFilter)
         if (mutateResult) {
-          this.reviewed(reviewAbbrev)
+          this.$refs[`personPub${index}`].hide()
           this.clearPublication()
-          this.refreshReviewQueue()
+          Vue.delete(this.publications, index)
           return mutateResult
         }
       } catch (error) {
         console.log(error)
-      } finally {
       }
     },
-    async reviewAccepted (person, personPublication) {
-      const mutateResult = this.addReview(person, personPublication, 'accepted', 'ACC')
-      if (mutateResult) {
-        console.log(`Incrementing accepted count for person id: ${person.id}`)
-        this.$store.dispatch('admin/incrementAcceptedCount')
-        console.log(`Accepted count is: ${this.$store.getters['admin/acceptedCount']}`)
-      }
+    async clickReviewAccepted (index, person, personPublication) {
+      await this.addReview(index, person, personPublication, 'accepted')
     },
-    async reviewRejected (person, personPublication) {
-      const mutateResult = this.addReview(person, personPublication, 'rejected', 'REJ')
-      if (mutateResult) {
-        console.log(`Incrementing rejected count for person id: ${person.id}`)
-        this.$store.dispatch('admin/incrementRejectedCount')
-        console.log(`Rejected count is: ${this.$store.getters['admin/rejectedCount']}`)
-      }
+    async clickReviewRejected (index, person, personPublication) {
+      await this.addReview(index, person, personPublication, 'rejected')
     },
-    async reviewUnsure (person, personPublication) {
-      const mutateResult = this.addReview(person, personPublication, 'unsure', 'UNS')
-      if (mutateResult) {
-        console.log(`Incrementing unsure count for person id: ${person.id}`)
-        this.$store.dispatch('admin/incrementUnsureCount')
-        console.log(`Unsure count is: ${this.$store.getters['admin/unsureCount']}`)
-      }
+    async clickReviewUnsure (index, person, personPublication) {
+      await this.addReview(index, person, personPublication, 'unsure')
     },
     getDoiUrl (doi) {
       const doiBaseUrl = 'https://dx.doi.org'
@@ -652,31 +626,6 @@ export default {
       this.links = []
       this.url = undefined
       this.publicationCitation = undefined
-    },
-    reviewed (reviewAbbrev) {
-      this.$store.dispatch('admin/incrementLogCount')
-      let index = _.findIndex(this.publicationsGroupedByReview['PEN'], { id: this.personPublication.id })
-      // remove item from current review state list
-      if (index >= 0) {
-        Vue.delete(this.publicationsGroupedByReview['PEN'], index)
-      } else {
-        index = _.findIndex(this.publicationsGroupedByReview['ACC'], { id: this.personPublication.id })
-        if (index >= 0) {
-          Vue.delete(this.publicationsGroupedByReview['ACC'], index)
-        } else {
-          index = _.findIndex(this.publicationsGroupedByReview['REJ'], { id: this.personPublication.id })
-          if (index >= 0) {
-            Vue.delete(this.publicationsGroupedByReview['REJ'], index)
-          } else {
-            index = _.findIndex(this.publicationsGroupedByReview['UNS'], { id: this.personPublication.id })
-            if (index >= 0) {
-              Vue.delete(this.publicationsGroupedByReview['UNS'], index)
-            }
-          }
-        }
-      }
-      // add item into new review state list
-      Vue.set(this.publicationsGroupedByReview[reviewAbbrev], this.publicationsGroupedByReview[reviewAbbrev].length, this.personPublication)
     },
     setNameVariants (person) {
       this.nameVariants = []

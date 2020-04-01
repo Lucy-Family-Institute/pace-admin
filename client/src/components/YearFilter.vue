@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pa-md">
+  <div class="q-pa-md yearFilter">
     <q-range
       v-model="years"
       :step="1"
@@ -57,4 +57,8 @@ export default {
 </script>
 
 <style scoped>
+  .yearFilter {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
 </style>
