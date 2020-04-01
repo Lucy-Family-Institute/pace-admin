@@ -1,4 +1,4 @@
-query MyQuery ($personId: Int!, $userId: Int!, $reviewType: String!) {
+query MyQuery ($personId: Int!, $userId: Int!, $reviewType: type_review_enum!) {
   persons_publications(
     where: {
       person_id: {_eq: $personId},
