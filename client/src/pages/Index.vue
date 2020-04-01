@@ -170,115 +170,92 @@
                 v-if="personPublication"
                 :style="{height: ($q.screen.height-50)+'px'}"
               >
-
-                <div class="q-pa-lg row items-start q-gutter-md">
+                <div class="q-pa-md row items-start q-gutter-md">
                   <q-card>
+                    <q-card-section v-if="personPublication.publication.doi">
+                      <q-btn
+                        dense
+                        label="View via DOI"
+                        color="cyan"
+                        type="a"
+                        :href="getDoiUrl(personPublication.publication.doi)"
+                        target="_blank"
+                      />
+                    </q-card-section>
                     <q-card-section>
                       <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
                     </q-card-section>
-                    <q-card>
-                      <q-card-section>
-                        <q-card>
-                          <q-card-section>
-                            <q-item-label>
-                              <div class="text-left">
-                                <b>View Article</b>
-                              </div>
-                            </q-item-label>
-                          </q-card-section>
-                          <q-card-section v-if="personPublication.publication.doi">
-                            <q-btn
-                              dense
-                              label="View via DOI"
-                              color="cyan"
-                              type="a"
-                              :href="getDoiUrl(personPublication.publication.doi)"
-                              target="_blank"
-                            >
-                            </q-btn>
-                          </q-card-section>
-                          <q-card v-if="unpaywall">
-                            <q-card-section style="width:250px;"  @click="pdf()">
-                              <q-card class="my-card col-xs-4" style="width:220px; min-height:300px" >
-                                <q-card-section>
-                                  <q-card-actions align="around">
-                                  <q-btn flat @click="pdf()">
-                                    <img
-                                      :src="unpaywallThumbnail"
-                                      style="width:200px; min-height:250px">
-                                  </q-btn>
-                                  <q-btn dense flat round color="primary" icon="link" @click="pdf()"/>
-                                  <q-btn dense flat round color="primary" icon="cloud_download" />
-                                  </q-card-actions>
-                                </q-card-section>
-                              </q-card>
-                            </q-card-section>
-                          </q-card>
-                          <q-card>
-                            <q-card-section style="width:250px;">
-                              <q-card class="my-card col-xs-4" style="width:200px; min-height:300px">
-                              <img src="~assets/google_logo.svg" class="q-pa-md" style="padding-top:50px;">
-
-                              <q-list>
-                                <q-item clickable>
-                                  <q-item-section avatar>
-                                    <q-icon color="primary" name="account_box" />
-                                  </q-item-section>
-
-                                  <q-item-section @click="google1()">
-                                    <q-item-label>Title + Author</q-item-label>
-                                    <!-- <q-item-label caption>Have a drink.</!-->
-                                  </q-item-section>
-                                </q-item>
-                                <q-item clickable>
-                                  <q-item-section avatar>
-                                    <q-icon color="primary" name="account_balance" />
-                                  </q-item-section>
-
-                                  <q-item-section @click="google2()">
-                                    <q-item-label>+ Notre Dame</q-item-label>
-                                    <!-- <q-item-label caption>Have a drink.</!-->
-                                  </q-item-section>
-                                </q-item>
-                                <q-item clickable>
-                                  <q-item-section avatar>
-                                    <q-icon color="primary" name="account_balance" />
-                                  </q-item-section>
-
-                                  <q-item-section @click="google3()">
-                                    <q-item-label>+ nd.edu</q-item-label>
-                                    <!-- <q-item-label caption>Have a drink.</!-->
-                                  </q-item-section>
-                                </q-item>
-                              </q-list>
-                              </q-card>
-                            </q-card-section>
-                          </q-card>
-                        </q-card>
-                      </q-card-section>
-                    </q-card>
+                  </q-card>
+                  <q-card v-if="unpaywall" class="col-xs-5" style="min-width:200px; max-height:300px" @click="pdf()">
                     <q-card-section>
-                      <div class="q-pa-md">
-                        <q-table
-                          title="Possible Author Matches"
-                          :data="matchedPublicationAuthors"
-                          :columns="authorColumns"
-                          row-key="position"
-                          :rows-per-page-options="[0]"
-                          :pagination.sync="pagination"
-                          hide-bottom
-                        />
-                      </div>
+                      <q-card-actions align="around">
+                        <q-btn flat @click="pdf()">
+                          <img
+                            :src="unpaywallThumbnail"
+                            style="width:180px; max-height:230px">
+                        </q-btn>
+                        <q-btn dense flat round color="primary" icon="link" @click="pdf()"/>
+                        <q-btn dense flat round color="primary" icon="cloud_download" />
+                      </q-card-actions>
+                    </q-card-section>
+                  </q-card>
+                  <q-card class="col-xs-5" style="min-width:200px; min-height:300px">
+                    <img src="~assets/google_logo.svg" class="q-pa-md" style="padding-top:20px;padding-bottom:0px;">
+
+                    <q-item dense style="font-size:25px;padding-top:0px;padding-bottom:20px;">
+                        <q-item-section align="center">
+                          <q-item-label >Search</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    <q-list>
+                      <q-item clickable>
+                        <q-item-section avatar>
+                          <q-icon color="primary" name="account_box" />
+                        </q-item-section>
+
+                        <q-item-section @click="google1()">
+                          <q-item-label>Title + Author</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                      <q-item clickable>
+                        <q-item-section avatar>
+                          <q-icon color="primary" name="account_balance" />
+                        </q-item-section>
+
+                        <q-item-section @click="google2()">
+                          <q-item-label>+ Notre Dame</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                      <q-item clickable>
+                        <q-item-section avatar>
+                          <q-icon color="primary" name="account_balance" />
+                        </q-item-section>
+
+                        <q-item-section @click="google3()">
+                          <q-item-label>+ nd.edu</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-card>
+                  <q-card class="col-xs-11">
+                    <q-card-section>
+                      <q-table
+                        title="Possible Author Matches"
+                        :data="matchedPublicationAuthors"
+                        :columns="authorColumns"
+                        row-key="position"
+                        :rows-per-page-options="[0]"
+                        :pagination.sync="pagination"
+                        hide-bottom
+                      />
                     </q-card-section>
                     <q-card-section>
-                      <div class="q-pa-md">
-                        <q-table
-                          title="Full Author List"
-                          :data="publicationAuthors"
-                          :columns="authorColumns"
-                          row-key="position"
-                        />
-                      </div>
+                      <q-table
+                        title="Full Author List"
+                        :data="publicationAuthors"
+                        :columns="authorColumns"
+                        row-key="position"
+                      />
                     </q-card-section>
                   </q-card>
                 </div>
