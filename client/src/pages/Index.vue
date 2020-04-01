@@ -96,7 +96,6 @@
                 :items="publications"
                 separator
                 :style="{'max-height': ($q.screen.height-50-16-88-36-2-10-4)+'px'}"
-                ref="pubScroll"
               >
                 <template v-slot="{ item, index }">
                   <q-expansion-item
