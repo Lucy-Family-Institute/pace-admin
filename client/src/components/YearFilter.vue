@@ -1,13 +1,12 @@
 <template>
   <div class="q-pa-md yearFilter">
     <q-range
-      v-model="years"
+      v-model="selectedYears"
       :step="1"
       :min="yearStaticMin"
       :max="yearStaticMax"
       label-always
       snap
-      @change="watchRange"
     />
   </div>
 </template>
@@ -21,16 +20,12 @@ import _ from 'lodash'
 export default {
   data () {
     return {
-      // years: sync('filters/years'),
-      years: {
-        min: null,
-        max: null
-      },
-      yearStaticMin: 1900,
-      yearStaticMax: 2200,
-      selectedYearMin: sync('filters/selctedYearMax'),
-      selectedYearMax: sync('filters/selctedYearMax')
     }
+  },
+  computed: {
+    yearStaticMin: sync('filter/yearStaticMin'),
+    yearStaticMax: sync('filter/yearStaticMax'),
+    selectedYears: sync('filter/selectedYears')
   },
   async created () {
     this.fetchData()
@@ -39,18 +34,14 @@ export default {
     $route: 'fetchData'
   },
   methods: {
-    async watchRange (value) {
-      this.selectedYearMin = value.min
-      this.selectedYearMax = value.max
-    },
     async fetchData () {
       const results = await this.$apollo.query({
         query: getYearFilterYears
       })
       this.yearStaticMin = _.get(results, 'data.publications_aggregate.aggregate.min.year', 1800)
-      this.years.min = this.yearStaticMin
       this.yearStaticMax = _.get(results, 'data.publications_aggregate.aggregate.max.year', 2200)
-      this.years.max = this.yearStaticMax
+
+      console.log(`Initialized year min: ${this.yearStaticMin} max: ${this.yearStaticMax}`)
     }
   }
 }
