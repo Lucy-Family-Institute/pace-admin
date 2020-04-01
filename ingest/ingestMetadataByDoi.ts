@@ -248,6 +248,7 @@ async function matchPeopleToPaperAuthors(personMap, authors, confirmedAuthors){
 
       let firstInitialFound = false
       let affiliationFound = false
+      let firstNameFound = false
       //check for any matches of first initial or affiliation
       _.each(personMap[_.lowerCase(author.family)], async (testPerson) => {
         let confidenceVal = 0.0
@@ -257,6 +258,17 @@ async function matchPeopleToPaperAuthors(personMap, authors, confirmedAuthors){
         
         if (_.lowerCase(author.given)[0] === testPerson.firstInitial){
           firstInitialFound = true
+
+          if (author.given.toLowerCase()=== testPerson.firstName){
+            firstNameFound = true
+          }
+          // split the given name based on spaces
+          const givenParts = _.split(author.given, ' ')
+          _.each(givenParts, (part) => {
+            if (_.lowerCase(part) === testPerson.firstName){
+              firstNameFound = true
+            }
+          })
         }
         if(!_.isEmpty(author.affiliation)) {
           if(/notre dame/gi.test(author.affiliation[0].name)) {
@@ -264,10 +276,12 @@ async function matchPeopleToPaperAuthors(personMap, authors, confirmedAuthors){
           }
         }
 
-        if (affiliationFound) confidenceVal += 0.2
+        if (affiliationFound) confidenceVal += 0.15
         if (firstInitialFound) {
-          confidenceVal += 0.3
-
+          confidenceVal += 0.15
+          if (firstNameFound) {
+            confidenceVal += 0.25
+          }
           //check if author in confirmed list and change confidence to 0.99 if found
           if (confirmedAuthors){
             _.each(confirmedAuthors, function (confirmedAuthor){
