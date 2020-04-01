@@ -1,4 +1,4 @@
-query MyQuery($names: [String!]) {
+query MyQuery($names: [String!], $yearMin: Int!, $yearMax: Int!) {
   persons(where: {institution: {name: {_in: $names}}}, order_by: {persons_publications_aggregate: {count: desc}}) {
     id
     given_name
@@ -6,7 +6,7 @@ query MyQuery($names: [String!]) {
     institution {
       name
     }
-    persons_publications_aggregate {
+    persons_publications_aggregate (where: {publication: {year: {_gte: $yearMin, _lte: $yearMax}}}){
       aggregate {
         count
       }

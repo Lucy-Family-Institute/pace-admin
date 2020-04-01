@@ -370,6 +370,9 @@ export default {
     selectedInstitutions: function () {
       this.loadPersonsWithFilter()
     },
+    selectedYears: function () {
+      this.loadPersonsWithFilter()
+    },
     selectedPersonSort: function () {
       // re-sort people
       this.loadPersonsWithFilter()
@@ -437,10 +440,13 @@ export default {
     async loadPersonsWithFilter () {
       console.log('filtering', this.selectedInstitutions)
       this.people = []
+      console.log(`Applying year filter to person search year min: ${this.selectedYears.min} max: ${this.selectedYears.max}`)
       const personResult = await this.$apollo.query({
         query: readPersonsByInstitution,
         variables: {
-          names: this.selectedInstitutions
+          names: this.selectedInstitutions,
+          yearMin: this.selectedYears.min,
+          yearMax: this.selectedYears.max
         }
       })
       this.people = personResult.data.persons
@@ -658,7 +664,8 @@ export default {
     userId: get('auth/userId'),
     selectedInstitutions: get('filter/selectedInstitutions'),
     selectedPersonSort: get('filter/selectedPersonSort'),
-    filterReviewStates: get('filter/filterReviewStates')
+    filterReviewStates: get('filter/filterReviewStates'),
+    selectedYears: get('filter/selectedYears')
     // filteredPersonPublications: function (personPublications) {
     //   return personPublications.filter(item => {
     //     return _.lowerCase(item.publication.title).includes(this.search)
