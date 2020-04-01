@@ -6,7 +6,8 @@ query MyQuery ($personId: Int!, $userId: Int!, $reviewType: type_review_enum!) {
         user_id: {_eq: $userId},
         reviewType: {_eq: $reviewType}
       }
-    }
+    },
+    order_by: {confidence: desc, publication: {title: asc}}
   ) {
     id
     person_id

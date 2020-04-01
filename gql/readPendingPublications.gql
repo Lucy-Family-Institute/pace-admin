@@ -5,7 +5,8 @@ query MyQuery ($personId: Int!, $userId: Int!) {
       _not: {
         reviews: {user_id: {_eq: $userId}}
       }
-    }
+    },
+    order_by: {confidence: desc, publication: {title: asc}}
   ) {
     id
     person_id

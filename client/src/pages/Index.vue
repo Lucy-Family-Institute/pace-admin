@@ -4,6 +4,7 @@
       <!-- TODO calculate exact height below -->
       <q-splitter
         v-model="firstModel"
+        unit="px"
         :style="{height: ($q.screen.height-56-16)+'px'}"
       >
         <template v-slot:before>
@@ -62,6 +63,7 @@
         <template v-slot:after v-if="person">
           <q-splitter
             v-model="secondModel"
+            unit="px"
             :style="{height: ($q.screen.height-56-16)+'px'}"
           >
             <template v-slot:before>
@@ -87,11 +89,14 @@
                 :value="progress"
                 :buffer="buffer"
                 :color="publicationsLoadedError ? 'red' : 'secondary'"/>
+              <q-item v-if="publicationsLoadedError">
+                <q-item-label>Error on Publication Data Load</q-item-label>
+              </q-item>
               <q-virtual-scroll
                 :items="publications"
                 separator
                 :style="{'max-height': ($q.screen.height-50-16-88-36-2-10-4)+'px'}"
-                :key="id"
+                ref="pubScroll"
               >
                 <template v-slot="{ item, index }">
                   <q-expansion-item
@@ -114,7 +119,6 @@
 
                       <q-item-section>
                         <q-item-label lines="1">{{ item.publication.title }}</q-item-label>
-                        <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
                       </q-item-section>
 
                       <q-item-section side>
@@ -123,10 +127,6 @@
                           :color="item.confidence*100 <= 50 ? 'orange' : 'green'"
                         />
                       </q-item-section>
-
-                <!-- <q-item-section side>
-                  <q-icon name="keyboard_arrow_right" color="green" />
-                </q-item-section> -->
                     </template>
                     <q-card v-if="item.publication !== undefined">
                       <q-card-section class="text-center">
@@ -316,8 +316,8 @@ export default {
     search: '',
     dom,
     date,
-    firstModel: 33,
-    secondModel: 50,
+    firstModel: 375,
+    secondModel: 400,
     people: [],
     publications: [],
     publicationsGroupedByReview: {},
@@ -427,12 +427,12 @@ export default {
       console.log(`checking show review state for: ${reviewState.name} result is: ${test}, filter review states are: ${JSON.stringify(this.filterReviewStates, null, 2)}`)
       return test
     },
-    async setSelectedReviewState (reviewAbbrev) {
-      this.selectedReviewState = reviewAbbrev
+    async setSelectedReviewState (reviewState) {
+      this.selectedReviewState = reviewState
     },
     async scrollToPublication (index) {
-      console.log(`updating scroll ${index} for ${this.selectedReviewState} ${this.$refs[this.selectedReviewState].toString}`)
-      this.$refs[this.selectedReviewState].scrollTo(index + 1)
+      console.log(`updating scroll ${index} for ${this.selectedReviewState} ${this.$refs['pubScroll'].toString}`)
+      this.$refs['pubScroll'].scrollTo(index + 1)
     },
     async loadPersonsWithFilter () {
       console.log('filtering', this.selectedInstitutions)
@@ -486,22 +486,30 @@ export default {
     },
     async loadPublicationsByReviewState (person, reviewState) {
       this.publicationsLoaded = false
+      this.publicationsLoadedError = false
       this.clearPublications()
       this.person = person
-      const pubsWithReviewResult = await this.$apollo.query({
-        query: readPublicationsByReviewState,
-        variables: {
-          personId: this.person.id,
-          userId: this.userId,
-          reviewType: reviewState
-        },
-        fetchPolicy: 'network-only'
-      })
-      this.publications = pubsWithReviewResult.data.persons_publications
+      try {
+        const pubsWithReviewResult = await this.$apollo.query({
+          query: readPublicationsByReviewState,
+          variables: {
+            personId: this.person.id,
+            userId: this.userId,
+            reviewType: reviewState
+          },
+          fetchPolicy: 'network-only'
+        })
+        this.publications = pubsWithReviewResult.data.persons_publications
+      } catch (error) {
+        this.publicationsLoaded = true
+        this.publicationsLoadedError = true
+        throw error
+      }
       this.publicationsLoaded = true
     },
     async loadPublications (person) {
       this.publicationsLoaded = false
+      this.publicationsLoadedError = false
       // clear any previous publications in list
       this.clearPublications()
       this.person = person
