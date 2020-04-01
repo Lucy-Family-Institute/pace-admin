@@ -199,8 +199,8 @@
                       </q-card-actions>
                     </q-card-section>
                   </q-card>
-                  <q-card class="col-xs-5" style="min-width:200px; min-height:300px">
-                    <img src="~assets/google_logo.svg" class="q-pa-md" style="padding-top:20px;padding-bottom:0px;">
+                  <q-card :class="unpaywall ? 'col-xs-6' : 'col-xs-11'" style="min-width:200px; min-height:300px">
+                    <img src="~assets/google_logo.svg" class="q-pa-md" style="max-height:100px;padding-top:20px;padding-bottom:0px;">
 
                     <q-item dense style="font-size:25px;padding-top:0px;padding-bottom:20px;">
                         <q-item-section align="center">
