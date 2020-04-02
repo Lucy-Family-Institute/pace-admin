@@ -26,7 +26,7 @@
                   :active="person!==undefined && item.id === person.id"
                   clickable
                   group="expansion_group_person"
-                  @click="startProgressBar();loadPublications(item); setNameVariants(item)"
+                  @click="resetReviewTypeFilter();startProgressBar();loadPublications(item); setNameVariants(item)"
                   active-class="bg-teal-1 text-grey-8"
                   expand-icon="keyboard_arrow_rights"
                 >
@@ -383,6 +383,7 @@ export default {
       this.loadPublications(this.person)
     },
     reviewTypeFilter: function () {
+      this.startProgressBar()
       switch (this.reviewTypeFilter) {
         case 'pending':
           this.loadPublications(this.person)
@@ -394,6 +395,9 @@ export default {
     }
   },
   methods: {
+    async resetReviewTypeFilter () {
+      this.reviewTypeFilter = 'pending'
+    },
     async startProgressBar () {
       this.publicationsLoaded = false
       this.publicationsLoadedError = false
@@ -675,11 +679,40 @@ export default {
       this.nameVariants[1] = `${person.family_name}, ${person.given_name}`
       // return variants
     },
+    getUpdatedPublicationYear (csl) {
+      // look for both online and print dates, and make newer date win if different
+      // put in array sorted by date
+
+      let years = []
+      years.push(_.get(csl, 'journal-issue.published-print.date-parts[0][0]', null))
+      years.push(_.get(csl, 'journal-issue.published-online.date-parts[0][0]', null))
+      years.push(_.get(csl, 'issued.date-parts[0][0]', null))
+      years.push(_.get(csl, 'published-print.date-parts[0][0]', null))
+      years.push(_.get(csl, 'published-online.date-parts[0][0]', null))
+
+      years = _.sortBy(years, (year) => { return year === null ? 0 : Number.parseInt(year) }).reverse()
+      if (years.length > 0 && years[0] > 0) {
+        // return the most recent year
+        return years[0]
+      } else {
+        return null
+      }
+    },
     // assumes getting csl as json object from DB
     getCitationApa (cslString) {
       const csl = JSON.parse(cslString)
-      const citeObj = new Cite(csl)
 
+      try {
+        // update publication year to be current if can, otherwise leave as is
+        const publicationYear = this.getUpdatedPublicationYear(csl)
+        if (publicationYear !== null && publicationYear > 0) {
+          csl['issued']['date-parts'][0][0] = publicationYear
+        }
+      } catch (error) {
+        console.log(`Warning: Was unable to update publication year for citation with error: ${error}`)
+      }
+
+      const citeObj = new Cite(csl)
       // create formatted citation as test
       const apaCitation = citeObj.format('bibliography', {
         template: 'apa'
