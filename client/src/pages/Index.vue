@@ -372,6 +372,8 @@ export default {
     },
     selectedYears: function () {
       this.loadPersonsWithFilter()
+      // need to see about reloading publications if in view
+      this.clearPublications()
     },
     selectedPersonSort: function () {
       // re-sort people
@@ -455,6 +457,28 @@ export default {
       console.log('filtering', this.selectedPersonSort)
       if (this.selectedPersonSort === 'Name') {
         this.people = _.sortBy(this.people, ['family_name', 'given_name'])
+      } else {
+        // need to sort by total and then name, not guaranteed to be in order from what is returned from DB
+        // first group items by count
+        const peopleByCounts = _.groupBy(this.people, (person) => {
+          return person.persons_publications_aggregate.aggregate.count
+        })
+
+        // sort each person array by name for each count
+        const peopleByCountsByName = _.mapValues(peopleByCounts, (persons) => {
+          return _.sortBy(persons, ['family_name', 'given_name'])
+        })
+
+        // get array of counts (i.e., keys) sorted in reverse
+        const sortedCounts = _.sortBy(_.keys(peopleByCountsByName), (count) => { return Number.parseInt(count) }).reverse()
+
+        // now push values into array in desc order of count and flatten
+        let sortedPersons = []
+        _.each(sortedCounts, (key) => {
+          sortedPersons.push(peopleByCountsByName[key])
+        })
+
+        this.people = _.flatten(sortedPersons)
       }
     },
     // async loadReviewStates () {
@@ -501,7 +525,9 @@ export default {
           variables: {
             personId: this.person.id,
             userId: this.userId,
-            reviewType: reviewState
+            reviewType: reviewState,
+            yearMin: this.selectedYears.min,
+            yearMax: this.selectedYears.max
           },
           fetchPolicy: 'network-only'
         })
@@ -527,7 +553,9 @@ export default {
           query: readPendingPublications,
           variables: {
             personId: this.person.id,
-            userId: this.userId
+            userId: this.userId,
+            yearMin: this.selectedYears.min,
+            yearMax: this.selectedYears.max
           },
           fetchPolicy: 'network-only'
         })

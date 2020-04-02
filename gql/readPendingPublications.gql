@@ -1,9 +1,12 @@
-query MyQuery ($personId: Int!, $userId: Int!) {
+query MyQuery ($personId: Int!, $userId: Int!, $yearMin: Int!, $yearMax: Int!) {
   persons_publications(
     where: {
       person_id: {_eq: $personId},
       _not: {
         reviews: {user_id: {_eq: $userId}}
+      },
+      publication: {
+        year: {_gte: $yearMin, _lte: $yearMax}
       }
     },
     order_by: {confidence: desc, publication: {title: asc}}
