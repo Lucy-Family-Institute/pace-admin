@@ -75,51 +75,74 @@ function getSimpleName (lastName, firstInitial){
   return `${lastName}, ${firstInitial}`
 }
 
+function getPublicationYear (csl) {
+  const item = new Cite(csl)
+  const citation = item.format('citation')
+  let year = null
+  // last item in string is the year after the last comma
+  const items = _.split(citation, ',')
+
+  if (items.length > 0){
+    year = items[items.length - 1]
+    // get rid of any parentheses
+    year = _.replace(year, ')', '')
+    year = _.replace(year, '(', '')
+    // remove any whitespace
+    year = _.trim(year)
+  } else {
+    throw(`Unable to determine publication year from csl: ${JSON.stringify(csl, null, 2)}`)
+  }
+  return year
+}
+
 async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName, sourceMetadata) {
   //console.log(`trying to insert pub: ${JSON.stringify(title,null,2)}, ${JSON.stringify(doi,null,2)}`)
-  const publication = {
-    title: title,
-    doi: doi,
-    year: _.get(csl, 'journal-issue.published-print.date-parts[0][0]',
-      _.get(csl, 'issued.date-parts[0][0]', 
-        _.get(csl, 'created.date-parts[0][0]', null)
-      )
-    ),
-    csl: csl,  // put these in as JSONB
-    source_name: sourceName,  
-    source_metadata: sourceMetadata, // put these in as JSONB,
-    csl_string: JSON.stringify(csl)
-  }
-  const mutatePubResult = await client.mutate(
-    //for now convert csl json object to a string when storing in DB
-    insertPublication ([publication])
-  )
-  //console.log(`Insert mutate pub result ${JSON.stringify(mutatePubResult.data,null,2)}`)
-  const publicationId = 0+parseInt(`${ mutatePubResult.data.insert_publications.returning[0].id }`);
-  console.log(`Added publication with id: ${ publicationId }`)
-  
-  //console.log(`Pub Id: ${publicationId} Adding ${authorMap.firstAuthors.length + authorMap.otherAuthors.length} total authors`)
-  const insertAuthors = _.map(authors, (author) => {
-    return {
-      publication_id: publicationId,
-      family_name: author.family, 
-      given_name: author.given, 
-      position: author.position
+  try  {
+    const publicationYear = getPublicationYear (csl)
+ 
+    const publication = {
+      title: title,
+      doi: doi,
+      year: publicationYear,
+      csl: csl,  // put these in as JSONB
+      source_name: sourceName,  
+      source_metadata: sourceMetadata, // put these in as JSONB,
+      csl_string: JSON.stringify(csl)
     }
-  })
-
-  try {
-    //console.log(`publication id: ${ publicationId } inserting first author: ${ JSON.stringify(firstAuthor) }`)
-    const mutateFirstAuthorResult = await client.mutate(
-      insertPubAuthor(insertAuthors)
+    const mutatePubResult = await client.mutate(
+      //for now convert csl json object to a string when storing in DB
+      insertPublication ([publication])
     )
+    //console.log(`Insert mutate pub result ${JSON.stringify(mutatePubResult.data,null,2)}`)
+    const publicationId = 0+parseInt(`${ mutatePubResult.data.insert_publications.returning[0].id }`);
+    console.log(`Added publication with id: ${ publicationId }`)
+    
+    //console.log(`Pub Id: ${publicationId} Adding ${authorMap.firstAuthors.length + authorMap.otherAuthors.length} total authors`)
+    const insertAuthors = _.map(authors, (author) => {
+      return {
+        publication_id: publicationId,
+        family_name: author.family, 
+        given_name: author.given, 
+        position: author.position
+      }
+    })
+
+    try {
+      //console.log(`publication id: ${ publicationId } inserting first author: ${ JSON.stringify(firstAuthor) }`)
+      const mutateFirstAuthorResult = await client.mutate(
+        insertPubAuthor(insertAuthors)
+      )
+    } catch (error) {
+      console.log(`Error on insert of Doi: ${doi} insert authors: ${JSON.stringify(insertAuthors,null,2)}`)
+      console.log(error)
+      throw error
+    }
+    return publicationId
   } catch (error){
-    console.log(`Error on insert of Doi: ${doi} insert authors: ${JSON.stringify(insertAuthors,null,2)}`)
+    console.log(`Error on insert of Doi: ${doi} insert publication, csl: ${JSON.stringify}`)
     console.log(error)
     throw error
   }
-
-  return publicationId
 }
 
 async function getSimplifiedPersons(year) {
