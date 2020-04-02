@@ -76,23 +76,38 @@ function getSimpleName (lastName, firstInitial){
 }
 
 function getPublicationYear (csl) {
-  const item = new Cite(csl)
-  const citation = item.format('citation')
-  let year = null
-  // last item in string is the year after the last comma
-  const items = _.split(citation, ',')
+  // look for both online and print dates, and make newer date win if different
+  // put in array sorted by date
+  let years = []
+  years.push(_.get(csl, 'journal-issue.published-print.date-parts[0][0]', null))
+  years.push(_.get(csl, 'journal-issue.published-online.date-parts[0][0]', null))
+  years.push(_.get(csl, 'issued.date-parts[0][0]', null))
+  years.push(_.get(csl, 'published-print.date-parts[0][0]', null))
+  years.push(_.get(csl, 'published-online.date-parts[0][0]', null))
 
-  if (items.length > 0){
-    year = items[items.length - 1]
-    // get rid of any parentheses
-    year = _.replace(year, ')', '')
-    year = _.replace(year, '(', '')
-    // remove any whitespace
-    year = _.trim(year)
+  years = _.sortBy(years, (year) => { return year === null ?  0 : Number.parseInt(year) }).reverse()
+  if (years.length > 0 && years[0] > 0) {
+    // return the most recent year
+    return years[0]
   } else {
-    throw(`Unable to determine publication year from csl: ${JSON.stringify(csl, null, 2)}`)
+    const item = new Cite(csl)
+    const citation = item.format('citation')
+    let year = null
+    // last item in string is the year after the last comma
+    const items = _.split(citation, ',')
+
+    if (items.length > 0){
+      year = items[items.length - 1]
+      // get rid of any parentheses
+      year = _.replace(year, ')', '')
+      year = _.replace(year, '(', '')
+      // remove any whitespace
+      return _.trim(year)
+    } else {
+      throw(`Unable to determine publication year from csl: ${JSON.stringify(csl, null, 2)}`)
+    }
   }
-  return year
+  
 }
 
 async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName, sourceMetadata) {
