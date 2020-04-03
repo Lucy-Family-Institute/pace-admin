@@ -1,0 +1,16 @@
+query MyQuery ($publicationId: Int!) {
+  publications(
+    where: {
+      id: {_eq: $publicationId}
+    }
+  ) {
+    id
+    title
+    doi
+    year
+    csl_string
+    csl
+    source_name
+    source_metadata
+  }
+}
