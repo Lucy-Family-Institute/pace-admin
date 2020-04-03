@@ -84,6 +84,7 @@
                 <q-tab name="unsure" label="Unsure" />
               </q-tabs>
               <q-linear-progress
+                v-if="!publicationsLoaded && !publicationsLoadedError"
                 stripe
                 size="10px"
                 :value="progress"
@@ -297,12 +298,13 @@ import readPersonsByInstitution from '../../../gql/readPersonsByInstitution.gql'
 // import readReviewStates from '../../../gql/readReviewStates.gql'
 import readPendingPublications from '../../../gql/readPendingPublications.gql'
 import readPublicationsByReviewState from '../../../gql/readPublicationsByReviewState.gql'
+import readPublication from '../../../gql/readPublication.gql'
 // import * as service from '@porter/osf.io';
 
 import PeopleFilter from '../components/PeopleFilter.vue'
 import YearFilter from '../components/YearFilter.vue'
 import sanitize from 'sanitize-filename'
-// import moment from 'moment'
+import moment from 'moment'
 
 export default {
   name: 'PageIndex',
@@ -325,6 +327,7 @@ export default {
     institutionOptions: [],
     institutionGroup: [],
     personPublication: undefined,
+    publication: undefined,
     links: [],
     checkedPublications: [],
     url: undefined,
@@ -347,6 +350,7 @@ export default {
     buffer: 0,
     publicationsLoaded: false,
     publicationsLoadedError: false,
+    showProgressBar: false,
     authorColumns: [
       { name: 'position', align: 'left', label: 'Position', field: 'position', sortable: true },
       { name: 'family_name', align: 'left', label: 'Family Name', field: 'family_name', sortable: true },
@@ -407,16 +411,21 @@ export default {
     async resetProgressBar () {
       this.buffer = 0
       this.progress = 0
+      this.showProgressBar = true
       clearInterval(this.interval)
       clearInterval(this.bufferInterval)
     },
     async runProgressBar () {
       this.interval = setInterval(() => {
         if (this.publicationsLoaded && this.progress > 0) {
-          this.progress = 1
+          if (this.progress === 1) {
+            // set show progress bar to false the second time called so bar completes before hiding
+            this.showProgressBar = false
+          } else {
+            this.progress = 1
+          }
           return
-        }
-        if (this.progress >= 1) {
+        } else if (this.progress >= 1) {
           this.progress = 0.01
           this.buffer = 0.01
           return
@@ -552,7 +561,7 @@ export default {
       // const result = await this.$apollo.query(readPublicationsByPerson(item.id))
       // this.publications = result.data.publications
       try {
-        // console.log(`Starting query publications for person id: ${person.id} ${moment().format('HH:mm:ss:SSS')}`)
+        console.log(`Starting query publications for person id: ${person.id} ${moment().format('HH:mm:ss:SSS')}`)
         const pubsWithReviewResult = await this.$apollo.query({
           query: readPendingPublications,
           variables: {
@@ -564,8 +573,7 @@ export default {
           fetchPolicy: 'network-only'
         })
         // console.log('***', pubsWithReviewResult)
-        // console.log(`Finished query publications for person id: ${this.person.id} ${moment().format('HH:mm:ss:SSS')}`)
-        // console.log(`Starting group by publications for person id: ${this.person.id} ${moment().format('HH:mm:ss:SSS')}`)
+        console.log(`Finished query publications for person id: ${this.person.id} ${moment().format('HH:mm:ss:SSS')}`)
         this.publications = pubsWithReviewResult.data.persons_publications
       } catch (error) {
         this.publicationsLoaded = true
@@ -578,9 +586,20 @@ export default {
       this.clearPublication()
       this.personPublication = personPublication
       this.loadPublicationAuthors(personPublication)
-      this.publicationCitation = this.getCitationApa(personPublication.publication.csl_string)
+      // query separately for csl because slow to get more than one
+      const publicationId = personPublication.publication.id
+      const result = await this.$apollo.query({
+        query: readPublication,
+        variables: {
+          publicationId: publicationId
+        }
+      })
+      // const result = await this.$apollo.query(readPublication(publicationId))
+      this.publication = result.data.publications[0]
+      console.log(`Loaded Publication: ${JSON.stringify(this.publication)}`)
+      this.publicationCitation = this.getCitationApa(this.publication.csl_string)
       try {
-        const sanitizedDoi = sanitize(personPublication.publication.doi, { replacement: '_' })
+        const sanitizedDoi = sanitize(this.publication.doi, { replacement: '_' })
         const imageHostBase = process.env.IMAGE_HOST_URL
         const result = await this.$axios.head(`${imageHostBase}/pdfs/${sanitizedDoi}.pdf`)
         if (result.status === 200) {
@@ -671,6 +690,7 @@ export default {
       this.publicationAuthors = []
       this.links = []
       this.url = undefined
+      this.publication = undefined
       this.publicationCitation = undefined
     },
     setNameVariants (person) {
