@@ -1,6 +1,6 @@
 <template>
   <div>
-    <q-item dense>
+    <!--<q-item dense>
       <q-select
         filled
         v-model="filterReviewStates"
@@ -11,24 +11,40 @@
         label="Review Status"
         class="fullSelect"
       />
+    </q-item>-->
+    <q-item dense>
+      <q-select
+        name="sort_person"
+        v-model="selectedPersonPubSort"
+        :options="sortPersonPubOptions"
+        color="primary"
+        filled
+        label="Sort Publications By:"
+        class="fullSelect"
+      />
     </q-item>
   </div>
 </template>
 
 <script>
 import { sync } from 'vuex-pathify'
-import _ from 'lodash'
+// import _ from 'lodash'
 
-import readReviewStates from '../../../gql/readReviewStates.gql'
+// import readReviewStates from '../../../gql/readReviewStates.gql'
 
 export default {
   data () {
     return {
-      reviewStateOptions: []
+      sortPersonPubOptions: [
+        'Confidence',
+        'Title',
+        'Source'
+      ],
+      preferredPersonPubSort: 'Confidence'
     }
   },
   computed: {
-    filterReviewStates: sync('filter/filterReviewStates')
+    selectedPersonPubSort: sync('filter/selectedPersonPubSort')
   },
   async created () {
     this.fetchData()
@@ -38,12 +54,13 @@ export default {
   },
   methods: {
     async fetchData () {
-      const results = await this.$apollo.query({
-        query: readReviewStates
-      })
-      this.reviewStateOptions = _.compact(_.map(results.data.reviewstates, 'name'))
-      this.filterReviewStates = _.clone(this.reviewStateOptions)
-      console.log(`Loaded Review State Options: ${this.reviewStateOptions}`)
+      // const results = await this.$apollo.query({
+      //   query: readReviewStates
+      // })
+      // this.reviewStateOptions = _.compact(_.map(results.data.reviewstates, 'name'))
+      // this.filterReviewStates = _.clone(this.reviewStateOptions)
+      // console.log(`Loaded Review State Options: ${this.reviewStateOptions}`)
+      this.selectedPersonPubSort = this.preferredPersonPubSort
     }
   }
 }

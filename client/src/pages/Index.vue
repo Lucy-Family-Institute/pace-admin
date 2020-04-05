@@ -74,6 +74,7 @@
                   </template>
                 </q-input>
               </q-item-label>
+              <PublicationFilter />
               <q-tabs
                 v-model="reviewTypeFilter"
                 dense
@@ -108,6 +109,7 @@
                     :active="personPublication !== undefined && item.id === personPublication.id"
                     active-class="bg-teal-1 text-grey-8"
                     :ref="`personPub${index}`"
+                    :color="getDuplicatePersonPubs(item).length > 0 ? 'purple': 'grey'"
                   >
                     <template
                       v-if="item.publication !== undefined"
@@ -119,7 +121,7 @@
                       </q-item-section>
 
                       <q-item-section>
-                        <q-item-label lines="1">{{ item.publication.title }}</q-item-label>
+                        <q-item-label lines="1">{{item.publication.source_name}}: {{ item.publication.title }}</q-item-label>
                       </q-item-section>
 
                       <q-item-section side>
@@ -301,6 +303,7 @@ import readPublicationsByReviewState from '../../../gql/readPublicationsByReview
 import readPublication from '../../../gql/readPublication.gql'
 // import * as service from '@porter/osf.io';
 
+import PublicationFilter from '../components/PublicationFilter.vue'
 import PeopleFilter from '../components/PeopleFilter.vue'
 import YearFilter from '../components/YearFilter.vue'
 import sanitize from 'sanitize-filename'
@@ -309,6 +312,7 @@ import moment from 'moment'
 export default {
   name: 'PageIndex',
   components: {
+    PublicationFilter,
     PeopleFilter,
     YearFilter
   },
@@ -323,6 +327,7 @@ export default {
     people: [],
     publications: [],
     publicationsGroupedByReview: {},
+    publicationsGroupedByDoi: {},
     institutions: [],
     institutionOptions: [],
     institutionGroup: [],
@@ -382,6 +387,9 @@ export default {
     selectedPersonSort: function () {
       // re-sort people
       this.loadPersonsWithFilter()
+    },
+    selectedPersonPubSort: function () {
+      this.sortPublications()
     },
     publicationsGroupedByView: function () {
       this.loadPublications(this.person)
@@ -526,6 +534,7 @@ export default {
     async clearPublications () {
       this.clearPublication()
       this.publications = []
+      this.publicationsGroupedByDoi = {}
     },
     async loadPublicationsByReviewState (person, reviewState) {
       this.publicationsLoaded = false
@@ -550,7 +559,79 @@ export default {
         this.publicationsLoadedError = true
         throw error
       }
+      this.sortPublications()
+      this.groupPublicationsByDoi()
       this.publicationsLoaded = true
+    },
+    async getDuplicatePersonPubs (personPublication) {
+      let duplicates = []
+      const doiPubs = this.publicationsGroupedByDoi[personPublication.publication.doi]
+      if (doiPubs && doiPubs.length > 1) {
+        // add other ones in list to dups array
+        duplicates = _.remove(doiPubs, (pub) => {
+          return pub.id === personPublication.id
+        })
+      }
+      return duplicates
+    },
+    async groupPublicationsByDoi () {
+      this.publicationsGroupedByDoi = _.groupBy(this.publications, (personPub) => {
+        return personPub.publication.doi
+      })
+    },
+    async sortPublications () {
+      // sort by confidence of pub title
+      // apply any sorting applied
+      console.log('sorting', this.selectedPersonPubSort)
+      if (this.selectedPersonPubSort === 'Title') {
+        this.publications = _.sortBy(this.publications, (personPub) => {
+          return personPub.publication.title
+        })
+      } else if (this.selectedPersonPubSort === 'Source') {
+        // need to sort by confidence and then name, not guaranteed to be in order from what is returned from DB
+        // first group items by count
+        const groupedPubs = _.groupBy(this.publications, (pub) => {
+          return pub.publication.source_name
+        })
+
+        // sort each person array by title for each conf
+        const groupedPubsByTitle = _.mapValues(groupedPubs, (pubs) => {
+          return _.sortBy(pubs, ['title'])
+        })
+
+        // get array of pub values (i.e., keys) sorted in reverse
+        const sortedKeys = _.sortBy(_.keys(groupedPubsByTitle), (key) => { return key })
+
+        // now push values into array in desc order of count and flatten
+        let sortedPubs = []
+        _.each(sortedKeys, (key) => {
+          sortedPubs.push(groupedPubsByTitle[key])
+        })
+
+        this.publications = _.flatten(sortedPubs)
+      } else {
+        // need to sort by confidence and then name, not guaranteed to be in order from what is returned from DB
+        // first group items by count
+        const pubsByConf = _.groupBy(this.publications, (pub) => {
+          return pub.confidence
+        })
+
+        // sort each person array by title for each conf
+        const pubsByConfByName = _.mapValues(pubsByConf, (pubs) => {
+          return _.sortBy(pubs, ['title'])
+        })
+
+        // get array of confidence values (i.e., keys) sorted in reverse
+        const sortedConfs = _.sortBy(_.keys(pubsByConfByName), (confidence) => { return Number.parseFloat(confidence) }).reverse()
+
+        // now push values into array in desc order of count and flatten
+        let sortedPubs = []
+        _.each(sortedConfs, (key) => {
+          sortedPubs.push(pubsByConfByName[key])
+        })
+
+        this.publications = _.flatten(sortedPubs)
+      }
     },
     async loadPublications (person) {
       this.publicationsLoaded = false
@@ -575,11 +656,13 @@ export default {
         // console.log('***', pubsWithReviewResult)
         console.log(`Finished query publications for person id: ${this.person.id} ${moment().format('HH:mm:ss:SSS')}`)
         this.publications = pubsWithReviewResult.data.persons_publications
+        this.sortPublications()
       } catch (error) {
         this.publicationsLoaded = true
         this.publicationsLoadedError = true
         throw error
       }
+      this.groupPublicationsByDoi()
       this.publicationsLoaded = true
     },
     async loadPublication (personPublication) {
@@ -745,6 +828,7 @@ export default {
     userId: get('auth/userId'),
     selectedInstitutions: get('filter/selectedInstitutions'),
     selectedPersonSort: get('filter/selectedPersonSort'),
+    selectedPersonPubSort: get('filter/selectedPersonPubSort'),
     filterReviewStates: get('filter/filterReviewStates'),
     selectedYears: get('filter/selectedYears')
     // filteredPersonPublications: function (personPublications) {

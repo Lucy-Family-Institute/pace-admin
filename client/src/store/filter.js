@@ -4,6 +4,7 @@ const state = {
   selectedInstitutions: [],
   filterReviewStates: [],
   selectedPersonSort: undefined,
+  selectedPersonPubSort: undefined,
   yearStaticMin: 1900,
   yearStaticMax: 2200,
   selectedYears: {
