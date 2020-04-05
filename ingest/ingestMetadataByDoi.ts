@@ -410,11 +410,16 @@ async function loadPersonPapersFromCSV (personMap, path) {
           //check for SCOPUS
           //console.log(`Checking paper if from scopus: ${JSON.stringify(papersByDoi[doi],null,2)}`)
           //there may be more than one author match with same paper, and just grab first one
-          if (papersByDoi[doi].length > 1 && papersByDoi[doi][0]['scopus_record']){
+          if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['scopus_record']){
             sourceName = 'Scopus'
             sourceMetadata = papersByDoi[doi][0]['scopus_record']
             if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
             console.log(`Scopus Source metadata is: ${JSON.stringify(sourceMetadata,null,2)}`)
+          } else if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['pubmed_record']){
+            sourceName = 'PubMed'
+            sourceMetadata = papersByDoi[doi][0]['pubmed_record']
+            if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
+            console.log(`Pubmed Source metadata found`)//is: ${JSON.stringify(sourceMetadata,null,2)}`)
           }
           console.log(`Inserting Publication DOI: ${doi} from source: ${sourceName}`)
           const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authors, sourceName, sourceMetadata)
@@ -478,9 +483,10 @@ async function main() {
 
   const pathsByYear = {
     // 2019: ['../data/scopus.2019.20200320103319.csv']
-    2019: ['../data/HCRI-pubs-2019_-_Faculty_Selected_2.csv', '../data/scopus.2019.20200320103319.csv'],
-    2018: ['../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv'],
-    2017: ['../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv']
+    // 2019: ['../data/HCRI-pubs-2019_-_Faculty_Selected_2.csv', '../data/scopus.2019.20200320103319.csv'],
+    // 2018: ['../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv'],
+    //2017: ['../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv']
+    2017: ['../data/authorsByAwards.20200405090557.csv']
   }
 
   let doiStatus = new Map()
