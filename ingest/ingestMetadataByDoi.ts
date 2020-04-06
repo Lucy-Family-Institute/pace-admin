@@ -7,6 +7,7 @@ import fetch from 'node-fetch'
 import pEachSeries from 'p-each-series'
 import readUsers from '../client/src/gql/readPersons'
 import readPersonsByYear from '../client/src/gql/readPersonsByYear'
+import readPersons from '../client/src/gql/readPersons'
 import insertPublication from './gql/insertPublication'
 import insertPersonPublication from './gql/insertPersonPublication'
 import insertPubAuthor from './gql/insertPubAuthor'
@@ -160,7 +161,23 @@ async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName
   }
 }
 
-async function getSimplifiedPersons(year) {
+async function getAllSimplifiedPersons() {
+  const queryResult = await client.query(readPersons())
+
+  const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
+    return {
+      id: person.id,
+      lastName: _.lowerCase(person.family_name),
+      firstInitial: _.lowerCase(person.given_name[0]),
+      firstName: _.lowerCase(person.given_name),
+      startYear: person.start_date,
+      endYear: person.end_date
+    }
+  })
+  return simplifiedPersons
+}
+
+async function getSimplifiedPersonsByYear(year) {
   const queryResult = await client.query(readPersonsByYear(year))
 
   const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
@@ -483,15 +500,17 @@ async function main() {
 
   const pathsByYear = {
     // 2019: ['../data/scopus.2019.20200320103319.csv']
-    // 2019: ['../data/HCRI-pubs-2019_-_Faculty_Selected_2.csv', '../data/scopus.2019.20200320103319.csv'],
-    // 2018: ['../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv'],
-    //2017: ['../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv']
-    2017: ['../data/authorsByAwards.20200405090557.csv']
+    2019: ['../data/HCRI-pubs-2019_-_Faculty_Selected_2.csv', '../data/scopus.2019.20200320103319.csv'],
+    2018: ['../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv'],
+    2017: ['../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv', '../data/authorsByAwards.20200406074032.csv']
   }
+
+  //just get all simplified persons as will filter later
+  const simplifiedPersons = await getAllSimplifiedPersons()
 
   let doiStatus = new Map()
   await pMap(_.keys(pathsByYear), async (year) => {
-    const simplifiedPersons = await getSimplifiedPersons(year)
+    //const simplifiedPersons = await getSimplifiedPersonsByYear(year)
     console.log(`Simplified persons for ${year} are: ${JSON.stringify(simplifiedPersons,null,2)}`)
 
     //create map of last name to array of related persons with same last name

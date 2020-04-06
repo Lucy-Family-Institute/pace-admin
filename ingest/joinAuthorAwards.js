@@ -18,7 +18,7 @@ function getResourceIdentifiers (resourceIdentifiers) {
 
 async function mapGrantFiles (filename) {
   if(!_.endsWith(filename, '.json')) return;
-  const data = await pify(fs.readFile)(path.join('../data', 'awards2', filename));
+  const data = await pify(fs.readFile)(path.join('../data', 'awards', filename));
   const grantId = filename.replace('.json', '');
 
   console.log(`Processing Grant Award Id: ${grantId}`)
@@ -148,7 +148,7 @@ async function go() {
   }));
   
   console.log('Reading awards')
-  const files = await pify(fs.readdir)('../data/awards2');
+  const files = await pify(fs.readdir)('../data/awards');
 
   console.log ('Mapping grant files')
   const authorsByGrant = await pMap(files, mapGrantFiles, { concurrency: 1 });
