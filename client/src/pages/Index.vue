@@ -10,6 +10,7 @@
         <template v-slot:before>
           <q-item-label header>Filter</q-item-label>
             <YearFilter />
+            <MemberYearFilter />
             <PeopleFilter />
 
           <q-item-label header>People</q-item-label>
@@ -296,7 +297,7 @@ import insertReview from '../gql/insertReview'
 import _ from 'lodash'
 import Cite from 'citation-js'
 
-import readPersonsByInstitution from '../../../gql/readPersonsByInstitution.gql'
+import readPersonsByInstitutionByYear from '../gql/readPersonsByInstitutionByYear'
 // import readReviewStates from '../../../gql/readReviewStates.gql'
 import readPendingPublications from '../../../gql/readPendingPublications.gql'
 import readPublicationsByReviewState from '../../../gql/readPublicationsByReviewState.gql'
@@ -306,6 +307,7 @@ import readPublication from '../../../gql/readPublication.gql'
 import PublicationFilter from '../components/PublicationFilter.vue'
 import PeopleFilter from '../components/PeopleFilter.vue'
 import YearFilter from '../components/YearFilter.vue'
+import MemberYearFilter from '../components/MemberYearFilter.vue'
 import sanitize from 'sanitize-filename'
 import moment from 'moment'
 
@@ -314,7 +316,8 @@ export default {
   components: {
     PublicationFilter,
     PeopleFilter,
-    YearFilter
+    YearFilter,
+    MemberYearFilter
   },
   data: () => ({
     reviewStates: undefined,
@@ -379,7 +382,12 @@ export default {
     selectedInstitutions: function () {
       this.loadPersonsWithFilter()
     },
-    selectedYears: function () {
+    selectedPubYears: function () {
+      this.loadPersonsWithFilter()
+      // need to see about reloading publications if in view
+      this.clearPublications()
+    },
+    selectedMemberYears: function () {
       this.loadPersonsWithFilter()
       // need to see about reloading publications if in view
       this.clearPublications()
@@ -463,15 +471,8 @@ export default {
     async loadPersonsWithFilter () {
       console.log('filtering', this.selectedInstitutions)
       this.people = []
-      console.log(`Applying year filter to person search year min: ${this.selectedYears.min} max: ${this.selectedYears.max}`)
-      const personResult = await this.$apollo.query({
-        query: readPersonsByInstitution,
-        variables: {
-          names: this.selectedInstitutions,
-          yearMin: this.selectedYears.min,
-          yearMax: this.selectedYears.max
-        }
-      })
+      console.log(`Applying year filter to person search year min: ${this.selectedPubYears.min} max: ${this.selectedPubYears.max}`)
+      const personResult = await this.$apollo.query(readPersonsByInstitutionByYear(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max))
       this.people = personResult.data.persons
 
       // apply any sorting applied
@@ -548,8 +549,8 @@ export default {
             personId: this.person.id,
             userId: this.userId,
             reviewType: reviewState,
-            yearMin: this.selectedYears.min,
-            yearMax: this.selectedYears.max
+            yearMin: this.selectedPubYears.min,
+            yearMax: this.selectedPubYears.max
           },
           fetchPolicy: 'network-only'
         })
@@ -648,8 +649,8 @@ export default {
           variables: {
             personId: this.person.id,
             userId: this.userId,
-            yearMin: this.selectedYears.min,
-            yearMax: this.selectedYears.max
+            yearMin: this.selectedPubYears.min,
+            yearMax: this.selectedPubYears.max
           },
           fetchPolicy: 'network-only'
         })
@@ -830,7 +831,8 @@ export default {
     selectedPersonSort: get('filter/selectedPersonSort'),
     selectedPersonPubSort: get('filter/selectedPersonPubSort'),
     filterReviewStates: get('filter/filterReviewStates'),
-    selectedYears: get('filter/selectedYears')
+    selectedPubYears: get('filter/selectedPubYears'),
+    selectedMemberYears: get('filter/selectedMemberYears')
     // filteredPersonPublications: function (personPublications) {
     //   return personPublications.filter(item => {
     //     return _.lowerCase(item.publication.title).includes(this.search)

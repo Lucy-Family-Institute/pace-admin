@@ -20,6 +20,10 @@ function parseCsv(file) {
 
 async function loadCsv(filePath) {
   // TODO error on missing filepath
+  console.log(`Loading CSV File from path: ${filePath}`)
+  if (!fs.existsSync(filePath)) {
+    throw `Invalid path on load csv from: ${filePath}`
+  }
   const data = await parseCsv(fs.createReadStream(filePath));
   return data;
 }

@@ -2,8 +2,11 @@
   <q-layout view="lHh lpr fFf">
     <q-header elevated>
       <q-toolbar>
-        <q-select v-model="model" :options="options" class="white" />
-
+        <q-select
+          v-model="model"
+          :options="options"
+          class="white"
+        />
         <q-toolbar-title>
         </q-toolbar-title>
 
@@ -54,7 +57,7 @@ export default {
   name: 'MyLayout',
   data () {
     return {
-      model: null,
+      model: 'Harper Cancer Research Institute',
       options: [ 'Harper Cancer Research Institute' ]
     }
   },
@@ -68,6 +71,6 @@ export default {
 
 <style>
   .white {
-    color: white
+    color: white;
   }
 </style>

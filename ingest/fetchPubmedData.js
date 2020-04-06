@@ -163,8 +163,8 @@ async function createAwardPubJSON(awardId, data){
 async function go() {
   const awardIds = await getIds();
   console.log(`Award ids are: ${JSON.stringify(awardIds, null, 2)}`)
-  //const uniqueAwardIds = _.uniq(awardIds);
-  let uniqueAwardIds = ['GM067079','CA212964'];
+  const uniqueAwardIds = _.uniq(awardIds);
+  //let uniqueAwardIds = ['GM067079','CA212964'];
   console.log(`Found ${awardIds.length} awards; ${uniqueAwardIds.length} unique`);
 
   const mapper = async (awardId) => {
