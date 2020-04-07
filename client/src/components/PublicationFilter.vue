@@ -37,8 +37,7 @@ export default {
     return {
       sortPersonPubOptions: [
         'Confidence',
-        'Title',
-        'Source'
+        'Title'
       ],
       preferredPersonPubSort: 'Confidence'
     }

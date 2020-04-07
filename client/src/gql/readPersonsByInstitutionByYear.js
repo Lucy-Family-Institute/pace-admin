@@ -5,6 +5,7 @@ export default function readPersonsByInstitutionByYear (institutionNames, pubYea
   const startDateLT = `1/1/${memberYearMax + 1}`
   const endDateGT = `12/31/${memberYearMin - 1}`
   let namesString = ''
+  // for now manually construct the string for names in the array
   _.forEach(institutionNames, (value, index) => {
     if (index > 0) {
       namesString = `${namesString},`
