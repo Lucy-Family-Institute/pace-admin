@@ -8,8 +8,9 @@
         :style="{height: ($q.screen.height-56-16)+'px'}"
       >
         <template v-slot:before>
-          <q-item-label header>Filter</q-item-label>
+          <q-item-label header>Publication Filter</q-item-label>
             <YearFilter />
+          <q-item-label header>Person Filter</q-item-label>
             <MemberYearFilter />
             <PeopleFilter />
 
@@ -96,7 +97,7 @@
                 <q-item-label>Error on Publication Data Load</q-item-label>
               </q-item>
               <q-virtual-scroll
-                :items="publications"
+                :items="personPublicationsCombinedMatches"
                 separator
                 :style="{'max-height': ($q.screen.height-50-16-88-36-2-10-4)+'px'}"
                 :ref="`pubScroll`"
@@ -110,7 +111,6 @@
                     :active="personPublication !== undefined && item.id === personPublication.id"
                     active-class="bg-teal-1 text-grey-8"
                     :ref="`personPub${index}`"
-                    :color="getDuplicatePersonPubs(item).length > 0 ? 'purple': 'grey'"
                   >
                     <template
                       v-if="item.publication !== undefined"
@@ -122,9 +122,23 @@
                       </q-item-section>
 
                       <q-item-section>
-                        <q-item-label lines="1">{{item.publication.source_name}}: {{ item.publication.title }}</q-item-label>
+                        <q-item-label lines="1">{{ item.publication.title }}</q-item-label>
                       </q-item-section>
 
+                      <q-item-section side>
+                        <q-list>
+                          <q-chip
+                            dense
+                            size="md"
+                            v-for="(personPub, index) in publicationsGroupedByDoi[item.publication.doi]"
+                            :key="index"
+                            :color="getSourceNameChipColor(personPub.publication.source_name)"
+                            text-color="white"
+                          >
+                            {{personPub.publication.source_name}}
+                          </q-chip>
+                        </q-list>
+                      </q-item-section>
                       <q-item-section side>
                         <q-badge
                           :label="item.confidence*100+'%'"
@@ -299,6 +313,7 @@ import Cite from 'citation-js'
 
 import readPersonsByInstitutionByYear from '../gql/readPersonsByInstitutionByYear'
 // import readReviewStates from '../../../gql/readReviewStates.gql'
+import readPublications from '../gql/readPublications'
 import readPendingPublications from '../../../gql/readPendingPublications.gql'
 import readPublicationsByReviewState from '../../../gql/readPublicationsByReviewState.gql'
 import readPublication from '../../../gql/readPublication.gql'
@@ -330,6 +345,7 @@ export default {
     people: [],
     publications: [],
     publicationsGroupedByReview: {},
+    personPublicationsCombinedMatches: [],
     publicationsGroupedByDoi: {},
     institutions: [],
     institutionOptions: [],
@@ -415,6 +431,33 @@ export default {
     }
   },
   methods: {
+    getSourceNameChipColor (sourceName) {
+      if (sourceName) {
+        if (sourceName.toLowerCase() === 'pubmed') {
+          return 'blue'
+        } else if (sourceName.toLowerCase() === 'scopus') {
+          return 'orange'
+        } else if (sourceName.toLowerCase() === 'crossref') {
+          return 'purple'
+        } else {
+          return 'teal'
+        }
+      } else {
+        return 'teal'
+      }
+    },
+    // return all duplicate publications
+    async reportDuplicatePublications () {
+      const pubResults = await this.$apollo.query(readPublications())
+      const publications = pubResults.data.publications
+      // group pubs by doi
+      const pubsByDoi = _.groupBy(publications, (pub) => { return pub.doi })
+      _.forEach(_.keys(pubsByDoi), (doi) => {
+        if (pubsByDoi[doi].length > 2) {
+          console.log(`Duplicate doi found: ${doi} items: ${JSON.stringify(pubsByDoi[doi], null, 2)}`)
+        }
+      })
+    },
     async resetReviewTypeFilter () {
       this.reviewTypeFilter = 'pending'
     },
@@ -501,6 +544,7 @@ export default {
         })
 
         this.people = _.flatten(sortedPersons)
+        this.reportDuplicatePublications()
       }
     },
     // async loadReviewStates () {
@@ -535,6 +579,7 @@ export default {
     async clearPublications () {
       this.clearPublication()
       this.publications = []
+      this.personPublicationsCombinedMatches = []
       this.publicationsGroupedByDoi = {}
     },
     async loadPublicationsByReviewState (person, reviewState) {
@@ -555,14 +600,15 @@ export default {
           fetchPolicy: 'network-only'
         })
         this.publications = pubsWithReviewResult.data.persons_publications
+
+        this.combinePublicationMatches()
+        this.sortPublications()
+        this.publicationsLoaded = true
       } catch (error) {
         this.publicationsLoaded = true
         this.publicationsLoadedError = true
         throw error
       }
-      this.sortPublications()
-      this.groupPublicationsByDoi()
-      this.publicationsLoaded = true
     },
     async getDuplicatePersonPubs (personPublication) {
       let duplicates = []
@@ -575,6 +621,25 @@ export default {
       }
       return duplicates
     },
+    async combinePublicationMatches () {
+      this.publicationsGroupedByDoi = _.groupBy(this.publications, (personPub) => {
+        return `${personPub.publication.doi}`
+      })
+
+      console.log(`Person pubs grouped by DOI are: ${JSON.stringify(_.keys(this.publicationsGroupedByDoi), null, 2)}`)
+      // grab one with highest confidence to display and grab others via doi later when changing status
+      this.personPublicationsCombinedMatches = _.map(_.keys(this.publicationsGroupedByDoi), (doi) => {
+        // get match with highest confidence level and use that one
+        const personPubs = this.publicationsGroupedByDoi[doi]
+        let currentPersonPub
+        _.each(personPubs, (personPub, index) => {
+          if (!currentPersonPub || currentPersonPub.confidence < personPub.confidence) {
+            currentPersonPub = personPub
+          }
+        })
+        return currentPersonPub
+      })
+    },
     async groupPublicationsByDoi () {
       this.publicationsGroupedByDoi = _.groupBy(this.publications, (personPub) => {
         return personPub.publication.doi
@@ -585,13 +650,13 @@ export default {
       // apply any sorting applied
       console.log('sorting', this.selectedPersonPubSort)
       if (this.selectedPersonPubSort === 'Title') {
-        this.publications = _.sortBy(this.publications, (personPub) => {
+        this.personPublicationsCombinedMatches = _.sortBy(this.personPublicationsCombinedMatches, (personPub) => {
           return personPub.publication.title
         })
       } else if (this.selectedPersonPubSort === 'Source') {
         // need to sort by confidence and then name, not guaranteed to be in order from what is returned from DB
         // first group items by count
-        const groupedPubs = _.groupBy(this.publications, (pub) => {
+        const groupedPubs = _.groupBy(this.personPublicationsCombinedMatches, (pub) => {
           return pub.publication.source_name
         })
 
@@ -609,11 +674,11 @@ export default {
           sortedPubs.push(groupedPubsByTitle[key])
         })
 
-        this.publications = _.flatten(sortedPubs)
+        this.personPublicationsCombinedMatches = _.flatten(sortedPubs)
       } else {
         // need to sort by confidence and then name, not guaranteed to be in order from what is returned from DB
         // first group items by count
-        const pubsByConf = _.groupBy(this.publications, (pub) => {
+        const pubsByConf = _.groupBy(this.personPublicationsCombinedMatches, (pub) => {
           return pub.confidence
         })
 
@@ -631,7 +696,7 @@ export default {
           sortedPubs.push(pubsByConfByName[key])
         })
 
-        this.publications = _.flatten(sortedPubs)
+        this.personPublicationsCombinedMatches = _.flatten(sortedPubs)
       }
     },
     async loadPublications (person) {
@@ -657,13 +722,13 @@ export default {
         // console.log('***', pubsWithReviewResult)
         console.log(`Finished query publications for person id: ${this.person.id} ${moment().format('HH:mm:ss:SSS')}`)
         this.publications = pubsWithReviewResult.data.persons_publications
+        this.combinePublicationMatches()
         this.sortPublications()
       } catch (error) {
         this.publicationsLoaded = true
         this.publicationsLoadedError = true
         throw error
       }
-      this.groupPublicationsByDoi()
       this.publicationsLoaded = true
     },
     async loadPublication (personPublication) {
@@ -713,18 +778,27 @@ export default {
         return null
       }
       this.person = person
-      this.personPublication = personPublication
+      // add the review for personPublications with the same doi in the list
+      const personPubs = this.publicationsGroupedByDoi[personPublication.publication.doi]
+
       try {
-        const mutateResult = await this.$apollo.mutate(
-          insertReview(this.userId, personPublication.id, reviewType)
-        )
-        console.log('&&', reviewType, this.reviewTypeFilter)
-        if (mutateResult) {
-          this.$refs[`personPub${index}`].hide()
-          this.clearPublication()
-          Vue.delete(this.publications, index)
-          return mutateResult
-        }
+        let mutateResults = []
+        await _.each(personPubs, async (personPub) => {
+          // const personPub = personPubs[0]
+          console.log(`Adding Review for person publication: ${personPub.id}`)
+          const mutateResult = await this.$apollo.mutate(
+            insertReview(this.userId, personPub.id, reviewType)
+          )
+          console.log('&&', reviewType, this.reviewTypeFilter)
+          if (mutateResult && personPub.id === personPublication.id) {
+            this.$refs[`personPub${index}`].hide()
+            Vue.delete(this.combinePublicationMatches, index)
+          }
+          mutateResults.push(mutateResult)
+        })
+        console.log(`Added reviews: ${JSON.stringify(mutateResults, null, 2)}`)
+        this.clearPublication()
+        return mutateResults
       } catch (error) {
         console.log(error)
       }

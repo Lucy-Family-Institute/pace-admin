@@ -19,7 +19,7 @@ query MyQuery ($personId: Int!, $userId: Int!, $reviewType: type_review_enum!, $
       id
       title
       doi
-      csl_string
+      source_name
     }
     person {
       id
