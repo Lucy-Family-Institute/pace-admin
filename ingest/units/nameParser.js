@@ -60,7 +60,7 @@ const functions = {
 // }
 
 async function parse(name, chooseMethod) {
-  console.log(`Parsing name: ${name} choose method: ${chooseMethod}`)
+  //console.log(`Parsing name: ${name} choose method: ${chooseMethod}`)
   const parsedNames = await pAll(_.map(functions, (fn) => () => fn(name)));
   
   const objectsToObjectOfArrays = _.reduce(parsedNames, (result, value, key) => {

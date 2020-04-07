@@ -1,13 +1,14 @@
 <template>
   <div class="q-pa-md yearFilter">
     <q-range
-      v-model="selectedYears"
+      v-model="selectedPubYears"
       :step="1"
-      :min="yearStaticMin"
-      :max="yearStaticMax"
+      :min="yearPubStaticMin"
+      :max="yearPubStaticMax"
       label-always
       snap
     />
+    <q-item-label>Publication Year(s)</q-item-label>
   </div>
 </template>
 
@@ -23,9 +24,9 @@ export default {
     }
   },
   computed: {
-    yearStaticMin: sync('filter/yearStaticMin'),
-    yearStaticMax: sync('filter/yearStaticMax'),
-    selectedYears: sync('filter/selectedYears')
+    yearPubStaticMin: sync('filter/yearPubStaticMin'),
+    yearPubStaticMax: sync('filter/yearPubStaticMax'),
+    selectedPubYears: sync('filter/selectedPubYears')
   },
   async created () {
     this.fetchData()
@@ -38,10 +39,10 @@ export default {
       const results = await this.$apollo.query({
         query: getYearFilterYears
       })
-      this.yearStaticMin = _.get(results, 'data.publications_aggregate.aggregate.min.year', 1800)
-      this.yearStaticMax = _.get(results, 'data.publications_aggregate.aggregate.max.year', 2200)
+      this.yearPubStaticMin = _.get(results, 'data.publications_aggregate.aggregate.min.year', 1800)
+      this.yearPubStaticMax = _.get(results, 'data.publications_aggregate.aggregate.max.year', 2200)
 
-      console.log(`Initialized year min: ${this.yearStaticMin} max: ${this.yearStaticMax}`)
+      console.log(`Initialized pub year min: ${this.yearPubStaticMin} max: ${this.yearPubStaticMax}`)
     }
   }
 }
