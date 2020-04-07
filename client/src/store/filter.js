@@ -5,9 +5,15 @@ const state = {
   filterReviewStates: [],
   selectedPersonSort: undefined,
   selectedPersonPubSort: undefined,
-  yearStaticMin: 1900,
-  yearStaticMax: 2200,
-  selectedYears: {
+  yearPubStaticMin: 1900,
+  yearPubStaticMax: 2200,
+  selectedPubYears: {
+    min: 1900,
+    max: 2200
+  },
+  yearMemberStaticMin: 1900,
+  yearMemberStaticMax: 2200,
+  selectedMemberYears: {
     min: 1900,
     max: 2200
   }
