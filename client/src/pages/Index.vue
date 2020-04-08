@@ -341,7 +341,7 @@ export default {
     dom,
     date,
     firstModel: 375,
-    secondModel: 400,
+    secondModel: 500,
     people: [],
     publications: [],
     publicationsGroupedByReview: {},

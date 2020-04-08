@@ -2,13 +2,20 @@
   <q-layout view="lHh lpr fFf">
     <q-header elevated>
       <q-toolbar>
+        <q-avatar  size="32px">
+          <img src="~/assets/nd-logo.png">
+        </q-avatar>
+        <q-toolbar-title shrink>
+          PACE
+        </q-toolbar-title>
+        <q-separator vertical inset/>
+
+        <q-space/>
         <q-select
           v-model="model"
           :options="options"
           class="white"
         />
-        <q-toolbar-title>
-        </q-toolbar-title>
 
         <q-btn-group unelevated spread>
           <q-separator class="gt-sm" vertical inset/>
