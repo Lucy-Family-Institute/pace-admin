@@ -122,7 +122,7 @@
                       </q-item-section>
 
                       <q-item-section>
-                        <q-item-label lines="1">{{ item.publication.title }}</q-item-label>
+                        <q-item-label lines="1">{{ decode(item.publication.title) }}</q-item-label>
                       </q-item-section>
 
                       <q-item-section side>
@@ -431,6 +431,11 @@ export default {
     }
   },
   methods: {
+    decode (str) {
+      const textArea = document.createElement('textarea')
+      textArea.innerHTML = str
+      return textArea.value
+    },
     getSourceNameChipColor (sourceName) {
       if (sourceName) {
         if (sourceName.toLowerCase() === 'pubmed') {
@@ -896,7 +901,7 @@ export default {
         template: 'apa'
       })
       console.log(`Converted to citation: ${apaCitation}`)
-      return apaCitation
+      return this.decode(apaCitation)
     }
   },
   computed: {
