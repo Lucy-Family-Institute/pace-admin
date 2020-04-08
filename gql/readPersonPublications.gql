@@ -1,0 +1,34 @@
+query MyQuery ($personId: Int!, $userId: Int!, $yearMin: Int!, $yearMax: Int!) {
+  persons_publications(
+      where: {
+        person_id: {_eq: $personId},
+        publication: {
+          year: {_gte: $yearMin, _lte: $yearMax}
+        }
+      },
+      order_by: {confidence: desc, publication: {title: asc}}
+  ) {
+    id
+    person_id
+    publication_id
+    publication {
+      id
+      title
+      doi
+      source_name
+    }
+    person {
+      id
+      family_name
+      given_name
+    }
+    confidence
+    reviews_aggregate(where: {user_id: {_eq: $userId}}, limit: 1, order_by: {datetime: desc}) {
+      nodes {
+        reviewType
+        id
+        datetime
+      }
+    }
+  }
+}
