@@ -8,16 +8,20 @@
         :style="{height: ($q.screen.height-56-16)+'px'}"
       >
         <template v-slot:before>
+          <q-expansion-item
+            expand-separator
+            label="Filter"
+          >
           <q-item-label header>Publication Filter</q-item-label>
             <YearFilter />
           <q-item-label header>Person Filter</q-item-label>
             <MemberYearFilter />
             <PeopleFilter />
-
+          </q-expansion-item>
           <q-item-label header>People</q-item-label>
           <!-- TODO calculate exact height below -->
           <q-virtual-scroll
-            :style="{'max-height': ($q.screen.height-56-16-48-72-65-60-48)+'px'}"
+            :style="{'max-height': ($q.screen.height-56-16-48-72-65-60-48+300)+'px'}"
             :items="people"
             bordered
             separator
@@ -142,7 +146,7 @@
                       <q-item-section side>
                         <q-badge
                           :label="item.confidence*100+'%'"
-                          :color="item.confidence*100 <= 50 ? 'orange' : 'green'"
+                          :color="item.confidence*100 <= 50 ? 'amber-10' : 'green'"
                         />
                       </q-item-section>
                     </template>
