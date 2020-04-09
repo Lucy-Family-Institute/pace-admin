@@ -391,7 +391,8 @@ export default {
       page: 1,
       rowsPerPage: 0 // 0 means all rows
     },
-    reviewTypeFilter: 'pending'
+    reviewTypeFilter: 'pending',
+    publicationsReloadPending: false
   }),
   beforeDestroy () {
     clearInterval(this.interval)
@@ -426,7 +427,12 @@ export default {
       this.loadPublications(this.person)
     },
     reviewTypeFilter: function () {
-      this.setCurrentPersonPublicationsCombinedMatches()
+      if (this.publicationsReloadPending) {
+        this.loadPublications(this.person)
+        this.publicationsReloadPending = false
+      } else {
+        this.setCurrentPersonPublicationsCombinedMatches()
+      }
     }
   },
   methods: {
@@ -788,9 +794,18 @@ export default {
           if (mutateResult && personPub.id === personPublication.id) {
             this.$refs[`personPub${index}`].hide()
             Vue.delete(this.personPublicationsCombinedMatches, index)
+            // transfer from one review queue to the next primarily for counts, other sorting will shake out on reload when clicking the tab
+            // remove from current lists
+            _.unset(this.publicationsGroupedByDoiByReview[this.reviewTypeFilter], personPublication.publication.doi)
+            _.remove(this.personPublicationsCombinedMatchesByReview[this.reviewTypeFilter], (pub) => {
+              return pub.id === personPub.id
+            })
+            // add to new lists
+            this.publicationsGroupedByDoiByReview[reviewType][personPublication.publication.doi] = personPubs
+            this.personPublicationsCombinedMatchesByReview[reviewType].push(personPub)
           }
           mutateResults.push(mutateResult)
-          this.loadPublications(this.person)
+          this.publicationsReloadPending = true
         })
         console.log(`Added reviews: ${JSON.stringify(mutateResults, null, 2)}`)
         this.clearPublication()
