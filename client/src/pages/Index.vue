@@ -85,10 +85,10 @@
                 v-model="reviewTypeFilter"
                 dense
               >
-                <q-tab name="pending" :label="`Pending (${publicationsGroupedByReview['pending'] ? publicationsGroupedByReview['pending'].length : 0})`" />
-                <q-tab name="accepted" :label="`Accepted (${publicationsGroupedByReview['accepted'] ? publicationsGroupedByReview['accepted'].length : 0})`" />
-                <q-tab name="rejected" :label="`Rejected (${publicationsGroupedByReview['rejected'] ? publicationsGroupedByReview['rejected'].length : 0})`" />
-                <q-tab name="unsure" :label="`Unsure (${publicationsGroupedByReview['unsure'] ? publicationsGroupedByReview['unsure'].length : 0})`" />
+                <q-tab name="pending" :label="`Pending (${getPublicationsGroupedByDoiByReviewCount('pending')})`" />
+                <q-tab name="accepted" :label="`Accepted (${getPublicationsGroupedByDoiByReviewCount('accepted')})`" />
+                <q-tab name="rejected" :label="`Rejected (${getPublicationsGroupedByDoiByReviewCount('rejected')})`" />
+                <q-tab name="unsure" :label="`Unsure (${getPublicationsGroupedByDoiByReviewCount('unsure')})`" />
               </q-tabs>
               <q-linear-progress
                 v-if="!publicationsLoaded && !publicationsLoadedError"
@@ -135,7 +135,7 @@
                           <q-chip
                             dense
                             size="md"
-                            v-for="(personPub, index) in publicationsGroupedByDoi[item.publication.doi]"
+                            v-for="(personPub, index) in publicationsGroupedByDoiByReview[reviewTypeFilter][item.publication.doi]"
                             :key="index"
                             :color="getSourceNameChipColor(personPub.publication.source_name)"
                             text-color="white"
@@ -317,7 +317,7 @@ import _ from 'lodash'
 import Cite from 'citation-js'
 
 import readPersonsByInstitutionByYear from '../gql/readPersonsByInstitutionByYear'
-// import readReviewStates from '../../../gql/readReviewStates.gql'
+import readReviewTypes from '../../../gql/readReviewTypes.gql'
 import readPublications from '../gql/readPublications'
 // import readPendingPublications from '../../../gql/readPendingPublications.gql'
 import readPersonPublications from '../../../gql/readPersonPublications.gql'
@@ -352,7 +352,8 @@ export default {
     publications: [],
     publicationsGroupedByReview: {},
     personPublicationsCombinedMatches: [],
-    publicationsGroupedByDoi: {},
+    personPublicationsCombinedMatchesByReview: {},
+    publicationsGroupedByDoiByReview: {},
     institutions: [],
     institutionOptions: [],
     institutionGroup: [],
@@ -425,10 +426,13 @@ export default {
       this.loadPublications(this.person)
     },
     reviewTypeFilter: function () {
-      this.loadPersonPublicationsCombinedMatches()
+      this.setCurrentPersonPublicationsCombinedMatches()
     }
   },
   methods: {
+    getPublicationsGroupedByDoiByReviewCount (reviewType) {
+      return this.publicationsGroupedByDoiByReview[reviewType] ? _.keys(this.publicationsGroupedByDoiByReview[reviewType]).length : 0
+    },
     decode (str) {
       const textArea = document.createElement('textarea')
       textArea.innerHTML = str
@@ -550,15 +554,19 @@ export default {
         this.reportDuplicatePublications()
       }
     },
-    // async loadReviewStates () {
-    //   console.log('loading review states')
-    //   const reviewStatesResult = await this.$apollo.query({
-    //     query: readReviewStates
-    //   })
-    //   this.reviewStates = await reviewStatesResult.data.reviewstates
-    //   this.showReviewStates = _.filter(this.reviewStates, (value) => { return this.showReviewState(value) })
-    //   console.log(`Show Review states initialized to: ${this.showReviewStates} Review states are: ${this.reviewStates}`)
-    // },
+    async loadReviewStates () {
+      console.log('loading review states')
+      const reviewStatesResult = await this.$apollo.query({
+        query: readReviewTypes
+      })
+      console.log(`Review Type Results: ${JSON.stringify(reviewStatesResult.data, null, 2)}`)
+      this.reviewStates = await _.map(reviewStatesResult.data.type_review, (typeReview) => {
+        console.log(`Current type review is: ${JSON.stringify(typeReview, null, 2)}`)
+        return typeReview.value
+      })
+      this.showReviewStates = _.filter(this.reviewStates, (value) => { return this.showReviewState(value) })
+      console.log(`Show Review states initialized to: ${this.showReviewStates} Review states are: ${this.reviewStates}`)
+    },
     async loadPersons () {
       const personResult = await this.$apollo.query(readPersons())
       this.people = personResult.data.persons
@@ -576,25 +584,26 @@ export default {
       console.log(`Matched authors are: ${JSON.stringify(this.matchedPublicationAuthors, null, 2)}`)
     },
     async fetchData () {
-      // await this.loadReviewStates()
+      await this.loadReviewStates()
       await this.loadPersonsWithFilter()
     },
     async clearPublications () {
       this.clearPublication()
       this.publications = []
       this.personPublicationsCombinedMatches = []
+      this.personPublicationsCombinedMatchesByReview = {}
+      this.publicationsGroupedByDoiByReview = {}
       this.publicationsGroupedByDoi = {}
     },
-    async getDuplicatePersonPubs (personPublication) {
-      let duplicates = []
-      const doiPubs = this.publicationsGroupedByDoi[personPublication.publication.doi]
-      if (doiPubs && doiPubs.length > 1) {
-        // add other ones in list to dups array
-        duplicates = _.remove(doiPubs, (pub) => {
-          return pub.id === personPublication.id
-        })
+    async setCurrentPersonPublicationsCombinedMatches () {
+      let reviewType = 'pending'
+      if (this.reviewTypeFilter) {
+        reviewType = this.reviewTypeFilter
       }
-      return duplicates
+      this.personPublicationsCombinedMatches = this.personPublicationsCombinedMatchesByReview[reviewType]
+
+      // finally sort the publications
+      this.sortPublications()
     },
     async loadPersonPublicationsCombinedMatches () {
       console.log(`Start group by publications for person id: ${this.person.id} ${moment().format('HH:mm:ss:SSS')}`)
@@ -607,33 +616,29 @@ export default {
       })
       console.log(`Finish group by publications for person id: ${this.person.id} ${moment().format('HH:mm:ss:SSS')}`)
 
-      let reviewType = 'pending'
-      if (this.reviewTypeFilter) {
-        reviewType = this.reviewTypeFilter
-      }
-      const publications = this.publicationsGroupedByReview[reviewType]
-      this.publicationsGroupedByDoi = _.groupBy(publications, (personPub) => {
-        return `${personPub.publication.doi}`
-      })
-
-      console.log(`Person pubs grouped by DOI are: ${JSON.stringify(_.keys(this.publicationsGroupedByDoi), null, 2)}`)
-      // grab one with highest confidence to display and grab others via doi later when changing status
-      this.personPublicationsCombinedMatches = _.map(_.keys(this.publicationsGroupedByDoi), (doi) => {
-        // get match with highest confidence level and use that one
-        const personPubs = this.publicationsGroupedByDoi[doi]
-        let currentPersonPub
-        _.each(personPubs, (personPub, index) => {
-          if (!currentPersonPub || currentPersonPub.confidence < personPub.confidence) {
-            currentPersonPub = personPub
-          }
+      // put in pubs grouped by doi for each review status
+      _.each(this.reviewStates, (reviewType) => {
+        const publications = this.publicationsGroupedByReview[reviewType]
+        this.publicationsGroupedByDoiByReview[reviewType] = _.groupBy(publications, (personPub) => {
+          return `${personPub.publication.doi}`
         })
-        return currentPersonPub
+
+        console.log(`Person pubs grouped by DOI are: ${JSON.stringify(this.publicationsGroupedByDoiByReview, null, 2)}`)
+        // grab one with highest confidence to display and grab others via doi later when changing status
+        this.personPublicationsCombinedMatchesByReview[reviewType] = _.map(_.keys(this.publicationsGroupedByDoiByReview[reviewType]), (doi) => {
+          // get match with highest confidence level and use that one
+          const personPubs = this.publicationsGroupedByDoiByReview[reviewType][doi]
+          let currentPersonPub
+          _.each(personPubs, (personPub, index) => {
+            if (!currentPersonPub || currentPersonPub.confidence < personPub.confidence) {
+              currentPersonPub = personPub
+            }
+          })
+          return currentPersonPub
+        })
       })
-    },
-    async groupPublicationsByDoi () {
-      this.publicationsGroupedByDoi = _.groupBy(this.publications, (personPub) => {
-        return personPub.publication.doi
-      })
+      // initialize the list in view
+      this.setCurrentPersonPublicationsCombinedMatches()
     },
     async sortPublications () {
       // sort by confidence of pub title
@@ -714,7 +719,6 @@ export default {
         console.log(`Finished query publications for person id: ${this.person.id} ${moment().format('HH:mm:ss:SSS')}`)
         this.publications = pubsWithReviewResult.data.persons_publications
         this.loadPersonPublicationsCombinedMatches()
-        this.sortPublications()
       } catch (error) {
         this.publicationsLoaded = true
         this.publicationsLoadedError = true
@@ -770,7 +774,7 @@ export default {
       }
       this.person = person
       // add the review for personPublications with the same doi in the list
-      const personPubs = this.publicationsGroupedByDoi[personPublication.publication.doi]
+      const personPubs = this.publicationsGroupedByDoiByReview[this.reviewTypeFilter][personPublication.publication.doi]
 
       try {
         let mutateResults = []

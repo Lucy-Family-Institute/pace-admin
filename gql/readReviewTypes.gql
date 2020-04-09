@@ -1,0 +1,6 @@
+query MyQuery {
+  type_review {
+    value
+    comment
+  }
+}
