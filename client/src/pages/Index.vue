@@ -73,13 +73,6 @@
             :style="{height: ($q.screen.height-56-16)+'px'}"
           >
             <template v-slot:before>
-              <q-item-label header>
-                <q-input v-if="person" v-model="search" label="">
-                  <template v-slot:append>
-                    <q-icon name="search" />
-                  </template>
-                </q-input>
-              </q-item-label>
               <PublicationFilter />
               <q-tabs
                 v-model="reviewTypeFilter"
@@ -109,7 +102,7 @@
               >
                 <template v-slot="{ item, index }">
                   <q-expansion-item
-                    :key="index"
+                    :key="item.id"
                     clickable
                     @click="loadPublication(item);scrollToPublication(index)"
                     group="expansion_group"
@@ -343,7 +336,6 @@ export default {
   data: () => ({
     reviewStates: undefined,
     selectedReviewState: undefined,
-    search: '',
     dom,
     date,
     firstModel: 375,
@@ -353,6 +345,7 @@ export default {
     publicationsGroupedByReview: {},
     personPublicationsCombinedMatches: [],
     personPublicationsCombinedMatchesByReview: {},
+    filteredPersonPublicationsCombinedMatchesByReview: {},
     publicationsGroupedByDoiByReview: {},
     institutions: [],
     institutionOptions: [],
@@ -420,6 +413,9 @@ export default {
       // re-sort people
       this.loadPersonsWithFilter()
     },
+    pubSearch: function () {
+      this.setCurrentPersonPublicationsCombinedMatches()
+    },
     selectedPersonPubSort: function () {
       this.sortPublications()
     },
@@ -437,7 +433,7 @@ export default {
   },
   methods: {
     getPublicationsGroupedByDoiByReviewCount (reviewType) {
-      return this.publicationsGroupedByDoiByReview[reviewType] ? _.keys(this.publicationsGroupedByDoiByReview[reviewType]).length : 0
+      return this.filteredPersonPublicationsCombinedMatchesByReview[reviewType] ? this.filteredPersonPublicationsCombinedMatchesByReview[reviewType].length : 0
     },
     decode (str) {
       const textArea = document.createElement('textarea')
@@ -585,7 +581,7 @@ export default {
       console.log(`Loaded Publication Authors: ${JSON.stringify(this.publicationAuthors)}`)
       // load up author positions of possible matches
       this.matchedPublicationAuthors = _.filter(this.publicationAuthors, function (author) {
-        return _.lowerCase(author.family_name) === _.lowerCase(personPublication.person.family_name)
+        return author.family_name.toLowerCase() === personPublication.person.family_name.toLowerCase()
       })
       console.log(`Matched authors are: ${JSON.stringify(this.matchedPublicationAuthors, null, 2)}`)
     },
@@ -598,6 +594,7 @@ export default {
       this.publications = []
       this.personPublicationsCombinedMatches = []
       this.personPublicationsCombinedMatchesByReview = {}
+      this.filteredPersonPublicationsCombinedMatchesByReview = {}
       this.publicationsGroupedByDoiByReview = {}
       this.publicationsGroupedByDoi = {}
     },
@@ -606,7 +603,8 @@ export default {
       if (this.reviewTypeFilter) {
         reviewType = this.reviewTypeFilter
       }
-      this.personPublicationsCombinedMatches = this.personPublicationsCombinedMatchesByReview[reviewType]
+      this.filterPublications()
+      this.personPublicationsCombinedMatches = this.filteredPersonPublicationsCombinedMatchesByReview[reviewType]
 
       // finally sort the publications
       this.sortPublications()
@@ -645,6 +643,25 @@ export default {
       })
       // initialize the list in view
       this.setCurrentPersonPublicationsCombinedMatches()
+    },
+    async filterPublications () {
+      let filterOutCurrentPublication = false
+      this.filteredPersonPublicationsCombinedMatchesByReview = _.mapValues(
+        this.personPublicationsCombinedMatchesByReview,
+        (personPublications) => {
+          return _.filter(personPublications, (item) => {
+            const includePublication = item.publication.title.toLowerCase().includes(this.pubSearch)
+            if (!includePublication && this.personPublication && item.id === this.personPublication.id) {
+              // clear out the publication from view if it is filtered out of the results
+              filterOutCurrentPublication = true
+            }
+            return includePublication
+          })
+        }
+      )
+      if (filterOutCurrentPublication) {
+        this.clearPublication()
+      }
     },
     async sortPublications () {
       // sort by confidence of pub title
@@ -800,9 +817,13 @@ export default {
             _.remove(this.personPublicationsCombinedMatchesByReview[this.reviewTypeFilter], (pub) => {
               return pub.id === personPub.id
             })
+            _.remove(this.filteredPersonPublicationsCombinedMatchesByReview[this.reviewTypeFilter], (pub) => {
+              return pub.id === personPub.id
+            })
             // add to new lists
             this.publicationsGroupedByDoiByReview[reviewType][personPublication.publication.doi] = personPubs
             this.personPublicationsCombinedMatchesByReview[reviewType].push(personPub)
+            this.filteredPersonPublicationsCombinedMatchesByReview[reviewType].push(personPub)
           }
           mutateResults.push(mutateResult)
           this.publicationsReloadPending = true
@@ -917,12 +938,8 @@ export default {
     selectedPersonPubSort: get('filter/selectedPersonPubSort'),
     filterReviewStates: get('filter/filterReviewStates'),
     selectedPubYears: get('filter/selectedPubYears'),
-    selectedMemberYears: get('filter/selectedMemberYears')
-    // filteredPersonPublications: function (personPublications) {
-    //   return personPublications.filter(item => {
-    //     return _.lowerCase(item.publication.title).includes(this.search)
-    //   })
-    // }
+    selectedMemberYears: get('filter/selectedMemberYears'),
+    pubSearch: get('filter/pubSearch')
   }
 }
 </script>

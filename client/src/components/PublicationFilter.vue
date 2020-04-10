@@ -12,6 +12,13 @@
         class="fullSelect"
       />
     </q-item>-->
+    <q-item-label header>
+      <q-input v-model="pubSearch" label="">
+        <template v-slot:append>
+          <q-icon name="search" />
+        </template>
+      </q-input>
+    </q-item-label>
     <q-item dense>
       <q-select
         name="sort_person"
@@ -43,7 +50,8 @@ export default {
     }
   },
   computed: {
-    selectedPersonPubSort: sync('filter/selectedPersonPubSort')
+    selectedPersonPubSort: sync('filter/selectedPersonPubSort'),
+    pubSearch: sync('filter/pubSearch')
   },
   async created () {
     this.fetchData()
@@ -60,6 +68,7 @@ export default {
       // this.filterReviewStates = _.clone(this.reviewStateOptions)
       // console.log(`Loaded Review State Options: ${this.reviewStateOptions}`)
       this.selectedPersonPubSort = this.preferredPersonPubSort
+      this.pubSearch = ''
     }
   }
 }
