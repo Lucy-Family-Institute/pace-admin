@@ -128,7 +128,7 @@
                           <q-chip
                             dense
                             size="md"
-                            v-for="(personPub, index) in publicationsGroupedByDoiByReview[reviewTypeFilter][item.publication.doi]"
+                            v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByDoiByReview[reviewTypeFilter][item.publication.doi])"
                             :key="index"
                             :color="getSourceNameChipColor(personPub.publication.source_name)"
                             text-color="white"
@@ -432,6 +432,12 @@ export default {
     }
   },
   methods: {
+    // sort person pubs by source so chips in screen always in same order
+    getSortedPersonPublicationsBySourceName (personPublications) {
+      return _.sortBy(personPublications, (personPublication) => {
+        return personPublication.publication.source_name
+      })
+    },
     getPublicationsGroupedByDoiByReviewCount (reviewType) {
       return this.filteredPersonPublicationsCombinedMatchesByReview[reviewType] ? this.filteredPersonPublicationsCombinedMatchesByReview[reviewType].length : 0
     },
@@ -663,13 +669,37 @@ export default {
         this.clearPublication()
       }
     },
+    // trims off all words on front until not a stop word for sorting by first non stop word
+    trimFirstArticles (title) {
+      // for now just remove 'a', 'an', or 'the'
+      try {
+        // first trim whitespace
+        let trimmedTitle = _.trim(title.toLowerCase())
+        if (_.startsWith(trimmedTitle, 'the ')) {
+          trimmedTitle = trimmedTitle.substring(4)
+          return this.trimFirstArticles(trimmedTitle)
+        } else if (_.startsWith(trimmedTitle, 'a ')) {
+          trimmedTitle = trimmedTitle.substring(2)
+          return this.trimFirstArticles(trimmedTitle)
+        } else if (_.startsWith(trimmedTitle, 'an ')) {
+          trimmedTitle = trimmedTitle.substring(3)
+          return this.trimFirstArticles(trimmedTitle)
+        } else {
+          // call recursively above until no articles found at beginning
+          return trimmedTitle
+        }
+      } catch (error) {
+        // just return title on error
+        return title
+      }
+    },
     async sortPublications () {
       // sort by confidence of pub title
       // apply any sorting applied
       console.log('sorting', this.selectedPersonPubSort)
       if (this.selectedPersonPubSort === 'Title') {
         this.personPublicationsCombinedMatches = _.sortBy(this.personPublicationsCombinedMatches, (personPub) => {
-          return personPub.publication.title
+          return this.trimFirstArticles(personPub.publication.title)
         })
       } else if (this.selectedPersonPubSort === 'Source') {
         // need to sort by confidence and then name, not guaranteed to be in order from what is returned from DB
