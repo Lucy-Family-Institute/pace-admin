@@ -16,7 +16,8 @@ const state = {
   selectedMemberYears: {
     min: 1900,
     max: 2200
-  }
+  },
+  pubSearch: ''
 }
 
 const getters = {
