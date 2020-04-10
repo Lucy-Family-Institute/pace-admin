@@ -177,17 +177,21 @@
                     </q-card-section>
                   </q-card>
                   <q-card v-if="unpaywall" class="col-xs-5" style="min-width:200px; max-height:300px" @click="pdf()">
-                    <q-card-section>
-                      <q-card-actions align="around">
-                        <q-btn flat @click="pdf()">
-                          <img
-                            :src="unpaywallThumbnail"
-                            style="width:180px; max-height:230px">
-                        </q-btn>
-                        <q-btn dense flat round color="primary" icon="link" @click="pdf()"/>
-                        <q-btn dense flat round color="primary" icon="cloud_download" />
-                      </q-card-actions>
-                    </q-card-section>
+                      <q-card style="min-width:200px" class="justify-center">
+                        <q-card-actions align="around">
+                          <q-btn flat @click="pdf()">
+                            <img
+                              :src="unpaywallThumbnail"
+                              style="align:center;width:190px; max-height:230px">
+                          </q-btn>
+                        </q-card-actions>
+                      </q-card>
+                      <q-card style="min-width:200px">
+                        <q-card-actions align="around">
+                          <q-btn dense flat round color="primary" icon="link" @click="pdf()"/>
+                          <q-btn dense flat round color="primary" icon="cloud_download" />
+                        </q-card-actions>
+                      </q-card>
                   </q-card>
                   <q-card :class="unpaywall ? 'col-xs-6' : 'col-xs-11'" style="min-width:200px; min-height:300px">
                     <img src="~assets/google_logo.svg" class="q-pa-md" style="max-height:100px;padding-top:20px;padding-bottom:0px;">
