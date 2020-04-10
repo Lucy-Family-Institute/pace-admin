@@ -21,7 +21,7 @@
           <q-item-label header>People</q-item-label>
           <!-- TODO calculate exact height below -->
           <q-virtual-scroll
-            :style="{'max-height': ($q.screen.height-175)+'px'}"
+            :style="{'max-height': ($q.screen.height-170)+'px'}"
             :items="people"
             bordered
             separator
@@ -97,7 +97,7 @@
                 :items="personPublicationsCombinedMatches"
                 separator
                 bordered
-                :style="{'max-height': ($q.screen.height-50-16-88-36-2-10-4-56)+'px'}"
+                :style="{'max-height': ($q.screen.height-50-88-36-8)+'px'}"
                 :ref="`pubScroll`"
               >
                 <template v-slot="{ item, index }">

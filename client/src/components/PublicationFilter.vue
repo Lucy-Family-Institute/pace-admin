@@ -12,21 +12,20 @@
         class="fullSelect"
       />
     </q-item>-->
-    <q-item-label header>
-      <q-input v-model="pubSearch" label="">
+    <q-item header>
+      <q-input v-model="pubSearch" label="" style="width:100%">
         <template v-slot:append>
           <q-icon name="search" />
         </template>
       </q-input>
-    </q-item-label>
-    <q-item dense>
       <q-select
         name="sort_person"
         v-model="selectedPersonPubSort"
         :options="sortPersonPubOptions"
         color="primary"
         filled
-        label="Sort Publications By:"
+        style="width:180px"
+        label="Sort By:"
         class="fullSelect"
       />
     </q-item>
