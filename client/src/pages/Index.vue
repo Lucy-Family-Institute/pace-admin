@@ -656,7 +656,7 @@ export default {
         this.personPublicationsCombinedMatchesByReview,
         (personPublications) => {
           return _.filter(personPublications, (item) => {
-            const includePublication = item.publication.title.toLowerCase().includes(this.pubSearch.toLowerCase())
+            const includePublication = item.publication.title.toLowerCase().includes(this.pubSearch.toLowerCase().trim())
             if (!includePublication && this.personPublication && item.id === this.personPublication.id) {
               // clear out the publication from view if it is filtered out of the results
               filterOutCurrentPublication = true
