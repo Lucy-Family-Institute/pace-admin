@@ -1,0 +1,3 @@
+args:
+  sql: DROP VIEW IF EXISTS "public"."persons_publications_metadata"
+type: run_sql
