@@ -5,6 +5,7 @@ const state = {
   filterReviewStates: [],
   selectedPersonSort: undefined,
   selectedPersonPubSort: undefined,
+  selectedPersonTotal: undefined,
   yearPubStaticMin: 1900,
   yearPubStaticMax: 2200,
   selectedPubYears: {
