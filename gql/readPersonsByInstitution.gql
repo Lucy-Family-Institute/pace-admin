@@ -6,9 +6,9 @@ query MyQuery($names: [String!], $yearMin: Int!, $yearMax: Int!) {
     institution {
       name
     }
-    persons_publications_aggregate (where: {publication: {year: {_gte: $yearMin, _lte: $yearMax}}}){
+    persons_publications_metadata_aggregate(distinct_on: doi, where: {year: {_gte: $yearMin, _lte: $yearMax}}) {
       aggregate {
-        count
+        count(columns: doi)
       }
     }
   }

@@ -22,6 +22,15 @@
         label="Sort Person By:"
         class="fullSelect"
       />
+      <q-select
+        name="person_total"
+        v-model="selectedPersonTotal"
+        :options="personTotalOptions"
+        color="primary"
+        filled
+        label="Total Counts:"
+        class="fullSelect"
+      />
     </q-item>
   </div>
 </template>
@@ -40,12 +49,18 @@ export default {
         'Total',
         'Name'
       ],
+      personTotalOptions: [
+        'Pending',
+        'All'
+      ],
+      preferredPersonTotal: 'Pending',
       preferredPersonSort: 'Total'
     }
   },
   computed: {
     selectedInstitutions: sync('filter/selectedInstitutions'),
-    selectedPersonSort: sync('filter/selectedPersonSort')
+    selectedPersonSort: sync('filter/selectedPersonSort'),
+    selectedPersonTotal: sync('filter/selectedPersonTotal')
   },
   async created () {
     this.fetchData()
@@ -61,6 +76,7 @@ export default {
       this.institutionOptions = _.compact(_.map(results.data.institutions, 'name'))
       this.selectedInstitutions = _.clone(this.institutionOptions)
       this.selectedPersonSort = this.preferredPersonSort
+      this.selectedPersonTotal = this.preferredPersonTotal
     }
   }
 }

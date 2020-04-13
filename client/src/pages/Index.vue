@@ -42,7 +42,7 @@
                     </q-item-section>
 
                     <q-item-section>
-                      <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.persons_publications_aggregate.aggregate.count }})</q-item-label>
+                      <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.persons_publications_metadata_aggregate.aggregate.count }})</q-item-label>
                       <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
                     </q-item-section>
 
@@ -314,6 +314,7 @@ import _ from 'lodash'
 import Cite from 'citation-js'
 
 import readPersonsByInstitutionByYear from '../gql/readPersonsByInstitutionByYear'
+import readPersonsByInstitutionByYearPendingPubs from '../gql/readPersonsByInstitutionByYearPendingPubs'
 import readReviewTypes from '../../../gql/readReviewTypes.gql'
 import readPublications from '../gql/readPublications'
 // import readPendingPublications from '../../../gql/readPendingPublications.gql'
@@ -422,6 +423,10 @@ export default {
     },
     selectedPersonPubSort: function () {
       this.sortPublications()
+    },
+    selectedPersonTotal: function () {
+      this.loadPersonsWithFilter()
+      this.clearPublications()
     },
     publicationsGroupedByView: function () {
       this.loadPublications(this.person)
@@ -534,8 +539,16 @@ export default {
       console.log('filtering', this.selectedInstitutions)
       this.people = []
       console.log(`Applying year filter to person search year min: ${this.selectedPubYears.min} max: ${this.selectedPubYears.max}`)
-      const personResult = await this.$apollo.query(readPersonsByInstitutionByYear(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max))
-      this.people = personResult.data.persons
+      if (this.selectedPersonTotal === 'All') {
+        const personResult = await this.$apollo.query(readPersonsByInstitutionByYear(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max))
+        this.people = personResult.data.persons
+      } else {
+        const personResult = await this.$apollo.query({
+          query: readPersonsByInstitutionByYearPendingPubs(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, this.userId),
+          fetchPolicy: 'network-only'
+        })
+        this.people = personResult.data.persons
+      }
 
       // apply any sorting applied
       console.log('filtering', this.selectedPersonSort)
@@ -545,7 +558,7 @@ export default {
         // need to sort by total and then name, not guaranteed to be in order from what is returned from DB
         // first group items by count
         const peopleByCounts = _.groupBy(this.people, (person) => {
-          return person.persons_publications_aggregate.aggregate.count
+          return person.persons_publications_metadata_aggregate.aggregate.count
         })
 
         // sort each person array by name for each count
@@ -858,6 +871,12 @@ export default {
             this.publicationsGroupedByDoiByReview[reviewType][personPublication.publication.doi] = personPubs
             this.personPublicationsCombinedMatchesByReview[reviewType].push(personPub)
             this.filteredPersonPublicationsCombinedMatchesByReview[reviewType].push(personPub)
+            if (this.reviewTypeFilter === 'pending' && this.selectedPersonTotal === 'Pending') {
+              const currentPersonIndex = _.findIndex(this.people, (person) => {
+                return person.id === this.person.id
+              })
+              this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
+            }
           }
           mutateResults.push(mutateResult)
           this.publicationsReloadPending = true
@@ -970,6 +989,7 @@ export default {
     selectedInstitutions: get('filter/selectedInstitutions'),
     selectedPersonSort: get('filter/selectedPersonSort'),
     selectedPersonPubSort: get('filter/selectedPersonPubSort'),
+    selectedPersonTotal: get('filter/selectedPersonTotal'),
     filterReviewStates: get('filter/filterReviewStates'),
     selectedPubYears: get('filter/selectedPubYears'),
     selectedMemberYears: get('filter/selectedMemberYears'),
