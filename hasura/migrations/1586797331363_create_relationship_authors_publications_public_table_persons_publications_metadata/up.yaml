@@ -1,13 +1,13 @@
 - args:
-    name: persons_publications_metadata
+    name: authors_publications
     table:
-      name: persons
+      name: persons_publications_metadata
       schema: public
     using:
       manual_configuration:
         column_mapping:
-          id: person_id
+          publication_id: publication_id
         remote_table:
-          name: persons_publications_metadata
+          name: authors_publications
           schema: public
   type: create_array_relationship
