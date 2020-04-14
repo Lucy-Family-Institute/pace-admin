@@ -1,6 +1,6 @@
 <template>
   <div>
-    <q-item dense>
+    <q-item>
       <q-select
         filled
         v-model="selectedInstitutions"
@@ -12,7 +12,7 @@
         class="fullSelect"
       />
     </q-item>
-    <q-item dense>
+    <q-item>
       <q-select
         name="sort_person"
         v-model="selectedPersonSort"
@@ -22,6 +22,8 @@
         label="Sort Person By:"
         class="fullSelect"
       />
+    </q-item>
+    <q-item>
       <q-select
         name="person_total"
         v-model="selectedPersonTotal"
@@ -54,7 +56,15 @@ export default {
         'All'
       ],
       preferredPersonTotal: 'Pending',
-      preferredPersonSort: 'Total'
+      preferredPersonSort: 'Total',
+      filterMenuIcons: {
+        'institution':
+        {
+          icon: 'account_balance',
+          label: 'Institutions',
+          separator: true
+        }
+      }
     }
   },
   computed: {

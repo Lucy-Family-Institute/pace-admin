@@ -2,22 +2,51 @@
   <div>
     <div class="q-pa-md">
       <!-- TODO calculate exact height below -->
+      <q-drawer
+        v-model="drawer"
+        @click.capture="drawerClick"
+        show-if-above
+
+        :width="250"
+        :breakpoint="500"
+        bordered
+        content-class="bg-grey-3"
+      >
+        <div class="absolute" style="top: 70px">
+          <q-item-label header>Publication Filter</q-item-label>
+          <YearFilter />
+          <q-item-label header>Person Filter</q-item-label>
+          <MemberYearFilter />
+          <PeopleFilter />
+          <div class="q-mini-drawer-hide absolute" style="top: 70px; right: -17px">
+            <q-btn
+              v-if="drawer"
+              dense
+              round
+              unelevated
+              color="teal"
+              icon="chevron_left"
+              @click="drawer = false"
+            />
+          </div>
+        </div>
+      </q-drawer>
       <q-splitter
         v-model="firstModel"
         unit="px"
         :style="{height: ($q.screen.height-56-16)+'px'}"
       >
         <template v-slot:before>
-          <q-expansion-item
-            expand-separator
-            label="Filter"
+          <q-btn flat
+            @click="drawer = !drawer"
+            class="text-grey-8"
+            style="align:left;width:100%"
           >
-          <q-item-label header>Publication Filter</q-item-label>
-            <YearFilter />
-          <q-item-label header>Person Filter</q-item-label>
-            <MemberYearFilter />
-            <PeopleFilter />
-          </q-expansion-item>
+            <q-item-section avatar>
+              <q-icon name="tune"/>
+            </q-item-section>
+            <q-item-section header align="left">Filter</q-item-section>
+          </q-btn>
           <q-item-label header>People</q-item-label>
           <!-- TODO calculate exact height below -->
           <q-virtual-scroll
@@ -25,6 +54,7 @@
             :items="people"
             bordered
             separator
+            :ref="`personScroll`"
           >
             <template v-slot="{ item, index }">
               <q-expansion-item
@@ -35,6 +65,7 @@
                   @click="resetReviewTypeFilter();startProgressBar();loadPublications(item); setNameVariants(item)"
                   active-class="bg-teal-1 text-grey-8"
                   expand-icon="keyboard_arrow_rights"
+                  :ref="`person${index}`"
                 >
                   <template v-slot:header>
                     <q-item-section avatar top>
@@ -390,7 +421,9 @@ export default {
       rowsPerPage: 0 // 0 means all rows
     },
     reviewTypeFilter: 'pending',
-    publicationsReloadPending: false
+    publicationsReloadPending: false,
+    drawer: false,
+    miniState: false
   }),
   beforeDestroy () {
     clearInterval(this.interval)
@@ -404,16 +437,26 @@ export default {
     selectedInstitutions: function () {
       this.loadPersonsWithFilter()
     },
-    selectedPubYears: function () {
-      this.loadPersonsWithFilter()
-      // need to see about reloading publications if in view
-      this.clearPublications()
+    changedPubYears: async function () {
+      await this.loadPersonsWithFilter()
+      if (this.person) {
+        // reload publications if person selected
+        await this.loadPublications(this.person)
+      }
     },
-    selectedMemberYears: function () {
-      this.loadPersonsWithFilter()
-      // need to see about reloading publications if in view
-      this.clearPublications()
+    changedMemberYears: async function () {
+      await this.loadPersonsWithFilter()
     },
+    // selectedPubYears: async function () {
+    //   // if (this.person) {
+    //   //   // reload publications if person selected
+    //   //   await this.loadPublications(this.person)
+    //   // }
+    //   // await this.loadPersonsWithFilter()
+    // },
+    // selectedMemberYears: function () {
+    //   this.loadPersonsWithFilter()
+    // },
     selectedPersonSort: function () {
       // re-sort people
       this.loadPersonsWithFilter()
@@ -426,7 +469,6 @@ export default {
     },
     selectedPersonTotal: function () {
       this.loadPersonsWithFilter()
-      this.clearPublications()
     },
     publicationsGroupedByView: function () {
       this.loadPublications(this.person)
@@ -441,6 +483,18 @@ export default {
     }
   },
   methods: {
+    drawerClick (e) {
+      // if in "mini" state and user
+      // click on drawer, we switch it to "normal" mode
+      if (this.miniState) {
+        this.miniState = false
+
+        // notice we have registered an event with capture flag;
+        // we need to stop further propagation as this click is
+        // intended for switching drawer to "normal" mode only
+        e.stopPropagation()
+      }
+    },
     // sort person pubs by source so chips in screen always in same order
     getSortedPersonPublicationsBySourceName (personPublications) {
       return _.sortBy(personPublications, (personPublication) => {
@@ -535,6 +589,31 @@ export default {
       console.log(`updating scroll ${index} for ${this.selectedReviewState} ${this.$refs['pubScroll'].toString}`)
       this.$refs['pubScroll'].scrollTo(index + 1)
     },
+    async showCurrentSelectedPerson () {
+      if (this.person && this.people) {
+        // check people still contains the person if not clear out states
+        const currentPersonIndex = _.findIndex(this.people, (currentPerson) => {
+          return currentPerson.id === this.person.id
+        })
+        if (currentPersonIndex >= 0) {
+          console.log(`Trying to show person ${this.person.id}`)
+          // if not top item scroll to 2 items above
+          let scrollIndex = currentPersonIndex
+          if (scrollIndex > 1) {
+            // if greater than 2 move up 2 spaces
+            scrollIndex -= 2
+          }
+          await this.$refs['personScroll'].scrollTo(scrollIndex)
+          // console.log(this.$refs)
+          this.$refs[`person${currentPersonIndex}`].show()
+        } else {
+          console.log(`Person id: ${this.person.id} no longer found.  Clearing UI states...`)
+          // clear everything out
+          this.person = undefined
+          this.clearPublications()
+        }
+      }
+    },
     async loadPersonsWithFilter () {
       console.log('filtering', this.selectedInstitutions)
       this.people = []
@@ -553,30 +632,33 @@ export default {
       // apply any sorting applied
       console.log('filtering', this.selectedPersonSort)
       if (this.selectedPersonSort === 'Name') {
-        this.people = _.sortBy(this.people, ['family_name', 'given_name'])
+        this.people = await _.sortBy(this.people, ['family_name', 'given_name'])
       } else {
         // need to sort by total and then name, not guaranteed to be in order from what is returned from DB
         // first group items by count
-        const peopleByCounts = _.groupBy(this.people, (person) => {
+        const peopleByCounts = await _.groupBy(this.people, (person) => {
           return person.persons_publications_metadata_aggregate.aggregate.count
         })
 
         // sort each person array by name for each count
-        const peopleByCountsByName = _.mapValues(peopleByCounts, (persons) => {
+        const peopleByCountsByName = await _.mapValues(peopleByCounts, (persons) => {
           return _.sortBy(persons, ['family_name', 'given_name'])
         })
 
         // get array of counts (i.e., keys) sorted in reverse
-        const sortedCounts = _.sortBy(_.keys(peopleByCountsByName), (count) => { return Number.parseInt(count) }).reverse()
+        const sortedCounts = await _.sortBy(_.keys(peopleByCountsByName), (count) => { return Number.parseInt(count) }).reverse()
 
         // now push values into array in desc order of count and flatten
         let sortedPersons = []
-        _.each(sortedCounts, (key) => {
+        await _.each(sortedCounts, (key) => {
           sortedPersons.push(peopleByCountsByName[key])
         })
 
-        this.people = _.flatten(sortedPersons)
-        this.reportDuplicatePublications()
+        this.people = await _.flatten(sortedPersons)
+        // this.reportDuplicatePublications()
+      }
+      if (this.person) {
+        this.showCurrentSelectedPerson()
       }
     },
     async loadReviewStates () {
@@ -650,7 +732,7 @@ export default {
           return `${personPub.publication.doi}`
         })
 
-        console.log(`Person pubs grouped by DOI are: ${JSON.stringify(this.publicationsGroupedByDoiByReview, null, 2)}`)
+        // console.log(`Person pubs grouped by DOI are: ${JSON.stringify(this.publicationsGroupedByDoiByReview, null, 2)}`)
         // grab one with highest confidence to display and grab others via doi later when changing status
         this.personPublicationsCombinedMatchesByReview[reviewType] = _.map(_.keys(this.publicationsGroupedByDoiByReview[reviewType]), (doi) => {
           // get match with highest confidence level and use that one
@@ -993,6 +1075,8 @@ export default {
     filterReviewStates: get('filter/filterReviewStates'),
     selectedPubYears: get('filter/selectedPubYears'),
     selectedMemberYears: get('filter/selectedMemberYears'),
+    changedPubYears: get('filter/changedPubYears'),
+    changedMemberYears: get('filter/changedMemberYears'),
     pubSearch: get('filter/pubSearch')
   }
 }

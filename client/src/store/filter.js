@@ -8,6 +8,8 @@ const state = {
   selectedPersonTotal: undefined,
   yearPubStaticMin: 1900,
   yearPubStaticMax: 2200,
+  changedPubYears: undefined,
+  changedMemberYears: undefined,
   selectedPubYears: {
     min: 1900,
     max: 2200

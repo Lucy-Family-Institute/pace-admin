@@ -5,6 +5,7 @@
       :step="1"
       :min="yearPubStaticMin"
       :max="yearPubStaticMax"
+      @change="updatePubYears()"
       label-always
       snap
     />
@@ -26,7 +27,8 @@ export default {
   computed: {
     yearPubStaticMin: sync('filter/yearPubStaticMin'),
     yearPubStaticMax: sync('filter/yearPubStaticMax'),
-    selectedPubYears: sync('filter/selectedPubYears')
+    selectedPubYears: sync('filter/selectedPubYears'),
+    changedPubYears: sync('filter/changedPubYears')
   },
   async created () {
     this.fetchData()
@@ -43,6 +45,9 @@ export default {
       this.yearPubStaticMax = _.get(results, 'data.publications_aggregate.aggregate.max.year', 2200)
 
       console.log(`Initialized pub year min: ${this.yearPubStaticMin} max: ${this.yearPubStaticMax}`)
+    },
+    async updatePubYears () {
+      this.changedPubYears = this.selectedPubYears
     }
   }
 }
