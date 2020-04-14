@@ -447,16 +447,6 @@ export default {
     changedMemberYears: async function () {
       await this.loadPersonsWithFilter()
     },
-    // selectedPubYears: async function () {
-    //   // if (this.person) {
-    //   //   // reload publications if person selected
-    //   //   await this.loadPublications(this.person)
-    //   // }
-    //   // await this.loadPersonsWithFilter()
-    // },
-    // selectedMemberYears: function () {
-    //   this.loadPersonsWithFilter()
-    // },
     selectedPersonSort: function () {
       // re-sort people
       this.loadPersonsWithFilter()
@@ -464,8 +454,9 @@ export default {
     pubSearch: function () {
       this.setCurrentPersonPublicationsCombinedMatches()
     },
-    selectedPersonPubSort: function () {
-      this.sortPublications()
+    selectedPersonPubSort: async function () {
+      await this.sortPublications()
+      this.showCurrentSelectedPublication()
     },
     selectedPersonTotal: function () {
       this.loadPersonsWithFilter()
@@ -589,6 +580,28 @@ export default {
       console.log(`updating scroll ${index} for ${this.selectedReviewState} ${this.$refs['pubScroll'].toString}`)
       this.$refs['pubScroll'].scrollTo(index + 1)
     },
+    async showCurrentSelectedPublication () {
+      if (this.person && this.personPublication) {
+        // check people still contains the person if not clear out states
+        const currentPubIndex = _.findIndex(this.personPublicationsCombinedMatches, (personPublication) => {
+          return personPublication.id === this.personPublication.id
+        })
+        if (currentPubIndex >= 0) {
+          let scrollIndex = currentPubIndex
+          if (scrollIndex > 1) {
+            // if greater than 2 move up 2 spaces
+            scrollIndex += 2
+          }
+          await this.$refs['pubScroll'].scrollTo(scrollIndex)
+          // console.log(this.$refs)
+          this.$refs[`personPub${currentPubIndex}`].show()
+        } else {
+          console.log(`Person Publication id: ${this.personPublication.id} no longer found.  Clearing UI states...`)
+          // clear everything out
+          this.clearPublication()
+        }
+      }
+    },
     async showCurrentSelectedPerson () {
       if (this.person && this.people) {
         // check people still contains the person if not clear out states
@@ -610,6 +623,7 @@ export default {
           console.log(`Person id: ${this.person.id} no longer found.  Clearing UI states...`)
           // clear everything out
           this.person = undefined
+          this.clearPublication()
           this.clearPublications()
         }
       }
@@ -695,7 +709,6 @@ export default {
       await this.loadPersonsWithFilter()
     },
     async clearPublications () {
-      this.clearPublication()
       this.publications = []
       this.personPublicationsCombinedMatches = []
       this.personPublicationsCombinedMatchesByReview = {}
@@ -712,7 +725,9 @@ export default {
       this.personPublicationsCombinedMatches = this.filteredPersonPublicationsCombinedMatchesByReview[reviewType]
 
       // finally sort the publications
-      this.sortPublications()
+      await this.sortPublications()
+
+      this.showCurrentSelectedPublication()
     },
     async loadPersonPublicationsCombinedMatches () {
       console.log(`Start group by publications for person id: ${this.person.id} ${moment().format('HH:mm:ss:SSS')}`)
