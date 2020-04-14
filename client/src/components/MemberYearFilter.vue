@@ -5,6 +5,7 @@
       :step="1"
       :min="yearMemberStaticMin"
       :max="yearMemberStaticMax"
+      @change="updateMemberYears()"
       label-always
       snap
     />
@@ -27,7 +28,8 @@ export default {
   computed: {
     yearMemberStaticMin: sync('filter/yearMemberStaticMin'),
     yearMemberStaticMax: sync('filter/yearMemberStaticMax'),
-    selectedMemberYears: sync('filter/selectedMemberYears')
+    selectedMemberYears: sync('filter/selectedMemberYears'),
+    changedMemberYears: sync('filter/changedMemberYears')
   },
   async created () {
     this.fetchData()
@@ -45,6 +47,9 @@ export default {
       this.yearMemberStaticMax = Number.parseInt(moment().format('YYYY'))
 
       console.log(`Initialized member year min: ${this.yearMemberStaticMin} max: ${this.yearMemberStaticMax}`)
+    },
+    async updateMemberYears () {
+      this.changedMemberYears = this.selectedMemberYears
     }
   }
 }

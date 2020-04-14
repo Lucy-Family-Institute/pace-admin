@@ -37,7 +37,7 @@ export default function readPersonsByInstitutionByYearPendingPubs (institutionNa
           institution {
             name
           }
-          persons_publications_metadata_aggregate (distinct_on: doi, where: {_not: {reviews: {user_id: {_eq: ${userId}}}, year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}}}) {
+          persons_publications_metadata_aggregate (distinct_on: doi, where: {year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}, _not: {reviews: {user_id: {_eq: ${userId}}}}}) {
             aggregate {
               count(columns: doi)
             }
