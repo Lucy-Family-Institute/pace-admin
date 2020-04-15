@@ -1,0 +1,15 @@
+- args:
+    permission:
+      columns:
+      - id
+      - primaryEmail
+      filter: {}
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: users
+      schema: public
+  type: create_update_permission

@@ -1,0 +1,59 @@
+- args:
+    permission:
+      allow_upsert: true
+      check: {}
+      columns:
+      - id
+      - user_id
+      - persons_publications_id
+      - datetime
+      - reviewType
+      filter: {}
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: reviews
+      schema: public
+  type: create_select_permission
+- args:
+    permission:
+      allow_upsert: true
+      check: {}
+      columns:
+      - id
+      - user_id
+      - persons_publications_id
+      - datetime
+      - reviewType
+      filter: {}
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: reviews
+      schema: public
+  type: create_update_permission
+- args:
+    permission:
+      allow_upsert: true
+      check: {}
+      columns:
+      - id
+      - user_id
+      - persons_publications_id
+      - datetime
+      - reviewType
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: reviews
+      schema: public
+  type: create_insert_permission

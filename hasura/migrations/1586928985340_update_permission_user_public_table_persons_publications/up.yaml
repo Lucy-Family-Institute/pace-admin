@@ -1,0 +1,17 @@
+- args:
+    permission:
+      allow_aggregations: false
+      columns:
+      - confidence
+      - data_id
+      - id
+      - person_id
+      - provenance_id
+      - publication_id
+      filter: {}
+      limit: null
+    role: user
+    table:
+      name: persons_publications
+      schema: public
+  type: create_select_permission

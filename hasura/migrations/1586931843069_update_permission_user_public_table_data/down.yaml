@@ -1,0 +1,18 @@
+- args:
+    role: user
+    table:
+      name: data
+      schema: public
+  type: drop_select_permission
+- args:
+    permission:
+      allow_aggregations: false
+      columns:
+      - id
+      computed_fields: []
+      filter: {}
+    role: user
+    table:
+      name: data
+      schema: public
+  type: create_select_permission
