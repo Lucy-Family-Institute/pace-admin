@@ -100,7 +100,7 @@ async function init (options) {
     res.redirect('/')
   })
   app.get('/logout', (req: Request, res: Response) => {
-    const url = `http://${options.endpoint}:${options.port}/auth/realms/${options.realm}/protocol/openid-connect/logout?redirect_uri=http://localhost:8000`
+    const url = `${options.authServerUrl}/realms/${options.realm}/protocol/openid-connect/logout?redirect_uri=${options.baseUrl}`
     req.logout()
     res.redirect(url)
   })
