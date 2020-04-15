@@ -31,14 +31,14 @@ async function main () {
     loadModule('passport', passportModule, app, {})
     loadModule('keycloak', keycloakModule, app, {
       client: adminClient,
-      endpoint: process.env.KEYCLOAK_ENDPOINT,
       port: process.env.KEYCLOAK_PORT,
       clientId: process.env.KEYCLOAK_CLIENT_ID,
       realm: process.env.KEYCLOAK_REALM,
       clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
       authServerUrl: process.env.AUTH_SERVER_URL,
       callbackUrl: process.env.AUTH_CALLBACK_URL,
-      sessionName: process.env.SESSION_NAME
+      sessionName: process.env.SESSION_NAME,
+      baseUrl: process.env.APP_BASE_URL
     })
     loadModule('hasura', hasuraModule, app, {
       secret: process.env.HASURA_SECRET
