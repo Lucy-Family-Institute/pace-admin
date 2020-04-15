@@ -1004,17 +1004,17 @@ export default {
     },
     google1 () {
       const query = _.trim(`${this.person.family_name} ${this.personPublication.publication.title}`)
-      this.url = `https://www.google.com/search?igu=1&q=${_.replace(query, / +/, '+')}`
+      this.url = `https://www.google.com/search?igu=1&q=${encodeURI(_.replace(query, / +/, '+'))}`
       this.displayUrl()
     },
     google2 () {
       const query = _.trim(`${this.person.family_name} Notre Dame ${this.personPublication.publication.title}`)
-      this.url = `https://www.google.com/search?igu=1&q=${_.replace(query, / +/, '+')}`
+      this.url = `https://www.google.com/search?igu=1&q=${encodeURI(_.replace(query, / +/, '+'))}`
       this.displayUrl()
     },
     google3 () {
       const query = _.trim(`${this.person.family_name} nd.edu ${this.personPublication.publication.title}`)
-      this.url = `https://www.google.com/search?igu=1&q=${_.replace(query, / +/, '+')}`
+      this.url = `https://www.google.com/search?igu=1&q=${encodeURI(_.replace(query, / +/, '+'))}`
       this.displayUrl()
     },
     pdf () {
