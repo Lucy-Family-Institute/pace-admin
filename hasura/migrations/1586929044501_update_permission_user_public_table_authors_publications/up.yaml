@@ -1,0 +1,16 @@
+- args:
+    permission:
+      allow_aggregations: false
+      columns:
+      - id
+      - position
+      - publication_id
+      - family_name
+      - given_name
+      filter: {}
+      limit: null
+    role: user
+    table:
+      name: authors_publications
+      schema: public
+  type: create_select_permission

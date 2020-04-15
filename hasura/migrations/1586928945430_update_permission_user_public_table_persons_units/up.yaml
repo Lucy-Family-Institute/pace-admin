@@ -1,0 +1,16 @@
+- args:
+    permission:
+      columns:
+      - id
+      - person_id
+      - unit_id
+      filter: {}
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: persons_units
+      schema: public
+  type: create_update_permission

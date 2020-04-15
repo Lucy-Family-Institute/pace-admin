@@ -15,6 +15,7 @@
           v-model="model"
           :options="options"
           class="white"
+          v-if="isLoggedIn"
         />
 
         <q-btn-group unelevated spread>
@@ -22,43 +23,32 @@
           <q-btn
             dense
             flat
-            class="text-weight-light text-grey-8"
-          >
-            <q-avatar  size="32px">
-              <img src="https://cdn.quasar.dev/img/avatar1.jpg">
-            </q-avatar>
-            <q-menu>
-              <q-list style="min-width: 200px">
-              <q-item to="/settings" clickable v-close-popup>
-                <q-item-section>
-                  <q-item-label>
-                    <q-icon name="settings" class="q-pr-sm"/>Account Settings
-                  </q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-separator inset/>
-              <q-item clickable v-close-popup>
-                <q-item-section>
-                  <q-item-label>
-                    <q-icon name="lock" class="q-pr-sm"/>Logout
-                  </q-item-label>
-                </q-item-section>
-              </q-item>
-            </q-list>
-            </q-menu>
-          </q-btn>
+            label="Logout"
+            type="a" href="/logout"
+            v-if="isLoggedIn"
+          />
+          <q-btn
+            dense
+            flat
+            label="Login"
+            type="a" href="/login"
+            v-else
+          />
         </q-btn-group>
       </q-toolbar>
     </q-header>
 
     <q-page-container>
-      <router-view />
+      <router-view v-if="isLoggedIn" />
     </q-page-container>
   </q-layout>
 </template>
 
 <script>
 import { openURL } from 'quasar'
+import { sync } from 'vuex-pathify'
+import _ from 'lodash'
+import axios from 'axios'
 
 export default {
   name: 'MyLayout',
@@ -68,10 +58,39 @@ export default {
       options: [ 'Harper Cancer Research Institute' ]
     }
   },
+  async created () {
+    await this.syncSessionAndStore()
+  },
+  watch: {
+    $route: 'syncSessionAndStore'
+  },
   computed: {
+    isLoggedIn: sync('auth/isLoggedIn'),
+    userId: sync('auth/userId')
   },
   methods: {
-    openURL
+    openURL,
+    async syncSessionAndStore () {
+      if (
+        this.isLoggedIn === null ||
+        (this.isLoggedIn === true && this.userId === null)
+      ) {
+        try {
+          const response = await axios({ url: '/session', method: 'GET' })
+          if (_.get(response.data, 'databaseId') !== undefined) {
+            this.isLoggedIn = true
+            this.userId = response.data.databaseId
+          } else {
+            this.isLoggedIn = false
+            this.userId = null
+          }
+        } catch (error) { // TODO specify the error
+          // this.isBackendDisconnected = true
+        }
+      } else if (this.isLoggedIn === false) {
+        this.userId = null
+      }
+    }
   }
 }
 </script>

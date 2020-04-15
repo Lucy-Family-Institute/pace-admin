@@ -1,0 +1,15 @@
+- args:
+    permission:
+      columns:
+      - comment
+      - value
+      filter: {}
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: type_review
+      schema: public
+  type: create_update_permission

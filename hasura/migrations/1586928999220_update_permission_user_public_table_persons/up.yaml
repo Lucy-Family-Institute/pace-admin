@@ -1,0 +1,24 @@
+- args:
+    permission:
+      allow_upsert: true
+      check: {}
+      columns:
+      - id
+      - given_name
+      - family_name
+      - email
+      - position_title
+      - institution_id
+      - provenance_id
+      - data_id
+      - start_date
+      - end_date
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: persons
+      schema: public
+  type: create_insert_permission

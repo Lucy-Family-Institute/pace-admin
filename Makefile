@@ -1,4 +1,31 @@
+include .env
+
+# TODO differentiate WSL Linux and Linux see:
+# https://stackoverflow.com/questions/38086185/how-to-check-if-a-program-is-run-in-bash-on-ubuntu-on-windows-and-not-just-plain
+UNAME := $(shell uname -s)
+SYSTEM = Linux
+
+ifeq ($(UNAME),Linux)
+	ifeq ($(WSL),1)
+		SYSTEM = 'WSL'
+	endif
+	else
+	ifeq ($(UNAME),Darwin)
+		SYSTEM = 'Mac'
+	else
+		SYSTEM = 'Windows'
+	endif
+endif
+
+DOCKER_HOST_IP = host.docker.internal
+ifeq ($(SYSTEM),Linux) 	
+	DOCKER_HOST_IP=$(shell ip -4 addr show docker0 | grep -Po 'inet \K[\d.]+')
+endif
+
 .PHONY: install client
+
+info:
+	@echo $(UNAME), $(WSL), $(SYSTEM), $(DOCKER_HOST_IP)
 
 install_hasura_cli:
 ifeq (,$(shell which hasura))
@@ -27,7 +54,7 @@ install_js:
 	cd ingest && yarn && cd ..
 
 cleardb:
-	docker-compose down -v
+	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose down -v
 migrate:
 	cd hasura && hasura migrate apply && cd ..
 newdb:
@@ -38,7 +65,7 @@ install: install_docker_compose install_hasura_cli install_yarn install_quasar i
 	echo 'Installing'
 
 start_docker:
-	docker-compose up -d
+	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose up -d
 stop_docker:
 	docker-compose down
 
@@ -47,7 +74,7 @@ client:
 server:
 	cd server && ts-node index.ts && cd ..
 docker:
-	docker-compose up
+	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose up 
 
 clear_pdfs:
 	rm data/pdfs/*

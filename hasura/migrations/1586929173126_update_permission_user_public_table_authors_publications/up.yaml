@@ -1,0 +1,18 @@
+- args:
+    permission:
+      columns:
+      - id
+      - position
+      - publication_id
+      - family_name
+      - given_name
+      filter: {}
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: authors_publications
+      schema: public
+  type: create_update_permission

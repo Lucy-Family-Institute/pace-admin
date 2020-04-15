@@ -1,0 +1,14 @@
+- args:
+    permission:
+      allow_aggregations: false
+      columns:
+      - id
+      - person_id
+      - unit_id
+      filter: {}
+      limit: null
+    role: user
+    table:
+      name: persons_units
+      schema: public
+  type: create_select_permission
