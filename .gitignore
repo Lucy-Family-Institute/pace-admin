@@ -13,3 +13,5 @@ server/!config/default.*
 server/sessions
 data/
 .env
+bak.env
+*.code-workspace
