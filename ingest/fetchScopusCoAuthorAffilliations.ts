@@ -15,9 +15,8 @@ import moment from 'moment'
 
 const fs = require('fs');
 const axios = require('axios');
-const elsApiKey = '[INSERT API KEY HERE]'
-const elsCookie = '[INSERT COOKIE HERE]'
-
+const elsApiKey = '[INSERT_KEY_HERE]'
+const elsCookie = '[INSERT_COOKIE_HERE]'
 // environment variables
 process.env.NODE_ENV = 'development';
 
@@ -295,7 +294,7 @@ async function main (): Promise<void> {
   //            all_author_total_pubs_by_country.csv (all years, duplicates on co-authors removed)
   //            all_author_total_coauthors_by_country.csv (all years), 
   // folders -> raw_data -> all, 2020, 2019, 2018 -> lastName_scopusID -> pub -> affiliation items
-  let authorCoauthorCountsByCountryByYear = {} // 
+  let authorCoauthorAffiliationByCountryByYear = {} // 
   
   await pMap(years, async (year) => {
     const simplifiedPersons = await getSimplifiedPersons()
@@ -309,11 +308,22 @@ async function main (): Promise<void> {
     console.log(`Loading Person Publication Data`)
     //load data from scopus
     let personCounter = 0
+
+    // and total country affiliations across all papers counting the country for each co-author
+    let affiliationCoauthorCountryCountsByAuthor = {}
+
+    // now get distinct counts for each country for papers independent of number of coauthors across all papers
+    let distinctCountryCountsAllPapersByAuthor = {}
+
+    //have a map for capturing all country names
+    let distinctCountries = {}
+
     await pMap(simplifiedPersons, async (person) => {
       //const person = simplifiedPersons[0]
   
       let succeededScopusPapers = []
       let failedScopusPapers = []
+
       try {
         personCounter += 1
         randomWait(1000,personCounter)
@@ -352,6 +362,15 @@ async function main (): Promise<void> {
         console.log(`Total Succeeded Papers Author ${person.authorId}.${person.lastName}.${person.firstName}: ${outputScopusPapers.length}`)
         console.log(`Get error messages: ${JSON.stringify(failedScopusPapers,null,2)}`)
 
+        // have each affiliation counts for each country mapped to paper
+        let affiliationsByCountryByPaper = {}
+
+        // and total country affiliations across all papers counting the country for each co-author
+        let affiliationCoauthorCountryCounts = {}
+
+        // now get distinct counts for each country for papers independent of number of coauthors across all papers
+        let distinctCountryCountsAllPapers = {}
+
         // get the affiliation arrays for each paper
         await pMap(outputScopusPapers, async (paper) => {
           //const paper = outputScopusPapers[0]
@@ -367,8 +386,11 @@ async function main (): Promise<void> {
           // //get simplified scopus papers
           const simplifiedPaperAffiliations = await getSimplifiedPaperAffiliations(paper, paperAffiliations, person)
 
+          // push affiliations into map by paper scopus id
+          affiliationsByCountryByPaper[paper.scopus_id] = _.groupBy(simplifiedPaperAffiliations, (affiliation) => {
+            return affiliation['affiliation-country'].toLowerCase()
+          })
           
-
           //console.log(`Simplified Paper Affiliations: ${JSON.stringify(simplifiedPaperAffiliations, null, 2)}`)
           
           // make a folder for author and write out affiliation data for each paper
@@ -386,6 +408,42 @@ async function main (): Promise<void> {
             data: simplifiedPaperAffiliations,
           });
         }, {concurrency: 3})
+
+        // combine arrays and do total for countries by paper for each author
+        let affiliationCoauthorCountryCountsByPaper = {}
+        
+        // first group by country for each paper
+        _.each(_.keys(affiliationsByCountryByPaper), (paperScopusId) => {
+          affiliationCoauthorCountryCountsByPaper[paperScopusId] = {}
+          _.each(_.keys(affiliationsByCountryByPaper[paperScopusId]), (country) => {
+            // first add to country list (even if already there just overwrite, does not matter, more work to search if exists)
+            distinctCountries[country] = 0
+            affiliationCoauthorCountryCountsByPaper[paperScopusId][country] = affiliationsByCountryByPaper[paperScopusId][country].length
+            if (affiliationCoauthorCountryCounts[country]) {
+              affiliationCoauthorCountryCounts[country] += affiliationCoauthorCountryCountsByPaper[paperScopusId][country]
+            } else {
+              // if no previous use current one as start of total
+              affiliationCoauthorCountryCounts[country] = affiliationCoauthorCountryCountsByPaper[paperScopusId][country]
+            }
+          })
+        })
+
+        // now get distinct counts for each country for papers independent of number of coauthors across all papers
+        _.each(_.keys(affiliationCoauthorCountryCountsByPaper), (paperScopusId) => {
+          _.each(_.keys(affiliationCoauthorCountryCountsByPaper[paperScopusId]), (country) => {
+            if (distinctCountryCountsAllPapers[country]) {
+              distinctCountryCountsAllPapers[country] += affiliationCoauthorCountryCountsByPaper[paperScopusId][country]
+            } else {
+              // if no previous use current one as start of total
+              distinctCountryCountsAllPapers[country] = affiliationCoauthorCountryCountsByPaper[paperScopusId][country]
+            }
+          })
+        })
+
+        affiliationCoauthorCountryCountsByAuthor[person.authorId] = affiliationCoauthorCountryCountsByPaper
+        // now get distinct counts for each country for papers independent of number of coauthors across all papers
+        distinctCountryCountsAllPapersByAuthor[person.authorId] = distinctCountryCountsAllPapers
+
       } catch (error) {
         const errorMessage = `Error on get scopus papers for author: ${person.authorId}.${person.lastName}.${person.firstName}: ${error}`
         failedScopusPapers.push(errorMessage)
@@ -393,6 +451,29 @@ async function main (): Promise<void> {
       }
     }, {concurrency: 3})
 
+    // finally create array of counts, one row per author with union of all countries found
+    // where if not found for a particular author make count 0
+    // get list of countries
+    let countries = _.keys(distinctCountries)
+    let affiliationCoauthorCountryCountsRows = []
+    // now populate row of values for each author for number of papers by country
+    // and number for each country counted for each coauthor across all papers
+    _.each(_.keys(affiliationCoauthorCountryCountsByAuthor), (authorId) => {
+      let affiliationCoauthorCountryCountRow = {
+        authorId: authorId
+      } 
+      _.each(countries, (country) => {
+        if (affiliationCoauthorCountryCountsByAuthor[authorId][country]) {
+          affiliationCoauthorCountryCountRow[country] = affiliationCoauthorCountryCountsByAuthor[authorId][country]
+        } else {
+          affiliationCoauthorCountryCountRow[country] = 0
+        }
+      })
+      affiliationCoauthorCountryCountsRows.push(affiliationCoauthorCountryCountRow)
+    })
+    
+    //next populate row for distinct country and author for papers
+    // [need to do same as above loop]
   }, { concurrency: 1 })
 
   // //flatten out succeedScopusPaperArray for data for csv and change scopus json object to string
