@@ -12,11 +12,18 @@ import { split } from 'apollo-link'
 import cslParser from './utils/cslParser' 
 import { command as writeCsv } from './units/writeCsv'
 import moment from 'moment'
+import dotenv from 'dotenv'
+import resolve from 'path'
+
+dotenv.config({
+  path: '../.env'
+})
 
 const fs = require('fs');
 const axios = require('axios');
-const elsApiKey = '[INSERT API KEY]'
-const elsCookie = '[INSERT COOKIE HERE]'
+const elsApiKey = process.env.SCOPUS_API_KEY
+const elsCookie = process.env.SCOPUS_API_COOKIE
+
 // environment variables
 process.env.NODE_ENV = 'development';
 

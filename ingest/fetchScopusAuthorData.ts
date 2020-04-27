@@ -12,9 +12,15 @@ import { split } from 'apollo-link'
 import cslParser from './utils/cslParser' 
 import { command as writeCsv } from './units/writeCsv'
 import moment from 'moment'
+import dotenv from 'dotenv'
+import resolve from 'path'
+
+dotenv.config({
+  path: '../.env'
+})
 
 const axios = require('axios');
-const elsApiKey = "[INSERT API KEY HERE]"
+const elsApiKey = process.env.SCOPUS_API_KEY
 
 // environment variables
 process.env.NODE_ENV = 'development';
