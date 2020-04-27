@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const pMap = require('p-map');
 const Fuse = require('fuse.js');
-const elasticlunr = require('elasticlunr'); // We're not using this atm
+// const elasticlunr = require('elasticlunr'); // We're not using this atm
 
 const loadCsv = require('./loadCsv').command;
 const nameParser = require('./nameParser').command;
