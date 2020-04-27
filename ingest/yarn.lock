@@ -624,6 +624,11 @@ doctrine@^3.0.0:
   dependencies:
     esutils "^2.0.2"
 
+elasticlunr@^0.9.5:
+  version "0.9.5"
+  resolved "https://registry.yarnpkg.com/elasticlunr/-/elasticlunr-0.9.5.tgz#65541bb309dddd0cf94f2d1c8861b2be651bb0d5"
+  integrity sha1-ZVQbswnd3Qz5Ty0ciGGyvmUbsNU=
+
 emoji-regex@^7.0.1:
   version "7.0.3"
   resolved "https://registry.yarnpkg.com/emoji-regex/-/emoji-regex-7.0.3.tgz#933a04052860c85e83c122479c4748a8e4c72156"
@@ -945,6 +950,11 @@ functional-red-black-tree@^1.0.1:
   resolved "https://registry.yarnpkg.com/functional-red-black-tree/-/functional-red-black-tree-1.0.1.tgz#1b0ab3bd553b2a0d6399d29c0e3ea0b252078327"
   integrity sha1-GwqzvVU7Kg1jmdKcDj6gslIHgyc=
 
+fuse.js@^5.0.10-beta:
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/fuse.js/-/fuse.js-5.1.0.tgz#192a670e48bc3ac0247cf9a61590714ab991f7a8"
+  integrity sha512-R8nPr9tQx0HdjRJsqkESimL7o/2Xe0/Lw0cMBrBjkAKAJFq6D6u/o3obteqxkvOJNEgS4xPP78dxoNMaCWNoGg==
+
 glob-parent@^5.0.0:
   version "5.1.0"
   resolved "https://registry.yarnpkg.com/glob-parent/-/glob-parent-5.1.0.tgz#5f4c1d1e748d30cd73ad2944b3577a81b081e8c2"
@@ -1250,7 +1260,7 @@ lodash.unescape@4.0.1:
   resolved "https://registry.yarnpkg.com/lodash.unescape/-/lodash.unescape-4.0.1.tgz#bf2249886ce514cda112fae9218cdc065211fc9c"
   integrity sha1-vyJJiGzlFM2hEvrpIYzcBlIR/Jw=
 
-lodash@^4.17.11, lodash@^4.17.14, lodash@^4.17.15:
+lodash@^4.17.10, lodash@^4.17.11, lodash@^4.17.14, lodash@^4.17.15:
   version "4.17.15"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.15.tgz#b447f6670a0455bbfeedd11392eff330ea097548"
   integrity sha512-8xOcRHvCjnocdS5cpwXQXVzmmh5e5+saE2QGoeQmbKmRS6J3VQppPOIt0MnmE+4xlZoumy0GPG0D0MVIQbNA1A==
@@ -1446,6 +1456,13 @@ p-map@^4.0.0:
   dependencies:
     aggregate-error "^3.0.0"
 
+p-times@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/p-times/-/p-times-2.1.0.tgz#b3e7f9159f916cacb6aae06d67c79451b0076c6c"
+  integrity sha512-y23lF7HegeUyBTAxHNl6qYvwTy6S4d+BQcs+4CwgxXzc1v1Hsf7pyAqbDHMiYnjdL5Vcmr/oHc9l+nAu0Q+Hhg==
+  dependencies:
+    p-map "^2.0.0"
+
 p-try@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/p-try/-/p-try-1.0.0.tgz#cbc79cdbaf8fd4228e13f621f2b1a237c1b207b3"
@@ -1628,6 +1645,25 @@ sanitize-filename@^1.6.3:
   integrity sha512-y/52Mcy7aw3gRm7IrcGDFx/bCk4AhRh2eI9luHOQM86nZsqwiRkkq2GekHXBBD+SmPidc8i2PqtYZl+pWJ8Oeg==
   dependencies:
     truncate-utf8-bytes "^1.0.0"
+
+sax@^1.2.4:
+  version "1.2.4"
+  resolved "https://registry.yarnpkg.com/sax/-/sax-1.2.4.tgz#2816234e2378bddc4e5354fab5caa895df7100d9"
+  integrity sha512-NqVDv9TpANUjFm0N8uM5GxL36UgKi9/atZw+x7YFnQ8ckwFGKrl4xX4yWtrey3UJm5nP1kUbnYgLopqWNSRhWw==
+
+schm-translate@^0.4.1:
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/schm-translate/-/schm-translate-0.4.1.tgz#167a6dff2639df0083332adb2cfed4e0c1c7d02e"
+  integrity sha512-QZVgh+4MdbqVsOXM23LBL2qQcFNQXc9ngt5vxvy68RdM65BtrtviHHX7yTXXSXNoAtgr5LsXvPJ1DlbFEV8J/A==
+  dependencies:
+    lodash "^4.17.10"
+
+schm@^0.4.1:
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/schm/-/schm-0.4.1.tgz#8550656119b3b5649549e0d75dd794a8ea90f5dd"
+  integrity sha512-Ndl+URhRV3//jAmt2e4LrijQOoN/PMws6OsNVEl6SxCctiaZcU+laW1Ya2iLPn9HrAQMQbzznLBd6D2cvNO0Wg==
+  dependencies:
+    lodash "^4.17.10"
 
 "semver@2 || 3 || 4 || 5", semver@^5.5.0:
   version "5.7.1"
@@ -1938,6 +1974,13 @@ write@1.0.3:
   integrity sha512-/lg70HAjtkUgWPVZhZcm+T4hkL8Zbtp1nFNOn3lRrxnlv50SRBv7cR7RqR+GMsd3hUXy9hWBo4CHTbFTcOYwig==
   dependencies:
     mkdirp "^0.5.1"
+
+xml-js@^1.6.11:
+  version "1.6.11"
+  resolved "https://registry.yarnpkg.com/xml-js/-/xml-js-1.6.11.tgz#927d2f6947f7f1c19a316dd8eea3614e8b18f8e9"
+  integrity sha512-7rVi2KMfwfWFl+GpPg6m80IVMWXLRjO+PxTq7V2CDhoGak0wzYzFgUY2m4XJ47OGdXd8eLE8EmwfAmdjw7lC1g==
+  dependencies:
+    sax "^1.2.4"
 
 yallist@^2.1.2:
   version "2.1.2"
