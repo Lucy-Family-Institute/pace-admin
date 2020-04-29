@@ -16,6 +16,8 @@ query MyQuery ($personId: Int!, $userId: Int!, $yearMin: Int!, $yearMax: Int!) {
       title
       doi
       source_name
+      scopus_eid: source_metadata(path: "eid")
+      pubmed_resource_identifiers: source_metadata(path: "resourceIdentifiers")
     }
     person {
       id
