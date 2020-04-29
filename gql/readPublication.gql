@@ -12,5 +12,7 @@ query MyQuery ($publicationId: Int!) {
     csl
     source_name
     source_metadata
+    scopus_eid: source_metadata(path: "eid")
+    pubmed_resource_identifiers: source_metadata(path: "resourceIdentifiers")
   }
 }

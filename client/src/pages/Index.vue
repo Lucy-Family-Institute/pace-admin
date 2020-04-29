@@ -140,35 +140,36 @@
                     :active="personPublication !== undefined && item.id === personPublication.id"
                     active-class="bg-teal-1 text-grey-8"
                     :ref="`personPub${index}`"
+                    :header-inset-level="0"
+                    :content-inset-level="0"
                   >
                     <template
                       v-if="item.publication !== undefined"
                       v-slot:header
                     >
-                      <q-item-section avatar top>
+                      <q-item-section avatar>
                         <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.id" />
                         <q-avatar icon="description" color="primary" text-color="white" v-else />
                       </q-item-section>
-
-                      <q-item-section>
-                        <q-item-label lines="1">{{ decode(item.publication.title) }}</q-item-label>
-                      </q-item-section>
-
-                      <q-item-section side>
-                        <q-list>
-                          <q-chip
+                      <q-item-section top class="q-pa-xs">
+                        <q-item-label style="width:100%" class="text-grey-9" lines="1">{{ decode(item.publication.title) }}</q-item-label>
+                        <q-list class="q-pt-sm">
+                          <q-btn
+                            rounded
                             dense
-                            size="md"
+                            size="sm"
                             v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByDoiByReview[reviewTypeFilter][item.publication.doi])"
                             :key="index"
                             :color="getSourceNameChipColor(personPub.publication.source_name)"
                             text-color="white"
-                          >
-                            {{personPub.publication.source_name}}
-                          </q-chip>
+                            type="a"
+                            :href="getSourceUri(personPub)"
+                            target="_blank"
+                            :label="getDisplaySourceLabel(personPub)"
+                          />
                         </q-list>
                       </q-item-section>
-                      <q-item-section side>
+                      <q-item-section avatar side>
                         <q-badge
                           :label="item.confidence*100+'%'"
                           :color="item.confidence*100 <= 50 ? 'amber-10' : 'green'"
@@ -176,10 +177,10 @@
                       </q-item-section>
                     </template>
                     <q-card v-if="item.publication !== undefined">
-                      <q-card-section class="text-center">
-                        <q-btn color="green" label="Accept" class="on-left" @click="clickReviewAccepted(index, person, personPublication);" />
-                        <q-btn color="red" label="Reject" @click="clickReviewRejected(index, person, personPublication);" />
-                        <q-btn color="grey" label="Unsure" class="on-right" @click="clickReviewUnsure(index, person, personPublication);" />
+                      <q-card-section dense class="text-center">
+                        <q-btn dense color="green" label="Accept" class="on-left" @click="clickReviewAccepted(index, person, personPublication);" />
+                        <q-btn dense color="red" label="Reject" @click="clickReviewRejected(index, person, personPublication);" />
+                        <q-btn dense color="grey" label="Unsure" class="on-right" @click="clickReviewUnsure(index, person, personPublication);" />
                       </q-card-section>
                     </q-card>
                   </q-expansion-item>
@@ -194,14 +195,22 @@
                 <div class="q-pa-md row items-start q-gutter-md">
                   <q-card>
                     <q-card-section v-if="personPublication.publication.doi">
-                      <q-btn
-                        dense
-                        label="View via DOI"
-                        color="cyan"
-                        type="a"
-                        :href="getDoiUrl(personPublication.publication.doi)"
-                        target="_blank"
-                      />
+                      <q-item-header>View Article:</q-item-header>
+                      <q-list class="q-pt-sm">
+                          <q-btn
+                            rounded
+                            dense
+                            size="md"
+                            v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByDoiByReview[reviewTypeFilter][personPublication.publication.doi])"
+                            :key="index"
+                            :color="getSourceNameChipColor(personPub.publication.source_name)"
+                            text-color="white"
+                            type="a"
+                            :href="getSourceUri(personPub)"
+                            target="_blank"
+                            :label="getDisplaySourceLabel(personPub)"
+                          />
+                        </q-list>
                     </q-card-section>
                     <q-card-section>
                       <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
@@ -486,11 +495,66 @@ export default {
         e.stopPropagation()
       }
     },
+    getPublicationSourceId (personPublication) {
+      if (personPublication.publication.source_name.toLowerCase() === 'scopus' &&
+        personPublication.publication.scopus_eid) {
+        return personPublication.publication.scopus_eid
+      } else if (personPublication.publication.source_name.toLowerCase() === 'pubmed' &&
+        personPublication.publication.pubmed_resource_identifiers &&
+        _.isArray(personPublication.publication.pubmed_resource_identifiers)) {
+        const resourceId = _.find(personPublication.publication.pubmed_resource_identifiers, (id) => {
+          return id['resourceIdentifierType'] === 'pmc'
+        })
+        if (resourceId) {
+          return resourceId['resourceIdentifier']
+        } else {
+          return undefined
+        }
+      } else if (personPublication.publication.source_name.toLowerCase() === 'crossref') {
+        return personPublication.publication.doi
+      } else {
+        return undefined
+      }
+    },
     // sort person pubs by source so chips in screen always in same order
     getSortedPersonPublicationsBySourceName (personPublications) {
       return _.sortBy(personPublications, (personPublication) => {
         return personPublication.publication.source_name
       })
+    },
+    getDisplaySourceLabel (personPublication) {
+      const sourceId = this.getPublicationSourceId(personPublication)
+      let sourceName = personPublication.publication.source_name
+      if (sourceId) {
+        if (sourceName.toLowerCase() === 'crossref') {
+          sourceName = 'DOI'
+        }
+        return `${sourceName}: ${sourceId}`
+      } else {
+        return sourceName
+      }
+    },
+    // depending on the source return source uri
+    getSourceUri (personPublication) {
+      const sourceId = this.getPublicationSourceId(personPublication)
+      if (sourceId) {
+        if (personPublication.publication.source_name.toLowerCase() === 'scopus') {
+          return this.getScopusUri(sourceId)
+        } else if (personPublication.publication.source_name.toLowerCase() === 'pubmed') {
+          return this.getPubMedUri(sourceId)
+        } else if (personPublication.publication.source_name.toLowerCase() === 'crossref') {
+          return this.getDoiUrl(personPublication.publication.doi)
+        }
+      } else {
+        return undefined
+      }
+    },
+    // expects an e-id of the form '2-s2.0-85048483099' to go directly to the resource in scopus
+    getScopusUri (scopusEid) {
+      return `${process.env.SCOPUS_ARTICLE_URI_BASE}/record/display.uri?origin=resultslist&eid=${scopusEid}`
+    },
+    getPubMedUri (pmcId) {
+      return `${process.env.PUBMED_ARTICLE_URI_BASE}/pmc/articles/${pmcId}`
     },
     getPublicationsGroupedByDoiByReviewCount (reviewType) {
       return this.filteredPersonPublicationsCombinedMatchesByReview[reviewType] ? this.filteredPersonPublicationsCombinedMatchesByReview[reviewType].length : 0
