@@ -196,21 +196,31 @@
                   <q-card>
                     <q-card-section v-if="personPublication.publication.doi">
                       <q-item-header>View Article:</q-item-header>
-                      <q-list class="q-pt-sm">
-                          <q-btn
-                            rounded
-                            dense
-                            size="md"
-                            v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByDoiByReview[reviewTypeFilter][personPublication.publication.doi])"
-                            :key="index"
-                            :color="getSourceNameChipColor(personPub.publication.source_name)"
-                            text-color="white"
-                            type="a"
-                            :href="getSourceUri(personPub)"
-                            target="_blank"
-                            :label="getDisplaySourceLabel(personPub)"
-                          />
-                        </q-list>
+                      <q-list class="q-pt-sm q-pb-sm">
+                        <q-btn
+                          rounded
+                          dense
+                          no-wrap
+                          size="md"
+                          v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByDoiByReview[reviewTypeFilter][personPublication.publication.doi])"
+                          :key="index"
+                          :color="getSourceNameChipColor(personPub.publication.source_name)"
+                          text-color="white"
+                          type="a"
+                          :href="getSourceUri(personPub)"
+                          target="_blank"
+                          :label="getDisplaySourceLabel(personPub)"
+                        />
+                      </q-list>
+                      <q-btn
+                        v-if="personPublication"
+                        dense
+                        label="View via DOI"
+                        color="cyan"
+                        type="a"
+                        :href="getDoiUrl(personPublication.publication.doi)"
+                        target="_blank"
+                      />
                     </q-card-section>
                     <q-card-section>
                       <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
@@ -526,9 +536,6 @@ export default {
       const sourceId = this.getPublicationSourceId(personPublication)
       let sourceName = personPublication.publication.source_name
       if (sourceId) {
-        if (sourceName.toLowerCase() === 'crossref') {
-          sourceName = 'DOI'
-        }
         return `${sourceName}: ${sourceId}`
       } else {
         return sourceName
