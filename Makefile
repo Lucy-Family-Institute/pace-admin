@@ -75,7 +75,7 @@ stop_docker:
 client:
 	cd client && quasar dev && cd ..
 server:
-	cd server && ts-node index.ts && cd ..
+	cd server && ts-node src/index.ts && cd ..
 docker:
 	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose up 
 

@@ -17,7 +17,7 @@ This pilot project will prototype a new process that automates data collection f
 
     make docker
     make client
-    make server
+    make -B server
     make migration_console
 
 It's worth running ``make install_js`` every now and then to make sure your packages are up-to-date.
@@ -28,3 +28,28 @@ You may need to change the following variables in your .env file
 
     GRAPHQL_END_POINT=http://localhost:8002/v1/graphql
     IMAGE_HOST_URL=http://localhost:8000/
+
+To run client and server as daemon, install and run pm2:
+
+    npm install pm2 -g
+
+Then to setup processes to run as daemons
+
+    pm2 start 'make client'
+    pm2 start 'make -B server'
+
+Then run check logs to see status
+
+    pm2 logs
+
+And check status of processes
+
+    pm2 monit
+
+Finally once confirmed running correctly configure startup script they restart when the machine is restarted
+
+    pm2 startup
+
+Run the command it specifies and if successful run the following to save the current process list to be restarted when pm2 restarts
+
+    pm2 save
