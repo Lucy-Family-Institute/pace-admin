@@ -61,6 +61,9 @@ newdb:
 	cd ingest && ts-node loadAuthors.ts && cd ..
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
 
+scopus_author_data:
+	cd ingest && ts-node fetchScopusAuthorObjects.ts && cd ..
+
 install: install_docker_compose install_hasura_cli install_yarn install_quasar install_js
 	echo 'Installing'
 
