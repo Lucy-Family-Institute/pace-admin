@@ -134,6 +134,7 @@
                 <template v-slot="{ item, index }">
                   <q-expansion-item
                     :key="item.id"
+                    expand-icon-toggle
                     clickable
                     @click="loadPublication(item);scrollToPublication(index)"
                     group="expansion_group"
@@ -147,12 +148,12 @@
                       v-if="item.publication !== undefined"
                       v-slot:header
                     >
-                      <q-item-section avatar>
+                      <q-item-section clickable @click="$refs[`personPub${index}`].toggle()" avatar>
                         <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.id" />
                         <q-avatar icon="description" color="primary" text-color="white" v-else />
                       </q-item-section>
                       <q-item-section top class="q-pa-xs">
-                        <q-item-label style="width:100%" class="text-grey-9" lines="1">{{ decode(item.publication.title) }}</q-item-label>
+                        <q-item-label clickable @click="$refs[`personPub${index}`].toggle()" style="width:100%" class="text-grey-9" lines="1">{{ decode(item.publication.title) }}</q-item-label>
                         <q-list class="q-pt-sm">
                           <q-btn
                             rounded
@@ -169,7 +170,7 @@
                           />
                         </q-list>
                       </q-item-section>
-                      <q-item-section avatar side>
+                      <q-item-section avatar side clickable @click="$refs[`personPub${index}`].toggle()" >
                         <q-badge
                           :label="item.confidence*100+'%'"
                           :color="item.confidence*100 <= 50 ? 'amber-10' : 'green'"
