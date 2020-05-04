@@ -37,6 +37,7 @@
         :style="{height: ($q.screen.height-56-16)+'px'}"
       >
         <template v-slot:before>
+          <q-list>
           <q-btn flat
             @click="drawer = !drawer"
             class="text-grey-8"
@@ -47,6 +48,10 @@
             </q-item-section>
             <q-item-section header align="left">Filter</q-item-section>
           </q-btn>
+          <q-btn flat class="text-grey-8" @click="resetFilters()">
+            Reset Filters
+          </q-btn>
+          </q-list>
           <q-item-label header>People</q-item-label>
           <!-- TODO calculate exact height below -->
           <q-virtual-scroll
@@ -350,7 +355,7 @@
 
 <script>
 import Vue from 'vue'
-import { get } from 'vuex-pathify'
+import { get, sync } from 'vuex-pathify'
 import { dom, date } from 'quasar'
 // const { getScrollPosition, setScrollPosition } = scroll
 import readPersons from '../gql/readPersons'
@@ -1151,17 +1156,36 @@ export default {
       })
       console.log(`Converted to citation: ${apaCitation}`)
       return this.decode(apaCitation)
+    },
+    resetFilters () {
+      this.selectedPersonPubSort = this.preferredPersonPubSort
+      this.selectedPersonSort = this.preferredPersonSort
+      this.selectedPersonTotal = this.preferredPersonTotal
+      this.selectedPubYears.min = this.yearPubStaticMin
+      this.selectedPubYears.max = this.yearPubStaticMax
+      this.selelectedInstitutions = this.institutionOptions
+      this.selectedMemberYears.min = this.yearMemberStaticMin
+      this.selectedMemberYears.max = this.yearMemberStaticMax
+      this.changedPubYears = undefined
+      this.changedMemberYears = undefined
     }
   },
   computed: {
     userId: get('auth/userId'),
-    selectedInstitutions: get('filter/selectedInstitutions'),
-    selectedPersonSort: get('filter/selectedPersonSort'),
-    selectedPersonPubSort: get('filter/selectedPersonPubSort'),
-    selectedPersonTotal: get('filter/selectedPersonTotal'),
+    preferredPersonSort: get('filter/preferredPersonSort'),
+    preferredPersonPubSort: get('filter/preferredPersonPubSort'),
+    preferredPersonTotal: get('filter/preferredPersonTotal'),
+    selectedInstitutions: sync('filter/selectedInstitutions'),
+    selectedPersonSort: sync('filter/selectedPersonSort'),
+    selectedPersonPubSort: sync('filter/selectedPersonPubSort'),
+    selectedPersonTotal: sync('filter/selectedPersonTotal'),
     filterReviewStates: get('filter/filterReviewStates'),
-    selectedPubYears: get('filter/selectedPubYears'),
-    selectedMemberYears: get('filter/selectedMemberYears'),
+    selectedPubYears: sync('filter/selectedPubYears'),
+    yearPubStaticMin: get('filter/yearPubStaticMin'),
+    yearPubStaticMax: get('filter/yearPubStaticMax'),
+    yearMemberStaticMin: get('filter/yearMemberStaticMin'),
+    yearMemberStaticMax: get('filter/yearMemberStaticMax'),
+    selectedMemberYears: sync('filter/selectedMemberYears'),
     changedPubYears: get('filter/changedPubYears'),
     changedMemberYears: get('filter/changedMemberYears'),
     pubSearch: get('filter/pubSearch')
