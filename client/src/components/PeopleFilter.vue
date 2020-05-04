@@ -46,7 +46,6 @@ import readInstitutions from '../../../gql/readInstitutions.gql'
 export default {
   data () {
     return {
-      institutionOptions: [],
       sortPersonOptions: [
         'Total',
         'Name'
@@ -55,8 +54,6 @@ export default {
         'Pending',
         'All'
       ],
-      preferredPersonTotal: 'Pending',
-      preferredPersonSort: 'Total',
       filterMenuIcons: {
         'institution':
         {
@@ -68,6 +65,9 @@ export default {
     }
   },
   computed: {
+    institutionOptions: sync('filter/institutionOptions'),
+    preferredPersonTotal: sync('filter/preferredPersonTotal'),
+    preferredPersonSort: sync('filter/preferredPersonSort'),
     selectedInstitutions: sync('filter/selectedInstitutions'),
     selectedPersonSort: sync('filter/selectedPersonSort'),
     selectedPersonTotal: sync('filter/selectedPersonTotal')
@@ -84,9 +84,9 @@ export default {
         query: readInstitutions
       })
       this.institutionOptions = _.compact(_.map(results.data.institutions, 'name'))
-      this.selectedInstitutions = _.clone(this.institutionOptions)
-      this.selectedPersonSort = this.preferredPersonSort
-      this.selectedPersonTotal = this.preferredPersonTotal
+      this.selectedInstitutions = (this.selectedInstitutions && this.selectedInstitutions.length > 0) ? this.selectedInstitutions : _.clone(this.institutionOptions)
+      this.selectedPersonSort = (this.selectedPersonSort) ? this.selectedPersonSort : this.preferredPersonSort
+      this.selectedPersonTotal = (this.selectedPersonTotal) ? this.selectedPersonTotal : this.preferredPersonTotal
     }
   }
 }

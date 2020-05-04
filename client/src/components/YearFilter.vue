@@ -47,6 +47,8 @@ export default {
       console.log(`Initialized pub year min: ${this.yearPubStaticMin} max: ${this.yearPubStaticMax}`)
     },
     async updatePubYears () {
+      if (this.selectedPubYears.min < this.yearPubStaticMin) this.selectedPubYears.min = this.yearPubStaticMin
+      if (this.selectedPubYears.max > this.yearPubStaticMax) this.selectedPubYears.max = this.yearPubStaticMax
       this.changedPubYears = this.selectedPubYears
     }
   }
