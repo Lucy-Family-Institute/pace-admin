@@ -155,6 +155,7 @@
                         <q-item-label style="width:100%" class="text-grey-9" lines="1">{{ decode(item.publication.title) }}</q-item-label>
                         <q-list class="q-pt-sm">
                           <q-btn
+                            @click.capture.stop
                             rounded
                             dense
                             size="sm"
