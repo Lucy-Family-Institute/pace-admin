@@ -13,6 +13,16 @@
         content-class="bg-grey-3"
       >
         <div class="absolute" style="top: 70px">
+          <q-btn flat
+            @click="resetFilters()"
+            class="text-grey-8"
+            style="align:left;width:100%"
+          >
+            <q-item-section class="q-pl-lg" align="right" avatar>
+              <q-icon name="replay"/>
+            </q-item-section>
+            <q-item-section header align="left">Clear All</q-item-section>
+          </q-btn>
           <q-item-label header>Publication Filter</q-item-label>
           <YearFilter />
           <q-item-label header>Person Filter</q-item-label>
@@ -37,7 +47,6 @@
         :style="{height: ($q.screen.height-56-16)+'px'}"
       >
         <template v-slot:before>
-          <q-list>
           <q-btn flat
             @click="drawer = !drawer"
             class="text-grey-8"
@@ -48,10 +57,6 @@
             </q-item-section>
             <q-item-section header align="left">Filter</q-item-section>
           </q-btn>
-          <q-btn flat class="text-grey-8" @click="resetFilters()">
-            Reset Filters
-          </q-btn>
-          </q-list>
           <q-item-label header>People</q-item-label>
           <!-- TODO calculate exact height below -->
           <q-virtual-scroll
