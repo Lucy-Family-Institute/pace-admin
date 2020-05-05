@@ -25,7 +25,8 @@
     "sanitize-filename": "^1.6.3",
     "vue-apollo": "^3.0.3",
     "vue-friendly-iframe": "^0.16.0",
-    "vuex-pathify": "^1.4.1"
+    "vuex-pathify": "^1.4.1",
+    "vuex-persistedstate": "^3.0.1"
   },
   "devDependencies": {
     "@quasar/app": "^1.0.0",

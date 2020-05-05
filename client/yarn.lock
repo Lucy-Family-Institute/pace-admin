@@ -2997,6 +2997,11 @@ deepmerge@^1.5.2:
   resolved "https://registry.yarnpkg.com/deepmerge/-/deepmerge-1.5.2.tgz#10499d868844cdad4fee0842df8c7f6f0c95a753"
   integrity sha512-95k0GDqvBjZavkuvzx/YqVLv/6YYa17fz6ILMSf7neqQITCPbnfEnQvEgMPNjH4kgobe7+WIL0yJEHku+H3qtQ==
 
+deepmerge@^4.2.2:
+  version "4.2.2"
+  resolved "https://registry.yarnpkg.com/deepmerge/-/deepmerge-4.2.2.tgz#44d2ea3679b8f4d4ffba33f03d865fc1e7bf4955"
+  integrity sha512-FJ3UgI4gIl+PHZm53knsuSFpE+nESMr7M4v9QcgB7S63Kj/6WqMiFQJpBBYz1Pt+66bZpP3Q7Lye0Oo9MPKEdg==
+
 default-gateway@^4.2.0:
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/default-gateway/-/default-gateway-4.2.0.tgz#167104c7500c2115f6dd69b0a536bb8ed720552b"
@@ -7870,6 +7875,11 @@ shebang-regex@^3.0.0:
   resolved "https://registry.yarnpkg.com/shebang-regex/-/shebang-regex-3.0.0.tgz#ae16f1644d873ecad843b0307b143362d4c42172"
   integrity sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==
 
+shvl@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/shvl/-/shvl-2.0.0.tgz#55fd550b6e81bf7574f2f576b8b5c1ffae74e10f"
+  integrity sha512-WbpzSvI5XgVGJ3A4ySGe8hBxj0JgJktfnoLhhJmvITDdK21WPVWwgG8GPlYEh4xqdti3Ff7PJ5G0QrRAjNS0Ig==
+
 signal-exit@^3.0.0, signal-exit@^3.0.2:
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/signal-exit/-/signal-exit-3.0.2.tgz#b5fdc08f1287ea1178628e415e25132b73646c6d"
@@ -8995,6 +9005,14 @@ vuex-pathify@^1.4.1:
   integrity sha512-i4CsRrOW9r67su8YiVrthTvNfjACUMTjVne6Gxsa+tAxyNhGdKLOXhlDyi3e536gDrgHFU7Uon1TfaKoErfAuA==
   dependencies:
     vue-class-component "^7.1.0"
+
+vuex-persistedstate@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/vuex-persistedstate/-/vuex-persistedstate-3.0.1.tgz#6eacc3c416fe8cfe63c40d3ee7b8ed13aac4f04f"
+  integrity sha512-2dH77+fIecAXO8GeJEXiYnC++gx48PFGUayB5d7rWrN3fblRCOHQoVnmu/VV9DXbHHJcJth/0W/ofl8vw12j1A==
+  dependencies:
+    deepmerge "^4.2.2"
+    shvl "^2.0.0"
 
 vuex@3.1.1:
   version "3.1.1"
