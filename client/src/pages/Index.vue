@@ -414,7 +414,6 @@ export default {
     filteredPersonPublicationsCombinedMatchesByReview: {},
     publicationsGroupedByDoiByReview: {},
     institutions: [],
-    institutionOptions: [],
     institutionGroup: [],
     personPublication: undefined,
     publication: undefined,
@@ -1166,13 +1165,15 @@ export default {
       this.selectedPersonPubSort = this.preferredPersonPubSort
       this.selectedPersonSort = this.preferredPersonSort
       this.selectedPersonTotal = this.preferredPersonTotal
-      this.selectedPubYears.min = this.yearPubStaticMin
-      this.selectedPubYears.max = this.yearPubStaticMax
-      this.selelectedInstitutions = this.institutionOptions
-      this.selectedMemberYears.min = this.yearMemberStaticMin
-      this.selectedMemberYears.max = this.yearMemberStaticMax
-      this.changedPubYears = undefined
-      this.changedMemberYears = undefined
+      this.selectedPubYears = {
+        min: this.yearPubStaticMin,
+        max: this.yearPubStaticMax
+      }
+      this.selectedInstitutions = _.clone(this.institutionOptions)
+      this.selectedMemberYears = {
+        min: this.yearMemberStaticMin,
+        max: this.yearMemberStaticMax
+      }
     }
   },
   computed: {
@@ -1181,6 +1182,7 @@ export default {
     preferredPersonPubSort: get('filter/preferredPersonPubSort'),
     preferredPersonTotal: get('filter/preferredPersonTotal'),
     selectedInstitutions: sync('filter/selectedInstitutions'),
+    institutionOptions: get('filter/institutionOptions'),
     selectedPersonSort: sync('filter/selectedPersonSort'),
     selectedPersonPubSort: sync('filter/selectedPersonPubSort'),
     selectedPersonTotal: sync('filter/selectedPersonTotal'),
