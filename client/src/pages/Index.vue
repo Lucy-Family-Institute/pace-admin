@@ -1177,7 +1177,8 @@ export default {
     }
   },
   computed: {
-    userId: get('auth/userId'),
+    userId: sync('auth/userId'),
+    isLoggedIn: sync('auth/isLoggedIn'),
     preferredPersonSort: get('filter/preferredPersonSort'),
     preferredPersonPubSort: get('filter/preferredPersonPubSort'),
     preferredPersonTotal: get('filter/preferredPersonTotal'),
