@@ -1,0 +1,8 @@
+- args:
+    name: persons_publication
+    table:
+      name: confidencesets
+      schema: public
+    using:
+      foreign_key_constraint_on: persons_publications_id
+  type: create_object_relationship

@@ -1,0 +1,11 @@
+- args:
+    sql: CREATE TABLE "public"."confidencesets"("id" serial NOT NULL, "persons_publications_id"
+      integer NOT NULL, "value" float8 NOT NULL, "datetime" timestamptz NOT NULL DEFAULT
+      now(), PRIMARY KEY ("id") , FOREIGN KEY ("persons_publications_id") REFERENCES
+      "public"."persons_publications"("id") ON UPDATE no action ON DELETE restrict,
+      UNIQUE ("id"));
+  type: run_sql
+- args:
+    name: confidencesets
+    schema: public
+  type: add_existing_table_or_view

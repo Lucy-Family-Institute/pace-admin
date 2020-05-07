@@ -1,0 +1,6 @@
+- args:
+    relationship: confidencesets_items
+    table:
+      name: confidencesets
+      schema: public
+  type: drop_relationship
