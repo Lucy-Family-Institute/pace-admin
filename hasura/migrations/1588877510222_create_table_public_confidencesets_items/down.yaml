@@ -1,0 +1,3 @@
+- args:
+    sql: DROP TABLE "public"."confidencesets_items"
+  type: run_sql

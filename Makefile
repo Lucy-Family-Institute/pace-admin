@@ -53,6 +53,9 @@ install_js:
 	cd server && yarn && cd ..
 	cd ingest && yarn && cd ..
 
+calculate_confidence:
+	cd ingest && ts-node calculateConfidence.ts && cd ..
+
 cleardb:
 	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose down -v
 migrate:

@@ -1,0 +1,12 @@
+- args:
+    name: confidencesets
+    table:
+      name: persons_publications
+      schema: public
+    using:
+      foreign_key_constraint_on:
+        column: persons_publications_id
+        table:
+          name: confidencesets
+          schema: public
+  type: create_array_relationship
