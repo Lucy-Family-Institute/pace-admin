@@ -94,7 +94,7 @@ async function matchPeopleToPaperAuthors(personMap, authors, confirmedAuthors){
             _.each(confirmedAuthors, function (confirmedAuthor){
               if (_.lowerCase(confirmedAuthor.lastName) === testPerson.lastName &&
                 _.lowerCase(confirmedAuthor.firstName) === testPerson.firstName){
-                console.log(`Confirmed author found: ${JSON.stringify(testPerson,null,2)}, making confidence 0.99`)
+                // console.log(`Confirmed author found: ${JSON.stringify(testPerson,null,2)}, making confidence 0.99`)
                 confidenceVal = 0.99
               }
             })
@@ -198,91 +198,124 @@ function getAuthorLastNames (author) {
   return lastNames
 }
 
-async function testAuthorLastName (author, publicationAuthorMap) {
+function testAuthorLastName (author, publicationAuthorMap) {
   //check for any matches of last name
   // get array of author last names
   const lastNames = getAuthorLastNames(author)
-  // console.log(`here2 lastnames are: ${JSON.stringify(lastNames, null, 2)} `)
-  const matchedAuthors = _.filter(publicationAuthorMap, (value, pubLastName) => {
-    return _.hasIn(lastNames, pubLastName)
+  let matchedAuthors = {}
+  _.each(_.keys(publicationAuthorMap), (pubLastName) => {
+    _.each(lastNames, (lastName) => {
+      console.log(`Checking lastname ${lastName} against pubLastName: ${pubLastName}`)
+      if (lastName.toLowerCase()===pubLastName.toLowerCase()) {
+        console.log(`Found a lastname match for pub author: ${pubLastName} and author: ${lastName}`)
+        matchedAuthors[pubLastName] = publicationAuthorMap[pubLastName]
+      }
+    })
   })
   return matchedAuthors
 }
 
-async function testConfirmedAuthor (author, confirmedAuthorMap) {
+function testConfirmedAuthor (author, publicationAuthorMap, confirmedAuthorMap) {
   //check if author in confirmed list and change confidence to 0.99 if found
   //console.log(`Testing for confirmed authors: ${JSON.stringify(confirmedAuthorMap, null, 2)} against author: ${JSON.stringify(author, null, 2)}`)
+  let matchedAuthors = new Map()
   if (confirmedAuthorMap && confirmedAuthorMap.length > 0){
     _.each(author['names'], (name) => {
-      _.each(_.values(confirmedAuthorMap[0]), function (confirmedAuthor){
-         if (confirmedAuthor['lastName'].toLowerCase() === name.lastName.toLowerCase() &&
-         confirmedAuthor['firstName'].toLowerCase() === name.firstName.toLowerCase()){
-           console.log(`Confirmed author found: ${JSON.stringify(name,null,2)}, making confidence 0.99`)
-           return true
-         }
+      _.each(confirmedAuthorMap, function (confirmedAuthor){
+        if (confirmedAuthor['lastName'].toLowerCase() === name.lastName.toLowerCase() &&
+          confirmedAuthor['firstName'].toLowerCase() === name.firstName.toLowerCase() &&
+          publicationAuthorMap[name.lastName.toLowerCase()]){
+          console.log(`Confirmed author found: ${JSON.stringify(name,null,2)}`)
+          matchedAuthors[name.lastName.toLowerCase()] = publicationAuthorMap[name.lastName.toLowerCase()]
+          console.log(`Matched authors on match are: ${JSON.stringify(matchedAuthors, null, 2)}`)
+        }
       })
     })
   }
-  return false
+  return matchedAuthors
 }
 
 // only call this method if last name matched
-async function testAuthorGivenNameInitial (author, publicationAuthorMap) {
-  //check for any matches of first initial or affiliation
-  const authorLastName = author.lastName.toLowerCase()
-  _.each(publicationAuthorMap[authorLastName], async (testPerson) => {
-    if (testPerson.given.toLowerCase()[0] === author.firstInitial.toLowerCase()){
-      return true
-    }
+function testAuthorGivenNameInitial (author, publicationAuthorMap) {
+  // really check for last name and given name intial match for one of the name variations
+  console.log(`Testing given name test for author: ${JSON.stringify(author, null, 2)}`)
+  // group name variations by last name
+  const nameVariations = _.groupBy(author['names'], 'lastName')
+  let matchedAuthors = new Map()
+  _.each(_.keys(nameVariations), (nameLastName) => {
+    _.each(nameVariations[nameLastName], (testName) => {
+      const testLastName = nameLastName.toLowerCase()
+      _.each(publicationAuthorMap[testLastName], (pubAuthor) => {
+        if (testLastName===pubAuthor.family.toLowerCase()&&
+        testName.firstInitial.toLowerCase()===pubAuthor.given[0].toLowerCase()) {
+          (matchedAuthors[testLastName] || (matchedAuthors[testLastName] = [])).push(pubAuthor)
+        }
+      })
+    })
   })
-  return false
+  return matchedAuthors
 }
 
 // only call this method if last name matched
-async function testAuthorGivenName (author, publicationAuthorMap) {
-  //check for any matches of first initial or affiliation
-  const authorLastName = author.lastName.toLowerCase()
-  _.each(publicationAuthorMap[authorLastName], async (testPerson) => {
-    if (testPerson.given.toLowerCase() === author.firstName.toLowerCase()){
-      return true
-    }
+function testAuthorGivenName (author, publicationAuthorMap) {
+  // really check for last name and given name match for one of the name variations
+  console.log(`Testing given name test for author: ${JSON.stringify(author, null, 2)}`)
+  // group name variations by last name
+  const nameVariations = _.groupBy(author['names'], 'lastName')
+  let matchedAuthors = new Map()
+  _.each(_.keys(nameVariations), (nameLastName) => {
+    _.each(nameVariations[nameLastName], (testName) => {
+      const testLastName = nameLastName.toLowerCase()
+      _.each(publicationAuthorMap[testLastName], (pubAuthor) => {
+        if (testLastName===pubAuthor.family.toLowerCase()&&
+        testName.firstName.toLowerCase()===pubAuthor.given.toLowerCase()) {
+          (matchedAuthors[testLastName] || (matchedAuthors[testLastName] = [])).push(pubAuthor)
+        }
+      })
+    })
   })
-  return false
+  return matchedAuthors
 }
 
 // assumes passing in authors that matched previously
-async function testAuthorAffiliation (author, publicationAuthorMap) {
-  const authorLastName = author.lastName.toLowerCase()
-  _.each(publicationAuthorMap[authorLastName], async (testPerson) => {
-    if(!_.isEmpty(testPerson.affiliation)) {
-      if(/notre dame/gi.test(testPerson.affiliation[0].name)) {
-        return true
+function testAuthorAffiliation (author, publicationAuthorMap) {
+  const nameVariations = _.groupBy(author['names'], 'lastName')
+  let matchedAuthors = new Map()
+  _.each(_.keys(nameVariations), (nameLastName) => {
+    // check any authors with same last name to see if has the affiliation
+    _.each(publicationAuthorMap[nameLastName], async (pubAuthor) => {
+      if(!_.isEmpty(pubAuthor.affiliation)) {
+        if(/notre dame/gi.test(pubAuthor.affiliation[0].name)) {
+          (matchedAuthors[nameLastName] || (matchedAuthors[nameLastName] = [])).push(pubAuthor)
+        }
       }
-    }
+    })
   })
-  return false
+  return matchedAuthors
 }
 
 // returns true/false from a test called for the specific name passed in
-async function performConfidenceTest (confidenceTypeName, publicationCsl, author, publicationAuthorMap, confirmedAuthors){
+function performConfidenceTest (confidenceTypeName, publicationCsl, author, publicationAuthorMap, confirmedAuthors){
   if (confidenceTypeName === 'lastname') {
     return testAuthorLastName(author, publicationAuthorMap)
   } else if (confidenceTypeName === 'confirmed_by_author') {
      // needs to test against confirmed list
-     return testConfirmedAuthor(author, confirmedAuthors)
-  // } else if (confidenceTypeName === 'given_name_initial') {
-  //   return testAuthorGivenNameInitial(author, publicationAuthorMap)
-  // } else if (confidenceTypeName === 'given_name') {
-  //   return testAuthorGivenName(author, publicationAuthorMap)
-  // } else if (confidenceTypeName === 'university_affiliation') {
-  //   return testAuthorAffiliation(author, publicationAuthorMap)
-  // } else if (confidenceTypeName === 'common_coauthor') {
-  //   // need the publication for this test
-  //   // do nothing for now, and return an empty set
-  //   return {}
-  // } else if (confidenceTypeName === 'subject_area') {
-  //   // do nothing for now and return an empty set
-  //   return {}
+     const matchedAuthors = testConfirmedAuthor(author, publicationAuthorMap, confirmedAuthors)
+     // console.log(`Matches authors for ${confidenceTypeName}: ${JSON.stringify(matchedAuthors, null, 2)}`)
+     return matchedAuthors
+  } else if (confidenceTypeName === 'given_name_initial') {
+    return testAuthorGivenNameInitial(author, publicationAuthorMap)
+  } else if (confidenceTypeName === 'given_name') {
+    return testAuthorGivenName(author, publicationAuthorMap)
+  } else if (confidenceTypeName === 'university_affiliation') {
+    return testAuthorAffiliation(author, publicationAuthorMap)
+  } else if (confidenceTypeName === 'common_coauthor') {
+    // need the publication for this test
+    // do nothing for now, and return an empty set
+    return {}
+  } else if (confidenceTypeName === 'subject_area') {
+    // do nothing for now and return an empty set
+    return {}
   } else {
     return {}
   }
@@ -292,30 +325,47 @@ async function calculateConfidenceAuthor (author, publicationCsl, confirmedAutho
   let confidenceVal = 0.0
   // array of arrays for each rank sorted 1 to highest number
   // iterate through each group by rank if no matches in one rank, do no execute the next rank
-  const sortedKeys = _.sortBy(_.keys(confidenceTypesByRank), (value) => { return value })
+  const sortedRanks = _.sortBy(_.keys(confidenceTypesByRank), (value) => { return value })
   // now just push arrays in order into another array
 
   //update to current matched authors before proceeding with next tests
-  let publicationAuthorMap = getPublicationAuthorMap(publicationCsl)
-  _.each(sortedKeys, (key) => {
+  let publicationAuthorMap = await getPublicationAuthorMap(publicationCsl)
+  _.each(sortedRanks, (rank) => {
+    console.log(`Testing for rank: ${rank} author: ${JSON.stringify(author, null, 2)}`)
     let matchFound = false
-    _.each(confidenceTypesByRank[key], (confidenceType) => {
+    // after each test need to union the set of authors matched before moving to next level
+    let matchedAuthors = {}
+    _.each(confidenceTypesByRank[rank], (confidenceType) => {
       // need to update to make publicationAuthorMap be only ones that matched last name for subsequent tests
-      let matchedAuthors = performConfidenceTest(confidenceType.name, publicationCsl, author, publicationAuthorMap, confirmedAuthors)
-      //console.log(`${confidenceType.name} Matched Authors Found: ${JSON.stringify(matchedAuthors, null, 2)}`)
-      if (matchedAuthors && _.toLength(matchedAuthors) > 0){
+      let currentMatchedAuthors = performConfidenceTest(confidenceType.name, publicationCsl, author, publicationAuthorMap, confirmedAuthors)
+      // console.log(`${confidenceType.name} Matched Authors Found: ${JSON.stringify(matchedAuthors, null, 2)}`)
+      if (currentMatchedAuthors && _.keys(currentMatchedAuthors).length > 0){
+        console.log(`Matched authors found for rank: ${rank}, test: ${confidenceType.name}`)
+        // union any authors that are there for each author last name
+        _.each(_.keys(currentMatchedAuthors), (matchedLastName) => {
+          if (matchedAuthors[matchedLastName]) {
+            // need to merge with existing list
+            matchedAuthors[matchedLastName] = _.unionWith(matchedAuthors[matchedLastName], currentMatchedAuthors[matchedLastName], _.isEqual)
+          } else {
+            matchedAuthors[matchedLastName] = currentMatchedAuthors[matchedLastName]
+          }
+        })
+       
         // log the confidence set to true in DB
         matchFound = true
-        // calculate the confidence to add and add to overall value
-        confidenceVal += 0.5
         //update to current matched authors before proceeding with next tests
-        publicationAuthorMap = matchedAuthors
-        console.log(`Test ${confidenceType.name} found matches: ${matchedAuthors}`)
+        //publicationAuthorMap = matchedAuthors
+        console.log(`Test ${confidenceType.name} found matches: ${JSON.stringify(matchedAuthors, null, 2)} ${JSON.stringify(publicationAuthorMap, null, 2)}`)
       }
     })
-    if (!matchFound){
+    if (_.keys(matchedAuthors).length <= 0){
       // stop processing and skip next set of tests
-      return confidenceVal
+      console.log(`Stopping tests as no matches found as test rank: ${rank} for author ${JSON.stringify(author, null, 2)}`)
+      return false
+    } else {
+      // set publication author map for next iteration to union set of authors that were matched in current level of tests
+      publicationAuthorMap = matchedAuthors
+      console.log(`Matched authors found for tests rank: ${rank}, matched authors: ${JSON.stringify(matchedAuthors, null, 2)}`)
     }
   })
   return confidenceVal
@@ -350,7 +400,7 @@ async function getAllSimplifiedPersons() {
 async function calculateConfidence (publicationCsl, testAuthors, confirmedAuthors) {
   // get the set of tests to run
   const confidenceTypesByRank = await getConfidenceTypesByRank()
-  console.log(`Confidence Types By Rank: ${JSON.stringify(confidenceTypesByRank, null, 2)}`)
+  // console.log(`Confidence Types By Rank: ${JSON.stringify(confidenceTypesByRank, null, 2)}`)
 
   await pMap(testAuthors, async (testAuthor) => {
     const confidenceVal = calculateConfidenceAuthor (testAuthor, publicationCsl, confirmedAuthors, confidenceTypesByRank)
@@ -447,7 +497,7 @@ async function getConfirmedAuthorsByDoiFromCSV (path) {
       //get map of DOI's to an array of confirmed authors from the load table
       confirmedAuthorsByDoi = await getConfirmedAuthorsByDoi(papersByDoi, confirmedAuthorColumn)
      
-      console.log(`Confirmed Authors By Doi are: ${JSON.stringify(confirmedAuthorsByDoi,null,2)}`)
+      // console.log(`Confirmed Authors By Doi are: ${JSON.stringify(confirmedAuthorsByDoi,null,2)}`)
     }
     return confirmedAuthorsByDoi
   } catch (error){
@@ -486,21 +536,29 @@ async function main() {
   }, { concurrency: 1 })
 
   // combine the confirmed author lists together
+  //console.log(`combining confirmed author list: ${JSON.stringify(confirmedAuthorsByDoiByYear, null, 2)}`)
   let confirmedAuthorsByDoi = new Map()
   _.each(_.keys(confirmedAuthorsByDoiByYear), (year) => {
     _.each(_.keys(confirmedAuthorsByDoiByYear[year]), (doi) => {
-      confirmedAuthorsByDoi[doi] = _.concat((confirmedAuthorsByDoi[doi] || []), confirmedAuthorsByDoiByYear[year][doi])
+      confirmedAuthorsByDoi[doi] = _.concat((confirmedAuthorsByDoi[doi] || []), _.values(confirmedAuthorsByDoiByYear[year][doi]))
     }) 
   })
 
   // calculate confidence for publications
-  const doi = '10.1103/PhysRevC.99.024321'
+  // const doi = '10.1242/dev.171512'
+  const doi = '10.1002/cmdc.201900266'
   //get CSL (citation style language) record by doi from dx.dio.org
   const cslRecords = await Cite.inputAsync(doi)
   //console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
 
   const publicationCsl = cslRecords[0]
-  calculateConfidence (publicationCsl, testAuthors, (confirmedAuthorsByDoi[doi] || {}))
+  const testAuthors2 = []
+  testAuthors2.push(testAuthors[0])
+  console.log(`Test authors: ${JSON.stringify(testAuthors2, null, 2)}`)
+  calculateConfidence (publicationCsl, testAuthors2, (confirmedAuthorsByDoi[doi] || {}))
+
+  // next need to write checks found to DB and then calculate confidence accordingly 
+  // first do against current values and then have updated based on what is found
 }
 
 main()
