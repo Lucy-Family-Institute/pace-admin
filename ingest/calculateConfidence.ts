@@ -8,6 +8,7 @@ import humanparser from 'humanparser'
 import readConfidenceTypes from './gql/readConfidenceTypes'
 import readPersonsByYear from '../client/src/gql/readPersonsByYear'
 import readPersons from '../client/src/gql/readPersons'
+import readPersonPublications from './gql/readPersonPublications'
 import pMap from 'p-map'
 import { command as loadCsv } from './units/loadCsv'
 import Cite from 'citation-js'
@@ -125,15 +126,6 @@ async function getConfidenceTypesByRank() {
   return confidenceTypesByRank
 }
 
-async function calculateConfidenceByRank (personPublication, confidenceTypes) {
-
-}
-
-async function calculatePaperConfidence (personPublication, confidenceTypesByRank) {
-  const confidenceValue = 0.0
-  // const addConfidenceByRank = calculateConfidenceByRank (personPublication)
-}
-
 async function getCSLAuthors(paperCsl){
 
   const authMap = {
@@ -184,7 +176,7 @@ async function getPublicationAuthorMap (publicationCsl) {
   // group authors by last name
   //create map of last name to array of related persons with same last name
   const authorMap = _.transform(authors, function (result, value) {
-    const lastName = value.family.toLowerCase()
+    const lastName = _.toLower(value.family)
     return (result[lastName] || (result[lastName] = [])).push(value)
   }, {})
   return authorMap
@@ -205,9 +197,8 @@ function testAuthorLastName (author, publicationAuthorMap) {
   let matchedAuthors = {}
   _.each(_.keys(publicationAuthorMap), (pubLastName) => {
     _.each(lastNames, (lastName) => {
-      console.log(`Checking lastname ${lastName} against pubLastName: ${pubLastName}`)
-      if (lastName.toLowerCase()===pubLastName.toLowerCase()) {
-        console.log(`Found a lastname match for pub author: ${pubLastName} and author: ${lastName}`)
+      console.log (`Checking pub lastname ${_.toLower(pubLastName)} against test lastname: ${_.toLower(lastName)}`)
+      if (_.lowerCase(lastName)===_.lowerCase(pubLastName)) {
         matchedAuthors[pubLastName] = publicationAuthorMap[pubLastName]
       }
     })
@@ -222,12 +213,11 @@ function testConfirmedAuthor (author, publicationAuthorMap, confirmedAuthorMap) 
   if (confirmedAuthorMap && confirmedAuthorMap.length > 0){
     _.each(author['names'], (name) => {
       _.each(confirmedAuthorMap, function (confirmedAuthor){
-        if (confirmedAuthor['lastName'].toLowerCase() === name.lastName.toLowerCase() &&
-          confirmedAuthor['firstName'].toLowerCase() === name.firstName.toLowerCase() &&
-          publicationAuthorMap[name.lastName.toLowerCase()]){
-          console.log(`Confirmed author found: ${JSON.stringify(name,null,2)}`)
-          matchedAuthors[name.lastName.toLowerCase()] = publicationAuthorMap[name.lastName.toLowerCase()]
-          console.log(`Matched authors on match are: ${JSON.stringify(matchedAuthors, null, 2)}`)
+        // use _.lowercase to ignore any differences in punctuation like ' and `
+        if (_.lowerCase(confirmedAuthor['lastName']) === _.lowerCase(name.lastName) &&
+          _.lowerCase(confirmedAuthor['firstName']) === _.lowerCase(name.firstName) &&
+          publicationAuthorMap[_.toLower(name.lastName)]){
+          matchedAuthors[_.toLower(name.lastName)] = publicationAuthorMap[_.toLower(name.lastName)]
         }
       })
     })
@@ -238,15 +228,14 @@ function testConfirmedAuthor (author, publicationAuthorMap, confirmedAuthorMap) 
 // only call this method if last name matched
 function testAuthorGivenNameInitial (author, publicationAuthorMap) {
   // really check for last name and given name intial match for one of the name variations
-  console.log(`Testing given name test for author: ${JSON.stringify(author, null, 2)}`)
   // group name variations by last name
   const nameVariations = _.groupBy(author['names'], 'lastName')
   let matchedAuthors = new Map()
   _.each(_.keys(nameVariations), (nameLastName) => {
     _.each(nameVariations[nameLastName], (testName) => {
-      const testLastName = nameLastName.toLowerCase()
+      const testLastName = _.lowerCase(nameLastName)
       _.each(publicationAuthorMap[testLastName], (pubAuthor) => {
-        if (testLastName===pubAuthor.family.toLowerCase()&&
+        if (testLastName===_.lowerCase(pubAuthor.family)&&
         testName.firstInitial.toLowerCase()===pubAuthor.given[0].toLowerCase()) {
           (matchedAuthors[testLastName] || (matchedAuthors[testLastName] = [])).push(pubAuthor)
         }
@@ -259,17 +248,26 @@ function testAuthorGivenNameInitial (author, publicationAuthorMap) {
 // only call this method if last name matched
 function testAuthorGivenName (author, publicationAuthorMap) {
   // really check for last name and given name match for one of the name variations
-  console.log(`Testing given name test for author: ${JSON.stringify(author, null, 2)}`)
   // group name variations by last name
   const nameVariations = _.groupBy(author['names'], 'lastName')
   let matchedAuthors = new Map()
   _.each(_.keys(nameVariations), (nameLastName) => {
     _.each(nameVariations[nameLastName], (testName) => {
-      const testLastName = nameLastName.toLowerCase()
+      const testLastName = _.lowerCase(nameLastName)
       _.each(publicationAuthorMap[testLastName], (pubAuthor) => {
-        if (testLastName===pubAuthor.family.toLowerCase()&&
-        testName.firstName.toLowerCase()===pubAuthor.given.toLowerCase()) {
+        if (testLastName===_.lowerCase(pubAuthor.family)&&
+        _.lowerCase(testName.firstName)===_.lowerCase(pubAuthor.given)) {
           (matchedAuthors[testLastName] || (matchedAuthors[testLastName] = [])).push(pubAuthor)
+        } else {
+          // split the given name based on spaces
+          const givenParts = _.split(pubAuthor.given, ' ')
+          _.each(givenParts, (part) => {
+            if (_.lowerCase(part) === _.lowerCase(testName.firstName)){
+              (matchedAuthors[testLastName] || (matchedAuthors[testLastName] = [])).push(pubAuthor)
+              // break out of the loop if a match found
+              return false
+            }
+          })
         }
       })
     })
@@ -332,7 +330,7 @@ async function performAuthorConfidenceTests (author, publicationCsl, confirmedAu
   // initialize map to store passed tests by rank
   let passedConfidenceTests = {}
   await pMap (sortedRanks, async (rank) => {
-    console.log(`Testing for rank: ${rank} author: ${JSON.stringify(author, null, 2)}`)
+    // console.log(`Testing for rank: ${rank} author: ${JSON.stringify(author, null, 2)}`)
     let matchFound = false
     // after each test need to union the set of authors matched before moving to next level
     let matchedAuthors = {}
@@ -346,7 +344,7 @@ async function performAuthorConfidenceTests (author, publicationCsl, confirmedAu
           testAuthor : author,
           matchedAuthors : currentMatchedAuthors
         }
-        console.log(`Matched authors found for rank: ${rank}, test: ${confidenceType['name']}`)
+        // console.log(`Matched authors found for rank: ${rank}, test: ${confidenceType['name']}`)
         // union any authors that are there for each author last name
         _.each(_.keys(currentMatchedAuthors), (matchedLastName) => {
           if (matchedAuthors[matchedLastName]) {
@@ -356,23 +354,23 @@ async function performAuthorConfidenceTests (author, publicationCsl, confirmedAu
             matchedAuthors[matchedLastName] = currentMatchedAuthors[matchedLastName]
           }
         })
-        console.log(`Test ${confidenceType['name']} found matches: ${JSON.stringify(matchedAuthors, null, 2)} ${JSON.stringify(publicationAuthorMap, null, 2)}`)
+        // console.log(`Test ${confidenceType['name']} found matches: ${JSON.stringify(matchedAuthors, null, 2)}`)
       }
     }, {concurrency: 3})
     if (_.keys(matchedAuthors).length <= 0){
       // stop processing and skip next set of tests
-      console.log(`Stopping tests as no matches found as test rank: ${rank} for author ${JSON.stringify(author, null, 2)}`)
+      // console.log(`Stopping tests as no matches found as test rank: ${rank} for author ${JSON.stringify(author, null, 2)}`)
       return false
     } else {
       // set publication author map for next iteration to union set of authors that were matched in current level of tests
       publicationAuthorMap = matchedAuthors
-      console.log(`Matched authors found for tests rank: ${rank}, matched authors: ${JSON.stringify(matchedAuthors, null, 2)}`)
+      // console.log(`Matched authors found for tests rank: ${rank}, matched authors: ${JSON.stringify(matchedAuthors, null, 2)}`)
     }
   }, {concurrency: 1})
   return passedConfidenceTests
 }
 
-const confidenceMetricsByRank = {
+const confidenceMetrics = {
   1:  {
     base: 0.3,
     additiveCoefficient: 0.5
@@ -384,15 +382,25 @@ const confidenceMetricsByRank = {
   3: {
     base: 0.25,
     additiveCoefficient: 2.0
+  },
+  confirmed_by_author: {
+    base: 0.99,
+    additiveCoefficient: 1.0
   }
 }
 
-function getConfidenceValue (rank, index) {
+function getConfidenceValue (rank, confidenceTypeName, index) {
+  // start by setting metric to default rank metric
+  let confidenceMetric = confidenceMetrics[rank]
+  if (confidenceMetrics[confidenceTypeName]) {
+    // specific metric found for test type and use that instead of default rank value
+    confidenceMetric = confidenceMetrics[confidenceTypeName]
+  }
   if (index > 0) {
     // if not first one multiply by the additive coefficient
-    return confidenceMetricsByRank[rank].base * confidenceMetricsByRank[rank].additiveCoefficient
+    return confidenceMetric.base * confidenceMetric.additiveCoefficient
   } else {
-    return confidenceMetricsByRank[rank].base
+    return confidenceMetric.base
   }
 }
 
@@ -406,7 +414,7 @@ async function calculateAuthorConfidence (passedConfidenceTests) {
     let newConfidenceTests = {}
     _.each(passedConfidenceTests[rank], (confidenceTest) => {
       newConfidenceTests[confidenceTest.confidenceTypeName] = _.clone(confidenceTest)
-      _.set(newConfidenceTests[confidenceTest.confidenceTypeName], 'confidenceValue', getConfidenceValue(rank, index))
+      _.set(newConfidenceTests[confidenceTest.confidenceTypeName], 'confidenceValue', getConfidenceValue(rank, confidenceTest.confidenceTypeName, index))
       index += 1
     })
     newPassedConfidenceTests[rank] = newConfidenceTests
@@ -420,33 +428,73 @@ async function calculateAuthorConfidence (passedConfidenceTests) {
 // testAuthors: are authors for a given center/institute for the given year to test if there is a match
 // confirmedAuthors: is an optional parameter map of doi to a confirmed author if present and if so will make confidence highest
 //
-async function calculateConfidence (publicationCsl, testAuthors, confirmedAuthors) {
+async function calculateConfidence (testAuthors, confirmedAuthors) {
   // get the set of tests to run
   const confidenceTypesByRank = await getConfidenceTypesByRank()
   // console.log(`Confidence Types By Rank: ${JSON.stringify(confidenceTypesByRank, null, 2)}`)
 
+  const passedTests = []
+  const failedTests = []
   await pMap(testAuthors, async (testAuthor) => {
-    const passedConfidenceTests = await performAuthorConfidenceTests (testAuthor, publicationCsl, confirmedAuthors, confidenceTypesByRank)
-    // returns a new map of rank -> confidenceTestName -> calculatedValue
-    const passedConfidenceTestsWithConf = await calculateAuthorConfidence(passedConfidenceTests)
-    // calculate overall total and write the confidence set and comments to the DB
-    let confidenceTotal = 0.0
-    _.mapValues(passedConfidenceTestsWithConf, (confidenceTests, rank) => {
-      _.mapValues(confidenceTests, (confidenceTest) => {
-        confidenceTotal += confidenceTest['confidenceValue']
-        console.log(`new total: ${confidenceTotal} for test: ${JSON.stringify(confidenceTest, null, 2)} new added val: ${confidenceTest['confidenceValue']}`)
+    console.log(`Test Author is: ${JSON.stringify(testAuthor, null, 2)}`)
+    const personPublications = await getPersonPublications(testAuthor['id'])
+    await pMap(personPublications, async (personPublication) => {
+      const publicationCsl = JSON.parse(personPublication['publication']['csl_string'])
+      const passedConfidenceTests = await performAuthorConfidenceTests (testAuthor, publicationCsl, confirmedAuthors[personPublication['publication']['doi']], confidenceTypesByRank)
+      // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
+      // returns a new map of rank -> confidenceTestName -> calculatedValue
+      const passedConfidenceTestsWithConf = await calculateAuthorConfidence(passedConfidenceTests)
+      // calculate overall total and write the confidence set and comments to the DB
+      let confidenceTotal = 0.0
+      _.mapValues(passedConfidenceTestsWithConf, (confidenceTests, rank) => {
+        _.mapValues(confidenceTests, (confidenceTest) => {
+          confidenceTotal += confidenceTest['confidenceValue']
+          // console.log(`new total: ${confidenceTotal} for test: ${JSON.stringify(confidenceTest, null, 2)} new added val: ${confidenceTest['confidenceValue']}`)
+        })
       })
-    })
-    // set ceiling to 99%
-    if (confidenceTotal >= 1.0) confidenceTotal = 0.99
-    // have to do some weird conversion stuff to keep the decimals correct
-    confidenceTotal = Number.parseFloat(confidenceTotal.toFixed(3))
-    console.log(`Confidence Total: ${JSON.stringify(confidenceTotal, null, 2)} for ${JSON.stringify(testAuthor, null, 2)}, breakdown: ${JSON.stringify(passedConfidenceTestsWithConf, null, 2)}`)
-    // console.log(`Confidence found for ${JSON.stringify(testAuthor, null, 2)}: ${confidenceVal}`)
+      // set ceiling to 99%
+      if (confidenceTotal >= 1.0) confidenceTotal = 0.99
+      // have to do some weird conversion stuff to keep the decimals correct
+      confidenceTotal = Number.parseFloat(confidenceTotal.toFixed(3))
+      //update to current matched authors before proceeding with next tests
+      let publicationAuthorMap = await getPublicationAuthorMap(publicationCsl)
+      const newTest = {
+        author: testAuthor,
+        confirmedAuthors: confirmedAuthors[personPublication['publication']['doi']],
+        pubAuthors: publicationAuthorMap,
+        confidenceTests: passedConfidenceTestsWithConf,
+        person_publication_id: personPublication['id'],
+        doi: personPublication['publication']['doi'],
+        prevConf: personPublication['confidence'],
+        newConf: confidenceTotal
+      };
+      (confidenceTotal === personPublication['confidence']) ? passedTests.push(newTest) : failedTests.push(newTest)
+      // console.log(`Confidence found for ${JSON.stringify(testAuthor, null, 2)}: ${confidenceTotal}`)
+    }, {concurrency: 3})
   }, { concurrency: 3 })
+  // console.log(`Failed Tests: ${JSON.stringify(failedTests, null, 2)}`)
+  // console.log(`Confirmed authors: ${JSON.stringify(confirmedAuthors, null, 2)}`)
+  const failedTestsByNewConf = _.groupBy(failedTests, (failedTest) => {
+    return `${failedTest.prevConf} -> ${failedTest.newConf}`
+  })
+  const passedTestsByNewConf = _.groupBy(passedTests, (passedTest) => {
+    return `${passedTest.prevConf} -> ${passedTest.newConf}`
+  })
+  _.each(_.keys(passedTestsByNewConf), (conf) => {
+    console.log(`${passedTestsByNewConf[conf].length} Passed Tests By Confidence: ${conf}`)
+  })
+  _.each(_.keys(failedTestsByNewConf), (conf) => {
+    console.log(`${JSON.stringify(failedTestsByNewConf[conf], null, 2)} Failed Test By Confidence ${conf}`)
+    console.log(`${failedTestsByNewConf[conf].length} Failed Tests By Confidence: ${conf}`)
+  })
+  console.log(`Passed tests: ${passedTests.length} Failed Tests: ${failedTests.length}`)
+}
+async function getPersonPublications (personId) {
+  const queryResult = await client.query(readPersonPublications(personId))
+  return queryResult.data.persons_publications
 }
 
-async function getAllSimplifiedPersons() {
+async function getAllSimplifiedPersons () {
   const queryResult = await client.query(readPersons())
 
   const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
@@ -553,9 +601,9 @@ async function main() {
   // get confirmed author lists to papers
   const pathsByYear = {
     // 2019: ['../data/scopus.2019.20200320103319.csv']
-    2019: ['../data/HCRI-pubs-2019_-_Faculty_Selected_2.csv']//,
-    //2018: ['../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv'],
-    //2017: ['../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv']
+    2019: ['../data/HCRI-pubs-2019_-_Faculty_Selected_2.csv'],
+    2018: ['../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv'],
+    2017: ['../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv']
   }
 
   // get the set of persons to test
@@ -586,6 +634,10 @@ async function main() {
     }) 
   })
 
+  // console.log(`Confirmed Authors: ${JSON.stringify(confirmedAuthorsByDoi['10.1158/1541-7786.mcr-16-0312'], null, 2)}`)
+
+  // run against all pubs in DB and confirm have same confidence value calculation
+
   // calculate confidence for publications
   // const doi = '10.1242/dev.171512'
   // const doi = '10.1002/cmdc.201900266'
@@ -596,9 +648,9 @@ async function main() {
 
   const publicationCsl = cslRecords[0]
   const testAuthors2 = []
-  testAuthors2.push(testAuthors[0])
-  console.log(`Test authors: ${JSON.stringify(testAuthors2, null, 2)}`)
-  calculateConfidence (publicationCsl, testAuthors2, (confirmedAuthorsByDoi[doi] || {}))
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===20}))
+  // console.log(`Test authors: ${JSON.stringify(testAuthors2, null, 2)}`)
+  calculateConfidence (testAuthors2, (confirmedAuthorsByDoi || {}))
 
 
   // next need to write checks found to DB and then calculate confidence accordingly 
