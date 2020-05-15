@@ -199,7 +199,7 @@ function lastNameMatchFuzzy (last, lastNameKey, nameMap){
     includeScore: false,
     keys: [lastNameKey],
     findAllMatches: true,
-    threshold: 0.067,
+    threshold: 0.100,
   });
 
   const lastNameResults = lastFuzzy.search(last)
@@ -214,7 +214,7 @@ function nameMatchFuzzy (searchLast, lastKey, searchFirst, firstKey, nameMap) {
     includeScore: false,
     keys: [lastKey],
     findAllMatches: true,
-    threshold: 0.067,
+    threshold: 0.100,
   });
 
   const lastNameResults = lastFuzzy.search(searchLast);
@@ -315,32 +315,6 @@ function testAuthorGivenNameInitial (author, publicationAuthorMap) {
 // only call this method if last name matched
 function testAuthorGivenName (author, publicationAuthorMap) {
   return testAuthorGivenNamePart(author, publicationAuthorMap, false)
-  // // really check for last name and given name match for one of the name variations
-  // // group name variations by last name
-  // const nameVariations = _.groupBy(author['names'], 'lastName')
-  // let matchedAuthors = new Map()
-  // _.each(_.keys(nameVariations), (nameLastName) => {
-  //   _.each(nameVariations[nameLastName], (testName) => {
-  //     const testLastName = _.lowerCase(nameLastName)
-  //     _.each(publicationAuthorMap[testLastName], (pubAuthor) => {
-  //       if (testLastName===_.lowerCase(pubAuthor.family)&&
-  //       _.lowerCase(testName.firstName)===_.lowerCase(pubAuthor.given)) {
-  //         (matchedAuthors[testLastName] || (matchedAuthors[testLastName] = [])).push(pubAuthor)
-  //       } else {
-  //         // split the given name based on spaces
-  //         const givenParts = _.split(pubAuthor.given, ' ')
-  //         _.each(givenParts, (part) => {
-  //           if (_.lowerCase(part) === _.lowerCase(testName.firstName)){
-  //             (matchedAuthors[testLastName] || (matchedAuthors[testLastName] = [])).push(pubAuthor)
-  //             // break out of the loop if a match found
-  //             return false
-  //           }
-  //         })
-  //       }
-  //     })
-  //   })
-  // })
-  // return matchedAuthors
 }
 
 // assumes passing in authors that matched previously
@@ -348,12 +322,16 @@ function testAuthorAffiliation (author, publicationAuthorMap) {
   const nameVariations = _.groupBy(author['names'], 'lastName')
   let matchedAuthors = new Map()
   _.each(_.keys(nameVariations), (nameLastName) => {
-    // check any authors with same last name to see if has the affiliation
-    _.each(publicationAuthorMap[nameLastName], async (pubAuthor) => {
-      if(!_.isEmpty(pubAuthor.affiliation)) {
-        if(/notre dame/gi.test(pubAuthor.affiliation[0].name)) {
-          (matchedAuthors[nameLastName] || (matchedAuthors[nameLastName] = [])).push(pubAuthor)
-        }
+    _.each(_.keys(publicationAuthorMap), (pubLastName) => {
+      // check for a fuzzy match of name variant last names to lastname in pub author list
+      if (lastNameMatchFuzzy(pubLastName, 'lastName', nameVariations[nameLastName])){
+        _.each(publicationAuthorMap[pubLastName], async (pubAuthor) => {
+          if(!_.isEmpty(pubAuthor.affiliation)) {
+            if(/notre dame/gi.test(pubAuthor.affiliation[0].name)) {
+              (matchedAuthors[nameLastName] || (matchedAuthors[nameLastName] = [])).push(pubAuthor)
+            }
+          }
+        })
       }
     })
   })
@@ -531,9 +509,9 @@ async function calculateConfidence (testAuthors, confirmedAuthors) {
       let publicationAuthorMap = await getPublicationAuthorMap(publicationCsl)
       const newTest = {
         author: testAuthor,
-        confirmedAuthors: confirmedAuthors[personPublication['publication']['doi']],
-        pubAuthors: publicationAuthorMap,
-        confidenceTests: passedConfidenceTestsWithConf,
+        // confirmedAuthors: confirmedAuthors[personPublication['publication']['doi']],
+        // pubAuthors: publicationAuthorMap,
+        // confidenceTests: passedConfidenceTestsWithConf,
         person_publication_id: personPublication['id'],
         doi: personPublication['publication']['doi'],
         prevConf: personPublication['confidence'],
@@ -719,9 +697,9 @@ async function main() {
 
   //const publicationCsl = cslRecords[0]
   const testAuthors2 = []
-  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===20}))
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===67}))
   // console.log(`Test authors: ${JSON.stringify(testAuthors2, null, 2)}`)
-  calculateConfidence (testAuthors2, (confirmedAuthorsByDoi || {}))
+  calculateConfidence (testAuthors, (confirmedAuthorsByDoi || {}))
 
 
   // next need to write checks found to DB and then calculate confidence accordingly 
