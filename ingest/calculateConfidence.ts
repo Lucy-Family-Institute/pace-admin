@@ -191,24 +191,36 @@ function getAuthorLastNames (author) {
   return lastNames
 }
 
-function lastNameMatchFuzzy (last, lastNameKey, nameMap){
-  // console.log(`last name fuzzy on ${JSON.stringify(nameMap, null, 2)}`)
-  const lastFuzzy = new Fuse(nameMap, {
-    caseSensitive: false,
-    shouldSort: true,
-    includeScore: false,
-    keys: [lastNameKey],
-    findAllMatches: true,
-    threshold: 0.100,
-  });
-
-  const lastNameResults = lastFuzzy.search(last)
-  // console.log(`Last name results: ${JSON.stringify(lastNameResults, null, 2)}`)
-  return lastNameResults.length > 0 ? lastNameResults[0] : null
+// replace diacritics with alphabetic character equivalents
+function sanitizeDiacritics (value) {
+  if (_.isString(value)) {
+    const newValue = _.clone(value)
+    return newValue
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+  } else {
+    return value
+  }
 }
 
-function nameMatchFuzzy (searchLast, lastKey, searchFirst, firstKey, nameMap) {
-  const lastFuzzy = new Fuse(nameMap, {
+// remove diacritic characters (used later for fuzzy matching of names)
+function sanitizeDiacriticsObjectProperities (object, properties) {
+  const newObject = _.clone(object)
+  _.each (properties, (property) => {
+    newObject[property] = sanitizeDiacritics(newObject[property])
+  })
+  return newObject
+}
+
+function lastNameMatchFuzzy (last, lastKey, nameMap){
+  // first sanitize the diacritics
+  const testNameMap = _.map(nameMap, (name) => {
+     return sanitizeDiacriticsObjectProperities(name, [lastKey])
+  })
+  // sanitize last name checking against as well
+  const testLast = sanitizeDiacritics(last)
+
+  const lastFuzzy = new Fuse(testNameMap, {
     caseSensitive: false,
     shouldSort: true,
     includeScore: false,
@@ -217,7 +229,30 @@ function nameMatchFuzzy (searchLast, lastKey, searchFirst, firstKey, nameMap) {
     threshold: 0.100,
   });
 
-  const lastNameResults = lastFuzzy.search(searchLast);
+  const lastNameResults = lastFuzzy.search(testLast)
+  // console.log(`Last name results: ${JSON.stringify(lastNameResults, null, 2)}`)
+  return lastNameResults.length > 0 ? lastNameResults[0] : null
+}
+
+function nameMatchFuzzy (searchLast, lastKey, searchFirst, firstKey, nameMap) {
+  // first sanitize the diacritics
+  const testNameMap = _.map(nameMap, (name) => {
+    return sanitizeDiacriticsObjectProperities(name, [lastKey])
+ })
+ // sanitize name checking against as well
+ const testLast = sanitizeDiacritics(searchLast)
+ const testFirst = sanitizeDiacritics(searchFirst)
+
+  const lastFuzzy = new Fuse(testNameMap, {
+    caseSensitive: false,
+    shouldSort: true,
+    includeScore: false,
+    keys: [lastKey],
+    findAllMatches: true,
+    threshold: 0.100,
+  });
+
+  const lastNameResults = lastFuzzy.search(testLast);
   // console.log(`Last name match results are: ${JSON.stringify(lastNameResults, null, 2)}`)
   // need to reduce down to arrays of "item" value to then pass again to Fuse
   const reducedLastNameResults = _.map(lastNameResults, (result) => {
@@ -232,7 +267,7 @@ function nameMatchFuzzy (searchLast, lastKey, searchFirst, firstKey, nameMap) {
     findAllMatches: true,
     threshold: 0.001,
   });
-  const results = fuzzyHarperFirst.search(searchFirst);
+  const results = fuzzyHarperFirst.search(testFirst);
   // console.log(`First name match results are: ${JSON.stringify(results, null, 2)}`)
   return results.length > 0 ? results[0] : null;
 }
@@ -509,9 +544,9 @@ async function calculateConfidence (testAuthors, confirmedAuthors) {
       let publicationAuthorMap = await getPublicationAuthorMap(publicationCsl)
       const newTest = {
         author: testAuthor,
-        // confirmedAuthors: confirmedAuthors[personPublication['publication']['doi']],
-        // pubAuthors: publicationAuthorMap,
-        // confidenceTests: passedConfidenceTestsWithConf,
+        confirmedAuthors: confirmedAuthors[personPublication['publication']['doi']],
+        pubAuthors: publicationAuthorMap,
+        confidenceTests: passedConfidenceTestsWithConf,
         person_publication_id: personPublication['id'],
         doi: personPublication['publication']['doi'],
         prevConf: personPublication['confidence'],
@@ -699,7 +734,7 @@ async function main() {
   const testAuthors2 = []
   testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===67}))
   // console.log(`Test authors: ${JSON.stringify(testAuthors2, null, 2)}`)
-  calculateConfidence (testAuthors, (confirmedAuthorsByDoi || {}))
+  calculateConfidence (testAuthors2, (confirmedAuthorsByDoi || {}))
 
 
   // next need to write checks found to DB and then calculate confidence accordingly 
