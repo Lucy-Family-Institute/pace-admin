@@ -62,7 +62,11 @@ migrate:
 	cd hasura && hasura migrate apply && cd ..
 newdb:
 	cd ingest && ts-node loadAuthors.ts && cd ..
+	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
+
+load_name_variances:
+	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
 
 scopus_author_data:
 	cd ingest && ts-node fetchScopusAuthorObjects.ts && cd ..
