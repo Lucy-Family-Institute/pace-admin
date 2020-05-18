@@ -192,7 +192,7 @@ function getAuthorLastNames (author) {
 }
 
 // replace diacritics with alphabetic character equivalents
-function sanitizeDiacritics (value) {
+function normalizeDiacritics (value) {
   if (_.isString(value)) {
     const newValue = _.clone(value)
     return newValue
@@ -204,21 +204,21 @@ function sanitizeDiacritics (value) {
 }
 
 // remove diacritic characters (used later for fuzzy matching of names)
-function sanitizeDiacriticsObjectProperities (object, properties) {
+function normalizeDiacriticsObjectProperities (object, properties) {
   const newObject = _.clone(object)
   _.each (properties, (property) => {
-    newObject[property] = sanitizeDiacritics(newObject[property])
+    newObject[property] = normalizeDiacritics(newObject[property])
   })
   return newObject
 }
 
 function lastNameMatchFuzzy (last, lastKey, nameMap){
-  // first sanitize the diacritics
+  // first normalize the diacritics
   const testNameMap = _.map(nameMap, (name) => {
-     return sanitizeDiacriticsObjectProperities(name, [lastKey])
+     return normalizeDiacriticsObjectProperities(name, [lastKey])
   })
-  // sanitize last name checking against as well
-  const testLast = sanitizeDiacritics(last)
+  // normalize last name checking against as well
+  const testLast = normalizeDiacritics(last)
 
   const lastFuzzy = new Fuse(testNameMap, {
     caseSensitive: false,
@@ -226,7 +226,7 @@ function lastNameMatchFuzzy (last, lastKey, nameMap){
     includeScore: false,
     keys: [lastKey],
     findAllMatches: true,
-    threshold: 0.100,
+    threshold: 0.067,
   });
 
   const lastNameResults = lastFuzzy.search(testLast)
@@ -235,13 +235,13 @@ function lastNameMatchFuzzy (last, lastKey, nameMap){
 }
 
 function nameMatchFuzzy (searchLast, lastKey, searchFirst, firstKey, nameMap) {
-  // first sanitize the diacritics
+  // first normalize the diacritics
   const testNameMap = _.map(nameMap, (name) => {
-    return sanitizeDiacriticsObjectProperities(name, [lastKey])
+    return normalizeDiacriticsObjectProperities(name, [lastKey])
  })
- // sanitize name checking against as well
- const testLast = sanitizeDiacritics(searchLast)
- const testFirst = sanitizeDiacritics(searchFirst)
+ // normalize name checking against as well
+ const testLast = normalizeDiacritics(searchLast)
+ const testFirst = normalizeDiacritics(searchFirst)
 
   const lastFuzzy = new Fuse(testNameMap, {
     caseSensitive: false,
@@ -249,7 +249,7 @@ function nameMatchFuzzy (searchLast, lastKey, searchFirst, firstKey, nameMap) {
     includeScore: false,
     keys: [lastKey],
     findAllMatches: true,
-    threshold: 0.100,
+    threshold: 0.067,
   });
 
   const lastNameResults = lastFuzzy.search(testLast);
@@ -732,7 +732,7 @@ async function main() {
 
   //const publicationCsl = cslRecords[0]
   const testAuthors2 = []
-  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===67}))
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===20}))
   // console.log(`Test authors: ${JSON.stringify(testAuthors2, null, 2)}`)
   calculateConfidence (testAuthors2, (confirmedAuthorsByDoi || {}))
 
