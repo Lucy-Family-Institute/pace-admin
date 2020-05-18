@@ -37,6 +37,113 @@ const client = new ApolloClient({
 //   cache: new InMemoryCache()
 // })
 
+async function getPersonPublications (personId) {
+  const queryResult = await client.query(readPersonPublications(personId))
+  return queryResult.data.persons_publications
+}
+
+async function getAllSimplifiedPersons () {
+  const queryResult = await client.query(readPersons())
+
+  const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
+    return {
+      id: person.id,
+      names: [
+        {
+          lastName: person.family_name.toLowerCase(),
+          firstInitial: person.given_name[0].toLowerCase(),
+          firstName: person.given_name.toLowerCase(),
+        }
+      ],  // put in different lastname and given name combinations, for now just one variation
+      startYear: person.start_date,
+      endYear: person.end_date
+    }
+  })
+  return simplifiedPersons
+}
+
+async function wait(ms){
+  return new Promise((resolve, reject)=> {
+    setTimeout(() => resolve(true), ms );
+  });
+}
+
+async function randomWait(seedTime, index){
+  const waitTime = 1000 * (index % 5)
+  //console.log(`Thread Waiting for ${waitTime} ms`)
+  await wait(waitTime)
+}
+
+async function getPapersByDoi (csvPath) {
+  console.log(`Loading Papers from path: ${csvPath}`)
+  // ingest list of DOI's from CSV and relevant center author name
+  try {
+    const authorPapers: any = await loadCsv({
+     path: csvPath
+    })
+
+    //console.log(`Getting Keys for author papers`)
+
+    //normalize column names to all lowercase
+    const authorLowerPapers = _.mapValues(authorPapers, function (paper) {
+      return _.mapKeys(paper, function (value, key) {
+        return key.toLowerCase()
+      })
+    })
+
+    console.log(`After lowercase ${_.keys(authorLowerPapers[0])}`)
+
+    const papersByDoi = _.groupBy(authorLowerPapers, function(paper) {
+      //strip off 'doi:' if present
+      //console.log('in loop')
+      return _.replace(paper['doi'], 'doi:', '') 
+    })
+    //console.log('Finished load')
+    return papersByDoi
+  } catch (error){
+    console.log(`Error on paper load for path ${csvPath}, error: ${error}`)
+    return undefined
+  }
+} 
+
+async function getConfirmedAuthorsByDoi (papersByDoi, csvColumn) {
+  const confirmedAuthorsByDoi = _.mapValues(papersByDoi, function (papers) {
+    //console.log(`Parsing names from papers ${JSON.stringify(papers,null,2)}`)
+    return _.mapValues(papers, function (paper) {
+      const unparsedName = paper[csvColumn]
+      //console.log(`Parsing name: ${unparsedName}`)
+      const parsedName =  humanparser.parseName(unparsedName)
+      //console.log(`Parsed Name is: ${JSON.stringify(parsedName,null,2)}`)
+      return parsedName
+    })
+  })
+  return confirmedAuthorsByDoi
+}
+
+async function getConfirmedAuthorsByDoiFromCSV (path) {
+  try {
+    const papersByDoi = await getPapersByDoi(path)
+    const dois = _.keys(papersByDoi)
+    console.log(`Papers by DOI Count: ${JSON.stringify(dois.length,null,2)}`)
+   
+    const confirmedAuthorColumn = 'nd author (last, first)'
+    const firstDoiConfirmedList = papersByDoi[dois[0]]
+  
+    //check if confirmed column exists first, if not ignore this step
+    let confirmedAuthorsByDoi = {}
+    if (papersByDoi && dois.length > 0 && firstDoiConfirmedList && firstDoiConfirmedList.length > 0 && firstDoiConfirmedList[0][confirmedAuthorColumn]){
+      //get map of DOI's to an array of confirmed authors from the load table
+      confirmedAuthorsByDoi = await getConfirmedAuthorsByDoi(papersByDoi, confirmedAuthorColumn)
+     
+      // console.log(`Confirmed Authors By Doi are: ${JSON.stringify(confirmedAuthorsByDoi,null,2)}`)
+    }
+    return confirmedAuthorsByDoi
+  } catch (error){
+    console.log(`Error on load confirmed authors: ${error}`)
+    return {}
+  }
+}
+
 // person map assumed to be a map of simplename to simpleperson object
 // author map assumed to be doi mapped to two arrays: first authors and other authors
 // returns a map of person ids to the person object and confidence value for any persons that matched coauthor attributes
@@ -544,9 +651,9 @@ async function calculateConfidence (testAuthors, confirmedAuthors) {
       let publicationAuthorMap = await getPublicationAuthorMap(publicationCsl)
       const newTest = {
         author: testAuthor,
-        confirmedAuthors: confirmedAuthors[personPublication['publication']['doi']],
-        pubAuthors: publicationAuthorMap,
-        confidenceTests: passedConfidenceTestsWithConf,
+        // confirmedAuthors: confirmedAuthors[personPublication['publication']['doi']],
+        // pubAuthors: publicationAuthorMap,
+        // confidenceTests: passedConfidenceTestsWithConf,
         person_publication_id: personPublication['id'],
         doi: personPublication['publication']['doi'],
         prevConf: personPublication['confidence'],
@@ -572,112 +679,6 @@ async function calculateConfidence (testAuthors, confirmedAuthors) {
     console.log(`${failedTestsByNewConf[conf].length} Failed Tests By Confidence: ${conf}`)
   })
   console.log(`Passed tests: ${passedTests.length} Failed Tests: ${failedTests.length}`)
-}
-async function getPersonPublications (personId) {
-  const queryResult = await client.query(readPersonPublications(personId))
-  return queryResult.data.persons_publications
-}
-
-async function getAllSimplifiedPersons () {
-  const queryResult = await client.query(readPersons())
-
-  const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
-    return {
-      id: person.id,
-      names: [
-        {
-          lastName: person.family_name.toLowerCase(),
-          firstInitial: person.given_name[0].toLowerCase(),
-          firstName: person.given_name.toLowerCase(),
-        }
-      ],  // put in different lastname and given name combinations, for now just one variation
-      startYear: person.start_date,
-      endYear: person.end_date
-    }
-  })
-  return simplifiedPersons
-}
-
-async function wait(ms){
-  return new Promise((resolve, reject)=> {
-    setTimeout(() => resolve(true), ms );
-  });
-}
-
-async function randomWait(seedTime, index){
-  const waitTime = 1000 * (index % 5)
-  //console.log(`Thread Waiting for ${waitTime} ms`)
-  await wait(waitTime)
-}
-
-async function getPapersByDoi (csvPath) {
-  console.log(`Loading Papers from path: ${csvPath}`)
-  // ingest list of DOI's from CSV and relevant center author name
-  try {
-    const authorPapers: any = await loadCsv({
-     path: csvPath
-    })
-
-    //console.log(`Getting Keys for author papers`)
-
-    //normalize column names to all lowercase
-    const authorLowerPapers = _.mapValues(authorPapers, function (paper) {
-      return _.mapKeys(paper, function (value, key) {
-        return key.toLowerCase()
-      })
-    })
-
-    console.log(`After lowercase ${_.keys(authorLowerPapers[0])}`)
-
-    const papersByDoi = _.groupBy(authorLowerPapers, function(paper) {
-      //strip off 'doi:' if present
-      //console.log('in loop')
-      return _.replace(paper['doi'], 'doi:', '') 
-    })
-    //console.log('Finished load')
-    return papersByDoi
-  } catch (error){
-    console.log(`Error on paper load for path ${csvPath}, error: ${error}`)
-    return undefined
-  }
-} 
-
-async function getConfirmedAuthorsByDoi (papersByDoi, csvColumn) {
-  const confirmedAuthorsByDoi = _.mapValues(papersByDoi, function (papers) {
-    //console.log(`Parsing names from papers ${JSON.stringify(papers,null,2)}`)
-    return _.mapValues(papers, function (paper) {
-      const unparsedName = paper[csvColumn]
-      //console.log(`Parsing name: ${unparsedName}`)
-      const parsedName =  humanparser.parseName(unparsedName)
-      //console.log(`Parsed Name is: ${JSON.stringify(parsedName,null,2)}`)
-      return parsedName
-    })
-  })
-  return confirmedAuthorsByDoi
-}
-
-async function getConfirmedAuthorsByDoiFromCSV (path) {
-  try {
-    const papersByDoi = await getPapersByDoi(path)
-    const dois = _.keys(papersByDoi)
-    console.log(`Papers by DOI Count: ${JSON.stringify(dois.length,null,2)}`)
-   
-    const confirmedAuthorColumn = 'nd author (last, first)'
-    const firstDoiConfirmedList = papersByDoi[dois[0]]
-  
-    //check if confirmed column exists first, if not ignore this step
-    let confirmedAuthorsByDoi = {}
-    if (papersByDoi && dois.length > 0 && firstDoiConfirmedList && firstDoiConfirmedList.length > 0 && firstDoiConfirmedList[0][confirmedAuthorColumn]){
-      //get map of DOI's to an array of confirmed authors from the load table
-      confirmedAuthorsByDoi = await getConfirmedAuthorsByDoi(papersByDoi, confirmedAuthorColumn)
-     
-      // console.log(`Confirmed Authors By Doi are: ${JSON.stringify(confirmedAuthorsByDoi,null,2)}`)
-    }
-    return confirmedAuthorsByDoi
-  } catch (error){
-    console.log(`Error on load confirmed authors: ${error}`)
-    return {}
-  }
 }
 
 async function main() {
@@ -732,7 +733,7 @@ async function main() {
 
   //const publicationCsl = cslRecords[0]
   const testAuthors2 = []
-  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===20}))
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===24}))
   // console.log(`Test authors: ${JSON.stringify(testAuthors2, null, 2)}`)
   calculateConfidence (testAuthors2, (confirmedAuthorsByDoi || {}))
 
