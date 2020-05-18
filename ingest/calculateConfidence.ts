@@ -46,15 +46,25 @@ async function getAllSimplifiedPersons () {
   const queryResult = await client.query(readPersons())
 
   const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
+    const names = []
+    names.push({
+      lastName: person.family_name.toLowerCase(),
+      firstInitial: person.given_name[0].toLowerCase(),
+      firstName: person.given_name.toLowerCase(),
+    })
+    // add all name variations
+    if (person.persons_name_variances) {
+      _.each (person.persons_name_variances, (nameVariance) => {
+        names.push({
+          lastName: nameVariance.family_name.toLowerCase(),
+          firstInitial: nameVariance.given_name[0].toLowerCase(),
+          firstName: nameVariance.given_name.toLowerCase()
+        })
+      })
+    }
     return {
       id: person.id,
-      names: [
-        {
-          lastName: person.family_name.toLowerCase(),
-          firstInitial: person.given_name[0].toLowerCase(),
-          firstName: person.given_name.toLowerCase(),
-        }
-      ],  // put in different lastname and given name combinations, for now just one variation
+      names: names,
       startYear: person.start_date,
       endYear: person.end_date
     }
@@ -291,6 +301,7 @@ async function getPublicationAuthorMap (publicationCsl) {
 }
 
 function getAuthorLastNames (author) {
+  // console.log(`Getting author last names for ${JSON.stringify(author, null, 2)}`)
   const lastNames = _.transform(author['names'], function (result, value) {
     result.push(value['lastName'])
     return true
@@ -383,6 +394,7 @@ function testAuthorLastName (author, publicationAuthorMap) {
   //check for any matches of last name
   // get array of author last names
   const lastNames = getAuthorLastNames(author)
+  // console.log(`Author last names are: ${JSON.stringify(lastNames)}`)
   let matchedAuthors = {}
   _.each(_.keys(publicationAuthorMap), (pubLastName) => {
     _.each(lastNames, (lastName) => {
@@ -407,7 +419,9 @@ function testConfirmedAuthor (author, publicationAuthorMap, confirmedAuthorMap) 
         // find pub authors with fuzzy match to confirmed author
         _.each(_.keys(publicationAuthorMap), (pubLastName) => {
           // find the relevant pub authors and return as matched
-          if (lastNameMatchFuzzy(pubLastName, 'lastName', [{lastName: name.lastName}])) {
+          // no guarantee the pub author name matches the last name for the confirmed name
+          // so need to find a last name variant that does match
+          if (lastNameMatchFuzzy(pubLastName, 'lastName', author.names)) {
             matchedAuthors[pubLastName] = publicationAuthorMap[pubLastName]
           }
         })
@@ -432,16 +446,23 @@ function testAuthorGivenNamePart (author, publicationAuthorMap, initialOnly) {
         _.each(publicationAuthorMap[pubLastName], (pubAuthor) => {
           // split given names into separate parts and check initial against each one
           const givenParts = _.split(pubAuthor.given, ' ')
+          let matched = false
+          let firstKey = 'firstName'
           _.each(givenParts, (part) => {
-            let firstKey = 'firstName'
             if (initialOnly){
               part = part[0]
               firstKey = 'firstInitial'
             } 
             if (nameMatchFuzzy(pubLastName, 'lastName', part, firstKey, nameVariations[nameLastName])) {
               (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
+              matched = true
             }
           })
+          // if not matched try matching without breaking it into parts
+          if (!matched && !initialOnly && 
+            nameMatchFuzzy(pubLastName, 'lastName', pubAuthor.given, firstKey, nameVariations[nameLastName])){
+            (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
+          }
         })
       }
     })
@@ -696,7 +717,7 @@ async function main() {
   //create map of last name to array of related persons with same last name
   const personMap = _.transform(testAuthors, function (result, value) {
     _.each(value.names, (name) => {
-      (result[name.lastName] || (result[name.lastName] = [])).push(value)
+      (result[name['lastName']] || (result[name['lastName']] = [])).push(value)
     })
   }, {})
 
