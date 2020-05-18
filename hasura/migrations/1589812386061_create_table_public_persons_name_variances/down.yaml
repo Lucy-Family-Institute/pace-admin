@@ -1,0 +1,3 @@
+- args:
+    sql: DROP TABLE "public"."persons_name_variances"
+  type: run_sql

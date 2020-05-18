@@ -13,6 +13,11 @@ export default function readPersons () {
           institution {
             name
           }
+          persons_name_variances {
+            id
+            given_name
+            family_name
+          }
           persons_publications_aggregate {
             aggregate {
               count

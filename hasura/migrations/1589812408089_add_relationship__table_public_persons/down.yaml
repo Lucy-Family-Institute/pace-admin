@@ -1,0 +1,6 @@
+- args:
+    relationship: persons_name_variances
+    table:
+      name: persons
+      schema: public
+  type: drop_relationship
