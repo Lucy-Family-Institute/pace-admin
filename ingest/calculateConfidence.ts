@@ -315,7 +315,8 @@ function normalizeDiacritics (value) {
     const newValue = _.clone(value)
     return newValue
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[\u0300-\u036f]/g, '').replace(/[\u2019]/g, '\u0027')
+      // the u0027 also normalizes the curly apostrophe to the straight one
   } else {
     return value
   }
@@ -337,7 +338,7 @@ function lastNameMatchFuzzy (last, lastKey, nameMap){
   })
   // normalize last name checking against as well
   const testLast = normalizeDiacritics(last)
-
+  // console.log(`After diacritic switch ${JSON.stringify(nameMap, null, 2)} converted to: ${JSON.stringify(testNameMap, null, 2)}`)
   const lastFuzzy = new Fuse(testNameMap, {
     caseSensitive: false,
     shouldSort: true,
@@ -754,9 +755,9 @@ async function main() {
 
   //const publicationCsl = cslRecords[0]
   const testAuthors2 = []
-  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===24}))
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===61}))
   // console.log(`Test authors: ${JSON.stringify(testAuthors2, null, 2)}`)
-  calculateConfidence (testAuthors2, (confirmedAuthorsByDoi || {}))
+  calculateConfidence (testAuthors, (confirmedAuthorsByDoi || {}))
 
 
   // next need to write checks found to DB and then calculate confidence accordingly 
