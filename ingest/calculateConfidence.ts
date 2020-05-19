@@ -313,10 +313,15 @@ function getAuthorLastNames (author) {
 function normalizeDiacritics (value) {
   if (_.isString(value)) {
     const newValue = _.clone(value)
-    return newValue
+    const norm1 = newValue
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '').replace(/[\u2019]/g, '\u0027')
-      // the u0027 also normalizes the curly apostrophe to the straight one
+      .replace(/[\u0300-\u036f]/g, '')
+    // the u0027 also normalizes the curly apostrophe to the straight one
+    const norm2 = norm1.replace(/[\u2019]/g, '\u0027')
+    // return norm2
+    // remove periods in the name
+    const norm3 = norm2.replace(/\./g, '')
+    return norm3
   } else {
     return value
   }
@@ -327,6 +332,27 @@ function normalizeDiacriticsObjectProperities (object, properties) {
   const newObject = _.clone(object)
   _.each (properties, (property) => {
     newObject[property] = normalizeDiacritics(newObject[property])
+  })
+  return newObject
+}
+
+// replace diacritics with alphabetic character equivalents
+function spacesToUnderscores (value) {
+  if (_.isString(value)) {
+    const newValue = _.clone(value)
+    newValue.trim()
+    //return newValue.replace(' ', '_')
+    return _.lowerCase(newValue)
+  } else {
+    return value
+  }
+}
+
+// remove diacritic characters (used later for fuzzy matching of names)
+function spacesToUnderscoresObjectProperities (object, properties) {
+  const newObject = _.clone(object)
+  _.each (properties, (property) => {
+    newObject[property] = spacesToUnderscores(newObject[property])
   })
   return newObject
 }
@@ -349,18 +375,36 @@ function lastNameMatchFuzzy (last, lastKey, nameMap){
   });
 
   const lastNameResults = lastFuzzy.search(testLast)
-  // console.log(`Last name results: ${JSON.stringify(lastNameResults, null, 2)}`)
+  // console.log(`For testing: ${testLast} Last name results: ${JSON.stringify(lastNameResults, null, 2)}`)
   return lastNameResults.length > 0 ? lastNameResults[0] : null
 }
 
 function nameMatchFuzzy (searchLast, lastKey, searchFirst, firstKey, nameMap) {
   // first normalize the diacritics
+  // and if any spaces in search string replace spaces in both fields and search map with underscores for spaces
+  const spacesInLast = (_.words(searchLast).length > 1)
+  const spacesInFirst = (_.words(searchFirst).length > 1)
   const testNameMap = _.map(nameMap, (name) => {
-    return normalizeDiacriticsObjectProperities(name, [lastKey])
- })
- // normalize name checking against as well
- const testLast = normalizeDiacritics(searchLast)
- const testFirst = normalizeDiacritics(searchFirst)
+    let norm = normalizeDiacriticsObjectProperities(name, [lastKey, firstKey])
+    if (spacesInFirst) {
+      norm = spacesToUnderscoresObjectProperities(norm, [firstKey])
+    }
+    if (spacesInLast) {
+      norm = spacesToUnderscoresObjectProperities(norm, [lastKey])
+    }
+    return norm
+  })
+  // normalize name checking against as well
+  let testLast = normalizeDiacritics(searchLast)
+  let testFirst = normalizeDiacritics(searchFirst)
+
+  if (spacesInFirst) {
+    testFirst = spacesToUnderscores(testFirst)
+  }
+
+  if (spacesInLast) {
+    testLast = spacesToUnderscores(testLast)
+  }
 
   const lastFuzzy = new Fuse(testNameMap, {
     caseSensitive: false,
@@ -371,6 +415,7 @@ function nameMatchFuzzy (searchLast, lastKey, searchFirst, firstKey, nameMap) {
     threshold: 0.067,
   });
 
+  // check each phrase split by a space if more than one token
   const lastNameResults = lastFuzzy.search(testLast);
   // console.log(`Last name match results are: ${JSON.stringify(lastNameResults, null, 2)}`)
   // need to reduce down to arrays of "item" value to then pass again to Fuse
@@ -416,7 +461,7 @@ function testConfirmedAuthor (author, publicationAuthorMap, confirmedAuthorMap) 
   if (confirmedAuthorMap && confirmedAuthorMap.length > 0){
     _.each(author['names'], (name) => {
       // console.log(`Checking ${JSON.stringify(name, null, 2)} against confirmed authors`)
-      if (nameMatchFuzzy(name.lastName, 'lastName', name.firstName, 'firstName', confirmedAuthorMap)) {
+      if (nameMatchFuzzy(name.lastName, 'lastName', name.firstName.toLowerCase(), 'firstName', confirmedAuthorMap)) {
         // find pub authors with fuzzy match to confirmed author
         _.each(_.keys(publicationAuthorMap), (pubLastName) => {
           // find the relevant pub authors and return as matched
@@ -438,31 +483,36 @@ function testAuthorGivenNamePart (author, publicationAuthorMap, initialOnly) {
   // group name variations by last name
   const nameVariations = _.groupBy(author['names'], 'lastName')
   let matchedAuthors = new Map()
+  // console.log(`Checking given name match: ${JSON.stringify(nameVariations, null, 2)} author map: ${JSON.stringify(publicationAuthorMap, null, 2)}`)
   _.each(_.keys(nameVariations), (nameLastName) => {
     _.each(_.keys(publicationAuthorMap), (pubLastName) => {
       // check for a fuzzy match of name variant last names to lastname in pub author list
       if (lastNameMatchFuzzy(pubLastName, 'lastName', nameVariations[nameLastName])){
+        //console.log(`Found lastname match pub: ${pubLastName} and variation: ${nameLastName}`)
         // now check for first initial or given name match
         // split the given name based on spaces
+        
         _.each(publicationAuthorMap[pubLastName], (pubAuthor) => {
           // split given names into separate parts and check initial against each one
-          const givenParts = _.split(pubAuthor.given, ' ')
           let matched = false
+          const givenParts = _.split(pubAuthor.given, ' ')
+          //console.log(`Testing given parts: ${JSON.stringify(givenParts, null, 2)}`)
           let firstKey = 'firstName'
           _.each(givenParts, (part) => {
             if (initialOnly){
               part = part[0]
               firstKey = 'firstInitial'
             } 
-            if (nameMatchFuzzy(pubLastName, 'lastName', part, firstKey, nameVariations[nameLastName])) {
+            if (nameMatchFuzzy(pubLastName, 'lastName', part.toLowerCase(), firstKey, nameVariations[nameLastName])) {
               (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
               matched = true
             }
           })
           // if not matched try matching without breaking it into parts
-          if (!matched && !initialOnly && 
-            nameMatchFuzzy(pubLastName, 'lastName', pubAuthor.given, firstKey, nameVariations[nameLastName])){
-            (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
+          if (!matched && givenParts.length > 1) {
+            if (nameMatchFuzzy(pubLastName, 'lastName', pubAuthor.given, firstKey, nameVariations[nameLastName])) {
+              (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
+            }
           }
         })
       }
@@ -697,7 +747,9 @@ async function calculateConfidence (testAuthors, confirmedAuthors) {
     console.log(`${passedTestsByNewConf[conf].length} Passed Tests By Confidence: ${conf}`)
   })
   _.each(_.keys(failedTestsByNewConf), (conf) => {
-    // console.log(`${JSON.stringify(failedTestsByNewConf[conf], null, 2)} Failed Test By Confidence ${conf}`)
+    if (failedTestsByNewConf[conf][0]['newConf'] < failedTestsByNewConf[conf][0]['prevConf']) {
+      //console.log(`${JSON.stringify(failedTestsByNewConf[conf], null, 2)} Failed Test By Confidence ${conf}`)
+    }
     console.log(`${failedTestsByNewConf[conf].length} Failed Tests By Confidence: ${conf}`)
   })
   console.log(`Passed tests: ${passedTests.length} Failed Tests: ${failedTests.length}`)
@@ -755,7 +807,7 @@ async function main() {
 
   //const publicationCsl = cslRecords[0]
   const testAuthors2 = []
-  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===61}))
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===48}))
   // console.log(`Test authors: ${JSON.stringify(testAuthors2, null, 2)}`)
   calculateConfidence (testAuthors, (confirmedAuthorsByDoi || {}))
 
