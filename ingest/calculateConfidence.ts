@@ -320,7 +320,9 @@ function normalizeDiacritics (value) {
     const norm2 = norm1.replace(/[\u2019]/g, '\u0027')
     // return norm2
     // remove periods in the name
-    const norm3 = norm2.replace(/\./g, '')
+    // const norm3 = norm2.replace(/\./g, '')
+    // remove periods and other remaining special characters
+    const norm3 = norm2.replace(/[&\/\\#,+()$~%.'":*?<>{}!]/g,'');
     return norm3
   } else {
     return value
@@ -694,6 +696,7 @@ async function calculateConfidence (testAuthors, confirmedAuthors) {
 
   const passedTests = []
   const failedTests = []
+  const warningTests = []
   await pMap(testAuthors, async (testAuthor) => {
     console.log(`Test Author is: ${JSON.stringify(testAuthor, null, 2)}`)
     const personPublications = await getPersonPublications(testAuthor['id'])
@@ -719,15 +722,21 @@ async function calculateConfidence (testAuthors, confirmedAuthors) {
       let publicationAuthorMap = await getPublicationAuthorMap(publicationCsl)
       const newTest = {
         author: testAuthor,
-        // confirmedAuthors: confirmedAuthors[personPublication['publication']['doi']],
-        // pubAuthors: publicationAuthorMap,
-        // confidenceTests: passedConfidenceTestsWithConf,
+        confirmedAuthors: confirmedAuthors[personPublication['publication']['doi']],
+        pubAuthors: publicationAuthorMap[testAuthor['names'][0]['lastName']],
+        confidenceTests: passedConfidenceTestsWithConf,
         person_publication_id: personPublication['id'],
         doi: personPublication['publication']['doi'],
         prevConf: personPublication['confidence'],
         newConf: confidenceTotal
       };
-      (confidenceTotal === personPublication['confidence']) ? passedTests.push(newTest) : failedTests.push(newTest)
+      if (confidenceTotal === personPublication['confidence']) {
+        passedTests.push(newTest)
+      } else if (confidenceTotal > personPublication['confidence']) {
+        warningTests.push(newTest)
+      } else { 
+        failedTests.push(newTest)
+      }
       // console.log(`Confidence found for ${JSON.stringify(testAuthor, null, 2)}: ${confidenceTotal}`)
     }, {concurrency: 3})
   }, { concurrency: 3 })
@@ -739,16 +748,20 @@ async function calculateConfidence (testAuthors, confirmedAuthors) {
   const passedTestsByNewConf = _.groupBy(passedTests, (passedTest) => {
     return `${passedTest.prevConf} -> ${passedTest.newConf}`
   })
+  const warningTestsByNewConf = _.groupBy(warningTests, (warningTest) => {
+    return `${warningTest.prevConf} -> ${warningTest.newConf}`
+  })
   _.each(_.keys(passedTestsByNewConf), (conf) => {
     console.log(`${passedTestsByNewConf[conf].length} Passed Tests By Confidence: ${conf}`)
   })
+  _.each(_.keys(warningTestsByNewConf), (conf) => {
+    console.log(`${warningTestsByNewConf[conf].length} Warning Tests By Confidence: ${conf}`)
+  })
   _.each(_.keys(failedTestsByNewConf), (conf) => {
-    if (failedTestsByNewConf[conf][0]['newConf'] < failedTestsByNewConf[conf][0]['prevConf']) {
-      //console.log(`${JSON.stringify(failedTestsByNewConf[conf], null, 2)} Failed Test By Confidence ${conf}`)
-    }
+    // console.log(`${JSON.stringify(failedTestsByNewConf[conf], null, 2)} Failed Test By Confidence ${conf}`)
     console.log(`${failedTestsByNewConf[conf].length} Failed Tests By Confidence: ${conf}`)
   })
-  console.log(`Passed tests: ${passedTests.length} Failed Tests: ${failedTests.length}`)
+  console.log(`Passed tests: ${passedTests.length} Warning tests: ${warningTests.length} Failed Tests: ${failedTests.length}`)
 }
 
 async function main() {
@@ -803,9 +816,15 @@ async function main() {
 
   //const publicationCsl = cslRecords[0]
   const testAuthors2 = []
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===53}))
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===17}))
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===94}))
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===78}))
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===48}))
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===61}))
   testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===24}))
   // console.log(`Test authors: ${JSON.stringify(testAuthors2, null, 2)}`)
-  calculateConfidence (testAuthors2, (confirmedAuthorsByDoi || {}))
+  calculateConfidence (testAuthors, (confirmedAuthorsByDoi || {}))
 
 
   // next need to write checks found to DB and then calculate confidence accordingly 
