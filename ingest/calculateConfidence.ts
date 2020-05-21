@@ -6,9 +6,10 @@ import fetch from 'node-fetch'
 import { command as nameParser } from './units/nameParser'
 import humanparser from 'humanparser'
 import readConfidenceTypes from './gql/readConfidenceTypes'
-import readPersonsByYear from '../client/src/gql/readPersonsByYear'
 import readPersons from '../client/src/gql/readPersons'
 import readPersonPublications from './gql/readPersonPublications'
+import insertConfidenceSets from './gql/insertConfidenceSets'
+import insertConfidenceSetItems from './gql/insertConfidenceSetItems'
 import pMap from 'p-map'
 import { command as loadCsv } from './units/loadCsv'
 import Cite from 'citation-js'
@@ -310,7 +311,7 @@ function getAuthorLastNames (author) {
 }
 
 // replace diacritics with alphabetic character equivalents
-function normalizeDiacritics (value) {
+function normalizeString (value) {
   if (_.isString(value)) {
     const newValue = _.clone(value)
     const norm1 = newValue
@@ -318,9 +319,6 @@ function normalizeDiacritics (value) {
       .replace(/[\u0300-\u036f]/g, '')
     // the u0027 also normalizes the curly apostrophe to the straight one
     const norm2 = norm1.replace(/[\u2019]/g, '\u0027')
-    // return norm2
-    // remove periods in the name
-    // const norm3 = norm2.replace(/\./g, '')
     // remove periods and other remaining special characters
     const norm3 = norm2.replace(/[&\/\\#,+()$~%.'":*?<>{}!]/g,'');
     return norm3
@@ -330,10 +328,10 @@ function normalizeDiacritics (value) {
 }
 
 // remove diacritic characters (used later for fuzzy matching of names)
-function normalizeDiacriticsObjectProperities (object, properties) {
+function normalizeObjectProperties (object, properties) {
   const newObject = _.clone(object)
   _.each (properties, (property) => {
-    newObject[property] = normalizeDiacritics(newObject[property])
+    newObject[property] = normalizeString(newObject[property])
   })
   return newObject
 }
@@ -362,10 +360,10 @@ function removeSpacesObjectProperities (object, properties) {
 function lastNameMatchFuzzy (last, lastKey, nameMap){
   // first normalize the diacritics
   const testNameMap = _.map(nameMap, (name) => {
-     return normalizeDiacriticsObjectProperities(name, [lastKey])
+     return normalizeObjectProperties(name, [lastKey])
   })
   // normalize last name checking against as well
-  const testLast = normalizeDiacritics(last)
+  const testLast = normalizeString(last)
   // console.log(`After diacritic switch ${JSON.stringify(nameMap, null, 2)} converted to: ${JSON.stringify(testNameMap, null, 2)}`)
   const lastFuzzy = new Fuse(testNameMap, {
     caseSensitive: false,
@@ -385,14 +383,14 @@ function nameMatchFuzzy (searchLast, lastKey, searchFirst, firstKey, nameMap) {
   // first normalize the diacritics
   // and if any spaces in search string replace spaces in both fields and search map with underscores for spaces
   const testNameMap = _.map(nameMap, (name) => {
-    let norm = normalizeDiacriticsObjectProperities(name, [lastKey, firstKey])
+    let norm = normalizeObjectProperties(name, [lastKey, firstKey])
     norm = removeSpacesObjectProperities(norm, [firstKey])
     norm = removeSpacesObjectProperities(norm, [lastKey])
     return norm
   })
   // normalize name checking against as well
-  let testLast = normalizeDiacritics(searchLast)
-  let testFirst = normalizeDiacritics(searchFirst)
+  let testLast = normalizeString(searchLast)
+  let testFirst = normalizeString(searchFirst)
 
   // console.log(`search first: ${searchFirst} test first after norm: ${testFirst}`)
   testFirst = removeSpaces(testFirst)
@@ -600,6 +598,7 @@ async function performAuthorConfidenceTests (author, publicationCsl, confirmedAu
         // console.log(`${confidenceType['name']} Matched Authors Found: ${JSON.stringify(matchedAuthors, null, 2)}`)
         if (currentMatchedAuthors && _.keys(currentMatchedAuthors).length > 0){
           (passedConfidenceTests[rank] || (passedConfidenceTests[rank] = {}))[confidenceType['name']] = {
+            confidenceTypeId: confidenceType['id'],
             confidenceTypeName : confidenceType['name'],
             testAuthor : author,
             matchedAuthors : currentMatchedAuthors
@@ -676,6 +675,7 @@ async function calculateAuthorConfidence (passedConfidenceTests) {
     _.each(passedConfidenceTests[rank], (confidenceTest) => {
       newConfidenceTests[confidenceTest.confidenceTypeName] = _.clone(confidenceTest)
       _.set(newConfidenceTests[confidenceTest.confidenceTypeName], 'confidenceValue', getConfidenceValue(rank, confidenceTest.confidenceTypeName, index))
+      _.set(newConfidenceTests[confidenceTest.confidenceTypeName], 'confidenceComment', `Value calculated for rank: ${rank} index: ${index}`)
       index += 1
     })
     newPassedConfidenceTests[rank] = newConfidenceTests
@@ -698,7 +698,7 @@ async function calculateConfidence (testAuthors, confirmedAuthors) {
   const failedTests = []
   const warningTests = []
   await pMap(testAuthors, async (testAuthor) => {
-    console.log(`Test Author is: ${JSON.stringify(testAuthor, null, 2)}`)
+    console.log(`Confidence Test Author is: ${testAuthor['names'][0]['lastName']}, ${testAuthor['names'][0]['firstName']}`)
     const personPublications = await getPersonPublications(testAuthor['id'])
     await pMap(personPublications, async (personPublication) => {
       const publicationCsl = JSON.parse(personPublication['publication']['csl_string'])
@@ -722,10 +722,10 @@ async function calculateConfidence (testAuthors, confirmedAuthors) {
       let publicationAuthorMap = await getPublicationAuthorMap(publicationCsl)
       const newTest = {
         author: testAuthor,
-        confirmedAuthors: confirmedAuthors[personPublication['publication']['doi']],
-        pubAuthors: publicationAuthorMap[testAuthor['names'][0]['lastName']],
-        confidenceTests: passedConfidenceTestsWithConf,
-        person_publication_id: personPublication['id'],
+        // confirmedAuthors: confirmedAuthors[personPublication['publication']['doi']],
+        // pubAuthors: publicationAuthorMap[testAuthor['names'][0]['lastName']],
+        confidenceItems: passedConfidenceTestsWithConf,
+        persons_publications_id: personPublication['id'],
         doi: personPublication['publication']['doi'],
         prevConf: personPublication['confidence'],
         newConf: confidenceTotal
@@ -762,10 +762,68 @@ async function calculateConfidence (testAuthors, confirmedAuthors) {
     console.log(`${failedTestsByNewConf[conf].length} Failed Tests By Confidence: ${conf}`)
   })
   console.log(`Passed tests: ${passedTests.length} Warning tests: ${warningTests.length} Failed Tests: ${failedTests.length}`)
+  const confidenceTests = {
+    passed: passedTests,
+    warning: warningTests,
+    failed: failedTests
+  }
+  return confidenceTests
+}
+
+// returns an array confidence set items that were inserted
+async function insertConfidenceTestToDB (confidenceTest, confidenceAlgorithmVersion) {
+  // create confidence set
+  const confidenceSet = {
+    persons_publications_id: confidenceTest['persons_publications_id'],
+    value: confidenceTest['newConf'],
+    version: confidenceAlgorithmVersion
+  }
+  //console.log(`Trying to write confidence set: ${JSON.stringify(confidenceSet, null, 2)}`)
+  //insert confidence set
+  const resultInsertConfidenceSet = await client.mutate(insertConfidenceSets([confidenceSet]))
+  try {
+    if (resultInsertConfidenceSet.data.insert_confidencesets.returning.length > 0) {
+      const confidenceSetId = 0+parseInt(`${ resultInsertConfidenceSet.data.insert_confidencesets.returning[0].id }`)
+      // console.log(`Added confidence set with id: ${ confidenceSetId }`)
+
+      // insert confidence set items
+      let confidenceSetItems = []
+      let loopCounter = 0
+      await pMap(_.keys(confidenceTest['confidenceItems']), async (rank) => {
+        await randomWait(1000, loopCounter)
+        loopCounter += 1
+        _.each(confidenceTest['confidenceItems'][rank], (confidenceType) => {
+          // console.log(`Trying to create confidenceset item objects for personPub: ${confidenceTest['persons_publications_id']} item: ${JSON.stringify(confidenceType, null, 2)}`)
+          let obj = {}
+          obj['confidenceset_id'] = confidenceSetId
+          obj['confidence_type_id'] = confidenceType['confidenceTypeId']
+          obj['value'] = confidenceType['confidenceValue']
+          obj['comment'] = confidenceType['confidenceComment']
+          // console.log(`Created insert confidence set item obj: ${JSON.stringify(obj, null, 2)}`)
+          // push the object into the array of rows to insert later
+          confidenceSetItems.push(obj)
+        })
+      }, {concurrency: 3})
+      // console.log(JSON.stringify(confidenceSetItems, null, 2))
+      // console.log(`Calling insert items ${confidenceSetId}`)
+      const resultInsertConfidenceSetItems = await client.mutate(insertConfidenceSetItems(confidenceSetItems))
+      // console.log(`Done insert items ${confidenceSetId}`)
+      // _.each(resultInsertConfidenceSetItems.data.insert_confidencesets_items.returning, (item) => {
+      //   console.log(`Added item for confidence set ${ confidenceSetId } with item id: ${ item.id }`)
+      // })
+      return resultInsertConfidenceSetItems.data.insert_confidencesets_items.returning
+    } else {
+      throw `Failed to insert confidence set no result returned for set: ${JSON.stringify(confidenceTest, null, 2)}`
+    }
+  } catch (error) {
+     throw `Failed to insert confidence set: ${JSON.stringify(confidenceTest, null, 2)} with ${error}`
+  }
 }
 
 async function main() {
 
+  // use related github commit hash for the version when algorithm last completed
+  const confidenceAlgorithmVersion = '876b7bd06e1ca819f5fe2f77ee48ea8c491f1ab1'
   // get confirmed author lists to papers
   const pathsByYear = {
     // 2019: ['../data/scopus.2019.20200320103319.csv']
@@ -804,31 +862,57 @@ async function main() {
 
   // console.log(`Confirmed Authors: ${JSON.stringify(confirmedAuthorsByDoi['10.1158/1541-7786.mcr-16-0312'], null, 2)}`)
 
+  // first do against current values and then have updated based on what is found
   // run against all pubs in DB and confirm have same confidence value calculation
-
   // calculate confidence for publications
-  // const doi = '10.1242/dev.171512'
-  // const doi = '10.1002/cmdc.201900266'
-  //const doi = '10.1021/acs.analchem.7b03912'
-  //get CSL (citation style language) record by doi from dx.dio.org
-  //const cslRecords = await Cite.inputAsync(doi)
-  //console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
-
-  //const publicationCsl = cslRecords[0]
   const testAuthors2 = []
-  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===53}))
-  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===17}))
-  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===94}))
-  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===78}))
-  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===48}))
-  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===61}))
+  // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===53}))
+  // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===17}))
+  // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===94}))
+  // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===78}))
+  // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===48}))
+  // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===61}))
   testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===24}))
   // console.log(`Test authors: ${JSON.stringify(testAuthors2, null, 2)}`)
-  calculateConfidence (testAuthors, (confirmedAuthorsByDoi || {}))
+  const confidenceTests = await calculateConfidence (testAuthors, (confirmedAuthorsByDoi || {}))
 
-
-  // next need to write checks found to DB and then calculate confidence accordingly 
-  // first do against current values and then have updated based on what is found
+  // next need to write checks found to DB and then calculate confidence accordingly
+  let errorsInsert = []
+  let passedInsert = []
+  let totalConfidenceSets = 0
+  let totalSetItems = 0
+  let totalSetItemsInserted = 0
+  console.log('Beginning insert of confidence sets...')
+  await pMap (_.keys(confidenceTests), async (testStatus) => {
+    // console.log(`trying to insert confidence values ${testStatus}`)
+    let loopCounter = 1
+    await pMap (confidenceTests[testStatus], async (confidenceTest) => {
+      // console.log('trying to insert confidence values')
+      randomWait(1000, loopCounter)
+      loopCounter += 1
+      try {
+        // console.log(`Tabulating total for ${JSON.stringify(confidenceTest, null, 2)}`)
+        totalConfidenceSets += 1
+        _.each(_.keys(confidenceTest['confidenceItems']), (rank) => {
+          _.each(_.keys(confidenceTest['confidenceItems'][rank]), (confidenceType) => {
+            totalSetItems += 1
+          })
+        })
+        const insertedConfidenceSetItems = await insertConfidenceTestToDB(confidenceTest, confidenceAlgorithmVersion)
+        passedInsert.push(confidenceTest)
+        totalSetItemsInserted += insertedConfidenceSetItems.length
+      } catch (error) {
+        errorsInsert.push(error)
+        throw error
+      }
+    }, {concurrency: 1})
+  }, {concurrency: 1})
+  console.log('Done inserting confidence Sets...')
+  console.log(`Errors on insert of confidence sets: ${JSON.stringify(errorsInsert, null, 2)}`)
+  console.log(`Total Errors on insert of confidence sets: ${errorsInsert.length}`)
+  console.log(`Total Sets Tried: ${totalConfidenceSets} Passed: ${passedInsert.length} Failed: ${errorsInsert.length}`)
+  console.log(`Total Set Items Tried: ${totalSetItems} Passed: ${totalSetItemsInserted}`)
+  console.log(`Passed tests: ${confidenceTests['passed'].length} Warning tests: ${confidenceTests['warning'].length} Failed Tests: ${confidenceTests['failed'].length}`)
 }
 
 main()
