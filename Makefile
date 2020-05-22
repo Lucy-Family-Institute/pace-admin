@@ -64,6 +64,7 @@ newdb:
 	cd ingest && ts-node loadAuthors.ts && cd ..
 	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
+	cd ingest && ts-node calculatedConfidence.ts && cd ..
 
 load_name_variances:
 	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
