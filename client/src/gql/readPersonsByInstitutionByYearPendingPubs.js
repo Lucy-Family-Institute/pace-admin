@@ -42,6 +42,11 @@ export default function readPersonsByInstitutionByYearPendingPubs (institutionNa
               count(columns: doi)
             }
           }
+          persons_namevariances {
+            family_name
+            given_name
+            id
+          }
         }
       }
     `

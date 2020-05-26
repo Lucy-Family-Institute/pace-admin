@@ -1119,6 +1119,10 @@ export default {
       this.nameVariants[0] = `${person.family_name}, ${person.given_name.charAt(0)}`
       this.nameVariants[1] = `${person.family_name}, ${person.given_name}`
       // return variants
+      _.each(person.persons_namevariances, (nameVariant) => {
+        const nameStr = `${nameVariant.family_name}, ${nameVariant.given_name}`
+        this.nameVariants.push(nameStr)
+      })
     },
     getUpdatedPublicationYear (csl) {
       // look for both online and print dates, and make newer date win if different

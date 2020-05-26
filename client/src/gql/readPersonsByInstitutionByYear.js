@@ -43,6 +43,11 @@ export default function readPersonsByInstitutionByYear (institutionNames, pubYea
               count(columns: doi)
             }
           }
+          persons_namevariances {
+            family_name
+            given_name
+            id
+          }
         }
       }
     `
