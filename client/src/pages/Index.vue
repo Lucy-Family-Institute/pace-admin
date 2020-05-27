@@ -182,8 +182,8 @@
                       </q-item-section>
                       <q-item-section avatar side>
                         <q-badge
-                          :label="item.confidence*100+'%'"
-                          :color="item.confidence*100 <= 50 ? 'amber-10' : 'green'"
+                          :label="getPublicationConfidence(item)*100+'%'"
+                          :color="getPublicationConfidence(item)*100 <= 50 ? 'amber-10' : 'green'"
                         />
                       </q-item-section>
                     </template>
@@ -295,6 +295,21 @@
                   <q-card class="col-xs-11">
                     <q-card-section>
                       <q-table
+                        dense
+                        title="Confidence Breakdown"
+                        :data="confidenceSetItems"
+                        :columns="confidenceColumns"
+                        row-key="id"
+                      >
+                        <q-tr slot="bottom-row">
+                          <q-td colspan="100%">
+                            <strong>Total: {{ confidenceSet.value }}</strong>
+                          </q-td>
+                        </q-tr>
+                      </q-table>
+                    </q-card-section>
+                    <q-card-section>
+                      <q-table
                         title="Possible Author Matches"
                         :data="matchedPublicationAuthors"
                         :columns="authorColumns"
@@ -368,6 +383,7 @@ import readPersons from '../gql/readPersons'
 // import readPublicationsByPerson from '../gql/readPublicationsByPerson'
 // import readPublicationsByPersonByReview from '../gql/readPublicationsByPersonByReview'
 import readAuthorsByPublication from '../gql/readAuthorsByPublication'
+import readConfidenceSetItems from '../gql/readConfidenceSetItems'
 import insertReview from '../gql/insertReview'
 // import readUser from '../gql/readUser'
 // import readInstitutions from '../gql/readInstitutions'
@@ -430,6 +446,8 @@ export default {
     institutionId: undefined,
     nameVariants: [],
     publicationAuthors: [],
+    confidenceSetitems: [],
+    confidenceSet: undefined,
     matchedPublicationAuthors: [],
     reviewQueueKey: 0,
     publicationCitation: undefined,
@@ -444,6 +462,12 @@ export default {
       { name: 'position', align: 'left', label: 'Position', field: 'position', sortable: true },
       { name: 'family_name', align: 'left', label: 'Family Name', field: 'family_name', sortable: true },
       { name: 'given_name', align: 'left', label: 'Given Name', field: 'given_name', sortable: true }
+    ],
+    confidenceColumns: [
+      { name: 'value', align: 'left', label: 'Value', field: 'value', sortable: true },
+      { name: 'rank', align: 'left', label: 'Rank', field: 'confidence_type_rank', sortable: true },
+      { name: 'type_desc', align: 'left', label: 'Desc', field: 'confidence_type_desc', sortable: false },
+      { name: 'comment', align: 'left', label: 'Comment', field: 'comment', sortable: false }
     ],
     pagination: {
       page: 1,
@@ -761,13 +785,13 @@ export default {
       const reviewStatesResult = await this.$apollo.query({
         query: readReviewTypes
       })
-      console.log(`Review Type Results: ${JSON.stringify(reviewStatesResult.data, null, 2)}`)
+      // console.log(`Review Type Results: ${JSON.stringify(reviewStatesResult.data, null, 2)}`)
       this.reviewStates = await _.map(reviewStatesResult.data.type_review, (typeReview) => {
-        console.log(`Current type review is: ${JSON.stringify(typeReview, null, 2)}`)
+        // console.log(`Current type review is: ${JSON.stringify(typeReview, null, 2)}`)
         return typeReview.value
       })
       this.showReviewStates = _.filter(this.reviewStates, (value) => { return this.showReviewState(value) })
-      console.log(`Show Review states initialized to: ${this.showReviewStates} Review states are: ${this.reviewStates}`)
+      // console.log(`Show Review states initialized to: ${this.showReviewStates} Review states are: ${this.reviewStates}`)
     },
     async loadPersons () {
       const personResult = await this.$apollo.query(readPersons())
@@ -785,6 +809,25 @@ export default {
       })
       console.log(`Matched authors are: ${JSON.stringify(this.matchedPublicationAuthors, null, 2)}`)
     },
+    async loadConfidenceSet (personPublication) {
+      this.confidenceSetItems = []
+      this.confidenceSet = undefined
+      console.log(`Trying to load confidence sets for pub: ${JSON.stringify(personPublication, null, 2)}`)
+      if (personPublication.confidencesets_aggregate &&
+        personPublication.confidencesets_aggregate.nodes.length > 0) {
+        this.confidenceSet = personPublication.confidencesets_aggregate.nodes[0]
+        console.log('getting confidence set items...')
+        const result = await this.$apollo.query(readConfidenceSetItems(this.confidenceSet.id))
+        this.confidenceSetItems = result.data.confidencesets_items
+        this.confidenceSetItems = _.transform(this.confidenceSetItems, (result, setItem) => {
+          console.log(`Trying to set properties for confidence set item: ${JSON.stringify(setItem, null, 2)}`)
+          _.set(setItem, 'confidence_type_name', setItem.confidence_type.name)
+          _.set(setItem, 'confidence_type_rank', setItem.confidence_type.rank)
+          _.set(setItem, 'confidence_type_desc', setItem.confidence_type.description)
+          result.push(setItem)
+        }, [])
+      }
+    },
     async fetchData () {
       await this.loadReviewStates()
       await this.loadPersonsWithFilter()
@@ -796,6 +839,8 @@ export default {
       this.filteredPersonPublicationsCombinedMatchesByReview = {}
       this.publicationsGroupedByDoiByReview = {}
       this.publicationsGroupedByDoi = {}
+      this.confidenceSetItems = []
+      this.confidenceSet = undefined
     },
     async setCurrentPersonPublicationsCombinedMatches () {
       let reviewType = 'pending'
@@ -835,7 +880,7 @@ export default {
           const personPubs = this.publicationsGroupedByDoiByReview[reviewType][doi]
           let currentPersonPub
           _.each(personPubs, (personPub, index) => {
-            if (!currentPersonPub || currentPersonPub.confidence < personPub.confidence) {
+            if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
               currentPersonPub = personPub
             }
           })
@@ -888,6 +933,15 @@ export default {
         return title
       }
     },
+    getPublicationConfidence (personPublication) {
+      if (personPublication.confidencesets_aggregate &&
+        personPublication.confidencesets_aggregate.nodes &&
+        personPublication.confidencesets_aggregate.nodes.length > 0) {
+        return personPublication.confidencesets_aggregate.nodes[0].value
+      } else {
+        return personPublication.confidence
+      }
+    },
     async sortPublications () {
       // sort by confidence of pub title
       // apply any sorting applied
@@ -922,7 +976,7 @@ export default {
         // need to sort by confidence and then name, not guaranteed to be in order from what is returned from DB
         // first group items by count
         const pubsByConf = _.groupBy(this.personPublicationsCombinedMatches, (pub) => {
-          return pub.confidence
+          return this.getPublicationConfidence(pub)
         })
 
         // sort each person array by title for each conf
@@ -978,6 +1032,7 @@ export default {
       this.clearPublication()
       this.personPublication = personPublication
       this.loadPublicationAuthors(personPublication)
+      this.loadConfidenceSet(personPublication)
       // query separately for csl because slow to get more than one
       const publicationId = personPublication.publication.id
       const result = await this.$apollo.query({
