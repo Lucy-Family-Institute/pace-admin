@@ -1,0 +1,19 @@
+- args:
+    permission:
+      allow_upsert: true
+      check: {}
+      columns:
+      - value
+      - id
+      - persons_publications_id
+      - version
+      - datetime
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: confidencesets
+      schema: public
+  type: create_insert_permission

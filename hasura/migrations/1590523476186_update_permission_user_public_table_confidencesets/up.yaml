@@ -1,0 +1,16 @@
+- args:
+    permission:
+      allow_aggregations: true
+      columns:
+      - value
+      - id
+      - persons_publications_id
+      - version
+      - datetime
+      filter: {}
+      limit: null
+    role: user
+    table:
+      name: confidencesets
+      schema: public
+  type: create_select_permission

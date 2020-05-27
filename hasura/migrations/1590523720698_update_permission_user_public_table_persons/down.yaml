@@ -1,0 +1,27 @@
+- args:
+    role: user
+    table:
+      name: persons
+      schema: public
+  type: drop_select_permission
+- args:
+    permission:
+      allow_aggregations: false
+      columns:
+      - end_date
+      - start_date
+      - data_id
+      - id
+      - institution_id
+      - provenance_id
+      - email
+      - family_name
+      - given_name
+      - position_title
+      computed_fields: []
+      filter: {}
+    role: user
+    table:
+      name: persons
+      schema: public
+  type: create_select_permission

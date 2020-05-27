@@ -32,5 +32,12 @@ query MyQuery ($personId: Int!, $userId: Int!, $yearMin: Int!, $yearMax: Int!) {
         datetime
       }
     }
+    confidencesets_aggregate(limit: 1, order_by: {datetime: desc}) {
+      nodes {
+        id
+        value
+        datetime
+      }
+    }
   }
 }
