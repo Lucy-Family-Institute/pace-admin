@@ -4,7 +4,7 @@ export default function readAuthorsByPublications (id) {
   return {
     query: gql`
       query MyQuery ($publication_id: Int!){
-        authors_publications(
+        publications_authors(
           order_by: {
               position: asc
           }

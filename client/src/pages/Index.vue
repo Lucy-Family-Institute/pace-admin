@@ -801,7 +801,7 @@ export default {
       this.publicationAuthors = []
       const publicationId = personPublication.publication.id
       const result = await this.$apollo.query(readAuthorsByPublication(publicationId))
-      this.publicationAuthors = result.data.authors_publications
+      this.publicationAuthors = result.data.publications_authors
       console.log(`Loaded Publication Authors: ${JSON.stringify(this.publicationAuthors)}`)
       // load up author positions of possible matches
       this.matchedPublicationAuthors = _.filter(this.publicationAuthors, function (author) {
