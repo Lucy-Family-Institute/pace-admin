@@ -69,6 +69,9 @@ newdb:
 load_name_variances:
 	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
 
+update_scopus_data:
+	cd ingest && ts-node fetchScopusFullTextData.ts && cd ..
+
 scopus_author_data:
 	cd ingest && ts-node fetchScopusAuthorObjects.ts && cd ..
 
