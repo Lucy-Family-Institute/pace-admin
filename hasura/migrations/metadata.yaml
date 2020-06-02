@@ -1,0 +1,1035 @@
+functions: []
+remote_schemas: []
+query_collections: []
+allowlist: []
+tables:
+- table: confidencesets
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      foreign_key_constraint_on: persons_publications_id
+    name: persons_publication
+    comment: null
+  array_relationships:
+  - using:
+      foreign_key_constraint_on:
+        column: confidenceset_id
+        table: confidencesets_items
+    name: confidencesets_items
+    comment: null
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - value
+      - id
+      - persons_publications_id
+      - version
+      - datetime
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - value
+      - id
+      - persons_publications_id
+      - version
+      - datetime
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - value
+      - id
+      - persons_publications_id
+      - version
+      - datetime
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: confidencesets_items
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      foreign_key_constraint_on: confidenceset_id
+    name: confidenceset
+    comment: null
+  - using:
+      foreign_key_constraint_on: confidence_type_id
+    name: confidence_type
+    comment: null
+  array_relationships: []
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - confidenceset_id
+      - comment
+      - confidence_type_id
+      - value
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - value
+      - confidenceset_id
+      - confidence_type_id
+      - id
+      - comment
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - value
+      - confidenceset_id
+      - confidence_type_id
+      - id
+      - comment
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: confidence_type
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships: []
+  array_relationships:
+  - using:
+      foreign_key_constraint_on:
+        column: confidence_type_id
+        table: confidencesets_items
+    name: confidencesets_items
+    comment: null
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - name
+      - description
+      - rank
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - id
+      - rank
+      - description
+      - name
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - id
+      - rank
+      - description
+      - name
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: data
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships: []
+  array_relationships:
+  - using:
+      foreign_key_constraint_on:
+        column: data_id
+        table: persons
+    name: persons
+    comment: null
+  - using:
+      foreign_key_constraint_on:
+        column: data_id
+        table: persons_publications
+    name: persons_publications
+    comment: null
+  - using:
+      foreign_key_constraint_on:
+        column: data_id
+        table: publications
+    name: publications
+    comment: null
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - id
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - id
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: harvests
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships: []
+  array_relationships: []
+  insert_permissions: []
+  select_permissions: []
+  update_permissions: []
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: institutions
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships: []
+  array_relationships: []
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - name
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: false
+      computed_fields: []
+      columns:
+      - id
+      - name
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - id
+      - name
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: persons
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      foreign_key_constraint_on: data_id
+    name: datum
+    comment: null
+  - using:
+      foreign_key_constraint_on: institution_id
+    name: institution
+    comment: null
+  array_relationships:
+  - using:
+      foreign_key_constraint_on:
+        column: person_id
+        table: persons_namevariances
+    name: persons_namevariances
+    comment: null
+  - using:
+      foreign_key_constraint_on:
+        column: person_id
+        table: persons_publications
+    name: persons_publications
+    comment: null
+  - using:
+      manual_configuration:
+        remote_table: persons_publications_metadata
+        column_mapping:
+          id: person_id
+    name: persons_publications_metadata
+    comment: null
+  - using:
+      foreign_key_constraint_on:
+        column: person_id
+        table: persons_units
+    name: persons_units
+    comment: null
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - given_name
+      - family_name
+      - email
+      - position_title
+      - institution_id
+      - provenance_id
+      - data_id
+      - start_date
+      - end_date
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - end_date
+      - start_date
+      - data_id
+      - id
+      - institution_id
+      - provenance_id
+      - email
+      - family_name
+      - given_name
+      - position_title
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - end_date
+      - start_date
+      - data_id
+      - id
+      - institution_id
+      - provenance_id
+      - email
+      - family_name
+      - given_name
+      - position_title
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: persons_namevariances
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      foreign_key_constraint_on: person_id
+    name: person
+    comment: null
+  array_relationships: []
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - person_id
+      - given_name
+      - family_name
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - id
+      - person_id
+      - family_name
+      - given_name
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - id
+      - person_id
+      - family_name
+      - given_name
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: persons_publications
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      foreign_key_constraint_on: data_id
+    name: datum
+    comment: null
+  - using:
+      foreign_key_constraint_on: person_id
+    name: person
+    comment: null
+  - using:
+      foreign_key_constraint_on: publication_id
+    name: publication
+    comment: null
+  array_relationships:
+  - using:
+      foreign_key_constraint_on:
+        column: persons_publications_id
+        table: confidencesets
+    name: confidencesets
+    comment: null
+  - using:
+      foreign_key_constraint_on:
+        column: persons_publications_id
+        table: reviews
+    name: reviews
+    comment: null
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - person_id
+      - publication_id
+      - confidence
+      - provenance_id
+      - data_id
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - confidence
+      - data_id
+      - id
+      - person_id
+      - provenance_id
+      - publication_id
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - confidence
+      - data_id
+      - id
+      - person_id
+      - provenance_id
+      - publication_id
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: persons_publications_metadata
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      manual_configuration:
+        remote_table: persons
+        column_mapping:
+          person_id: id
+    name: person
+    comment: null
+  - using:
+      manual_configuration:
+        remote_table: publications
+        column_mapping:
+          publication_id: id
+    name: publication
+    comment: null
+  array_relationships:
+  - using:
+      manual_configuration:
+        remote_table: publications_authors
+        column_mapping:
+          publication_id: publication_id
+    name: authors_publications
+    comment: null
+  - using:
+      manual_configuration:
+        remote_table: reviews
+        column_mapping:
+          id: persons_publications_id
+    name: reviews
+    comment: null
+  insert_permissions: []
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - id
+      - person_id
+      - publication_id
+      - confidence
+      - title
+      - doi
+      - source_name
+      - year
+      filter: {}
+  update_permissions: []
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: persons_units
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships: []
+  array_relationships: []
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - person_id
+      - unit_id
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: false
+      computed_fields: []
+      columns:
+      - id
+      - person_id
+      - unit_id
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - id
+      - person_id
+      - unit_id
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: publications
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      foreign_key_constraint_on: data_id
+    name: datum
+    comment: null
+  array_relationships:
+  - using:
+      foreign_key_constraint_on:
+        column: publication_id
+        table: persons_publications
+    name: persons_publications
+    comment: null
+  - using:
+      foreign_key_constraint_on:
+        column: publication_id
+        table: publications_authors
+    name: publications_authors
+    comment: null
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - title
+      - doi
+      - provenance_id
+      - data_id
+      - source_name
+      - csl
+      - source_metadata
+      - csl_string
+      - year
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - data_id
+      - id
+      - provenance_id
+      - year
+      - csl
+      - source_metadata
+      - csl_string
+      - doi
+      - source_name
+      - title
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - data_id
+      - id
+      - provenance_id
+      - year
+      - csl
+      - source_metadata
+      - csl_string
+      - doi
+      - source_name
+      - title
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: publications_authors
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships: []
+  array_relationships: []
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - family_name
+      - given_name
+      - publication_id
+      - position
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - id
+      - position
+      - publication_id
+      - family_name
+      - given_name
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - id
+      - position
+      - publication_id
+      - family_name
+      - given_name
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: reviews
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      foreign_key_constraint_on: persons_publications_id
+    name: persons_publication
+    comment: null
+  - using:
+      foreign_key_constraint_on: reviewType
+    name: type_review
+    comment: null
+  - using:
+      foreign_key_constraint_on: user_id
+    name: user
+    comment: null
+  array_relationships: []
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - user_id
+      - persons_publications_id
+      - datetime
+      - reviewType
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - id
+      - user_id
+      - persons_publications_id
+      - datetime
+      - reviewType
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - id
+      - user_id
+      - persons_publications_id
+      - datetime
+      - reviewType
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: submissions
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships: []
+  array_relationships: []
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - type
+      - data
+      - datetime
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - id
+      - type
+      - data
+      - datetime
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - id
+      - type
+      - data
+      - datetime
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: type_review
+  is_enum: true
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships: []
+  array_relationships: []
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - value
+      - comment
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - comment
+      - value
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - comment
+      - value
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: units
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships: []
+  array_relationships: []
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - name
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - id
+      - name
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - id
+      - name
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: users
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships: []
+  array_relationships: []
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - primaryEmail
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - id
+      - primaryEmail
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - id
+      - primaryEmail
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
