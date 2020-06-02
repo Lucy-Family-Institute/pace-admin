@@ -54,8 +54,8 @@ async function getAllSimplifiedPersons () {
       firstName: person.given_name.toLowerCase(),
     })
     // add all name variations
-    if (person.persons_name_variances) {
-      _.each (person.persons_name_variances, (nameVariance) => {
+    if (person.persons_namevariances) {
+      _.each (person.persons_namevariances, (nameVariance) => {
         names.push({
           lastName: nameVariance.family_name.toLowerCase(),
           firstInitial: nameVariance.given_name[0].toLowerCase(),
