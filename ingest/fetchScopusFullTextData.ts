@@ -18,6 +18,9 @@ dotenv.config({
   path: '../.env'
 })
 
+import path from 'path'
+import pify from 'pify'
+import fs from 'fs'
 const axios = require('axios');
 
 const elsApiKey = process.env.SCOPUS_API_KEY
@@ -116,11 +119,22 @@ function getSimplifiedScopusPaper(scopusPaper){
     journal: (scopusPaper['coredata'] && scopusPaper['coredata']['prism:publicationName']) ? scopusPaper['coredata']['prism:publicationName'] : '',
     doi: (scopusPaper['coredata'] && scopusPaper['coredata']['prism:doi']) ? scopusPaper['coredata']['prism:doi'] : '',
     eid: (scopusPaper['coredata'] && scopusPaper['coredata']['eid']) ? scopusPaper['coredata']['eid']: '',
-    scopus_abstract: abstract ? abstract : '',
+    abstract: abstract ? abstract : '',
     subjects: subjects ? JSON.stringify(subjects) : '',
     // scopus_full_record : scopusPaper['coredata'] ? JSON.stringify(scopusPaper['coredata']) : ''
   }
 }
+
+// async function writeJsonFile (obj, eid) {
+//   const mapper = async (awardId) => {
+//     console.log(`Working on ${awardId}`);
+//     const filename = path.join(process.cwd(), '../data', 'scopus_full', `${eid}.json`);
+//     if( response ) {
+//       console.log(`Writing ${filename}`);
+//       await pify(fs.writeFile)(filename, JSON.stringify(response));
+//     }
+//   };
+// }
 
 async function main (): Promise<void> {
 

@@ -55,10 +55,6 @@ function getNameKey (lastName, firstName) {
 }
 
 async function getScopusPaperAbstractData (pii) {
-  // const baseUrl = `https://api-elsevier-com.proxy.library.nd.edu/content/abstract/scopus_id/${scopusId}`
-  //const baseUrl = 'https://api.elsevier.com/content/article/eid/1-s2.0-S152500161830594X'
-  //const baseUrl = `https://api.elsevier.com/content/article/eid/${eid}`
-  // const baseUrl = `https://api.elsevier.com/content/article/pii/S1525-0016(18)30594-X`
   const baseUrl = `https://api.elsevier.com/content/article/pii/${pii}`
   console.log(`Base url is: ${baseUrl}`)
 
@@ -80,6 +76,24 @@ async function getPublications () {
   return queryResult.data.publications
 }
 
+async function getScopusDataFromCsv (csvPath) {
+  console.log(`Loading Scopus Papers from path: ${csvPath}`)
+  // ingest list of DOI's from CSV and relevant center author name
+  try {
+    const scopusPapers: any = await loadCsv({
+     path: csvPath
+    })
+
+    const papersByDoi = _.groupBy(scopusPapers, (paper) => {
+      return paper['doi']
+    })
+
+    return papersByDoi
+  } catch (error) {
+    console.log (`Error on load csv: ${csvPath}`)
+  }
+}
+
 async function main (): Promise<void> {
 
   const publications = await getPublications()
@@ -87,46 +101,46 @@ async function main (): Promise<void> {
     return publication['source_name']
   })
 
-  const abstracts = {}
+  const pubMedAbstracts = {}
   // load pubmed abstracts
   _.each(publicationsBySource['PubMed'], (publication) => {
-    abstracts[publication['doi']] = publication['source_metadata']['description']
+    pubMedAbstracts[publication['doi']] = publication['source_metadata']['description']
   })
-  console.log(`Abstracts found for PubMed ${JSON.stringify(abstracts, null, 2)}`)
+  console.log(`Abstracts found for PubMed ${JSON.stringify(_.keys(pubMedAbstracts).length, null, 2)}`)
 
-  //_.each(publicationsBySource['Scopus'], async (publication) => {
-    const publication = publicationsBySource['Scopus'][0]
-    const eid = publication.scopus_eid
-    const pii = publication.scopus_pii
-    const eidParts = eid.split('-')
-    if (eidParts.length > 0) {
-      // const scopusId = eidParts[eidParts.length - 1]
-      const scopusId = '85059466526'
-      const scopusAbstractData = await getScopusPaperAbstractData(pii)
-      console.log(JSON.stringify(scopusAbstractData, null, 2))
+  const scopusDataFile = '../data/scopus_full_metadata.20200602085523.csv'
+  const scopusDataByDoi = await getScopusDataFromCsv(scopusDataFile)
+  const scopusAbstracts = {}
+  console.log(`Abstracts found for Scopus: ${JSON.stringify(_.keys(scopusDataByDoi).length, null, 2)}`)
+  _.each(_.keys(scopusDataByDoi), (doi) => {
+    const scopusData = scopusDataByDoi[doi]
+    const abstract = scopusData['abstract']
+    scopusAbstracts[doi] = abstract
+  })
+
+  // write abstracts from PubMed
+  _.each(_.keys(pubMedAbstracts), (doi) => {
+    if (!pubMedAbstracts[doi]){
+      console.log(`Found Doi with null abstract: ${doi}`)
+    } else {
+      console.log('Found doi with existing abstract')
+      console.log(`Writing abstract for doi: ${doi} abstract: ${pubMedAbstracts[doi]}`)
+      const resultUpdatePubAbstracts = client.mutate(updatePubAbstract(doi, pubMedAbstracts[doi]))
+      console.log(`Returned result pubmed: ${resultUpdatePubAbstracts}`)
     }
-  //})
-  // _.each(_.keys(abstracts), (doi) => {
-  //   if (!abstracts[doi]){
-  //     console.log(`Found Doi with null abstract: ${doi}`)
-  //   } else {
-  //     console.log('Found doi with existing abstract')
-  //     console.log(`Writing abstract for doi: ${doi} abstract: ${abstracts[doi]}`)
-  //     const resultUpdatePubAbstracts = client.mutate(updatePubAbstract(doi, abstracts[doi]))
-  //     console.log(`Returned result: ${resultUpdatePubAbstracts}`)
-  //   }
-  // })
+  })
 
-  // insert abstracts from PubMed
-  // const dois = _.keys(abstracts)
-  const doi = '10.1002/ijc.24347'
-
-  // console.log(`Writing abstract for doi: ${doi} abstract: ${abstracts[doi]}`)
-  // const resultUpdatePubAbstracts = await client.mutate(updatePubAbstract(doi, abstracts[doi]))
-  // console.log(`Returned result: ${resultUpdatePubAbstracts.data}`)
-  // // next grab abstracts from Scopus using the scopus id and call to content/abstract
-  // then update DB by DOI and publication id
-  // in UI display the abstract that exists from any source
+  // write scopus abstracts
+  _.each(_.keys(scopusAbstracts), (doi) => {
+    if (!scopusAbstracts[doi]){
+      console.log(`Found Doi with null abstract: ${doi}`)
+    } else {
+      console.log('Found doi with existing abstract')
+      console.log(`Writing abstract for doi: ${doi} abstract: ${pubMedAbstracts[doi]}`)
+      const resultUpdatePubAbstracts = client.mutate(updatePubAbstract(doi, scopusAbstracts[doi]))
+      console.log(`Returned result scopus: ${resultUpdatePubAbstracts}`)
+    }
+  })
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises

@@ -65,12 +65,16 @@ newdb:
 	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
 	cd ingest && ts-node calculateConfidence.ts && cd ..
+	cd ingest && ts-node loadAbstracts.ts && cd ..
 
 load_name_variances:
 	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
 
 update_scopus_data:
 	cd ingest && ts-node fetchScopusFullTextData.ts && cd ..
+
+load_abstracts:
+	cd ingest && ts-node loadAbstracts.ts && cd ..
 
 scopus_author_data:
 	cd ingest && ts-node fetchScopusAuthorObjects.ts && cd ..
