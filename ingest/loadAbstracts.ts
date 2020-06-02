@@ -108,7 +108,7 @@ async function main (): Promise<void> {
   })
   console.log(`Abstracts found for PubMed ${JSON.stringify(_.keys(pubMedAbstracts).length, null, 2)}`)
 
-  const scopusDataFile = '../data/scopus_full_metadata.20200602085523.csv'
+  const scopusDataFile = '../data/scopus_full_metadata.20200602154048.csv'
   const scopusDataByDoi = await getScopusDataFromCsv(scopusDataFile)
   const scopusAbstracts = {}
   console.log(`Abstracts found for Scopus: ${JSON.stringify(_.keys(scopusDataByDoi).length, null, 2)}`)
