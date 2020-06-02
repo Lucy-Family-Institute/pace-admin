@@ -90,8 +90,8 @@ async function main (): Promise<void> {
 
   const resultInsertNameVariances = await client.mutate({
     mutation: gql`
-      mutation InsertPersonNameVarianceMutation ($persons:[persons_name_variances_insert_input!]!){
-        insert_persons_name_variances(
+      mutation InsertPersonNameVarianceMutation ($persons:[persons_namevariances_insert_input!]!){
+        insert_persons_namevariances(
           objects: $persons
         ) {
           returning {

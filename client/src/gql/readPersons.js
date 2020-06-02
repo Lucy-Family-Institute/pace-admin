@@ -13,7 +13,7 @@ export default function readPersons () {
           institution {
             name
           }
-          persons_name_variances {
+          persons_namevariances {
             id
             given_name
             family_name
