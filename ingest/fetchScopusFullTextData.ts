@@ -50,7 +50,6 @@ async function randomWait(seedTime, index){
 }
 
 async function getScopusPaperAbstractData (baseUrl) {
-  console.log(`Base url is: ${baseUrl}`)
   const url = `${baseUrl}?apiKey=${elsApiKey}`
   const response = await axios.get(url, {
     headers: {
@@ -91,14 +90,35 @@ async function getPublications () {
 //
 // scopus_fulltext_record is the original json object
 function getSimplifiedScopusPaper(scopusPaper){
-  // console.log(`Simplifying paper: ${JSON.stringify(scopusPaper, null, 2)}`)
+  // get subjects
+  const subjects = []
+  let abstract = undefined
+  if (scopusPaper['coredata']) {
+    if (scopusPaper['coredata']['dcterms:subject']) {
+      _.each (scopusPaper['coredata']['dcterms:subject'], (obj) => {
+        if (obj['$']) {
+          subjects.push(obj['$'])
+        }
+      })
+    }
+    if (scopusPaper['coredata']['dc:description']) {
+      abstract = scopusPaper['coredata']['dc:description']
+      // trim 'Abstract ' or 'Summary ' off the front
+      if (_.startsWith(abstract, 'Abstract ')) {
+        abstract = abstract.substr('Abstract '.length)
+      } else if (_.startsWith(abstract, 'Summary ')) {
+        abstract = abstract.substr('Summary '.length)
+      }
+    }
+  }
   return {
     title: (scopusPaper['coredata'] && scopusPaper['coredata']['dc:title']) ? scopusPaper['coredata']['dc:title'] : '',
     journal: (scopusPaper['coredata'] && scopusPaper['coredata']['prism:publicationName']) ? scopusPaper['coredata']['prism:publicationName'] : '',
     doi: (scopusPaper['coredata'] && scopusPaper['coredata']['prism:doi']) ? scopusPaper['coredata']['prism:doi'] : '',
     eid: (scopusPaper['coredata'] && scopusPaper['coredata']['eid']) ? scopusPaper['coredata']['eid']: '',
-    scopus_abstract: (scopusPaper['coredata'] && scopusPaper['coredata']['dc:description']) ? scopusPaper['coredata']['dc:description'] : '',
-    scopus_fulltext_record : scopusPaper
+    scopus_abstract: abstract ? abstract : '',
+    subjects: subjects ? JSON.stringify(subjects) : '',
+    // scopus_full_record : scopusPaper['coredata'] ? JSON.stringify(scopusPaper['coredata']) : ''
   }
 }
 
@@ -127,17 +147,8 @@ async function main (): Promise<void> {
       const pii = piiParts[piiParts.length - 1]
       if (publication.scopus_pii) {
         const pii = publication.scopus_pii
+        console.log(`${paperCounter}: Getting Scopus Metadata for ${publication.doi} pii: ${pii}`)
         scopusAbstractData = await getScopusPaperAbstractDataByPii(pii)
-      // } else {
-      //   const dcId = publication.source_metadata['dc:identifier']
-      //   if (dcId) {
-      //     const scopusId = dcId.replace('SCOPUS_ID:', '')
-      //     scopusAbstractData = await getScopusPaperAbstractDataByScopusId(scopusId)
-      //   } else if (publication.scopus_eid) {
-      //     const eid = publication.scopus_eid
-      //     scopusAbstractData = await getScopusPaperAbstractDataByEid(eid)
-      //   }
-      // }
       }
       if (scopusAbstractData) {
         if (_.isArray(scopusAbstractData['full-text-retrieval-response'])){
@@ -146,11 +157,7 @@ async function main (): Promise<void> {
         } else {
           const simplifiedScopusPaper = getSimplifiedScopusPaper(scopusAbstractData['full-text-retrieval-response'])
           succeededScopusPapers.push(simplifiedScopusPaper)
-          if (simplifiedScopusPaper.scopus_abstract) {
-            console.log(JSON.stringify(succeededScopusPapers[0], null, 2))    
-          }
         }
-        // console.log(`Succeeded getting paper: ${JSON.stringify(simplifiedScopusPaper, null, 2)}`)
       }
     } catch (error) {
       const errorMessage = `Error on get scopus papers for doi: ${publication.doi}: ${error}`
@@ -160,23 +167,11 @@ async function main (): Promise<void> {
   }, {concurrency: 3})
 
   console.log(JSON.stringify(failedScopusPapers, null, 2))
-  _.each(succeededScopusPapers, (paper) => {
-    if (paper.scopus_abstract) {
-      console.log(JSON.stringify(succeededScopusPapers[0], null, 2))    
-    }
-  })
 
   // write data out to csv
-  // flatten out array for data for csv and change scopus json object to string
-  const outputScopusPapers = _.map(_.flatten(succeededScopusPapers), paper => {
-    paper['scopus_fulltext_record'] = JSON.stringify(paper['scopus_fulltext_record'])
-    return paper
-  })
-
-  //console.log(outputScopusPapers)
   await writeCsv({
     path: `../data/scopus_full_metadata.${moment().format('YYYYMMDDHHmmss')}.csv`,
-    data: outputScopusPapers,
+    data: succeededScopusPapers,
   });
   //  }
   // })
