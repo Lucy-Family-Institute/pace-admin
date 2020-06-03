@@ -685,15 +685,16 @@ tables:
       set: {}
       check: {}
       columns:
-      - id
-      - title
-      - doi
-      - provenance_id
-      - data_id
-      - source_name
+      - abstract
       - csl
-      - source_metadata
       - csl_string
+      - data_id
+      - doi
+      - id
+      - provenance_id
+      - source_metadata
+      - source_name
+      - title
       - year
   select_permissions:
   - role: user
@@ -702,16 +703,17 @@ tables:
       allow_aggregations: true
       computed_fields: []
       columns:
+      - abstract
+      - csl
+      - csl_string
       - data_id
+      - doi
       - id
       - provenance_id
-      - year
-      - csl
       - source_metadata
-      - csl_string
-      - doi
       - source_name
       - title
+      - year
       filter: {}
   update_permissions:
   - role: user
@@ -719,16 +721,17 @@ tables:
     permission:
       set: {}
       columns:
+      - abstract
+      - csl
+      - csl_string
       - data_id
+      - doi
       - id
       - provenance_id
-      - year
-      - csl
       - source_metadata
-      - csl_string
-      - doi
       - source_name
       - title
+      - year
       filter: {}
   delete_permissions: []
   event_triggers: []
