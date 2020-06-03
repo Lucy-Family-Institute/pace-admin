@@ -9,7 +9,23 @@
           PACE
         </q-toolbar-title>
         <q-separator vertical inset/>
-
+        <q-tabs v-if="isLoggedIn" v-model="globalReviewType">
+          <q-route-tab name="person"
+            icon="group"
+            to="/"
+            exact
+          />
+          <q-route-tab name="center"
+            icon="account_balance"
+            to="/center_review"
+            exact
+          />
+          <q-route-tab
+            icon="poll"
+            to="/dashboard"
+            exact
+          />
+        </q-tabs>
         <q-space/>
         <q-select
           v-model="model"

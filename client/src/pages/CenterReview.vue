@@ -1,7 +1,6 @@
 <template>
   <div>
     <div class="q-pa-md">
-      <!-- TODO calculate exact height below -->
       <q-drawer
         v-model="drawer"
         @click.capture="drawerClick"
@@ -58,63 +57,13 @@
             </q-item-section>
             <q-item-section header align="left">Filter</q-item-section>
           </q-btn>
-          <q-item-label header>People</q-item-label>
-          <!-- TODO calculate exact height below -->
-          <q-virtual-scroll
-            :style="{'max-height': ($q.screen.height-170)+'px'}"
-            :items="people"
-            bordered
-            separator
-            :ref="`personScroll`"
-          >
-            <template v-slot="{ item, index }">
-              <q-expansion-item
-                  :key="index"
-                  :active="person!==undefined && item.id === person.id"
-                  clickable
-                  group="expansion_group_person"
-                  @click="resetReviewTypeFilter();startProgressBar();loadPublications(item); setNameVariants(item)"
-                  active-class="bg-teal-1 text-grey-8"
-                  expand-icon="keyboard_arrow_rights"
-                  :ref="`person${index}`"
-                >
-                  <template v-slot:header>
-                    <q-item-section avatar top>
-                      <q-avatar icon="person" color="primary" text-color="white" />
-                    </q-item-section>
-
-                    <q-item-section>
-                      <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.persons_publications_metadata_aggregate.aggregate.count }})</q-item-label>
-                      <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
-                    </q-item-section>
-
-                    <q-item-section side>
-                      <!-- <q-icon name="keyboard_arrow_right" color="green" /> -->
-                    </q-item-section>
-                  </template>
-                  <q-card side>
-                      <q-card-section>
-                        <p>Institution: {{ item.institution ? item.institution.name : 'undefined'}}</p>
-                        <p>Name Variants:</p>
-                        <p>
-                          <ul>
-                            <li v-bind:key="name" v-for="name in nameVariants">{{ name }}</li>
-                          </ul>
-                        </p>
-                        <!--<p>Common Co-authors (expandable list): {{ getCommonCoauthors(item) }}</p>-->
-                      </q-card-section>
-                  </q-card>
-                </q-expansion-item>
-            </template>
-          </q-virtual-scroll>
-        </template>
-        <template v-slot:after v-if="person">
           <q-splitter
-            v-model="secondModel"
+            v-model="firstModel"
             unit="px"
             :style="{height: ($q.screen.height-56-16)+'px'}"
           >
             <template v-slot:before>
+            <q-item-label header>Center and Institute Review</q-item-label>
               <PublicationFilter />
               <q-tabs
                 v-model="reviewTypeFilter"
@@ -189,6 +138,11 @@
                       </q-item-section>
                     </template>
                     <q-card v-if="item.publication !== undefined">
+                      <q-card-section :v-if="item.publication.abstract" dense class="text-left">
+                        <q-item-label>Abstract:</q-item-label>
+                        <q-item v-if="item.publication.abstract && item.publication.abstract.length > 0">{{item.publication.abstract}}</q-item>
+                        <q-item v-else>Unavailable</q-item>
+                      </q-card-section>
                       <q-card-section dense class="text-center">
                         <q-btn dense color="green" label="Accept" class="on-left" @click="clickReviewAccepted(index, person, personPublication);" />
                         <q-btn dense color="red" label="Reject" @click="clickReviewRejected(index, person, personPublication);" />
@@ -467,7 +421,7 @@ import readPersonsByInstitutionByYearPendingPubs from '../gql/readPersonsByInsti
 import readReviewTypes from '../../../gql/readReviewTypes.gql'
 import readPublications from '../gql/readPublications'
 // import readPendingPublications from '../../../gql/readPendingPublications.gql'
-import readPersonPublications from '../../../gql/readPersonPublications.gql'
+import readPersonPublicationsAll from '../../../gql/readPersonPublicationsAll.gql'
 // import readPublicationsByReviewState from '../../../gql/readPublicationsByReviewState.gql'
 import readPublication from '../../../gql/readPublication.gql'
 // import * as service from '@porter/osf.io';
@@ -492,7 +446,7 @@ export default {
     selectedReviewState: undefined,
     dom,
     date,
-    firstModel: 375,
+    firstModel: 800,
     secondModel: 500,
     people: [],
     publications: [],
@@ -560,17 +514,13 @@ export default {
   watch: {
     $route: 'fetchData',
     selectedInstitutions: function () {
-      this.loadPersonsWithFilter()
+      this.loadPublications()
     },
     changedPubYears: async function () {
-      await this.loadPersonsWithFilter()
-      if (this.person) {
-        // reload publications if person selected
-        await this.loadPublications(this.person)
-      }
+      await this.loadPublications()
     },
     changedMemberYears: async function () {
-      await this.loadPersonsWithFilter()
+      await this.loadPublications()
     },
     selectedPersonSort: function () {
       // re-sort people
@@ -587,11 +537,11 @@ export default {
       this.loadPersonsWithFilter()
     },
     publicationsGroupedByView: function () {
-      this.loadPublications(this.person)
+      this.loadPublications()
     },
     reviewTypeFilter: function () {
       if (this.publicationsReloadPending) {
-        this.loadPublications(this.person)
+        this.loadPublications()
         this.publicationsReloadPending = false
       } else {
         this.setCurrentPersonPublicationsCombinedMatches()
@@ -902,7 +852,7 @@ export default {
     },
     async fetchData () {
       await this.loadReviewStates()
-      await this.loadPersonsWithFilter()
+      await this.loadPublications()
     },
     async clearPublications () {
       this.publications = []
@@ -928,7 +878,7 @@ export default {
       this.showCurrentSelectedPublication()
     },
     async loadPersonPublicationsCombinedMatches () {
-      console.log(`Start group by publications for person id: ${this.person.id} ${moment().format('HH:mm:ss:SSS')}`)
+      console.log(`Start group by publications ${moment().format('HH:mm:ss:SSS')}`)
       this.publicationsGroupedByReview = _.groupBy(this.publications, function (pub) {
         if (pub.reviews_aggregate.nodes && pub.reviews_aggregate.nodes.length > 0) {
           return pub.reviews_aggregate.nodes[0].reviewType
@@ -936,7 +886,7 @@ export default {
           return 'pending'
         }
       })
-      console.log(`Finish group by publications for person id: ${this.person.id} ${moment().format('HH:mm:ss:SSS')}`)
+      console.log(`Finish group by publications ${moment().format('HH:mm:ss:SSS')}`)
 
       // put in pubs grouped by doi for each review status
       _.each(this.reviewStates, (reviewType) => {
@@ -1068,21 +1018,19 @@ export default {
         this.personPublicationsCombinedMatches = _.flatten(sortedPubs)
       }
     },
-    async loadPublications (person) {
+    async loadPublications () {
       this.startProgressBar()
       this.publicationsLoaded = false
       this.publicationsLoadedError = false
       // clear any previous publications in list
       this.clearPublications()
-      this.person = person
       // const result = await this.$apollo.query(readPublicationsByPerson(item.id))
       // this.publications = result.data.publications
       try {
-        console.log(`Starting query publications for person id: ${person.id} ${moment().format('HH:mm:ss:SSS')}`)
+        console.log(`Starting query publications ${moment().format('HH:mm:ss:SSS')}`)
         const pubsWithReviewResult = await this.$apollo.query({
-          query: readPersonPublications,
+          query: readPersonPublicationsAll,
           variables: {
-            personId: this.person.id,
             userId: this.userId,
             yearMin: this.selectedPubYears.min,
             yearMax: this.selectedPubYears.max
@@ -1090,7 +1038,7 @@ export default {
           fetchPolicy: 'network-only'
         })
         // console.log('***', pubsWithReviewResult)
-        console.log(`Finished query publications for person id: ${this.person.id} ${moment().format('HH:mm:ss:SSS')}`)
+        console.log(`Finished query publications ${moment().format('HH:mm:ss:SSS')}`)
         this.publications = pubsWithReviewResult.data.persons_publications
         this.loadPersonPublicationsCombinedMatches()
       } catch (error) {
