@@ -95,7 +95,7 @@ import readPersonsByInstitutionByYearPendingPubs from '../gql/readPersonsByInsti
 import readReviewTypes from '../../../gql/readReviewTypes.gql'
 import readPublications from '../gql/readPublications'
 // import readPendingPublications from '../../../gql/readPendingPublications.gql'
-import readPersonPublicationsAll from '../../../gql/readPersonPublicationsAll.gql'
+import readPersonPublicationsAll from '../gql/readPersonPublicationsAll'
 // import readPublicationsByReviewState from '../../../gql/readPublicationsByReviewState.gql'
 import readPublication from '../../../gql/readPublication.gql'
 // import * as service from '@porter/osf.io';
@@ -701,12 +701,7 @@ export default {
       try {
         console.log(`Starting query publications ${moment().format('HH:mm:ss:SSS')}`)
         const pubsWithReviewResult = await this.$apollo.query({
-          query: readPersonPublicationsAll,
-          variables: {
-            userId: this.userId,
-            yearMin: this.selectedPubYears.min,
-            yearMax: this.selectedPubYears.max
-          },
+          query: readPersonPublicationsAll(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, this.userId),
           fetchPolicy: 'network-only'
         })
         // console.log('***', pubsWithReviewResult)

@@ -421,7 +421,7 @@ import readPersonsByInstitutionByYearPendingPubs from '../gql/readPersonsByInsti
 import readReviewTypes from '../../../gql/readReviewTypes.gql'
 import readPublications from '../gql/readPublications'
 // import readPendingPublications from '../../../gql/readPendingPublications.gql'
-import readPersonPublicationsAll from '../../../gql/readPersonPublicationsAll.gql'
+import readPersonPublicationsAll from '../gql/readPersonPublicationsAll'
 // import readPublicationsByReviewState from '../../../gql/readPublicationsByReviewState.gql'
 import readPublication from '../../../gql/readPublication.gql'
 // import * as service from '@porter/osf.io';
@@ -584,7 +584,20 @@ export default {
     },
     // sort person pubs by source so chips in screen always in same order
     getSortedPersonPublicationsBySourceName (personPublications) {
-      return _.sortBy(personPublications, (personPublication) => {
+      // first group by and then grab first one only to remove duplicates across authors
+      const groupedPersonPubs = _.groupBy(personPublications, (personPublication) => {
+        return personPublication.publication.source_name
+      })
+      const reducedPersonPubs = _.mapValues(groupedPersonPubs, (personPubs) => {
+        if (personPubs) {
+          return personPubs[0]
+        } else {
+          return undefined
+        }
+      })
+      // then sort
+      return _.sortBy(reducedPersonPubs, (personPublication) => {
+      // return _.sortBy(personPublications, (personPublication) => {
         return personPublication.publication.source_name
       })
     },
@@ -1029,12 +1042,7 @@ export default {
       try {
         console.log(`Starting query publications ${moment().format('HH:mm:ss:SSS')}`)
         const pubsWithReviewResult = await this.$apollo.query({
-          query: readPersonPublicationsAll,
-          variables: {
-            userId: this.userId,
-            yearMin: this.selectedPubYears.min,
-            yearMax: this.selectedPubYears.max
-          },
+          query: readPersonPublicationsAll(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, this.userId),
           fetchPolicy: 'network-only'
         })
         // console.log('***', pubsWithReviewResult)
