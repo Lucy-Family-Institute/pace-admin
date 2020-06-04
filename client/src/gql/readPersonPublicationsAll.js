@@ -1,7 +1,7 @@
 import gql from 'graphql-tag'
 import _ from 'lodash'
 
-export default function readPersonPublicationsAllJS (institutionNames, pubYearMin, pubYearMax, memberYearMin, memberYearMax, userId) {
+export default function readPersonPublicationsAllJS (institutionNames, pubYearMin, pubYearMax, memberYearMin, memberYearMax) {
   const startDateLT = `1/1/${memberYearMax + 1}`
   const endDateGT = `12/31/${memberYearMin - 1}`
   let namesString = ''
@@ -54,7 +54,7 @@ export default function readPersonPublicationsAllJS (institutionNames, pubYearMi
             given_name
           }
           confidence
-          reviews_aggregate(where: {user_id: {_eq: ${userId}}}, limit: 1, order_by: {datetime: desc}) {
+          reviews_aggregate(limit: 1, order_by: {datetime: desc}) {
             nodes {
               reviewType
               id

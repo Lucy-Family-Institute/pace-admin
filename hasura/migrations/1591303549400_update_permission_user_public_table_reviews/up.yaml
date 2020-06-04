@@ -1,0 +1,25 @@
+- args:
+    role: user
+    table:
+      name: reviews
+      schema: public
+  type: drop_insert_permission
+- args:
+    permission:
+      check: {}
+      columns:
+      - datetime
+      - id
+      - persons_publications_id
+      - reviewType
+      - review_organization_value
+      - user_id
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: reviews
+      schema: public
+  type: create_insert_permission

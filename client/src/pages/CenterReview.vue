@@ -1094,8 +1094,9 @@ export default {
       // this.publications = result.data.publications
       try {
         console.log(`Starting query publications ${moment().format('HH:mm:ss:SSS')}`)
+        // for now assume only one review, needs to be fixed later
         const pubsWithReviewResult = await this.$apollo.query({
-          query: readPersonPublicationsAll(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, this.userId),
+          query: readPersonPublicationsAll(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max),
           fetchPolicy: 'network-only'
         })
         // console.log('***', pubsWithReviewResult)
@@ -1191,7 +1192,7 @@ export default {
           // const personPub = personPubs[0]
           console.log(`Adding Review for person publication: ${personPub.id}`)
           const mutateResult = await this.$apollo.mutate(
-            insertReview(this.userId, personPub.id, reviewType)
+            insertReview(this.userId, personPub.id, reviewType, 'HCRI')
           )
           console.log('&&', reviewType, this.reviewTypeFilter)
           if (mutateResult && personPub.id === personPublication.id) {

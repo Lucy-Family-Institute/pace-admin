@@ -1093,7 +1093,7 @@ export default {
           // const personPub = personPubs[0]
           console.log(`Adding Review for person publication: ${personPub.id}`)
           const mutateResult = await this.$apollo.mutate(
-            insertReview(this.userId, personPub.id, reviewType)
+            insertReview(this.userId, personPub.id, reviewType, 'ND')
           )
           console.log('&&', reviewType, this.reviewTypeFilter)
           if (mutateResult && personPub.id === personPublication.id) {
