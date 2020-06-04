@@ -57,12 +57,6 @@
             </q-item-section>
             <q-item-section header align="left">Filter</q-item-section>
           </q-btn>
-          <q-splitter
-            v-model="firstModel"
-            unit="px"
-            :style="{height: ($q.screen.height-56-16)+'px'}"
-          >
-            <template v-slot:before>
             <q-item-label header>Center and Institute Review</q-item-label>
               <PublicationFilter />
               <q-tabs
@@ -138,15 +132,17 @@
                       </q-item-section>
                     </template>
                     <q-card v-if="item.publication !== undefined">
-                      <q-card-section :v-if="item.publication.abstract" dense class="text-left">
-                        <q-item-label>Abstract:</q-item-label>
-                        <q-item v-if="item.publication.abstract && item.publication.abstract.length > 0">{{item.publication.abstract}}</q-item>
-                        <q-item v-else>Unavailable</q-item>
-                      </q-card-section>
                       <q-card-section dense class="text-center">
                         <q-btn dense color="green" label="Accept" class="on-left" @click="clickReviewAccepted(index, person, personPublication);" />
                         <q-btn dense color="red" label="Reject" @click="clickReviewRejected(index, person, personPublication);" />
                         <q-btn dense color="grey" label="Unsure" class="on-right" @click="clickReviewUnsure(index, person, personPublication);" />
+                      </q-card-section>
+                      <q-card-section v-if="item.publication.abstract && item.publication.abstract.length > 0" dense class="text-left">
+                        <q-item-label><b>Abstract:</b></q-item-label>
+                        <q-item>{{item.publication.abstract}}</q-item>
+                      </q-card-section>
+                      <q-card-section v-else dense class="text-left">
+                        <q-item-label><b>Abstract:</b> Unavailable</q-item-label>
                       </q-card-section>
                     </q-card>
                   </q-expansion-item>
@@ -250,15 +246,51 @@
                   <q-card class="col-xs-11">
                     <q-card-section>
                       <q-table
-                        dense
-                        title="Confidence Breakdown"
-                        :data="confidenceSetItems"
-                        :columns="confidenceColumns"
-                        row-key="id"
+                        title="Accepted Authors"
+                        :data="acceptedAuthors"
+                        :columns="reviewedAuthorColumns"
+                        row-key="confidenceset_value"
+                        :rows-per-page-options="[0]"
+                        :pagination.sync="pagination"
+                        hide-bottom
                       >
-                        <q-tr slot="bottom-row">
-                          <q-td colspan="100%">
-                            <strong>Total: {{ confidenceSet.value }}</strong>
+                        <q-tr v-if="acceptedAuthors.length <= 0" slot="bottom-row">
+                          <q-td align="center" colspan="100%">
+                            <i>None</i>
+                          </q-td>
+                        </q-tr>
+                      </q-table>
+                    </q-card-section>
+                    <q-card-section>
+                      <q-table
+                        title="Rejected Authors"
+                        :data="rejectedAuthors"
+                        :columns="reviewedAuthorColumns"
+                        row-key="confidenceset_value"
+                        :rows-per-page-options="[0]"
+                        :pagination.sync="pagination"
+                        hide-bottom
+                      >
+                        <q-tr v-if="rejectedAuthors.length <= 0" slot="bottom-row">
+                          <q-td align="center" colspan="100%">
+                            <i>None</i>
+                          </q-td>
+                        </q-tr>
+                      </q-table>
+                    </q-card-section>
+                    <q-card-section>
+                      <q-table
+                        title="Unsure Authors"
+                        :data="unsureAuthors"
+                        :columns="reviewedAuthorColumns"
+                        row-key="confidenceset_value"
+                        :rows-per-page-options="[0]"
+                        :pagination.sync="pagination"
+                        hide-bottom
+                      >
+                        <q-tr v-if="unsureAuthors.length <= 0" slot="bottom-row">
+                          <q-td align="center" colspan="100%">
+                            <i>None</i>
                           </q-td>
                         </q-tr>
                       </q-table>
@@ -312,80 +344,7 @@
                 </q-dialog>
               </div>
             </template>
-          </q-splitter>
-        </template>
       </q-splitter>
-      <template :v-if="globalReviewType==='center'">
-      <div>
-      <div class="q-pa-md">
-      <q-item-label header>Center and Institute Review</q-item-label>
-          <!-- TODO calculate exact height below -->
-        <q-virtual-scroll
-        :style="{'max-height': ($q.screen.height-170)+'px'}"
-        :items="publications"
-        bordered
-        separator
-        :ref="`centerReviewScroll`"
-        >
-            <!--<template v-slot="{ item, index }">
-                <q-expansion-item
-                    :key="item.id"
-                    clickable
-                    @click="loadPublication(item);scrollToPublication(index)"
-                    group="expansion_group"
-                    :active="publication !== undefined && item.id === publication.id"
-                    active-class="bg-teal-1 text-grey-8"
-                    :ref="`pub${index}`"
-                    :header-inset-level="0"
-                    :content-inset-level="0"
-                    >
-                    <template
-                        v-if="item.publication !== undefined"
-                        v-slot:header
-                    >
-                        <q-item-section avatar>
-                        <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.id" />
-                        <q-avatar icon="description" color="primary" text-color="white" v-else />
-                        </q-item-section>
-                        <q-item-section top class="q-pa-xs">
-                        <q-item-label style="width:100%" class="text-grey-9" lines="1">{{ decode(item.title) }}</q-item-label>
-                        <q-list class="q-pt-sm">
-                            <q-btn
-                            @click.capture.stop
-                            rounded
-                            dense
-                            size="sm"
-                            v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(item.doi)"
-                            :key="index"
-                            :color="getSourceNameChipColor(personPub.publication.source_name)"
-                            text-color="white"
-                            type="a"
-                            :href="getSourceUri(personPub)"
-                            target="_blank"
-                            :label="getDisplaySourceLabel(personPub)"
-                            />
-                        </q-list>
-                        </q-item-section>
-                        <q-item-section avatar side>
-                        <q-badge
-                            :label="getPublicationConfidence(item)*100+'%'"
-                            :color="getPublicationConfidence(item)*100 <= 50 ? 'amber-10' : 'green'"
-                        />
-                        </q-item-section>
-                    </template>
-                    <q-card v-if="item.publication !== undefined">
-                        <q-card-section dense class="text-center">
-                        <q-btn dense color="green" label="Accept" class="on-left" @click="clickReviewAccepted(index, person, personPublication);" />
-                        <q-btn dense color="red" label="Reject" @click="clickReviewRejected(index, person, personPublication);" />
-                        <q-btn dense color="grey" label="Unsure" class="on-right" @click="clickReviewUnsure(index, person, personPublication);" />
-                        </q-card-section>
-                    </q-card>
-                </q-expansion-item>
-            </template>-->
-        </q-virtual-scroll>
-        </div>
-        </div>
-      </template>
     </div>
   </div>
 </template>
@@ -474,6 +433,9 @@ export default {
     publicationAuthors: [],
     confidenceSetitems: [],
     confidenceSet: undefined,
+    acceptedAuthors: [],
+    rejectedAuthors: [],
+    unsureAuthors: [],
     matchedPublicationAuthors: [],
     reviewQueueKey: 0,
     publicationCitation: undefined,
@@ -484,6 +446,11 @@ export default {
     publicationsLoaded: false,
     publicationsLoadedError: false,
     showProgressBar: false,
+    reviewedAuthorColumns: [
+      { name: 'confidenceset_value', align: 'left', label: 'Confidence', field: 'confidenceset_value', sortable: true },
+      { name: 'family_name', align: 'left', label: 'Family Name', field: 'family_name', sortable: true },
+      { name: 'given_name', align: 'left', label: 'Given Name', field: 'given_name', sortable: true }
+    ],
     authorColumns: [
       { name: 'position', align: 'left', label: 'Position', field: 'position', sortable: true },
       { name: 'family_name', align: 'left', label: 'Family Name', field: 'family_name', sortable: true },
@@ -634,6 +601,26 @@ export default {
     },
     getPublicationsGroupedByDoiByReviewCount (reviewType) {
       return this.filteredPersonPublicationsCombinedMatchesByReview[reviewType] ? this.filteredPersonPublicationsCombinedMatchesByReview[reviewType].length : 0
+    },
+    getDoiPersonPublicationsByReview (doi) {
+      const personPubsByReview = {}
+      _.each(_.keys(this.publicationsGroupedByDoiByReview), (reviewType) => {
+        if (this.publicationsGroupedByDoiByReview[reviewType][doi]) {
+          const pubsGroupedByPersonId = _.groupBy(this.publicationsGroupedByDoiByReview[reviewType][doi], (personPub) => {
+            return personPub.person_id
+          })
+          personPubsByReview[reviewType] = _.map(_.keys(pubsGroupedByPersonId), (personId) => {
+            let currentPersonPub
+            _.each(pubsGroupedByPersonId[personId], (personPub, index) => {
+              if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
+                currentPersonPub = personPub
+              }
+            })
+            return currentPersonPub
+          })
+        }
+      })
+      return personPubsByReview
     },
     decode (str) {
       const textArea = document.createElement('textarea')
@@ -832,16 +819,25 @@ export default {
       const personResult = await this.$apollo.query(readPersons())
       this.people = personResult.data.persons
     },
-    async loadPublicationAuthors (personPublication) {
+    getMatchedPublicationAuthors (personPublication, reviewedAuthors) {
+      return _.filter(this.publicationAuthors, function (author) {
+        let matchFound = false
+        _.each(reviewedAuthors, (reviewedAuthor) => {
+          if (author.family_name.toLowerCase() === reviewedAuthor.family_name.toLowerCase()) {
+            matchFound = true
+          }
+        })
+        return matchFound
+      })
+    },
+    async loadPublicationAuthors (personPublication, reviewedAuthors) {
       this.publicationAuthors = []
       const publicationId = personPublication.publication.id
       const result = await this.$apollo.query(readAuthorsByPublication(publicationId))
       this.publicationAuthors = result.data.publications_authors
       console.log(`Loaded Publication Authors: ${JSON.stringify(this.publicationAuthors)}`)
       // load up author positions of possible matches
-      this.matchedPublicationAuthors = _.filter(this.publicationAuthors, function (author) {
-        return author.family_name.toLowerCase() === personPublication.person.family_name.toLowerCase()
-      })
+      this.matchedPublicationAuthors = this.getMatchedPublicationAuthors(personPublication, reviewedAuthors)
       console.log(`Matched authors are: ${JSON.stringify(this.matchedPublicationAuthors, null, 2)}`)
     },
     async loadConfidenceSet (personPublication) {
@@ -1056,11 +1052,36 @@ export default {
       }
       this.publicationsLoaded = true
     },
+    getReviewedAuthor (personPublication) {
+      const obj = _.clone(personPublication)
+      _.set(obj, 'given_name', obj.person['given_name'])
+      _.set(obj, 'family_name', obj.person['family_name'])
+      const confidenceset = personPublication.confidencesets_aggregate.nodes[0]
+      _.set(obj, 'confidenceset_value', confidenceset['value'])
+      return obj
+    },
     async loadPublication (personPublication) {
       this.clearPublication()
       this.personPublication = personPublication
-      this.loadPublicationAuthors(personPublication)
-      this.loadConfidenceSet(personPublication)
+      const personPublicationsByReview = await this.getDoiPersonPublicationsByReview(personPublication.publication.doi)
+      const reviewedAuthors = []
+      this.acceptedAuthors = _.map(personPublicationsByReview['accepted'], (personPub) => {
+        const reviewedAuthor = this.getReviewedAuthor(personPub)
+        reviewedAuthors.push(reviewedAuthor)
+        return reviewedAuthor
+      })
+      this.rejectedAuthors = _.map(personPublicationsByReview['rejected'], (personPub) => {
+        const reviewedAuthor = this.getReviewedAuthor(personPub)
+        reviewedAuthors.push(reviewedAuthor)
+        return reviewedAuthor
+      })
+      this.unsureAuthors = _.map(personPublicationsByReview['unsure'], (personPub) => {
+        const reviewedAuthor = this.getReviewedAuthor(personPub)
+        reviewedAuthors.push(reviewedAuthor)
+        return reviewedAuthor
+      })
+      this.loadPublicationAuthors(personPublication, reviewedAuthors)
+      // this.loadConfidenceSet(personPublication)
       // query separately for csl because slow to get more than one
       const publicationId = personPublication.publication.id
       const result = await this.$apollo.query({
@@ -1192,6 +1213,9 @@ export default {
       this.unpaywall = undefined
       this.personPublication = undefined
       this.publicationAuthors = []
+      this.acceptedAuthors = []
+      this.rejectedAuthors = []
+      this.unsureAuthors = []
       this.links = []
       this.url = undefined
       this.publication = undefined

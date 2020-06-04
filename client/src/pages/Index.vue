@@ -237,6 +237,13 @@
                     <q-card-section>
                       <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
                     </q-card-section>
+                    <q-card-section v-if="personPublication.publication.abstract && personPublication.publication.abstract.length > 0" dense class="text-left">
+                      <q-item-label><b>Abstract:</b></q-item-label>
+                      <q-item>{{personPublication.publication.abstract}}</q-item>
+                    </q-card-section>
+                    <q-card-section v-else dense class="text-left">
+                      <q-item-label><b>Abstract:</b> Unavailable</q-item-label>
+                    </q-card-section>
                   </q-card>
                   <q-card v-if="unpaywall" class="col-xs-5" style="min-width:200px; max-height:300px" @click="pdf()">
                       <q-card style="min-width:200px" class="justify-center">
@@ -361,77 +368,6 @@
           </q-splitter>
         </template>
       </q-splitter>
-      <template :v-if="globalReviewType==='center'">
-      <div>
-      <div class="q-pa-md">
-      <q-item-label header>Center and Institute Review</q-item-label>
-          <!-- TODO calculate exact height below -->
-        <q-virtual-scroll
-        :style="{'max-height': ($q.screen.height-170)+'px'}"
-        :items="publications"
-        bordered
-        separator
-        :ref="`centerReviewScroll`"
-        >
-            <!--<template v-slot="{ item, index }">
-                <q-expansion-item
-                    :key="item.id"
-                    clickable
-                    @click="loadPublication(item);scrollToPublication(index)"
-                    group="expansion_group"
-                    :active="publication !== undefined && item.id === publication.id"
-                    active-class="bg-teal-1 text-grey-8"
-                    :ref="`pub${index}`"
-                    :header-inset-level="0"
-                    :content-inset-level="0"
-                    >
-                    <template
-                        v-if="item.publication !== undefined"
-                        v-slot:header
-                    >
-                        <q-item-section avatar>
-                        <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.id" />
-                        <q-avatar icon="description" color="primary" text-color="white" v-else />
-                        </q-item-section>
-                        <q-item-section top class="q-pa-xs">
-                        <q-item-label style="width:100%" class="text-grey-9" lines="1">{{ decode(item.title) }}</q-item-label>
-                        <q-list class="q-pt-sm">
-                            <q-btn
-                            @click.capture.stop
-                            rounded
-                            dense
-                            size="sm"
-                            v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(item.doi)"
-                            :key="index"
-                            :color="getSourceNameChipColor(personPub.publication.source_name)"
-                            text-color="white"
-                            type="a"
-                            :href="getSourceUri(personPub)"
-                            target="_blank"
-                            :label="getDisplaySourceLabel(personPub)"
-                            />
-                        </q-list>
-                        </q-item-section>
-                        <q-item-section avatar side>
-                        <q-badge
-                            :label="getPublicationConfidence(item)*100+'%'"
-                            :color="getPublicationConfidence(item)*100 <= 50 ? 'amber-10' : 'green'"
-                        />
-                        </q-item-section>
-                    </template>
-                    <q-card v-if="item.publication !== undefined">
-                        <q-card-section dense class="text-center">
-                        <q-btn dense color="green" label="Accept" class="on-left" @click="clickReviewAccepted(index, person, personPublication);" />
-                        <q-btn dense color="red" label="Reject" @click="clickReviewRejected(index, person, personPublication);" />
-                        <q-btn dense color="grey" label="Unsure" class="on-right" @click="clickReviewUnsure(index, person, personPublication);" />
-                        </q-card-section>
-                    </q-card>
-                </q-expansion-item>
-            </template>-->
-        </q-virtual-scroll>
-        </div>
-        </div>
-      </template>
     </div>
   </div>
 </template>
