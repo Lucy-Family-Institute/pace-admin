@@ -391,6 +391,7 @@ import YearFilter from '../components/YearFilter.vue'
 import MemberYearFilter from '../components/MemberYearFilter.vue'
 import sanitize from 'sanitize-filename'
 import moment from 'moment'
+import pMap from 'p-map'
 
 export default {
   name: 'PageIndex',
@@ -903,21 +904,77 @@ export default {
         this.publicationsGroupedByDoiByReview[reviewType] = _.groupBy(publications, (personPub) => {
           return `${personPub.publication.doi}`
         })
+      })
 
-        // console.log(`Person pubs grouped by DOI are: ${JSON.stringify(this.publicationsGroupedByDoiByReview, null, 2)}`)
-        // grab one with highest confidence to display and grab others via doi later when changing status
-        this.personPublicationsCombinedMatchesByReview[reviewType] = _.map(_.keys(this.publicationsGroupedByDoiByReview[reviewType]), (doi) => {
-          // get match with highest confidence level and use that one
-          const personPubs = this.publicationsGroupedByDoiByReview[reviewType][doi]
+      const doisPresent = {}
+      this.personPublicationsCombinedMatchesByReview = {}
+      // console.log(`Person pubs grouped by DOI are: ${JSON.stringify(this.publicationsGroupedByDoiByReview, null, 2)}`)
+      // grab one with highest confidence to display and grab others via doi later when changing status
+      // instead of random order add them sequentially to not have duplicates in rejected,
+      // unsure if in accepted and then not in rejected if unsure and not in accepted
+      this.personPublicationsCombinedMatchesByReview['accepted'] = await _.map(_.keys(this.publicationsGroupedByDoiByReview['accepted']), (doi) => {
+        // get match with highest confidence level and use that one
+        const personPubs = this.publicationsGroupedByDoiByReview['accepted'][doi]
+        let currentPersonPub
+        _.each(personPubs, (personPub, index) => {
+          if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
+            currentPersonPub = personPub
+          }
+        })
+        doisPresent[doi] = true
+        return currentPersonPub
+      })
+
+      this.personPublicationsCombinedMatchesByReview['unsure'] = {}
+      await pMap(_.keys(this.publicationsGroupedByDoiByReview['unsure']), (doi) => {
+        // get match with highest confidence level and use that one
+        if (!doisPresent[doi]) {
+          const personPubs = this.publicationsGroupedByDoiByReview['unsure'][doi]
           let currentPersonPub
           _.each(personPubs, (personPub, index) => {
             if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
               currentPersonPub = personPub
             }
           })
-          return currentPersonPub
-        })
-      })
+
+          doisPresent[doi] = true
+          this.personPublicationsCombinedMatchesByReview['unsure'][doi] = currentPersonPub
+        }
+      }, { concurrency: 1 })
+
+      this.personPublicationsCombinedMatchesByReview['rejected'] = {}
+      await pMap(_.keys(this.publicationsGroupedByDoiByReview['rejected']), (doi) => {
+        // get match with highest confidence level and use that one
+        if (!doisPresent[doi]) {
+          const personPubs = this.publicationsGroupedByDoiByReview['rejected'][doi]
+          let currentPersonPub
+          _.each(personPubs, (personPub, index) => {
+            if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
+              currentPersonPub = personPub
+            }
+          })
+
+          doisPresent[doi] = true
+          this.personPublicationsCombinedMatchesByReview['rejected'][doi] = currentPersonPub
+        }
+      }, { concurrency: 1 })
+
+      this.personPublicationsCombinedMatchesByReview['pending'] = {}
+      await pMap(_.keys(this.publicationsGroupedByDoiByReview['pending']), (doi) => {
+        // get match with highest confidence level and use that one
+        if (!doisPresent[doi]) {
+          const personPubs = this.publicationsGroupedByDoiByReview['pending'][doi]
+          let currentPersonPub
+          _.each(personPubs, (personPub, index) => {
+            if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
+              currentPersonPub = personPub
+            }
+          })
+
+          this.personPublicationsCombinedMatchesByReview['pending'][doi] = currentPersonPub
+        }
+      }, { concurrency: 1 })
+
       // initialize the list in view
       this.setCurrentPersonPublicationsCombinedMatches()
     },
