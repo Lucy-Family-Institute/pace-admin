@@ -42,7 +42,6 @@
       </q-drawer>
       <q-splitter
         v-model="firstModel"
-        :v-if="globalReviewType==='person'"
         unit="px"
         :style="{height: ($q.screen.height-56-16)+'px'}"
       >

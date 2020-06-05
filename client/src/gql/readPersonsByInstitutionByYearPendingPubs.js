@@ -1,7 +1,7 @@
 import gql from 'graphql-tag'
 import _ from 'lodash'
 
-export default function readPersonsByInstitutionByYearPendingPubs (institutionNames, pubYearMin, pubYearMax, memberYearMin, memberYearMax, userId) {
+export default function readPersonsByInstitutionByYearPendingPubs (institutionNames, pubYearMin, pubYearMax, memberYearMin, memberYearMax) { // , userId) {  // commenting out use current user id for now
   const startDateLT = `1/1/${memberYearMax + 1}`
   const endDateGT = `12/31/${memberYearMin - 1}`
   let namesString = ''
@@ -37,7 +37,16 @@ export default function readPersonsByInstitutionByYearPendingPubs (institutionNa
           institution {
             name
           }
-          persons_publications_metadata_aggregate (distinct_on: doi, where: {year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}, _not: {reviews: {user_id: {_eq: ${userId}}}}}) {
+          persons_publications_metadata_aggregate (
+            distinct_on: doi,
+            where: {
+              year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}, 
+              _not: {
+                reviews: {
+                  review_organization_value: {_eq: ND}
+                }
+              }
+            }) {
             aggregate {
               count(columns: doi)
             }

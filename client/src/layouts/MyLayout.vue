@@ -9,7 +9,7 @@
           PACE
         </q-toolbar-title>
         <q-separator vertical inset/>
-        <q-tabs v-if="isLoggedIn" v-model="globalReviewType">
+        <q-tabs v-if="isLoggedIn">
           <q-route-tab name="person"
             icon="group"
             to="/"

@@ -1,4 +1,4 @@
-query MyQuery ($personId: Int!, $userId: Int!, $yearMin: Int!, $yearMax: Int!) {
+query MyQuery ($personId: Int!, $yearMin: Int!, $yearMax: Int!) {
   persons_publications(
       where: {
         person_id: {_eq: $personId},
@@ -26,7 +26,7 @@ query MyQuery ($personId: Int!, $userId: Int!, $yearMin: Int!, $yearMax: Int!) {
       given_name
     }
     confidence
-    reviews_aggregate(where: {user_id: {_eq: $userId}}, limit: 1, order_by: {datetime: desc}) {
+    reviews_aggregate(where: {review_organization_value: {_eq: ND}}, limit: 1, order_by: {datetime: desc}) {
       nodes {
         reviewType
         id
