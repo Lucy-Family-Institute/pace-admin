@@ -43,7 +43,6 @@
       </q-drawer>
       <q-splitter
         v-model="firstModel"
-        :v-if="globalReviewType==='person'"
         unit="px"
         :style="{height: ($q.screen.height-56-16)+'px'}"
       >
@@ -58,7 +57,7 @@
             </q-item-section>
             <q-item-section header align="left">Filter</q-item-section>
           </q-btn>
-          <q-item-label header>People</q-item-label>
+          <q-item-label header>Notre Dame Author Review</q-item-label>
           <!-- TODO calculate exact height below -->
           <q-virtual-scroll
             :style="{'max-height': ($q.screen.height-170)+'px'}"
@@ -750,7 +749,7 @@ export default {
         this.people = personResult.data.persons
       } else {
         const personResult = await this.$apollo.query({
-          query: readPersonsByInstitutionByYearPendingPubs(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, this.userId),
+          query: readPersonsByInstitutionByYearPendingPubs(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max), // this.userId),  // commenting out for now querying by current user
           fetchPolicy: 'network-only'
         })
         this.people = personResult.data.persons
@@ -1019,7 +1018,7 @@ export default {
           query: readPersonPublications,
           variables: {
             personId: this.person.id,
-            userId: this.userId,
+            // userId: this.userId,   // commenting out for now to have any review from any user visible for now and actionable by any user
             yearMin: this.selectedPubYears.min,
             yearMax: this.selectedPubYears.max
           },

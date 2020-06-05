@@ -42,7 +42,6 @@
       </q-drawer>
       <q-splitter
         v-model="firstModel"
-        :v-if="globalReviewType==='person'"
         unit="px"
         :style="{height: ($q.screen.height-56-16)+'px'}"
       >
@@ -57,8 +56,10 @@
             </q-item-section>
             <q-item-section header align="left">Filter</q-item-section>
           </q-btn>
-            <q-item-label header>Center and Institute Review</q-item-label>
-              <PublicationFilter />
+            <q-item header>
+              <q-item-label header>Center and Institute Review</q-item-label>
+            </q-item>
+              <CenterReviewPubFilter />
               <q-tabs
                 v-model="reviewTypeFilter"
                 dense
@@ -137,13 +138,6 @@
                         <q-btn dense color="red" label="Reject" @click="clickReviewRejected(index, person, personPublication);" />
                         <q-btn dense color="grey" label="Unsure" class="on-right" @click="clickReviewUnsure(index, person, personPublication);" />
                       </q-card-section>
-                      <q-card-section v-if="item.publication.abstract && item.publication.abstract.length > 0" dense class="text-left">
-                        <q-item-label><b>Abstract:</b></q-item-label>
-                        <q-item>{{item.publication.abstract}}</q-item>
-                      </q-card-section>
-                      <q-card-section v-else dense class="text-left">
-                        <q-item-label><b>Abstract:</b> Unavailable</q-item-label>
-                      </q-card-section>
                     </q-card>
                   </q-expansion-item>
                 </template>
@@ -187,6 +181,13 @@
                     <q-card-section>
                       <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
                     </q-card-section>
+                    <q-card-section v-if="personPublication.publication.abstract && personPublication.publication.abstract.length > 0" dense class="text-left">
+                      <q-item-label><b>Abstract:</b></q-item-label>
+                      <q-item>{{personPublication.publication.abstract}}</q-item>
+                    </q-card-section>
+                    <q-card-section v-else dense class="text-left">
+                      <q-item-label><b>Abstract:</b> Unavailable</q-item-label>
+                    </q-card-section>
                   </q-card>
                   <q-card v-if="unpaywall" class="col-xs-5" style="min-width:200px; max-height:300px" @click="pdf()">
                       <q-card style="min-width:200px" class="justify-center">
@@ -220,7 +221,7 @@
                         </q-item-section>
 
                         <q-item-section @click="google1()">
-                          <q-item-label>Title + Author</q-item-label>
+                          <q-item-label>Title</q-item-label>
                         </q-item-section>
                       </q-item>
                       <q-item clickable>
@@ -249,14 +250,14 @@
                         title="Accepted Authors"
                         :data="acceptedAuthors"
                         :columns="reviewedAuthorColumns"
-                        row-key="confidenceset_value"
+                        row-key="id"
                         :rows-per-page-options="[0]"
                         :pagination.sync="pagination"
                         hide-bottom
                       >
                         <q-tr v-if="acceptedAuthors.length <= 0" slot="bottom-row">
-                          <q-td align="center" colspan="100%">
-                            <i>None</i>
+                          <q-td align="left" colspan="100%">
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>None</i>
                           </q-td>
                         </q-tr>
                       </q-table>
@@ -266,14 +267,14 @@
                         title="Rejected Authors"
                         :data="rejectedAuthors"
                         :columns="reviewedAuthorColumns"
-                        row-key="confidenceset_value"
+                        row-key="id"
                         :rows-per-page-options="[0]"
                         :pagination.sync="pagination"
                         hide-bottom
                       >
                         <q-tr v-if="rejectedAuthors.length <= 0" slot="bottom-row">
-                          <q-td align="center" colspan="100%">
-                            <i>None</i>
+                          <q-td align="left" colspan="100%">
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>None</i>
                           </q-td>
                         </q-tr>
                       </q-table>
@@ -283,14 +284,14 @@
                         title="Unsure Authors"
                         :data="unsureAuthors"
                         :columns="reviewedAuthorColumns"
-                        row-key="confidenceset_value"
+                        row-key="id"
                         :rows-per-page-options="[0]"
                         :pagination.sync="pagination"
                         hide-bottom
                       >
                         <q-tr v-if="unsureAuthors.length <= 0" slot="bottom-row">
-                          <q-td align="center" colspan="100%">
-                            <i>None</i>
+                          <q-td align="left" colspan="100%">
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>None</i>
                           </q-td>
                         </q-tr>
                       </q-table>
@@ -344,7 +345,7 @@
                 </q-dialog>
               </div>
             </template>
-      </q-splitter>
+        </q-splitter>
     </div>
   </div>
 </template>
@@ -385,7 +386,7 @@ import readPersonPublicationsAll from '../gql/readPersonPublicationsAll'
 import readPublication from '../../../gql/readPublication.gql'
 // import * as service from '@porter/osf.io';
 
-import PublicationFilter from '../components/PublicationFilter.vue'
+import CenterReviewPubFilter from '../components/CenterReviewPubFilter.vue'
 import PeopleFilter from '../components/PeopleFilter.vue'
 import YearFilter from '../components/YearFilter.vue'
 import MemberYearFilter from '../components/MemberYearFilter.vue'
@@ -396,7 +397,7 @@ import pMap from 'p-map'
 export default {
   name: 'PageIndex',
   components: {
-    PublicationFilter,
+    CenterReviewPubFilter,
     PeopleFilter,
     YearFilter,
     MemberYearFilter
@@ -404,16 +405,19 @@ export default {
   data: () => ({
     reviewStates: undefined,
     selectedReviewState: undefined,
+    institutionReviewState: undefined,
     dom,
     date,
-    firstModel: 800,
+    firstModel: 600,
     secondModel: 500,
     people: [],
     publications: [],
     publicationsGroupedByReview: {},
     personPublicationsCombinedMatches: [],
     personPublicationsCombinedMatchesByReview: {},
-    filteredPersonPublicationsCombinedMatchesByReview: {},
+    personPublicationsCombinedMatchesByOrgReview: {},
+    filteredPersonPublicationsCombinedMatchesByOrgReview: {},
+    publicationsGroupedByDoiByInstitutionReview: {},
     publicationsGroupedByDoiByReview: {},
     institutions: [],
     institutionGroup: [],
@@ -496,6 +500,9 @@ export default {
     },
     pubSearch: function () {
       this.setCurrentPersonPublicationsCombinedMatches()
+    },
+    selectedInstitutionReviewState: async function () {
+      this.loadPersonPublicationsCombinedMatches()
     },
     selectedPersonPubSort: async function () {
       await this.sortPublications()
@@ -601,13 +608,13 @@ export default {
       return `${process.env.PUBMED_ARTICLE_URI_BASE}/pmc/articles/${pmcId}`
     },
     getPublicationsGroupedByDoiByReviewCount (reviewType) {
-      return this.filteredPersonPublicationsCombinedMatchesByReview[reviewType] ? this.filteredPersonPublicationsCombinedMatchesByReview[reviewType].length : 0
+      return this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType] ? this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType].length : 0
     },
     getDoiPersonPublicationsByReview (doi) {
       const personPubsByReview = {}
-      _.each(_.keys(this.publicationsGroupedByDoiByReview), (reviewType) => {
-        if (this.publicationsGroupedByDoiByReview[reviewType][doi]) {
-          const pubsGroupedByPersonId = _.groupBy(this.publicationsGroupedByDoiByReview[reviewType][doi], (personPub) => {
+      _.each(_.keys(this.publicationsGroupedByDoiByInstitutionReview), (reviewType) => {
+        if (this.publicationsGroupedByDoiByInstitutionReview[reviewType][doi]) {
+          const pubsGroupedByPersonId = _.groupBy(this.publicationsGroupedByDoiByInstitutionReview[reviewType][doi], (personPub) => {
             return personPub.person_id
           })
           personPubsByReview[reviewType] = _.map(_.keys(pubsGroupedByPersonId), (personId) => {
@@ -709,7 +716,7 @@ export default {
       this.$refs['pubScroll'].scrollTo(index + 1)
     },
     async showCurrentSelectedPublication () {
-      if (this.person && this.personPublication) {
+      if (this.personPublication) {
         // check people still contains the person if not clear out states
         const currentPubIndex = _.findIndex(this.personPublicationsCombinedMatches, (personPublication) => {
           return personPublication.id === this.personPublication.id
@@ -730,32 +737,31 @@ export default {
         }
       }
     },
-    async showCurrentSelectedPerson () {
-      if (this.person && this.people) {
-        // check people still contains the person if not clear out states
-        const currentPersonIndex = _.findIndex(this.people, (currentPerson) => {
-          return currentPerson.id === this.person.id
-        })
-        if (currentPersonIndex >= 0) {
-          console.log(`Trying to show person ${this.person.id}`)
-          // if not top item scroll to 2 items above
-          let scrollIndex = currentPersonIndex
-          if (scrollIndex > 1) {
-            // if greater than 2 move up 2 spaces
-            scrollIndex -= 2
-          }
-          await this.$refs['personScroll'].scrollTo(scrollIndex)
-          // console.log(this.$refs)
-          this.$refs[`person${currentPersonIndex}`].show()
-        } else {
-          console.log(`Person id: ${this.person.id} no longer found.  Clearing UI states...`)
-          // clear everything out
-          this.person = undefined
-          this.clearPublication()
-          this.clearPublications()
-        }
-      }
-    },
+    // async showCurrentSelectedPerson () {
+    //   if (this.person && this.people) {
+    //     // check people still contains the person if not clear out states
+    //     const currentPersonIndex = _.findIndex(this.people, (currentPerson) => {
+    //       return currentPerson.id === this.person.id
+    //     })
+    //     if (currentPersonIndex >= 0) {
+    //       console.log(`Trying to show person ${this.person.id}`)
+    //       // if not top item scroll to 2 items above
+    //       let scrollIndex = currentPersonIndex
+    //       if (scrollIndex > 1) {
+    //         // if greater than 2 move up 2 spaces
+    //         scrollIndex -= 2
+    //       }
+    //       await this.$refs['personScroll'].scrollTo(scrollIndex)
+    //       // console.log(this.$refs)
+    //       this.$refs[`person${currentPersonIndex}`].show()
+    //     } else {
+    //       console.log(`Person id: ${this.person.id} no longer found.  Clearing UI states...`)
+    //       // clear everything out
+    //       this.clearPublication()
+    //       this.clearPublications()
+    //     }
+    //   }
+    // },
     async loadPersonsWithFilter () {
       console.log('filtering', this.selectedInstitutions)
       this.people = []
@@ -798,9 +804,6 @@ export default {
 
         this.people = await _.flatten(sortedPersons)
         // this.reportDuplicatePublications()
-      }
-      if (this.person) {
-        this.showCurrentSelectedPerson()
       }
     },
     async loadReviewStates () {
@@ -868,8 +871,10 @@ export default {
       this.publications = []
       this.personPublicationsCombinedMatches = []
       this.personPublicationsCombinedMatchesByReview = {}
-      this.filteredPersonPublicationsCombinedMatchesByReview = {}
+      this.personPublicationsCombinedMatchesByOrgReview = {}
+      this.filteredPersonPublicationsCombinedMatchesByOrgReview = {}
       this.publicationsGroupedByDoiByReview = {}
+      this.publicationsGroupedByDoiByInstitutionReview = {}
       this.publicationsGroupedByDoi = {}
       this.confidenceSetItems = []
       this.confidenceSet = undefined
@@ -880,7 +885,7 @@ export default {
         reviewType = this.reviewTypeFilter
       }
       this.filterPublications()
-      this.personPublicationsCombinedMatches = this.filteredPersonPublicationsCombinedMatchesByReview[reviewType]
+      this.personPublicationsCombinedMatches = this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType]
 
       // finally sort the publications
       await this.sortPublications()
@@ -901,7 +906,7 @@ export default {
       // put in pubs grouped by doi for each review status
       _.each(this.reviewStates, (reviewType) => {
         const publications = this.publicationsGroupedByReview[reviewType]
-        this.publicationsGroupedByDoiByReview[reviewType] = _.groupBy(publications, (personPub) => {
+        this.publicationsGroupedByDoiByInstitutionReview[reviewType] = _.groupBy(publications, (personPub) => {
           return `${personPub.publication.doi}`
         })
       })
@@ -912,9 +917,9 @@ export default {
       // grab one with highest confidence to display and grab others via doi later when changing status
       // instead of random order add them sequentially to not have duplicates in rejected,
       // unsure if in accepted and then not in rejected if unsure and not in accepted
-      this.personPublicationsCombinedMatchesByReview['accepted'] = await _.map(_.keys(this.publicationsGroupedByDoiByReview['accepted']), (doi) => {
+      this.personPublicationsCombinedMatchesByReview['accepted'] = await _.map(_.keys(this.publicationsGroupedByDoiByInstitutionReview['accepted']), (doi) => {
         // get match with highest confidence level and use that one
-        const personPubs = this.publicationsGroupedByDoiByReview['accepted'][doi]
+        const personPubs = this.publicationsGroupedByDoiByInstitutionReview['accepted'][doi]
         let currentPersonPub
         _.each(personPubs, (personPub, index) => {
           if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
@@ -926,10 +931,10 @@ export default {
       })
 
       this.personPublicationsCombinedMatchesByReview['unsure'] = {}
-      await pMap(_.keys(this.publicationsGroupedByDoiByReview['unsure']), (doi) => {
+      await pMap(_.keys(this.publicationsGroupedByDoiByInstitutionReview['unsure']), (doi) => {
         // get match with highest confidence level and use that one
         if (!doisPresent[doi]) {
-          const personPubs = this.publicationsGroupedByDoiByReview['unsure'][doi]
+          const personPubs = this.publicationsGroupedByDoiByInstitutionReview['unsure'][doi]
           let currentPersonPub
           _.each(personPubs, (personPub, index) => {
             if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
@@ -943,10 +948,10 @@ export default {
       }, { concurrency: 1 })
 
       this.personPublicationsCombinedMatchesByReview['rejected'] = {}
-      await pMap(_.keys(this.publicationsGroupedByDoiByReview['rejected']), (doi) => {
+      await pMap(_.keys(this.publicationsGroupedByDoiByInstitutionReview['rejected']), (doi) => {
         // get match with highest confidence level and use that one
         if (!doisPresent[doi]) {
-          const personPubs = this.publicationsGroupedByDoiByReview['rejected'][doi]
+          const personPubs = this.publicationsGroupedByDoiByInstitutionReview['rejected'][doi]
           let currentPersonPub
           _.each(personPubs, (personPub, index) => {
             if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
@@ -960,10 +965,10 @@ export default {
       }, { concurrency: 1 })
 
       this.personPublicationsCombinedMatchesByReview['pending'] = {}
-      await pMap(_.keys(this.publicationsGroupedByDoiByReview['pending']), (doi) => {
+      await pMap(_.keys(this.publicationsGroupedByDoiByInstitutionReview['pending']), (doi) => {
         // get match with highest confidence level and use that one
         if (!doisPresent[doi]) {
-          const personPubs = this.publicationsGroupedByDoiByReview['pending'][doi]
+          const personPubs = this.publicationsGroupedByDoiByInstitutionReview['pending'][doi]
           let currentPersonPub
           _.each(personPubs, (personPub, index) => {
             if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
@@ -975,13 +980,29 @@ export default {
         }
       }, { concurrency: 1 })
 
+      // now group by org review according to the selected institution review state
+      this.personPublicationsCombinedMatchesByOrgReview = _.groupBy(this.personPublicationsCombinedMatchesByReview[this.selectedInstitutionReviewState.toLowerCase()], function (pub) {
+        if (pub.org_reviews_aggregate.nodes && pub.org_reviews_aggregate.nodes.length > 0) {
+          return pub.org_reviews_aggregate.nodes[0].reviewType
+        } else {
+          return 'pending'
+        }
+      })
+      // put in pubs grouped by doi for each review status
+      _.each(this.reviewStates, (reviewType) => {
+        const publications = this.personPublicationsCombinedMatchesByOrgReview[reviewType]
+        this.publicationsGroupedByDoiByReview[reviewType] = _.groupBy(publications, (personPub) => {
+          return `${personPub.publication.doi}`
+        })
+      })
+
       // initialize the list in view
       this.setCurrentPersonPublicationsCombinedMatches()
     },
     async filterPublications () {
       let filterOutCurrentPublication = false
-      this.filteredPersonPublicationsCombinedMatchesByReview = _.mapValues(
-        this.personPublicationsCombinedMatchesByReview,
+      this.filteredPersonPublicationsCombinedMatchesByOrgReview = _.mapValues(
+        this.personPublicationsCombinedMatchesByOrgReview,
         (personPublications) => {
           return _.filter(personPublications, (item) => {
             const includePublication = item.publication.title.toLowerCase().includes(this.pubSearch.toLowerCase().trim())
@@ -1182,7 +1203,6 @@ export default {
         // TODO deselect buttons that are the same as the current filter
         return null
       }
-      this.person = person
       // add the review for personPublications with the same doi in the list
       const personPubs = this.publicationsGroupedByDoiByReview[this.reviewTypeFilter][personPublication.publication.doi]
 
@@ -1201,22 +1221,16 @@ export default {
             // transfer from one review queue to the next primarily for counts, other sorting will shake out on reload when clicking the tab
             // remove from current lists
             _.unset(this.publicationsGroupedByDoiByReview[this.reviewTypeFilter], personPublication.publication.doi)
-            _.remove(this.personPublicationsCombinedMatchesByReview[this.reviewTypeFilter], (pub) => {
+            _.remove(this.personPublicationsCombinedMatchesByOrgReview[this.reviewTypeFilter], (pub) => {
               return pub.id === personPub.id
             })
-            _.remove(this.filteredPersonPublicationsCombinedMatchesByReview[this.reviewTypeFilter], (pub) => {
+            _.remove(this.filteredPersonPublicationsCombinedMatchesByOrgReview[this.reviewTypeFilter], (pub) => {
               return pub.id === personPub.id
             })
             // add to new lists
             this.publicationsGroupedByDoiByReview[reviewType][personPublication.publication.doi] = personPubs
-            this.personPublicationsCombinedMatchesByReview[reviewType].push(personPub)
-            this.filteredPersonPublicationsCombinedMatchesByReview[reviewType].push(personPub)
-            if (this.reviewTypeFilter === 'pending' && this.selectedPersonTotal === 'Pending') {
-              const currentPersonIndex = _.findIndex(this.people, (person) => {
-                return person.id === this.person.id
-              })
-              this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
-            }
+            this.personPublicationsCombinedMatchesByOrgReview[reviewType].push(personPub)
+            this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType].push(personPub)
           }
           mutateResults.push(mutateResult)
           this.publicationsReloadPending = true
@@ -1246,17 +1260,17 @@ export default {
       this.displayUrl()
     },
     google1 () {
-      const query = _.trim(`${this.person.family_name} ${this.personPublication.publication.title}`)
+      const query = _.trim(`${this.personPublication.publication.title}`)
       this.url = `https://www.google.com/search?igu=1&q=${encodeURI(_.replace(query, / +/, '+'))}`
       this.displayUrl()
     },
     google2 () {
-      const query = _.trim(`${this.person.family_name} Notre Dame ${this.personPublication.publication.title}`)
+      const query = _.trim(`Notre Dame ${this.personPublication.publication.title}`)
       this.url = `https://www.google.com/search?igu=1&q=${encodeURI(_.replace(query, / +/, '+'))}`
       this.displayUrl()
     },
     google3 () {
-      const query = _.trim(`${this.person.family_name} nd.edu ${this.personPublication.publication.title}`)
+      const query = _.trim(`nd.edu ${this.personPublication.publication.title}`)
       this.url = `https://www.google.com/search?igu=1&q=${encodeURI(_.replace(query, / +/, '+'))}`
       this.displayUrl()
     },
@@ -1334,6 +1348,7 @@ export default {
       this.selectedPersonPubSort = this.preferredPersonPubSort
       this.selectedPersonSort = this.preferredPersonSort
       this.selectedPersonTotal = this.preferredPersonTotal
+      this.selectedInstitutionReviewState = this.preferredInstitutionReviewState
       this.selectedPubYears = {
         min: this.yearPubStaticMin,
         max: this.yearPubStaticMax
@@ -1351,9 +1366,11 @@ export default {
     preferredPersonSort: get('filter/preferredPersonSort'),
     preferredPersonPubSort: get('filter/preferredPersonPubSort'),
     preferredPersonTotal: get('filter/preferredPersonTotal'),
+    preferredInstitutionReviewState: get('filter/preferredInstitutionReviewState'),
     selectedInstitutions: sync('filter/selectedInstitutions'),
     institutionOptions: get('filter/institutionOptions'),
     selectedPersonSort: sync('filter/selectedPersonSort'),
+    selectedInstitutionReviewState: sync('filter/selectedInstitutionReviewState'),
     selectedPersonPubSort: sync('filter/selectedPersonPubSort'),
     selectedPersonTotal: sync('filter/selectedPersonTotal'),
     filterReviewStates: get('filter/filterReviewStates'),

@@ -54,7 +54,14 @@ export default function readPersonPublicationsAllJS (institutionNames, pubYearMi
             given_name
           }
           confidence
-          reviews_aggregate(limit: 1, order_by: {datetime: desc}) {
+          reviews_aggregate(where: {review_organization_value: {_eq: ND}}, limit: 1, order_by: {datetime: desc}) {
+            nodes {
+              reviewType
+              id
+              datetime
+            }
+          }
+          org_reviews_aggregate: reviews_aggregate(where: {review_organization_value: {_eq: HCRI}}, limit: 1, order_by: {datetime: desc}) {
             nodes {
               reviewType
               id
