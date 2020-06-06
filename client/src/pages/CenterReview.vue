@@ -703,7 +703,7 @@ export default {
         }
       }, 700)
     },
-    showReviewState (reviewState) {
+    async showReviewState (reviewState) {
       const test = _.includes(this.filterReviewStates, reviewState.name)
       console.log(`checking show review state for: ${reviewState.name} result is: ${test}, filter review states are: ${JSON.stringify(this.filterReviewStates, null, 2)}`)
       return test
@@ -991,6 +991,14 @@ export default {
           return 'pending'
         }
       })
+
+      // fill out empty arrays if no array status
+      _.each(this.reviewStates, (reviewState) => {
+        if (!this.personPublicationsCombinedMatchesByOrgReview[reviewState]) {
+          this.personPublicationsCombinedMatchesByOrgReview[reviewState] = []
+        }
+      })
+
       // put in pubs grouped by doi for each review status
       _.each(this.reviewStates, (reviewType) => {
         const publications = this.personPublicationsCombinedMatchesByOrgReview[reviewType]
