@@ -981,6 +981,9 @@ export default {
       }, { concurrency: 1 })
 
       // now group by org review according to the selected institution review state
+      if (!this.selectedInstitutionReviewState) {
+        this.selectedInstitutionReviewState = 'Accepted'
+      }
       this.personPublicationsCombinedMatchesByOrgReview = _.groupBy(this.personPublicationsCombinedMatchesByReview[this.selectedInstitutionReviewState.toLowerCase()], function (pub) {
         if (pub.org_reviews_aggregate.nodes && pub.org_reviews_aggregate.nodes.length > 0) {
           return pub.org_reviews_aggregate.nodes[0].reviewType
