@@ -38,12 +38,18 @@ export default {
   },
   methods: {
     async fetchData () {
+      console.log('YEAR ROUTE CHANGED')
       const results = await this.$apollo.query({
         query: getYearFilterYears
       })
       this.yearPubStaticMin = _.get(results, 'data.publications_aggregate.aggregate.min.year', 1800)
       this.yearPubStaticMax = _.get(results, 'data.publications_aggregate.aggregate.max.year', 2200)
-
+      if (this.changedPubYears === undefined) {
+        this.selectedPubYears = {
+          min: this.yearPubStaticMin,
+          max: this.yearPubStaticMax
+        }
+      }
       console.log(`Initialized pub year min: ${this.yearPubStaticMin} max: ${this.yearPubStaticMax}`)
     },
     async updatePubYears () {
