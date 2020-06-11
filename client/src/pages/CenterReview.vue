@@ -64,10 +64,10 @@
                 v-model="reviewTypeFilter"
                 dense
               >
-                <q-tab name="pending" :label="`Pending (${getPublicationsGroupedByDoiByReviewCount('pending')})`" />
-                <q-tab name="accepted" :label="`Accepted (${getPublicationsGroupedByDoiByReviewCount('accepted')})`" />
-                <q-tab name="rejected" :label="`Rejected (${getPublicationsGroupedByDoiByReviewCount('rejected')})`" />
-                <q-tab name="unsure" :label="`Unsure (${getPublicationsGroupedByDoiByReviewCount('unsure')})`" />
+                <q-tab name="pending" :label="`Pending (${getpublicationsGroupedByDoiByOrgReviewCount('pending')})`" />
+                <q-tab name="accepted" :label="`Accepted (${getpublicationsGroupedByDoiByOrgReviewCount('accepted')})`" />
+                <q-tab name="rejected" :label="`Rejected (${getpublicationsGroupedByDoiByOrgReviewCount('rejected')})`" />
+                <q-tab name="unsure" :label="`Unsure (${getpublicationsGroupedByDoiByOrgReviewCount('unsure')})`" />
               </q-tabs>
               <q-linear-progress
                 v-if="!publicationsLoaded && !publicationsLoadedError"
@@ -107,14 +107,16 @@
                         <q-avatar icon="description" color="primary" text-color="white" v-else />
                       </q-item-section>
                       <q-item-section top class="q-pa-xs">
-                        <q-item-label style="width:100%" class="text-grey-9" lines="1">{{ decode(item.publication.title) }}</q-item-label>
+                        <q-item-label style="width:100%" class="text-grey-9" lines="1"><strong>Title:</strong> {{ decode(item.publication.title) }}</q-item-label>
+                        <q-item-label v-if="selectedInstitutionReviewState === 'Accepted'" style="width:100%" class="text-grey-9" lines="1"><strong>{{selectedInstitutionReviewState}} Authors:</strong> {{ getAuthorsString(matchedPublicationAuthorsByDoi[item.publication.doi]) }}</q-item-label>
+                        <q-item-label v-else style="width:100%" class="text-grey-9" lines="1"><strong>{{selectedInstitutionReviewState}} Authors:</strong> {{ getAuthorsString(getInstitutionReviewedAuthors(item.publication.doi, selectedInstitutionReviewState.toLowerCase())) }}</q-item-label>
                         <q-list class="q-pt-sm">
                           <q-btn
                             @click.capture.stop
                             rounded
                             dense
                             size="sm"
-                            v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByDoiByReview[reviewTypeFilter][item.publication.doi])"
+                            v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByDoi[item.publication.doi])"
                             :key="index"
                             :color="getSourceNameChipColor(personPub.publication.source_name)"
                             text-color="white"
@@ -138,6 +140,22 @@
                         <q-btn dense color="red" label="Reject" @click="clickReviewRejected(index, person, personPublication);" />
                         <q-btn dense color="grey" label="Unsure" class="on-right" @click="clickReviewUnsure(index, person, personPublication);" />
                       </q-card-section>
+                      <q-card-section>
+                        <q-table
+                         :title="`ND Author Review ${selectedInstitutionReviewState}`"
+                         :data="getInstitutionReviewedAuthors(item.publication.doi, selectedInstitutionReviewState.toLowerCase())"
+                         :columns="reviewedAuthorColumns"
+                         row-key="id"
+                         dense
+                         :pagination.sync="pagination"
+                        >
+                         <q-tr v-if="acceptedAuthors.length <= 0" slot="bottom-row">
+                          <q-td align="left" colspan="100%">
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>None</i>
+                          </q-td>
+                         </q-tr>
+                        </q-table>
+                      </q-card-section>
                     </q-card>
                   </q-expansion-item>
                 </template>
@@ -158,7 +176,7 @@
                           dense
                           no-wrap
                           size="md"
-                          v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByDoiByReview[reviewTypeFilter][personPublication.publication.doi])"
+                          v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByDoi[personPublication.publication.doi])"
                           :key="index"
                           :color="getSourceNameChipColor(personPub.publication.source_name)"
                           text-color="white"
@@ -248,12 +266,10 @@
                     <q-card-section>
                       <q-table
                         title="Accepted Authors"
-                        :data="acceptedAuthors"
                         :columns="reviewedAuthorColumns"
                         row-key="id"
-                        :rows-per-page-options="[0]"
                         :pagination.sync="pagination"
-                        hide-bottom
+                        :hide-bottom="acceptedAuthors.length <= 0"
                       >
                         <q-tr v-if="acceptedAuthors.length <= 0" slot="bottom-row">
                           <q-td align="left" colspan="100%">
@@ -268,9 +284,8 @@
                         :data="rejectedAuthors"
                         :columns="reviewedAuthorColumns"
                         row-key="id"
-                        :rows-per-page-options="[0]"
                         :pagination.sync="pagination"
-                        hide-bottom
+                        :hide-bottom="rejectedAuthors.length <= 0"
                       >
                         <q-tr v-if="rejectedAuthors.length <= 0" slot="bottom-row">
                           <q-td align="left" colspan="100%">
@@ -285,9 +300,8 @@
                         :data="unsureAuthors"
                         :columns="reviewedAuthorColumns"
                         row-key="id"
-                        :rows-per-page-options="[0]"
                         :pagination.sync="pagination"
-                        hide-bottom
+                        :hide-bottom="unsureAuthors.length <= 0"
                       >
                         <q-tr v-if="unsureAuthors.length <= 0" slot="bottom-row">
                           <q-td align="left" colspan="100%">
@@ -302,7 +316,6 @@
                         :data="matchedPublicationAuthors"
                         :columns="authorColumns"
                         row-key="position"
-                        :rows-per-page-options="[0]"
                         :pagination.sync="pagination"
                         hide-bottom
                       />
@@ -382,6 +395,8 @@ import readReviewTypes from '../../../gql/readReviewTypes.gql'
 import readPublications from '../gql/readPublications'
 // import readPendingPublications from '../../../gql/readPendingPublications.gql'
 import readPersonPublicationsAll from '../gql/readPersonPublicationsAll'
+// import readPersonPublicationsOrgReviews from '../gql/readPersonPublicationsOrgReviews'
+import readAuthorsByPublications from '../gql/readAuthorsByPublications'
 // import readPublicationsByReviewState from '../../../gql/readPublicationsByReviewState.gql'
 import readPublication from '../../../gql/readPublication.gql'
 // import * as service from '@porter/osf.io';
@@ -393,6 +408,7 @@ import MemberYearFilter from '../components/MemberYearFilter.vue'
 import sanitize from 'sanitize-filename'
 import moment from 'moment'
 import pMap from 'p-map'
+import VueFuse from 'vue-fuse'
 
 export default {
   name: 'PageIndex',
@@ -412,13 +428,15 @@ export default {
     secondModel: 500,
     people: [],
     publications: [],
-    publicationsGroupedByReview: {},
+    publicationsGroupedByInstitutionReview: {},
     personPublicationsCombinedMatches: [],
     personPublicationsCombinedMatchesByReview: {},
     personPublicationsCombinedMatchesByOrgReview: {},
     filteredPersonPublicationsCombinedMatchesByOrgReview: {},
     publicationsGroupedByDoiByInstitutionReview: {},
-    publicationsGroupedByDoiByReview: {},
+    publicationsGroupedByDoiByOrgReview: {},
+    publicationsGroupedByDoi: {},
+    sortAuthorsByDoi: {}, // map of doi's to the matched author to sort by (i.e., the matched author with the lowest matched position)
     institutions: [],
     institutionGroup: [],
     personPublication: undefined,
@@ -436,12 +454,14 @@ export default {
     institutionId: undefined,
     nameVariants: [],
     publicationAuthors: [],
+    authorsByDoi: {},
     confidenceSetitems: [],
     confidenceSet: undefined,
     acceptedAuthors: [],
     rejectedAuthors: [],
     unsureAuthors: [],
     matchedPublicationAuthors: [],
+    matchedPublicationAuthorsByDoi: {},
     reviewQueueKey: 0,
     publicationCitation: undefined,
     showReviewStates: [],
@@ -607,8 +627,23 @@ export default {
     getPubMedUri (pmcId) {
       return `${process.env.PUBMED_ARTICLE_URI_BASE}/pmc/articles/${pmcId}`
     },
-    getPublicationsGroupedByDoiByReviewCount (reviewType) {
+    getpublicationsGroupedByDoiByOrgReviewCount (reviewType) {
       return this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType] ? this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType].length : 0
+    },
+    getInstitutionReviewedAuthors (doi, reviewType) {
+      const personPubs = this.publicationsGroupedByDoiByInstitutionReview[reviewType][doi]
+      // console.log(`Person pubs on get author review: ${JSON.stringify(this.publicationsGroupedByDoiByReview, null, 2)}`)
+      const reviewedAuthors = {}
+      _.each(personPubs, (personPub) => {
+        const reviewedAuthor = this.getReviewedAuthor(personPub)
+        if (!reviewedAuthors[reviewedAuthor.id]) {
+          reviewedAuthors[reviewedAuthor.id] = reviewedAuthor
+        }
+      })
+      if (reviewedAuthors.length > 1) {
+        console.log(`Reviewed authors are: ${JSON.stringify(reviewedAuthors, null, 2)}`)
+      }
+      return _.values(reviewedAuthors)
     },
     getDoiPersonPublicationsByReview (doi) {
       const personPubsByReview = {}
@@ -823,6 +858,89 @@ export default {
       const personResult = await this.$apollo.query(readPersons())
       this.people = personResult.data.persons
     },
+    // replace diacritics with alphabetic character equivalents
+    normalizeString (value) {
+      if (_.isString(value)) {
+        const newValue = _.clone(value)
+        const norm1 = newValue
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+        // the u0027 also normalizes the curly apostrophe to the straight one
+        const norm2 = norm1.replace(/[\u2019]/g, '\u0027')
+        // remove periods and other remaining special characters
+        const norm3 = norm2.replace(/[&\\#,+()$~%.'":*?<>{}!]/g, '')
+        return norm3
+      } else {
+        return value
+      }
+    },
+    // remove diacritic characters (used later for fuzzy matching of names)
+    normalizeObjectProperties (object, properties) {
+      const newObject = _.clone(object)
+      _.each(properties, (property) => {
+        newObject[property] = this.normalizeString(newObject[property])
+      })
+      return newObject
+    },
+    lastNameMatchFuzzy (last, lastKey, nameMap) {
+      // first normalize the diacritics
+      const testNameMap = _.map(nameMap, (name) => {
+        return this.normalizeObjectProperties(name, [lastKey])
+      })
+      // normalize last name checking against as well
+      const testLast = this.normalizeString(last)
+      // console.log(`After diacritic switch ${JSON.stringify(nameMap, null, 2)} converted to: ${JSON.stringify(testNameMap, null, 2)}`)
+      //   const lastFuzzy = new VueFuse(testNameMap, {
+      //     caseSensitive: false,
+      //     shouldSort: true,
+      //     includeScore: false,
+      //     keys: [lastKey],
+      //     findAllMatches: true,
+      //     threshold: 0.067
+      //   })
+
+      const lastNameResults = VueFuse.$search(testLast, testNameMap, {
+        caseSensitive: false,
+        shouldSort: true,
+        includeScore: false,
+        keys: [lastKey],
+        findAllMatches: true,
+        threshold: 0.067
+      })
+      // console.log(`For testing: ${testLast} Last name results: ${JSON.stringify(lastNameResults, null, 2)}`)
+      return lastNameResults.length > 0 ? lastNameResults[0] : null
+    },
+    getAuthorsString (authors) {
+      let authorString = ''
+      _.forEach(authors, (author, index) => {
+        if (index > 0) {
+          authorString = `${authorString}; `
+        }
+        authorString = `${authorString}${author.family_name}, ${author.given_name}`
+      })
+      return authorString
+    },
+    // similar to getMatchedPublicationAuthors except working against data from csl
+    // if 'returnPersonPubAuthors is true it returns an array of matched personPubAuthors instead of the matched csl author object
+    getMatchedCslAuthors (cslAuthors, personPublications, returnPersonPubAuthors) {
+      const matchedAuthorsIds = {}
+      const matchedAuthors = []
+      _.each(cslAuthors, (author) => {
+        _.each(personPublications, (personPublication) => {
+          if (_.lowerCase(personPublication.person.family_name) === _.lowerCase(author['family'])) {
+            if (returnPersonPubAuthors) {
+              if (!matchedAuthorsIds[personPublication.person.id]) {
+                matchedAuthorsIds[personPublication.person.id] = true
+                matchedAuthors.push(personPublication.person)
+              }
+            } else {
+              matchedAuthors.push(author)
+            }
+          }
+        })
+      })
+      return matchedAuthors
+    },
     getMatchedPublicationAuthors (personPublication, reviewedAuthors) {
       return _.filter(this.publicationAuthors, function (author) {
         let matchFound = false
@@ -863,7 +981,11 @@ export default {
         }, [])
       }
     },
+    // check that filters are properly initialized
+    async checkFilters () {
+    },
     async fetchData () {
+      await this.checkFilters()
       await this.loadReviewStates()
       await this.loadPublications()
     },
@@ -873,7 +995,7 @@ export default {
       this.personPublicationsCombinedMatchesByReview = {}
       this.personPublicationsCombinedMatchesByOrgReview = {}
       this.filteredPersonPublicationsCombinedMatchesByOrgReview = {}
-      this.publicationsGroupedByDoiByReview = {}
+      this.publicationsGroupedByDoiByOrgReview = {}
       this.publicationsGroupedByDoiByInstitutionReview = {}
       this.publicationsGroupedByDoi = {}
       this.confidenceSetItems = []
@@ -894,22 +1016,46 @@ export default {
     },
     async loadPersonPublicationsCombinedMatches () {
       console.log(`Start group by publications ${moment().format('HH:mm:ss:SSS')}`)
-      this.publicationsGroupedByReview = _.groupBy(this.publications, function (pub) {
-        if (pub.reviews_aggregate.nodes && pub.reviews_aggregate.nodes.length > 0) {
-          return pub.reviews_aggregate.nodes[0].reviewType
-        } else {
-          return 'pending'
-        }
+      this.publicationsGroupedByDoi = _.groupBy(this.publications, (personPub) => {
+        return `${personPub.publication.doi}`
       })
-      console.log(`Finish group by publications ${moment().format('HH:mm:ss:SSS')}`)
 
-      // put in pubs grouped by doi for each review status
-      _.each(this.reviewStates, (reviewType) => {
-        const publications = this.publicationsGroupedByReview[reviewType]
-        this.publicationsGroupedByDoiByInstitutionReview[reviewType] = _.groupBy(publications, (personPub) => {
-          return `${personPub.publication.doi}`
-        })
+      // group by institution (i.e., ND author) review and then by doi
+      let pubsByDoi = {}
+      this.publicationsGroupedByInstitutionReview = _.groupBy(this.publications, function (personPub) {
+        let reviewType = 'pending'
+        const doi = personPub.publication.doi
+        if (personPub.reviews_aggregate.nodes && personPub.reviews_aggregate.nodes.length > 0) {
+          reviewType = personPub.reviews_aggregate.nodes[0].reviewType
+        }
+        if (!pubsByDoi[reviewType]) {
+          pubsByDoi[reviewType] = {}
+        }
+        if (!pubsByDoi[reviewType][doi]) {
+          pubsByDoi[reviewType][doi] = []
+        }
+        pubsByDoi[reviewType][doi].push(personPub)
+        return reviewType
       })
+      // put in pubs grouped by doi for each review status
+      this.publicationsGroupedByDoiByInstitutionReview = pubsByDoi
+      console.log(`Finish group by publications ${moment().format('HH:mm:ss:SSS')}`)
+      // initialize the pub author matches
+      this.matchedPublicationAuthorsByDoi = _.mapValues(this.authorsByDoi, (cslAuthors, doi) => {
+        return this.getMatchedCslAuthors(cslAuthors, this.publicationsGroupedByDoiByInstitutionReview['accepted'][doi], true)
+      })
+      this.sortAuthorsByDoi = {}
+      this.sortAuthorsByDoi['accepted'] = _.mapValues(this.matchedPublicationAuthorsByDoi, (matchedAuthors) => {
+        return this.getAuthorsString(matchedAuthors)
+      })
+      this.sortAuthorsByDoi['rejected'] = _.mapValues(this.publicationsGroupedByDoiByInstitutionReview['rejected'], (personPubs, doi) => {
+        return this.getAuthorsString(this.getInstitutionReviewedAuthors(doi, 'rejected'))
+      })
+      this.sortAuthorsByDoi['unsure'] = _.mapValues(this.publicationsGroupedByDoiByInstitutionReview['unsure'], (personPubs, doi) => {
+        return this.getAuthorsString(this.getInstitutionReviewedAuthors(doi, 'unsure'))
+      })
+
+      // console.log(`Matched pub authors by doi: ${JSON.stringify(this.matchedPublicationAuthorsByDoi, null, 2)}`)
 
       const doisPresent = {}
       this.personPublicationsCombinedMatchesByReview = {}
@@ -999,16 +1145,20 @@ export default {
         }
       })
 
-      // put in pubs grouped by doi for each review status
+      // put in pubs grouped by doi for each review status for both ND author review and center review status
       _.each(this.reviewStates, (reviewType) => {
         const publications = this.personPublicationsCombinedMatchesByOrgReview[reviewType]
-        this.publicationsGroupedByDoiByReview[reviewType] = _.groupBy(publications, (personPub) => {
+        // first grab relevant person pubs from global list based dois in this list
+        this.publicationsGroupedByDoiByOrgReview[reviewType] = _.groupBy(publications, (personPub) => {
           return `${personPub.publication.doi}`
         })
       })
 
       // initialize the list in view
       this.setCurrentPersonPublicationsCombinedMatches()
+    },
+    // return the matched author with the lowest matched position
+    getPersonPublicationMatchedAuthors (personPublication, reviewedAuthors) {
     },
     async filterPublications () {
       let filterOutCurrentPublication = false
@@ -1062,6 +1212,8 @@ export default {
         return personPublication.confidence
       }
     },
+    getPersonPubMatchPubAuthors (personPublication) {
+    },
     async sortPublications () {
       // sort by confidence of pub title
       // apply any sorting applied
@@ -1069,6 +1221,10 @@ export default {
       if (this.selectedPersonPubSort === 'Title') {
         this.personPublicationsCombinedMatches = _.sortBy(this.personPublicationsCombinedMatches, (personPub) => {
           return this.trimFirstArticles(personPub.publication.title)
+        })
+      } else if (this.selectedPersonPubSort === 'Authors') {
+        this.personPublicationsCombinedMatches = _.sortBy(this.personPublicationsCombinedMatches, (personPub) => {
+          return this.sortAuthorsByDoi(personPub.publication.doi)
         })
       } else if (this.selectedPersonPubSort === 'Source') {
         // need to sort by confidence and then name, not guaranteed to be in order from what is returned from DB
@@ -1133,7 +1289,25 @@ export default {
         })
         // console.log('***', pubsWithReviewResult)
         console.log(`Finished query publications ${moment().format('HH:mm:ss:SSS')}`)
+        console.log(`Start query publications authors ${moment().format('HH:mm:ss:SSS')}`)
         this.publications = pubsWithReviewResult.data.persons_publications
+        const publicationIds = _.map(this.publications, (pub) => {
+          return pub.publication.id
+        })
+        // now query for authors for the publications (faster if done in second query)
+        const pubsAuthorsResult = await this.$apollo.query({
+          query: readAuthorsByPublications(publicationIds),
+          fetchPolicy: 'network-only'
+        })
+        console.log(`Finished query publications authors ${moment().format('HH:mm:ss:SSS')}`)
+        const pubsWithAuthorsByDoi = _.groupBy(pubsAuthorsResult.data.publications, (publication) => {
+          return publication.doi
+        })
+        // now reduce to first instance by doi and authors array
+        this.authorsByDoi = _.mapValues(pubsWithAuthorsByDoi, (publication) => {
+          return (publication[0].authors) ? publication[0].authors : []
+        })
+        console.log(`Pub Authors are: ${JSON.stringify(this.authorsByDoi, null, 2)}`)
         this.loadPersonPublicationsCombinedMatches()
       } catch (error) {
         this.publicationsLoaded = true
@@ -1143,9 +1317,7 @@ export default {
       this.publicationsLoaded = true
     },
     getReviewedAuthor (personPublication) {
-      const obj = _.clone(personPublication)
-      _.set(obj, 'given_name', obj.person['given_name'])
-      _.set(obj, 'family_name', obj.person['family_name'])
+      const obj = _.clone(personPublication.person)
       const confidenceset = personPublication.confidencesets_aggregate.nodes[0]
       _.set(obj, 'confidenceset_value', confidenceset['value'])
       return obj
@@ -1215,7 +1387,7 @@ export default {
         return null
       }
       // add the review for personPublications with the same doi in the list
-      const personPubs = this.publicationsGroupedByDoiByReview[this.reviewTypeFilter][personPublication.publication.doi]
+      const personPubs = this.publicationsGroupedByDoi[personPublication.publication.doi]
 
       try {
         let mutateResults = []
@@ -1231,7 +1403,7 @@ export default {
             Vue.delete(this.personPublicationsCombinedMatches, index)
             // transfer from one review queue to the next primarily for counts, other sorting will shake out on reload when clicking the tab
             // remove from current lists
-            _.unset(this.publicationsGroupedByDoiByReview[this.reviewTypeFilter], personPublication.publication.doi)
+            _.unset(this.publicationsGroupedByDoiByOrgReview[this.reviewTypeFilter], personPublication.publication.doi)
             _.remove(this.personPublicationsCombinedMatchesByOrgReview[this.reviewTypeFilter], (pub) => {
               return pub.id === personPub.id
             })
@@ -1239,7 +1411,7 @@ export default {
               return pub.id === personPub.id
             })
             // add to new lists
-            this.publicationsGroupedByDoiByReview[reviewType][personPublication.publication.doi] = personPubs
+            this.publicationsGroupedByDoiByOrgReview[reviewType][personPublication.publication.doi] = personPubs
             this.personPublicationsCombinedMatchesByOrgReview[reviewType].push(personPub)
             this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType].push(personPub)
           }
