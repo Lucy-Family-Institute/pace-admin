@@ -52,7 +52,8 @@ export default {
     return {
       sortPersonPubOptions: [
         'Confidence',
-        'Title'
+        'Title',
+        'Authors'
       ],
       institutionReviewStateOptions: [
         'Accepted',
@@ -92,8 +93,6 @@ export default {
         // console.log(`Current type review is: ${JSON.stringify(typeReview, null, 2)}`)
         return typeReview.value
       })
-      this.showReviewStates = _.filter(this.reviewStates, (value) => { return this.showReviewState(value) })
-      // console.log(`Show Review states initialized to: ${this.showReviewStates} Review states are: ${this.reviewStates}`)
     }
   }
 }
