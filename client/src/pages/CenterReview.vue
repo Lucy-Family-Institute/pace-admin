@@ -147,7 +147,6 @@
                          :columns="reviewedAuthorColumns"
                          row-key="id"
                          dense
-                         :pagination.sync="pagination"
                         >
                          <q-tr v-if="acceptedAuthors.length <= 0" slot="bottom-row">
                           <q-td align="left" colspan="100%">
@@ -169,7 +168,7 @@
                 <div class="q-pa-md row items-start q-gutter-md">
                   <q-card>
                     <q-card-section v-if="personPublication.publication.doi">
-                      <q-item-header>View Article:</q-item-header>
+                      <q-item><strong>View Article:</strong></q-item>
                       <q-list class="q-pt-sm q-pb-sm">
                         <q-btn
                           rounded
@@ -266,9 +265,9 @@
                     <q-card-section>
                       <q-table
                         title="Accepted Authors"
+                        :data="acceptedAuthors"
                         :columns="reviewedAuthorColumns"
                         row-key="id"
-                        :pagination.sync="pagination"
                         :hide-bottom="acceptedAuthors.length <= 0"
                       >
                         <q-tr v-if="acceptedAuthors.length <= 0" slot="bottom-row">
@@ -284,7 +283,6 @@
                         :data="rejectedAuthors"
                         :columns="reviewedAuthorColumns"
                         row-key="id"
-                        :pagination.sync="pagination"
                         :hide-bottom="rejectedAuthors.length <= 0"
                       >
                         <q-tr v-if="rejectedAuthors.length <= 0" slot="bottom-row">
@@ -300,7 +298,6 @@
                         :data="unsureAuthors"
                         :columns="reviewedAuthorColumns"
                         row-key="id"
-                        :pagination.sync="pagination"
                         :hide-bottom="unsureAuthors.length <= 0"
                       >
                         <q-tr v-if="unsureAuthors.length <= 0" slot="bottom-row">
@@ -316,7 +313,6 @@
                         :data="matchedPublicationAuthors"
                         :columns="authorColumns"
                         row-key="position"
-                        :pagination.sync="pagination"
                         hide-bottom
                       />
                     </q-card-section>
@@ -395,7 +391,6 @@ import readReviewTypes from '../../../gql/readReviewTypes.gql'
 import readPublications from '../gql/readPublications'
 // import readPendingPublications from '../../../gql/readPendingPublications.gql'
 import readPersonPublicationsAll from '../gql/readPersonPublicationsAll'
-// import readPersonPublicationsOrgReviews from '../gql/readPersonPublicationsOrgReviews'
 import readAuthorsByPublications from '../gql/readAuthorsByPublications'
 // import readPublicationsByReviewState from '../../../gql/readPublicationsByReviewState.gql'
 import readPublication from '../../../gql/readPublication.gql'
@@ -408,7 +403,9 @@ import MemberYearFilter from '../components/MemberYearFilter.vue'
 import sanitize from 'sanitize-filename'
 import moment from 'moment'
 import pMap from 'p-map'
-import VueFuse from 'vue-fuse'
+// import VueFuse from 'vue-fuse'
+
+// Vue.use(VueFuse)
 
 export default {
   name: 'PageIndex',
@@ -747,7 +744,7 @@ export default {
       this.selectedReviewState = reviewState
     },
     async scrollToPublication (index) {
-      console.log(`updating scroll ${index} for ${this.selectedReviewState} ${this.$refs['pubScroll'].toString}`)
+      // console.log(`updating scroll ${index} for ${this.selectedReviewState} ${this.$refs['pubScroll'].toString}`)
       this.$refs['pubScroll'].scrollTo(index + 1)
     },
     async showCurrentSelectedPublication () {
@@ -772,31 +769,6 @@ export default {
         }
       }
     },
-    // async showCurrentSelectedPerson () {
-    //   if (this.person && this.people) {
-    //     // check people still contains the person if not clear out states
-    //     const currentPersonIndex = _.findIndex(this.people, (currentPerson) => {
-    //       return currentPerson.id === this.person.id
-    //     })
-    //     if (currentPersonIndex >= 0) {
-    //       console.log(`Trying to show person ${this.person.id}`)
-    //       // if not top item scroll to 2 items above
-    //       let scrollIndex = currentPersonIndex
-    //       if (scrollIndex > 1) {
-    //         // if greater than 2 move up 2 spaces
-    //         scrollIndex -= 2
-    //       }
-    //       await this.$refs['personScroll'].scrollTo(scrollIndex)
-    //       // console.log(this.$refs)
-    //       this.$refs[`person${currentPersonIndex}`].show()
-    //     } else {
-    //       console.log(`Person id: ${this.person.id} no longer found.  Clearing UI states...`)
-    //       // clear everything out
-    //       this.clearPublication()
-    //       this.clearPublications()
-    //     }
-    //   }
-    // },
     async loadPersonsWithFilter () {
       console.log('filtering', this.selectedInstitutions)
       this.people = []
@@ -899,7 +871,7 @@ export default {
       //     threshold: 0.067
       //   })
 
-      const lastNameResults = VueFuse.$search(testLast, testNameMap, {
+      const lastNameResults = this.$search(testLast, testNameMap, {
         caseSensitive: false,
         shouldSort: true,
         includeScore: false,
@@ -927,6 +899,7 @@ export default {
       const matchedAuthors = []
       _.each(cslAuthors, (author) => {
         _.each(personPublications, (personPublication) => {
+          // if (this.lastNameMatchFuzzy(personPublication.person.family_name, 'family', cslAuthors)) {
           if (_.lowerCase(personPublication.person.family_name) === _.lowerCase(author['family'])) {
             if (returnPersonPubAuthors) {
               if (!matchedAuthorsIds[personPublication.person.id]) {
@@ -957,23 +930,23 @@ export default {
       const publicationId = personPublication.publication.id
       const result = await this.$apollo.query(readAuthorsByPublication(publicationId))
       this.publicationAuthors = result.data.publications_authors
-      console.log(`Loaded Publication Authors: ${JSON.stringify(this.publicationAuthors)}`)
+      // console.log(`Loaded Publication Authors: ${JSON.stringify(this.publicationAuthors)}`)
       // load up author positions of possible matches
       this.matchedPublicationAuthors = this.getMatchedPublicationAuthors(personPublication, reviewedAuthors)
-      console.log(`Matched authors are: ${JSON.stringify(this.matchedPublicationAuthors, null, 2)}`)
+      // console.log(`Matched authors are: ${JSON.stringify(this.matchedPublicationAuthors, null, 2)}`)
     },
     async loadConfidenceSet (personPublication) {
       this.confidenceSetItems = []
       this.confidenceSet = undefined
-      console.log(`Trying to load confidence sets for pub: ${JSON.stringify(personPublication, null, 2)}`)
+      // console.log(`Trying to load confidence sets for pub: ${JSON.stringify(personPublication, null, 2)}`)
       if (personPublication.confidencesets_aggregate &&
         personPublication.confidencesets_aggregate.nodes.length > 0) {
         this.confidenceSet = personPublication.confidencesets_aggregate.nodes[0]
-        console.log('getting confidence set items...')
+        // console.log('getting confidence set items...')
         const result = await this.$apollo.query(readConfidenceSetItems(this.confidenceSet.id))
         this.confidenceSetItems = result.data.confidencesets_items
         this.confidenceSetItems = _.transform(this.confidenceSetItems, (result, setItem) => {
-          console.log(`Trying to set properties for confidence set item: ${JSON.stringify(setItem, null, 2)}`)
+          // console.log(`Trying to set properties for confidence set item: ${JSON.stringify(setItem, null, 2)}`)
           _.set(setItem, 'confidence_type_name', setItem.confidence_type.name)
           _.set(setItem, 'confidence_type_rank', setItem.confidence_type.rank)
           _.set(setItem, 'confidence_type_desc', setItem.confidence_type.description)
@@ -981,11 +954,7 @@ export default {
         }, [])
       }
     },
-    // check that filters are properly initialized
-    async checkFilters () {
-    },
     async fetchData () {
-      await this.checkFilters()
       await this.loadReviewStates()
       await this.loadPublications()
     },
@@ -1212,8 +1181,6 @@ export default {
         return personPublication.confidence
       }
     },
-    getPersonPubMatchPubAuthors (personPublication) {
-    },
     async sortPublications () {
       // sort by confidence of pub title
       // apply any sorting applied
@@ -1223,8 +1190,9 @@ export default {
           return this.trimFirstArticles(personPub.publication.title)
         })
       } else if (this.selectedPersonPubSort === 'Authors') {
+        console.log('trying to sort by author')
         this.personPublicationsCombinedMatches = _.sortBy(this.personPublicationsCombinedMatches, (personPub) => {
-          return this.sortAuthorsByDoi(personPub.publication.doi)
+          return this.sortAuthorsByDoi[this.selectedInstitutionReviewState.toLowerCase()][personPub.publication.doi]
         })
       } else if (this.selectedPersonPubSort === 'Source') {
         // need to sort by confidence and then name, not guaranteed to be in order from what is returned from DB
@@ -1307,7 +1275,6 @@ export default {
         this.authorsByDoi = _.mapValues(pubsWithAuthorsByDoi, (publication) => {
           return (publication[0].authors) ? publication[0].authors : []
         })
-        console.log(`Pub Authors are: ${JSON.stringify(this.authorsByDoi, null, 2)}`)
         this.loadPersonPublicationsCombinedMatches()
       } catch (error) {
         this.publicationsLoaded = true

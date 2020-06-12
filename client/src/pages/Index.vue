@@ -162,7 +162,7 @@
                         <q-avatar icon="description" color="primary" text-color="white" v-else />
                       </q-item-section>
                       <q-item-section top class="q-pa-xs">
-                        <q-item-label style="width:100%" class="text-grey-9" lines="1">{{ decode(item.publication.title) }}</q-item-label>
+                        <q-item-label style="width:100%" class="text-grey-9" lines="1"><strong>Title:</strong> {{ decode(item.publication.title) }}</q-item-label>
                         <q-list class="q-pt-sm">
                           <q-btn
                             @click.capture.stop
