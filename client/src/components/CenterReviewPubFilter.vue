@@ -29,9 +29,9 @@
         class="fullSelect"
       />
       <q-select
-        name="sort_person"
-        v-model="selectedPersonPubSort"
-        :options="sortPersonPubOptions"
+        name="sort_center_pub"
+        v-model="selectedCenterPubSort"
+        :options="sortCenterPubOptions"
         color="primary"
         filled
         style="width:180px"
@@ -50,7 +50,7 @@ import _ from 'lodash'
 export default {
   data () {
     return {
-      sortPersonPubOptions: [
+      sortCenterPubOptions: [
         'Confidence',
         'Title',
         'Authors'
@@ -66,8 +66,8 @@ export default {
   computed: {
     preferredInstitutionReviewState: sync('filter/preferredInstitutionReviewState'),
     selectedInstitutionReviewState: sync('filter/selectedInstitutionReviewState'),
-    preferredPersonPubSort: sync('filter/preferredPersonPubSort'),
-    selectedPersonPubSort: sync('filter/selectedPersonPubSort'),
+    preferredCenterPubSort: sync('filter/preferredCenterPubSort'),
+    selectedCenterPubSort: sync('filter/selectedCenterPubSort'),
     pubSearch: sync('filter/pubSearch')
   },
   async created () {
@@ -80,7 +80,7 @@ export default {
     async fetchData () {
       await this.loadReviewStates()
       this.selectedinstitutionReviewState = (this.selectedInstitutionReviewState) ? this.selectedinstitutionReviewState : this.preferredInstitutionReviewState
-      this.selectedPersonPubSort = (this.selectedPersonPubSort) ? this.selectedPersonPubSort : this.preferredPersonPubSort
+      this.selectedCenterPubSort = (this.selectedCenterPubSort) ? this.selectedCenterPubSort : this.preferredCenterPubSort
       this.pubSearch = ''
     },
     async loadReviewStates () {
