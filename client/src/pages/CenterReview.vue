@@ -521,7 +521,7 @@ export default {
     selectedInstitutionReviewState: async function () {
       this.loadPersonPublicationsCombinedMatches()
     },
-    selectedPersonPubSort: async function () {
+    selectedCenterPubSort: async function () {
       await this.sortPublications()
       this.showCurrentSelectedPublication()
     },
@@ -1184,17 +1184,17 @@ export default {
     async sortPublications () {
       // sort by confidence of pub title
       // apply any sorting applied
-      console.log('sorting', this.selectedPersonPubSort)
-      if (this.selectedPersonPubSort === 'Title') {
+      console.log('sorting', this.selectedCenterPubSort)
+      if (this.selectedCenterPubSort === 'Title') {
         this.personPublicationsCombinedMatches = _.sortBy(this.personPublicationsCombinedMatches, (personPub) => {
           return this.trimFirstArticles(personPub.publication.title)
         })
-      } else if (this.selectedPersonPubSort === 'Authors') {
+      } else if (this.selectedCenterPubSort === 'Authors') {
         console.log('trying to sort by author')
         this.personPublicationsCombinedMatches = _.sortBy(this.personPublicationsCombinedMatches, (personPub) => {
           return this.sortAuthorsByDoi[this.selectedInstitutionReviewState.toLowerCase()][personPub.publication.doi]
         })
-      } else if (this.selectedPersonPubSort === 'Source') {
+      } else if (this.selectedCenterPubSort === 'Source') {
         // need to sort by confidence and then name, not guaranteed to be in order from what is returned from DB
         // first group items by count
         const groupedPubs = _.groupBy(this.personPublicationsCombinedMatches, (pub) => {
@@ -1496,6 +1496,7 @@ export default {
     },
     resetFilters () {
       this.selectedPersonPubSort = this.preferredPersonPubSort
+      this.selectedCenterPubSort = this.preferredCenterPubSort
       this.selectedPersonSort = this.preferredPersonSort
       this.selectedPersonTotal = this.preferredPersonTotal
       this.selectedInstitutionReviewState = this.preferredInstitutionReviewState
@@ -1515,6 +1516,7 @@ export default {
     isLoggedIn: sync('auth/isLoggedIn'),
     preferredPersonSort: get('filter/preferredPersonSort'),
     preferredPersonPubSort: get('filter/preferredPersonPubSort'),
+    preferredCenterPubSort: get('filter/preferredCenterPubSort'),
     preferredPersonTotal: get('filter/preferredPersonTotal'),
     preferredInstitutionReviewState: get('filter/preferredInstitutionReviewState'),
     selectedInstitutions: sync('filter/selectedInstitutions'),
@@ -1522,6 +1524,7 @@ export default {
     selectedPersonSort: sync('filter/selectedPersonSort'),
     selectedInstitutionReviewState: sync('filter/selectedInstitutionReviewState'),
     selectedPersonPubSort: sync('filter/selectedPersonPubSort'),
+    selectedCenterPubSort: sync('filter/selectedCenterPubSort'),
     selectedPersonTotal: sync('filter/selectedPersonTotal'),
     filterReviewStates: get('filter/filterReviewStates'),
     selectedPubYears: sync('filter/selectedPubYears'),

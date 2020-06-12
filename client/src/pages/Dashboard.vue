@@ -908,6 +908,7 @@ export default {
     },
     resetFilters () {
       this.selectedPersonPubSort = this.preferredPersonPubSort
+      this.selectedCenterPubSort = this.preferredCenterPubSort
       this.selectedPersonSort = this.preferredPersonSort
       this.selectedPersonTotal = this.preferredPersonTotal
       this.selectedPubYears = {
@@ -926,11 +927,13 @@ export default {
     isLoggedIn: sync('auth/isLoggedIn'),
     preferredPersonSort: get('filter/preferredPersonSort'),
     preferredPersonPubSort: get('filter/preferredPersonPubSort'),
+    preferredCenterPubSort: get('filter/preferredCenterPubSort'),
     preferredPersonTotal: get('filter/preferredPersonTotal'),
     selectedInstitutions: sync('filter/selectedInstitutions'),
     institutionOptions: get('filter/institutionOptions'),
     selectedPersonSort: sync('filter/selectedPersonSort'),
     selectedPersonPubSort: sync('filter/selectedPersonPubSort'),
+    selectedCenterPubSort: sync('filter/selectedCenterPubSort'),
     selectedPersonTotal: sync('filter/selectedPersonTotal'),
     filterReviewStates: get('filter/filterReviewStates'),
     selectedPubYears: sync('filter/selectedPubYears'),
