@@ -1,0 +1,14 @@
+- args:
+    permission:
+      allow_aggregations: false
+      columns:
+      - classification_id
+      - id
+      - journal_id
+      filter: {}
+      limit: null
+    role: user
+    table:
+      name: journals_classifications
+      schema: public
+  type: create_select_permission

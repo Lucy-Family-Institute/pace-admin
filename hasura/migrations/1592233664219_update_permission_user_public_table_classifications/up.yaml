@@ -1,0 +1,17 @@
+- args:
+    permission:
+      columns:
+      - id
+      - identifier
+      - name
+      - scheme
+      filter: {}
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: classifications
+      schema: public
+  type: create_update_permission

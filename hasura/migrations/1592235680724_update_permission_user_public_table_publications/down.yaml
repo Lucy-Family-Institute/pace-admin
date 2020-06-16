@@ -1,0 +1,30 @@
+- args:
+    role: user
+    table:
+      name: publications
+      schema: public
+  type: drop_insert_permission
+- args:
+    permission:
+      check: {}
+      columns:
+      - abstract
+      - csl
+      - csl_string
+      - data_id
+      - doi
+      - id
+      - provenance_id
+      - source_metadata
+      - source_name
+      - title
+      - year
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: publications
+      schema: public
+  type: create_insert_permission

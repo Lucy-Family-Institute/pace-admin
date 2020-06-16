@@ -1,0 +1,80 @@
+- args:
+    cascade: false
+    sql: "insert into classifications (name, identifier, scheme) values ('Multidisciplinary','1000',
+      'ASJC');\n      insert into classifications (name, identifier, scheme) values
+      ('General Agricultural and Biological Sciences', '1100', 'ASJC');\n      insert
+      into classifications (name, identifier, scheme) values ('Agricultural and Biological
+      Sciences (miscellaneous)', '1101', 'ASJC');\n      insert into classifications
+      (name, identifier, scheme) values ('Agronomy and Crop Science', '1102', 'ASJC');\n
+      \     insert into classifications (name, identifier, scheme) values ('Animal
+      Science and Zoology', '1103', 'ASJC');\n      insert into classifications (name,
+      identifier, scheme) values ('Aquatic Science', '1104', 'ASJC');\n      insert
+      into classifications (name, identifier, scheme) values ('Ecology, Evolution,
+      Behavior and Systematics', '1105', 'ASJC');\n      insert into classifications
+      (name, identifier, scheme) values ('Food Science', '1106', 'ASJC');\n      insert
+      into classifications (name, identifier, scheme) values ('Forestry', '1107',
+      'ASJC');\n      insert into classifications (name, identifier, scheme) values
+      ('Horticulture', '1108', 'ASJC');\n      insert into classifications (name,
+      identifier, scheme) values ('Insect Science', '1109', 'ASJC');\n      insert
+      into classifications (name, identifier, scheme) values ('Plant Science', '1110',
+      'ASJC');\n      insert into classifications (name, identifier, scheme) values
+      ('Soil Science', '1111', 'ASJC');\n      insert into classifications (name,
+      identifier, scheme) values ('General Arts and Humanities', '1200', 'ASJC');\n
+      \     insert into classifications (name, identifier, scheme) values ('Arts and
+      Humanities (miscellaneous)', '1201', 'ASJC');\n      insert into classifications
+      (name, identifier, scheme) values ('History', '1202', 'ASJC');\n      insert
+      into classifications (name, identifier, scheme) values ('Language and Linguistics',
+      '1203', 'ASJC');\n      insert into classifications (name, identifier, scheme)
+      values ('Archaeology', '1204', 'ASJC');\n      insert into classifications (name,
+      identifier, scheme) values ('Classics', '1205', 'ASJC');\n      insert into
+      classifications (name, identifier, scheme) values ('Conservation', '1206', 'ASJC');\n
+      \     insert into classifications (name, identifier, scheme) values ('History
+      and Philosophy of Science', '1207', 'ASJC');\n      insert into classifications
+      (name, identifier, scheme) values ('Literature and Literary Theory', '1208',
+      'ASJC');\n      insert into classifications (name, identifier, scheme) values
+      ('Museology', '1209', 'ASJC');\n      insert into classifications (name, identifier,
+      scheme) values ('Music', '1210', 'ASJC');\n      insert into classifications
+      (name, identifier, scheme) values ('Philosophy', '1211', 'ASJC');\n      insert
+      into classifications (name, identifier, scheme) values ('Religious studies',
+      '1212', 'ASJC');\n      insert into classifications (name, identifier, scheme)
+      values ('Visual Arts and Performing Arts', '1213', 'ASJC');\n      insert into
+      classifications (name, identifier, scheme) values ('General Biochemistry, Genetics
+      and Molecular Biology', '1300', 'ASJC');\n      insert into classifications
+      (name, identifier, scheme) values ('Biochemistry, Genetics and Molecular Biology
+      (miscellaneous)', '1301', 'ASJC');\n      insert into classifications (name,
+      identifier, scheme) values ('Ageing', '1302', 'ASJC');\n      insert into classifications
+      (name, identifier, scheme) values ('Biochemistry', '1303', 'ASJC');\n      insert
+      into classifications (name, identifier, scheme) values ('Biophysics', '1304',
+      'ASJC');\n      insert into classifications (name, identifier, scheme) values
+      ('Biotechnology', '1305', 'ASJC');\n      insert into classifications (name,
+      identifier, scheme) values ('Cancer Research', '1306', 'ASJC');\n      insert
+      into classifications (name, identifier, scheme) values ('Cell Biology', '1307',
+      'ASJC');\n      insert into classifications (name, identifier, scheme) values
+      ('Clinical Biochemistry', '1308', 'ASJC');\n      insert into classifications
+      (name, identifier, scheme) values ('Developmental Biology', '1309', 'ASJC');\n
+      \     insert into classifications (name, identifier, scheme) values ('Endocrinology',
+      '1310', 'ASJC');\n      insert into classifications (name, identifier, scheme)
+      values ('Genetics', '1311', 'ASJC');\n      insert into classifications (name,
+      identifier, scheme) values ('Molecular Biology', '1312', 'ASJC');\n      insert
+      into classifications (name, identifier, scheme) values ('Molecular Medicine',
+      '1313', 'ASJC');\n      insert into classifications (name, identifier, scheme)
+      values ('Physiology', '1314', 'ASJC');\n      insert into classifications (name,
+      identifier, scheme) values ('Structural Biology', '1315', 'ASJC');\n      insert
+      into classifications (name, identifier, scheme) values ('General Business, Management
+      and Accounting', '1400', 'ASJC');\n      insert into classifications (name,
+      identifier, scheme) values ('Business, Management and Accounting (miscellaneous)',
+      '1401', 'ASJC');\n      insert into classifications (name, identifier, scheme)
+      values ('Accounting', '1402', 'ASJC');\n      insert into classifications (name,
+      identifier, scheme) values ('Business and International Management', '1403',
+      'ASJC');\n      insert into classifications (name, identifier, scheme) values
+      ('Management Information Systems', '1404', 'ASJC');\n      insert into classifications
+      (name, identifier, scheme) values ('Management of Technology and Innovation',
+      '1405', 'ASJC');\n      insert into classifications (name, identifier, scheme)
+      values ('Marketing', '1406', 'ASJC');\n      insert into classifications (name,
+      identifier, scheme) values ('Organizational Behavior and Human Resource Management',
+      '1407', 'ASJC');\n      insert into classifications (name, identifier, scheme)
+      values ('Strategy and Management', '1408', 'ASJC');\n      insert into classifications
+      (name, identifier, scheme) values ('Tourism, Leisure and Hospitality Management',
+      '1409', 'ASJC');\n      insert into classifications (name, identifier, scheme)
+      values ('Industrial relations', '1410', 'ASJC');\n "
+  type: run_sql

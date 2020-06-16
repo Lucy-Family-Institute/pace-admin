@@ -70,11 +70,17 @@ newdb:
 load_name_variances:
 	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
 
+update_pubmed_data:
+	cd ingest && ts-node fetchPubmedData.js && cd ..
+
 update_scopus_data:
 	cd ingest && ts-node fetchScopusFullTextData.ts && cd ..
 
 load_abstracts:
 	cd ingest && ts-node loadAbstracts.ts && cd ..
+
+load_journals:
+	cd ingest && ts-node loadJournals.ts && cd ..
 
 scopus_author_data:
 	cd ingest && ts-node fetchScopusAuthorObjects.ts && cd ..

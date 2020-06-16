@@ -1,0 +1,3 @@
+- args:
+    sql: DROP TABLE "public"."classifications"
+  type: run_sql
