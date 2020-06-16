@@ -20,14 +20,14 @@ const axios = require('axios');
 const elsApiKey = process.env.SCOPUS_API_KEY
 const elsCookie = process.env.SCOPUS_API_COOKIE
 
-// environment variables
-process.env.NODE_ENV = 'development';
+const hasuraSecret = process.env.HASURA_SECRET
+const graphQlEndPoint = process.env.GRAPHQL_END_POINT
 
 const client = new ApolloClient({
   link: createHttpLink({
-    uri: 'http://localhost:8002/v1/graphql',
+    uri: graphQlEndPoint,
     headers: {
-      'x-hasura-admin-secret': 'mysecret'
+      'x-hasura-admin-secret': hasuraSecret
     },
     fetch: fetch as any
   }),
