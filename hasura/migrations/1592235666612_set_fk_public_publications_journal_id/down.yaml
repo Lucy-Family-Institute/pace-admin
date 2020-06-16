@@ -1,0 +1,4 @@
+- args:
+    sql: "\n          alter table \"public\".\"publications\" drop constraint \"publications_journal_id_fkey\"\n
+      \     "
+  type: run_sql

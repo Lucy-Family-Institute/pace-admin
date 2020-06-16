@@ -1,0 +1,6 @@
+- args:
+    relationship: classification
+    table:
+      name: journals_classifications
+      schema: public
+  type: drop_relationship

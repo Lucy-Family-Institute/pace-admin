@@ -1,0 +1,8 @@
+- args:
+    name: classification
+    table:
+      name: journals_classifications
+      schema: public
+    using:
+      foreign_key_constraint_on: classification_id
+  type: create_object_relationship

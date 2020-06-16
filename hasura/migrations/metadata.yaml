@@ -3,6 +3,62 @@ remote_schemas: []
 query_collections: []
 allowlist: []
 tables:
+- table: classifications
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships: []
+  array_relationships:
+  - using:
+      foreign_key_constraint_on:
+        column: classification_id
+        table: journals_classifications
+    name: journals_classifications
+    comment: null
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - name
+      - identifier
+      - scheme
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: false
+      computed_fields: []
+      columns:
+      - id
+      - identifier
+      - name
+      - scheme
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - id
+      - identifier
+      - name
+      - scheme
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
 - table: confidencesets
   is_enum: false
   configuration:
@@ -301,6 +357,123 @@ tables:
       columns:
       - id
       - name
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: journals
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships: []
+  array_relationships:
+  - using:
+      foreign_key_constraint_on:
+        column: journal_id
+        table: journals_classifications
+    name: journals_classifications
+    comment: null
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - e_issn
+      - id
+      - issn
+      - journal_type
+      - title
+      - publisher
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: false
+      computed_fields: []
+      columns:
+      - id
+      - e_issn
+      - issn
+      - journal_type
+      - title
+      - publisher
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - id
+      - e_issn
+      - issn
+      - journal_type
+      - title
+      - publisher
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: journals_classifications
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      foreign_key_constraint_on: classification_id
+    name: classification
+    comment: null
+  - using:
+      foreign_key_constraint_on: journal_id
+    name: journal
+    comment: null
+  array_relationships: []
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - journal_id
+      - classification_id
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: false
+      computed_fields: []
+      columns:
+      - classification_id
+      - id
+      - journal_id
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - classification_id
+      - id
+      - journal_id
       filter: {}
   delete_permissions: []
   event_triggers: []
@@ -665,6 +838,10 @@ tables:
       foreign_key_constraint_on: data_id
     name: datum
     comment: null
+  - using:
+      foreign_key_constraint_on: journal_id
+    name: journal
+    comment: null
   array_relationships:
   - using:
       foreign_key_constraint_on:
@@ -685,17 +862,18 @@ tables:
       set: {}
       check: {}
       columns:
-      - abstract
-      - csl
-      - csl_string
-      - data_id
-      - doi
       - id
-      - provenance_id
-      - source_metadata
-      - source_name
       - title
+      - doi
+      - provenance_id
+      - data_id
+      - source_name
+      - csl
+      - source_metadata
+      - csl_string
       - year
+      - abstract
+      - journal_id
   select_permissions:
   - role: user
     comment: null
@@ -703,17 +881,18 @@ tables:
       allow_aggregations: true
       computed_fields: []
       columns:
-      - abstract
-      - csl
-      - csl_string
       - data_id
-      - doi
       - id
+      - journal_id
       - provenance_id
+      - year
+      - csl
       - source_metadata
+      - abstract
+      - csl_string
+      - doi
       - source_name
       - title
-      - year
       filter: {}
   update_permissions:
   - role: user
@@ -721,17 +900,18 @@ tables:
     permission:
       set: {}
       columns:
-      - abstract
-      - csl
-      - csl_string
       - data_id
-      - doi
       - id
+      - journal_id
       - provenance_id
+      - year
+      - csl
       - source_metadata
+      - abstract
+      - csl_string
+      - doi
       - source_name
       - title
-      - year
       filter: {}
   delete_permissions: []
   event_triggers: []

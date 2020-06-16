@@ -1,0 +1,18 @@
+- args:
+    permission:
+      allow_upsert: true
+      check: {}
+      columns:
+      - id
+      - name
+      - identifier
+      - scheme
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: classifications
+      schema: public
+  type: create_insert_permission

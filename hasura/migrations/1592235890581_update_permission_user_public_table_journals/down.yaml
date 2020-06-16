@@ -1,0 +1,24 @@
+- args:
+    role: user
+    table:
+      name: journals
+      schema: public
+  type: drop_insert_permission
+- args:
+    permission:
+      check: {}
+      columns:
+      - id
+      - name
+      - publisher
+      - issn
+      - e_issn
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: journals
+      schema: public
+  type: create_insert_permission

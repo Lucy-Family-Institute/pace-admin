@@ -1,0 +1,18 @@
+- args:
+    permission:
+      columns:
+      - id
+      - e_issn
+      - issn
+      - name
+      - publisher
+      filter: {}
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: journals
+      schema: public
+  type: create_update_permission
