@@ -14,6 +14,26 @@ import path from 'path'
 
 const EMAIL = `pace@nd.edu`
 
+import dotenv from 'dotenv'
+
+dotenv.config({
+  path: '../.env'
+})
+
+const hasuraSecret = process.env.HASURA_SECRET
+const graphQlEndPoint = process.env.GRAPHQL_END_POINT
+
+const client = new ApolloClient({
+  link: createHttpLink({
+    uri: graphQlEndPoint,
+    headers: {
+      'x-hasura-admin-secret': hasuraSecret
+    },
+    fetch: fetch as any
+  }),
+  cache: new InMemoryCache()
+})
+
 // import crypto from 'crypto'
 // export function hashStream ( dataStream ) {
 //   return new Promise((resolve, reject) => {
@@ -143,17 +163,6 @@ async function downloadFromUnpaywall (doi, directory, filename) {
   }
   return null
 }
-
-const client = new ApolloClient({
-  link: createHttpLink({
-    uri: 'http://localhost:8002/v1/graphql',
-    headers: {
-      'x-hasura-admin-secret': 'mysecret'
-    },
-    fetch: fetch as any
-  }),
-  cache: new InMemoryCache()
-})
 
 async function main() {
   const objectsWithDois = await getDois(client)

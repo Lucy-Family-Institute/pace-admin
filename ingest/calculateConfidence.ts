@@ -15,16 +15,25 @@ import { command as loadCsv } from './units/loadCsv'
 import Cite from 'citation-js'
 
 const Fuse = require('fuse.js')
+import dotenv from 'dotenv'
+
+dotenv.config({
+  path: '../.env'
+})
+
+const hasuraSecret = process.env.HASURA_SECRET
+const graphQlEndPoint = process.env.GRAPHQL_END_POINT
+
 const client = new ApolloClient({
-    link: createHttpLink({
-      uri: 'http://localhost:8002/v1/graphql',
-      headers: {
-        'x-hasura-admin-secret': 'mysecret'
-      },
-      fetch: fetch as any
-    }),
-    cache: new InMemoryCache()
-  })
+  link: createHttpLink({
+    uri: graphQlEndPoint,
+    headers: {
+      'x-hasura-admin-secret': hasuraSecret
+    },
+    fetch: fetch as any
+  }),
+  cache: new InMemoryCache()
+})
 // const apolloUri = process.env.GRAPHQL_END_POINT
 // const httpLink = createHttpLink({
 //   uri: apolloUri,
