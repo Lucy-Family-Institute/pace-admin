@@ -37,7 +37,7 @@ tables:
   - role: user
     comment: null
     permission:
-      allow_aggregations: false
+      allow_aggregations: true
       computed_fields: []
       columns:
       - id
@@ -397,7 +397,7 @@ tables:
   - role: user
     comment: null
     permission:
-      allow_aggregations: false
+      allow_aggregations: true
       computed_fields: []
       columns:
       - id
@@ -458,7 +458,7 @@ tables:
   - role: user
     comment: null
     permission:
-      allow_aggregations: false
+      allow_aggregations: true
       computed_fields: []
       columns:
       - classification_id
