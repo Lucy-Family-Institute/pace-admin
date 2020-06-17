@@ -66,6 +66,8 @@ newdb:
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
 	cd ingest && ts-node calculateConfidence.ts && cd ..
 	cd ingest && ts-node loadAbstracts.ts && cd ..
+	cd ingest && ts-node loadJournals.ts && cd ..
+	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
 
 load_name_variances:
 	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
@@ -81,6 +83,10 @@ load_abstracts:
 
 load_journals:
 	cd ingest && ts-node loadJournals.ts && cd ..
+	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
+
+update_pub_journals:
+	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
 
 scopus_author_data:
 	cd ingest && ts-node fetchScopusAuthorObjects.ts && cd ..
