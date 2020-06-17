@@ -1,0 +1,23 @@
+- args:
+    role: user
+    table:
+      name: journals
+      schema: public
+  type: drop_select_permission
+- args:
+    permission:
+      allow_aggregations: true
+      columns:
+      - id
+      - e_issn
+      - issn
+      - journal_type
+      - title
+      - publisher
+      computed_fields: []
+      filter: {}
+    role: user
+    table:
+      name: journals
+      schema: public
+  type: create_select_permission
