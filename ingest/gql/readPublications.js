@@ -16,6 +16,7 @@ export default function readPublications () {
           scopus_eid: source_metadata(path: "eid")
           scopus_pii: source_metadata(path: "pii")
           pubmed_resource_identifiers: source_metadata(path: "resourceIdentifiers")
+          journal_title: csl(path: "container-title")
         }
       }
     `
