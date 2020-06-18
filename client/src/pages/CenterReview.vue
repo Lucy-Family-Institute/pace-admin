@@ -168,7 +168,7 @@
                 <div class="q-pa-md row items-start q-gutter-md">
                   <q-card>
                     <q-card-section v-if="personPublication.publication.doi">
-                      <q-item><strong>View Article:</strong></q-item>
+                      <q-item-label align="left"><strong>View Article:</strong></q-item-label>
                       <q-list class="q-pt-sm q-pb-sm">
                         <q-btn
                           rounded
@@ -198,6 +198,20 @@
                     <q-card-section>
                       <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
                     </q-card-section>
+                    <q-card-section v-if="publication.journal" class="text-left">
+                      <q-item-label><b>Journal Title:&nbsp;</b>{{ publication.journal.title }}</q-item-label>
+                    </q-card-section>
+                    <q-card-section v-if="publication.journal" class="text-left">
+                      <q-item-label><b>Journal Subjects:</b></q-item-label>
+                      <q-item-label :key="index" v-for="(classification, index) in publicationJournalClassifications" lines="1">{{classification.name}}</q-item-label>
+                    </q-card-section>
+                    <!--<q-card-section v-if="personPublication.publication.csl_subject && personPublication.publication.csl_subject.length > 0" dense class="text-left">
+                      <q-item-label><b>Subjects:</b></q-item-label>
+                      <q-item>{{personPublication.publication.csl_subjects}}</q-item>
+                    </q-card-section>
+                    <q-card-section v-else dense class="text-left">
+                      <q-item-label><b>Subjects:</b> Unavailable</q-item-label>
+                    </q-card-section>-->
                     <q-card-section v-if="personPublication.publication.abstract && personPublication.publication.abstract.length > 0" dense class="text-left">
                       <q-item-label><b>Abstract:</b></q-item-label>
                       <q-item>{{personPublication.publication.abstract}}</q-item>
@@ -461,6 +475,7 @@ export default {
     matchedPublicationAuthorsByDoi: {},
     reviewQueueKey: 0,
     publicationCitation: undefined,
+    publicationJournalClassifications: [],
     showReviewStates: [],
     // for progress bar
     progress: 0,
@@ -1323,6 +1338,10 @@ export default {
       this.publication = result.data.publications[0]
       console.log(`Loaded Publication: ${JSON.stringify(this.publication)}`)
       this.publicationCitation = this.getCitationApa(this.publication.csl_string)
+      this.publicationJournalClassifications = _.map(this.publication.journal.journals_classifications_aggregate.nodes, (node) => {
+        return node.classification
+      })
+      console.log(`Found Journal Classifications: ${JSON.stringify(this.publicationJournalClassifications, null, 2)}`)
       try {
         const sanitizedDoi = sanitize(this.publication.doi, { replacement: '_' })
         const imageHostBase = process.env.IMAGE_HOST_URL
