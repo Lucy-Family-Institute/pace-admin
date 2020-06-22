@@ -83,6 +83,7 @@
                 :items="personPublicationsCombinedMatches"
                 separator
                 bordered
+                :virtual-scroll-item-size="50"
                 :style="{'max-height': ($q.screen.height-50-88-36-8)+'px'}"
                 :ref="`pubScroll`"
               >
@@ -90,7 +91,7 @@
                   <q-expansion-item
                     :key="item.id"
                     clickable
-                    @click="loadPublication(item);scrollToPublication(index)"
+                    @click="loadPublication(item);showCurrentSelectedPublication(true)"
                     group="expansion_group"
                     :active="personPublication !== undefined && item.id === personPublication.id"
                     active-class="bg-teal-1 text-grey-8"
@@ -198,10 +199,10 @@
                     <q-card-section>
                       <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
                     </q-card-section>
-                    <q-card-section v-if="publication.journal" class="text-left">
+                    <q-card-section v-if="publication.journal!==undefined&&publication.journal!==null" class="text-left">
                       <q-item-label><b>Journal Title:&nbsp;</b>{{ publication.journal.title }}</q-item-label>
                     </q-card-section>
-                    <q-card-section v-if="publication.journal" class="text-left">
+                    <q-card-section v-if="publication.journal!==undefined" class="text-left">
                       <q-item-label><b>Journal Subjects:</b></q-item-label>
                       <q-item-label :key="index" v-for="(classification, index) in publicationJournalClassifications" lines="1">{{classification.name}}</q-item-label>
                     </q-card-section>
@@ -538,7 +539,7 @@ export default {
     },
     selectedCenterPubSort: async function () {
       await this.sortPublications()
-      this.showCurrentSelectedPublication()
+      this.showCurrentSelectedPublication(true)
     },
     selectedPersonTotal: function () {
       this.loadPersonsWithFilter()
@@ -760,23 +761,39 @@ export default {
     },
     async scrollToPublication (index) {
       // console.log(`updating scroll ${index} for ${this.selectedReviewState} ${this.$refs['pubScroll'].toString}`)
-      this.$refs['pubScroll'].scrollTo(index + 1)
+      console.log(`In scroll to position method for ${index}`)
+      // console.log(`Current item position: ${this.$refs['pubScroll'].position().left}`)
+      // console.log(`Next item position: ${this.$refs['pubScroll'].getBoundingClientRect()}`)
+      this.$refs['pubScroll'].scrollTo(index)
     },
-    async showCurrentSelectedPublication () {
+    async showCurrentSelectedPublication (pubIsExpanded) {
       if (this.personPublication) {
         // check people still contains the person if not clear out states
         const currentPubIndex = _.findIndex(this.personPublicationsCombinedMatches, (personPublication) => {
           return personPublication.id === this.personPublication.id
         })
         if (currentPubIndex >= 0) {
-          let scrollIndex = currentPubIndex
-          if (scrollIndex > 1) {
-            // if greater than 2 move up 2 spaces
-            scrollIndex += 2
+          let newScrollIndex = currentPubIndex
+          const prevScrollIndex = this.$refs['pubScroll']['prevToIndex']
+          let scrollDifferential = newScrollIndex - prevScrollIndex
+          let scrollAdjustment = 0
+          if (newScrollIndex !== 0) {
+            if (scrollDifferential > 0) {
+              // move two extra indexes in the right direction to account for the large rows and then another index per 100 items as it tends to shift
+              // if needs to move down, move that number more, if needs to move up, move that number up (i.e., subtract not add)
+              scrollAdjustment = Math.floor(1.5 + (scrollDifferential / 100)) // round to nearest index factor
+            } else if (scrollDifferential < 0) {
+              scrollAdjustment = -1 * Math.floor(1.5 + (-1 * scrollDifferential / 100))
+            }
           }
-          await this.$refs['pubScroll'].scrollTo(scrollIndex)
+          newScrollIndex += scrollAdjustment
+          console.log(`Scrolling to pub index: ${newScrollIndex} for current pub index: ${currentPubIndex} previous index was ${prevScrollIndex}`)
+          await this.$refs['pubScroll'].scrollTo(newScrollIndex)
+
           // console.log(this.$refs)
-          this.$refs[`personPub${currentPubIndex}`].show()
+          if (pubIsExpanded) {
+            this.$refs[`personPub${currentPubIndex}`].show()
+          }
         } else {
           console.log(`Person Publication id: ${this.personPublication.id} no longer found.  Clearing UI states...`)
           // clear everything out
@@ -996,7 +1013,7 @@ export default {
       // finally sort the publications
       await this.sortPublications()
 
-      this.showCurrentSelectedPublication()
+      this.showCurrentSelectedPublication(true)
     },
     async loadPersonPublicationsCombinedMatches () {
       console.log(`Start group by publications ${moment().format('HH:mm:ss:SSS')}`)
@@ -1338,9 +1355,11 @@ export default {
       this.publication = result.data.publications[0]
       console.log(`Loaded Publication: ${JSON.stringify(this.publication)}`)
       this.publicationCitation = this.getCitationApa(this.publication.csl_string)
-      this.publicationJournalClassifications = _.map(this.publication.journal.journals_classifications_aggregate.nodes, (node) => {
-        return node.classification
-      })
+      if (this.publication.journal && this.publication.journal.journals_classifications_aggregate) {
+        this.publicationJournalClassifications = _.map(this.publication.journal.journals_classifications_aggregate.nodes, (node) => {
+          return node.classification
+        })
+      }
       console.log(`Found Journal Classifications: ${JSON.stringify(this.publicationJournalClassifications, null, 2)}`)
       try {
         const sanitizedDoi = sanitize(this.publication.doi, { replacement: '_' })
@@ -1461,6 +1480,7 @@ export default {
       this.url = undefined
       this.publication = undefined
       this.publicationCitation = undefined
+      this.publicationJournalClassifications = []
     },
     setNameVariants (person) {
       this.nameVariants = []
