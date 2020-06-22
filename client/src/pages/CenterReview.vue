@@ -79,6 +79,14 @@
               <q-item v-if="publicationsLoadedError">
                 <q-item-label>Error on Publication Data Load</q-item-label>
               </q-item>
+              <download-csv
+                v-if="publicationsLoaded && !publicationsLoadedError"
+                class="cursor-pointer"
+                name='pace.csv'
+                :data="getPublicationsCSVResult(personPublicationsCombinedMatches)">
+                Download Results
+                <q-icon name="cloud_download" />
+              </download-csv>
               <q-virtual-scroll
                 :items="personPublicationsCombinedMatches"
                 separator
@@ -109,8 +117,8 @@
                       </q-item-section>
                       <q-item-section top class="q-pa-xs">
                         <q-item-label style="width:100%" class="text-grey-9" lines="1"><strong>Title:</strong> {{ decode(item.publication.title) }}</q-item-label>
-                        <q-item-label v-if="selectedInstitutionReviewState === 'Accepted'" style="width:100%" class="text-grey-9" lines="1"><strong>{{selectedInstitutionReviewState}} Authors:</strong> {{ getAuthorsString(matchedPublicationAuthorsByDoi[item.publication.doi]) }}</q-item-label>
-                        <q-item-label v-else style="width:100%" class="text-grey-9" lines="1"><strong>{{selectedInstitutionReviewState}} Authors:</strong> {{ getAuthorsString(getInstitutionReviewedAuthors(item.publication.doi, selectedInstitutionReviewState.toLowerCase())) }}</q-item-label>
+                        <q-item-label v-if="selectedInstitutionReviewState === 'Accepted'" style="width:100%" class="text-grey-9" lines="1"><strong>{{selectedInstitutionReviewState}} Authors:</strong> {{ sortAuthorsByDoi[selectedInstitutionReviewState.toLowerCase()][item.publication.doi] }}</q-item-label>
+                        <q-item-label v-else style="width:100%" class="text-grey-9" lines="1"><strong>{{selectedInstitutionReviewState}} Authors:</strong> {{ sortAuthorsByDoi[selectedInstitutionReviewState.toLowerCase()][item.publication.doi] }}</q-item-label>
                         <q-list class="q-pt-sm">
                           <q-btn
                             @click.capture.stop
@@ -387,6 +395,8 @@
 import Vue from 'vue'
 import { get, sync } from 'vuex-pathify'
 import { dom, date } from 'quasar'
+// add csv downloader
+import JsonCSV from 'vue-json-csv'
 // const { getScrollPosition, setScrollPosition } = scroll
 import readPersons from '../gql/readPersons'
 // import readPersonsByInstitution from '../gql/readPersonsByInstitution'
@@ -428,7 +438,8 @@ export default {
     CenterReviewPubFilter,
     PeopleFilter,
     YearFilter,
-    MemberYearFilter
+    MemberYearFilter,
+    'download-csv': JsonCSV
   },
   data: () => ({
     reviewStates: undefined,
@@ -924,6 +935,16 @@ export default {
       })
       return authorString
     },
+    getSourceUriString (personPubs) {
+      let sourceUriString = ''
+      _.forEach(personPubs, (personPub, index) => {
+        if (index > 0) {
+          sourceUriString = `${sourceUriString}; `
+        }
+        sourceUriString = `${sourceUriString}${this.getSourceUri(personPub)}`
+      })
+      return sourceUriString
+    },
     // similar to getMatchedPublicationAuthors except working against data from csl
     // if 'returnPersonPubAuthors is true it returns an array of matched personPubAuthors instead of the matched csl author object
     getMatchedCslAuthors (cslAuthors, personPublications, returnPersonPubAuthors) {
@@ -1014,6 +1035,21 @@ export default {
       await this.sortPublications()
 
       this.showCurrentSelectedPublication(true)
+    },
+    getPublicationsCSVResult (personPublications) {
+      return _.map(personPublications, (personPub) => {
+        return this.getPubCSVResultObject(personPub)
+      })
+    },
+    getPubCSVResultObject (personPublication) {
+      console.log(`Creating csv object for personPub: ${JSON.stringify(personPublication, null, 2)}`)
+      return {
+        title: personPublication.publication.title,
+        doi: personPublication.publication.doi,
+        authors: this.sortAuthorsByDoi[this.selectedInstitutionReviewState.toLowerCase()][personPublication.publication.doi],
+        sources: this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.publicationsGroupedByDoi[personPublication.publication.doi])),
+        abstract: personPublication.publication.abstract
+      }
     },
     async loadPersonPublicationsCombinedMatches () {
       console.log(`Start group by publications ${moment().format('HH:mm:ss:SSS')}`)
