@@ -25,6 +25,7 @@
     "sanitize-filename": "^1.6.3",
     "vue-apollo": "^3.0.3",
     "vue-friendly-iframe": "^0.16.0",
+    "vue-json-csv": "^1.2.11",
     "vuex-pathify": "^1.4.1",
     "vuex-persistedstate": "^3.0.1"
   },
