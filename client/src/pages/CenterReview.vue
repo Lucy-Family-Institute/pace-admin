@@ -213,10 +213,10 @@
                     <q-card-section>
                       <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
                     </q-card-section>
-                    <q-card-section v-if="publication.journal!==undefined&&publication.journal!==null" class="text-left">
+                    <q-card-section v-if="publication&&publication.journal!==undefined&&publication.journal!==null" class="text-left">
                       <q-item-label><b>Journal Title:&nbsp;</b>{{ publication.journal.title }}</q-item-label>
                     </q-card-section>
-                    <q-card-section v-if="publication.journal!==undefined" class="text-left">
+                    <q-card-section v-if="publication&&publication.journal!==undefined" class="text-left">
                       <q-item-label><b>Journal Subjects:</b></q-item-label>
                       <q-item-label :key="index" v-for="(classification, index) in publicationJournalClassifications" lines="1">{{classification.name}}</q-item-label>
                     </q-card-section>
@@ -1213,7 +1213,10 @@ export default {
         this.personPublicationsCombinedMatchesByOrgReview,
         (personPublications) => {
           return _.filter(personPublications, (item) => {
-            const includePublication = item.publication.title.toLowerCase().includes(this.pubSearch.toLowerCase().trim())
+            const authorString = (this.sortAuthorsByDoi[this.selectedInstitutionReviewState.toLowerCase()][item.publication.doi]) ? this.sortAuthorsByDoi[this.selectedInstitutionReviewState.toLowerCase()][item.publication.doi] : ''
+            const includedInAuthors = authorString.toLowerCase().includes(this.pubSearch.toLowerCase().trim())
+            const includedInTitle = item.publication.title.toLowerCase().includes(this.pubSearch.toLowerCase().trim())
+            const includePublication = (includedInTitle || includedInAuthors)
             if (!includePublication && this.personPublication && item.id === this.personPublication.id) {
               // clear out the publication from view if it is filtered out of the results
               filterOutCurrentPublication = true
