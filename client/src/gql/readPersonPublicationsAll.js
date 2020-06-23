@@ -47,6 +47,10 @@ export default function readPersonPublicationsAllJS (institutionNames, pubYearMi
             scopus_eid: source_metadata(path: "eid")
             pubmed_resource_identifiers: source_metadata(path: "resourceIdentifiers")
             abstract
+            year
+            journal {
+              title
+            }
           }
           person {
             id
