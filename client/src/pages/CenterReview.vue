@@ -79,13 +79,19 @@
               <q-item v-if="publicationsLoadedError">
                 <q-item-label>Error on Publication Data Load</q-item-label>
               </q-item>
+              <q-separator/>
               <download-csv
                 v-if="publicationsLoaded && !publicationsLoadedError"
                 class="cursor-pointer"
-                name='pace.csv'
+                :name="`${reviewTypeFilter}_center_institute_review.csv`"
                 :data="getPublicationsCSVResult(personPublicationsCombinedMatches)">
-                Download Results
-                <q-icon name="cloud_download" />
+                <q-btn flat
+                  style="align:left;width:100%"
+                  icon="cloud_download"
+                  color="primary"
+                >
+                  <q-item-section header align="left">&nbsp;Download Results</q-item-section>
+                </q-btn>
               </download-csv>
               <q-virtual-scroll
                 :items="personPublicationsCombinedMatches"
@@ -1042,14 +1048,18 @@ export default {
       })
     },
     getPubCSVResultObject (personPublication) {
-      console.log(`Creating csv object for personPub: ${JSON.stringify(personPublication, null, 2)}`)
       return {
-        title: personPublication.publication.title,
-        doi: personPublication.publication.doi,
         authors: this.sortAuthorsByDoi[this.selectedInstitutionReviewState.toLowerCase()][personPublication.publication.doi],
+        title: personPublication.publication.title.replace(/\n/g, ' '),
+        doi: this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi)),
+        journal: (personPublication.publication.journal) ? personPublication.publication.journal.title : '',
+        year: personPublication.publication.year,
         sources: this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.publicationsGroupedByDoi[personPublication.publication.doi])),
         abstract: personPublication.publication.abstract
       }
+    },
+    getCSVHyperLinkString (showText, url) {
+      return `=HYPERLINK("${url}", "${showText}")`
     },
     async loadPersonPublicationsCombinedMatches () {
       console.log(`Start group by publications ${moment().format('HH:mm:ss:SSS')}`)
