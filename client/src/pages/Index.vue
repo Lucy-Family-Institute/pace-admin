@@ -189,9 +189,11 @@
                     </template>
                     <q-card v-if="item.publication !== undefined">
                       <q-card-section dense class="text-center">
-                        <q-btn dense color="green" label="Accept" class="on-left" @click="clickReviewAccepted(index, person, personPublication);" />
-                        <q-btn dense color="red" label="Reject" @click="clickReviewRejected(index, person, personPublication);" />
-                        <q-btn dense color="grey" label="Unsure" class="on-right" @click="clickReviewUnsure(index, person, personPublication);" />
+                        <q-item-label align="left">Move To:</q-item-label>
+                        <q-btn dense v-if="reviewTypeFilter!=='pending'" color="purple" label="Pending" class="on-left" @click="clickReviewPending(index, person, personPublication);" />
+                        <q-btn dense v-if="reviewTypeFilter!=='accepted'" color="blue" label="Accepted" class="on-left" @click="clickReviewAccepted(index, person, personPublication);" />
+                        <q-btn dense v-if="reviewTypeFilter!=='rejected'" color="red" label="Rejected" class="on-left" @click="clickReviewRejected(index, person, personPublication);" />
+                        <q-btn dense v-if="reviewTypeFilter!=='unsure'" color="grey" label="Unsure" class="on-left" @click="clickReviewUnsure(index, person, personPublication);" />
                       </q-card-section>
                     </q-card>
                   </q-expansion-item>
@@ -1139,6 +1141,9 @@ export default {
       } catch (error) {
         console.log(error)
       }
+    },
+    async clickReviewPending (index, person, personPublication) {
+      await this.addReview(index, person, personPublication, 'pending')
     },
     async clickReviewAccepted (index, person, personPublication) {
       await this.addReview(index, person, personPublication, 'accepted')
