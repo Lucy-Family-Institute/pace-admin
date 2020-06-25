@@ -24,7 +24,7 @@
         :options="institutionReviewStateOptions"
         color="primary"
         filled
-        style="width:300px"
+        style="width:325px"
         label="ND Author Review:"
         class="fullSelect"
       />
@@ -34,8 +34,18 @@
         :options="sortCenterPubOptions"
         color="primary"
         filled
-        style="width:180px"
+        style="width:210px"
         label="Sort By:"
+        class="fullSelect"
+      />
+      <q-select
+        name="selected_authors"
+        v-model="selectedCenterAuthor"
+        :options="centerAuthorOptions"
+        color="primary"
+        filled
+        style="width:400px"
+        label="Author:"
         class="fullSelect"
       />
     </q-item>
@@ -67,7 +77,10 @@ export default {
     preferredInstitutionReviewState: sync('filter/preferredInstitutionReviewState'),
     selectedInstitutionReviewState: sync('filter/selectedInstitutionReviewState'),
     preferredCenterPubSort: sync('filter/preferredCenterPubSort'),
+    preferredSelectedCenterAuthor: sync('filter/preferredSelectedCenterAuthor'),
     selectedCenterPubSort: sync('filter/selectedCenterPubSort'),
+    selectedCenterAuthor: sync('filter/selectedCenterAuthor'),
+    centerAuthorOptions: sync('filter/centerAuthorOptions'),
     pubSearch: sync('filter/pubSearch')
   },
   async created () {
@@ -81,6 +94,7 @@ export default {
       await this.loadReviewStates()
       this.selectedinstitutionReviewState = (this.selectedInstitutionReviewState) ? this.selectedinstitutionReviewState : this.preferredInstitutionReviewState
       this.selectedCenterPubSort = (this.selectedCenterPubSort) ? this.selectedCenterPubSort : this.preferredCenterPubSort
+      this.selectedCenterAuthor = (this.selectedCenterAuthor) ? this.selectedCenterAuthor : this.preferredSelectedCenterAuthor
       this.pubSearch = ''
     },
     async loadReviewStates () {

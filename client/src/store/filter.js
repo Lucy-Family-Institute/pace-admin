@@ -8,10 +8,15 @@ const state = {
   preferredPersonPubSort: 'Confidence',
   preferredCenterPubSort: 'Authors',
   preferredInstitutionReviewState: 'Accepted',
+  preferredSelectedCenterAuthor: 'All',
   filterReviewStates: [],
+  centerAuthorOptions: [
+    'All'
+  ],
   selectedPersonSort: undefined,
   selectedPersonPubSort: undefined,
   selectedCenterPubSort: undefined,
+  selectedCenterAuthor: undefined,
   selectedPersonTotal: undefined,
   selectedInstitutionReviewState: undefined,
   yearPubStaticMin: 1900,
