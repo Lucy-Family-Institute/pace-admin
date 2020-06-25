@@ -54,16 +54,14 @@ services:
       - 9379:6379
     command: ["redis-server", "--appendonly", "yes"]
     restart: always
-        
-  # imaginary:
-  #   image: h2non/imaginary
-  #   ports:
-  #     - 9000:9000
-  #   volumes:
-  #     - ./data/pdfs:/mnt/data
-  #   command: -enable-url-source -mount /mnt/data
-  #   environment:
-  #     PORT: 9000
+  
+  search:
+    image: getmeili/meilisearch:v0.11.0
+    ports:
+      - 7700:7700
+    restart: always
+    volumes:
+      - ./dashboard-search/data.ms:/data.ms
     
 volumes:
   postgres_data:

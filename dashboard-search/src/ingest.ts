@@ -33,7 +33,7 @@ async function main() {
 
   let index
   try {
-    index = await searchClient.createIndex({ uid: 'publications' })
+    index = await searchClient.createIndex('publications')
   } catch ( err ) {
     index = await searchClient.getIndex('publications')
   }
@@ -86,7 +86,7 @@ async function main() {
         return c.classification.name
       }),
       author: `${_.get(doc.person, 'family_name')}, ${_.get(doc.person, 'given_name')}`,
-      wildcard: "*"
+      wildcard: "*" // required for empty search (i.e., return all)
     }
   })), 'id'), 'doi')
 
@@ -97,9 +97,9 @@ async function main() {
   console.log(`Documents added`)
 
   let status
-  const { updateId } = await index.updateSettings({
-    attributesForFaceting: ['year', 'type', 'journal', 'classifications', 'author']
-  })
+  const { updateId } = await index.updateAttributesForFaceting([
+    'year', 'type', 'journal', 'classifications', 'author'
+  ])
   do {
     await sleep(10)
     status = await index.getUpdateStatus(updateId)
