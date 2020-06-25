@@ -10,8 +10,8 @@
             <template v-slot:prepend>
               <q-icon name="search" />
             </template>
-            <template v-slot:hint>
-              {{ hint }}
+            <template v-slot:hint v-if="results">
+              {{numberOfHits}} hits in {{processingTime}} ms
             </template>
           </q-input>
           <q-card class="my-card" flat bordered>
@@ -22,7 +22,7 @@
           <q-card class="my-card" flat bordered>
             <q-card-section>
               <q-scroll-area style="height: 200px; max-width: 300px;">
-                <q-list v-for="author in authors" :key="author.name" @click='filter("author", author.name)'>
+                <q-list v-for="author in authors" :key="author.name" @click='addFacetFilter("author", author.name)'>
                   <q-item clickable v-ripple v-if="author.count > 0">
                     <q-item-section>{{author.name}} ({{author.count}})</q-item-section>
                   </q-item>
@@ -33,7 +33,7 @@
           <q-card class="my-card" flat bordered>
             <q-card-section>
               <q-scroll-area style="height: 200px; max-width: 300px;">
-                <q-list v-for="author in classifications" :key="author.name" @click='filter("classifications", author.name)'>
+                <q-list v-for="author in classifications" :key="author.name" @click='addFacetFilter("classifications", author.name)'>
                   <q-item clickable v-ripple v-if="author.count > 0">
                     <q-item-section>{{author.name}} ({{author.count}})</q-item-section>
                   </q-item>
@@ -44,7 +44,7 @@
           <q-card class="my-card" flat bordered>
             <q-card-section>
               <q-scroll-area style="height: 200px; max-width: 300px;">
-                <q-list v-for="author in journals" :key="author.name" @click='filter("journal", author.name)'>
+                <q-list v-for="author in journals" :key="author.name" @click='addFacetFilter("journal", author.name)'>
                   <q-item clickable v-ripple v-if="author.count > 0">
                     <q-item-section>{{author.name}} ({{author.count}})</q-item-section>
                   </q-item>
@@ -86,6 +86,7 @@ export default {
     'download-csv': JsonCSV
   },
   data () {
+    const that = this
     return {
       search: '',
       processingTime: undefined,
@@ -93,14 +94,20 @@ export default {
       results: [],
       options: {
         chart: {
-          id: 'vuechart-example'
+          events: {
+            dataPointSelection: function (event, chartContext, config) {
+              that.addFacetFilter('year', config.w.globals.labels[config.dataPointIndex])
+            }
+          }
+        },
+        tooltip: {
+          enabled: false
         },
         xaxis: {
           categories: [2017, 2018, 2019, 2020]
         }
       },
       series: [{
-        name: 'series-1',
         data: [1, 2, 3, 4]
       }],
       authors: {},
@@ -115,9 +122,6 @@ export default {
     await this.init()
   },
   computed: {
-    hint: function () {
-      return this.results ? `${this.numberOfHits} hits in ${this.processingTime} ms` : ''
-    }
   },
   watch: {
     $route: 'init',
@@ -136,9 +140,11 @@ export default {
         host: 'http://127.0.0.1:7700'
       })
       this.indexPublications = await searchClient.getIndex('publications')
-      this.runSearch('*')
+      this.runSearch()
     },
-    async runSearch (query, facets) {
+    async runSearch () {
+      const searchfor = this.search ? this.search : '*'
+
       const options = {
         facetsDistribution: ['year', 'author', 'classifications', 'journal'],
         attributesToHighlight: ['title', 'abstract']
@@ -146,12 +152,14 @@ export default {
       // if (filter) {
       //   options.filters = filter
       // }
-      if (!_.isEmpty(facets)) {
-        options.facetFilters = facets
+      if (!_.isEmpty(this.facetFilters)) {
+        options.facetFilters = this.facetFilters
       }
-      const results = await this.indexPublications.search(query, options)
+      const results = await this.indexPublications.search(searchfor, options)
+      this.results = results.hits
       this.processingTime = results.processingTimeMs
       this.numberOfHits = results.nbHits
+
       this.classifications = Object.freeze(_.orderBy(
         _.map(results.facetsDistribution.classifications, (value, key) => {
           return { name: key, count: value }
@@ -171,26 +179,15 @@ export default {
         name: 'series-1',
         data: _.values(results.facetsDistribution.year)
       }]
-      this.results = results.hits
     },
     async reset () {
       this.facetFilters = []
       this.search = ''
-      const searchfor = this.search ? this.search : '*'
-      this.runSearch(searchfor, this.facetFilters)
+      this.runSearch()
     },
-    async filter (key, value) {
-      // if (this.filters === '') {
-      //   this.filters = `${key}="${value}"`
-      // } else {
-      //   this.filters = `${this.filters} AND ${key}="${value}"`
-      // }
-
+    async addFacetFilter (key, value) {
       this.facetFilters.push(`${key}:${value}`)
-
-      // console.log(this.filters)
-      const searchfor = this.search ? this.search : '*'
-      this.runSearch(searchfor, this.facetFilters)
+      this.runSearch()
     }
   }
 }

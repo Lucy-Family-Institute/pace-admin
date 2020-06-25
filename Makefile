@@ -52,6 +52,8 @@ install_js:
 	cd client && yarn && cd ..
 	cd server && yarn && cd ..
 	cd ingest && yarn && cd ..
+	cd dashboard-search && yarn && cd ..
+	cd dashboard-client && yarn && cd ..
 
 calculate_confidence:
 	cd ingest && ts-node calculateConfidence.ts && cd ..
@@ -90,6 +92,9 @@ update_pub_journals:
 
 scopus_author_data:
 	cd ingest && ts-node fetchScopusAuthorObjects.ts && cd ..
+
+dashboard-ingest:
+	cd dashboard-server && ts-node src/ingest.ts && cd ..
 
 install: install_docker_compose install_hasura_cli install_yarn install_quasar install_js
 	echo 'Installing'
