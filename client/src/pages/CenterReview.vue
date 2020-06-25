@@ -538,12 +538,14 @@ export default {
   watch: {
     $route: 'fetchData',
     selectedInstitutions: function () {
+      this.loadPersonsWithFilter()
       this.loadPublications()
     },
     changedPubYears: async function () {
       await this.loadPublications()
     },
     changedMemberYears: async function () {
+      await this.loadPersonsWithFilter()
       await this.loadPublications()
     },
     selectedPersonSort: function () {
@@ -559,6 +561,9 @@ export default {
     selectedCenterPubSort: async function () {
       await this.sortPublications()
       this.showCurrentSelectedPublication(true)
+    },
+    selectedCenterAuthor: async function () {
+      this.setCurrentPersonPublicationsCombinedMatches()
     },
     selectedPersonTotal: function () {
       this.loadPersonsWithFilter()
@@ -863,6 +868,14 @@ export default {
         this.people = await _.flatten(sortedPersons)
         // this.reportDuplicatePublications()
       }
+      this.loadCenterAuthorOptions()
+    },
+    async loadCenterAuthorOptions () {
+      let obj = ['All']
+      _.each(this.people, (person) => {
+        obj.push(this.getAuthorString(person))
+      })
+      this.centerAuthorOptions = obj
     },
     async loadReviewStates () {
       console.log('loading review states')
@@ -939,9 +952,19 @@ export default {
         if (index > 0) {
           authorString = `${authorString}; `
         }
-        authorString = `${authorString}${author.family_name}, ${author.given_name}`
+        authorString = `${authorString}${this.getAuthorString(author)}`
       })
       return authorString
+    },
+    getAuthorString (author) { //, includeCounts) {
+      let obj = `${author.family_name}, ${author.given_name}`
+      // if (includeCounts &&
+      //   author.persons_publications_metadata_aggregate &&
+      //   author.persons_publications_metadata_aggregate.aggregate &&
+      //   author.persons_publications_metadata_aggregate.aggregate.count) {
+      //   obj = `${obj} (${author.persons_publications_metadata_aggregate.aggregate.count})`
+      // }
+      return obj
     },
     getSourceUriString (personPubs) {
       let sourceUriString = ''
@@ -1017,6 +1040,7 @@ export default {
     },
     async fetchData () {
       await this.loadReviewStates()
+      await this.loadPersonsWithFilter()
       await this.loadPublications()
     },
     async clearPublications () {
@@ -1216,9 +1240,15 @@ export default {
         (personPublications) => {
           return _.filter(personPublications, (item) => {
             const authorString = (this.sortAuthorsByDoi[this.selectedInstitutionReviewState.toLowerCase()][item.publication.doi]) ? this.sortAuthorsByDoi[this.selectedInstitutionReviewState.toLowerCase()][item.publication.doi] : ''
+            let includedInSelectedAuthors = true
+            if (this.selectedCenterAuthor !== 'All') {
+              // assumes the name value in the list of the same form as the author string
+              const testAuthor = this.selectedCenterAuthor.toLowerCase().split('(')[0].trim()
+              includedInSelectedAuthors = authorString.toLowerCase().includes(testAuthor)
+            }
             const includedInAuthors = authorString.toLowerCase().includes(this.pubSearch.toLowerCase().trim())
             const includedInTitle = item.publication.title.toLowerCase().includes(this.pubSearch.toLowerCase().trim())
-            const includePublication = (includedInTitle || includedInAuthors)
+            const includePublication = includedInSelectedAuthors && (includedInTitle || includedInAuthors)
             if (!includePublication && this.personPublication && item.id === this.personPublication.id) {
               // clear out the publication from view if it is filtered out of the results
               filterOutCurrentPublication = true
@@ -1590,6 +1620,7 @@ export default {
     resetFilters () {
       this.selectedPersonPubSort = this.preferredPersonPubSort
       this.selectedCenterPubSort = this.preferredCenterPubSort
+      this.selectedCenterAuthor = this.preferredSelectedCenterAuthor
       this.selectedPersonSort = this.preferredPersonSort
       this.selectedPersonTotal = this.preferredPersonTotal
       this.selectedInstitutionReviewState = this.preferredInstitutionReviewState
@@ -1610,14 +1641,17 @@ export default {
     preferredPersonSort: get('filter/preferredPersonSort'),
     preferredPersonPubSort: get('filter/preferredPersonPubSort'),
     preferredCenterPubSort: get('filter/preferredCenterPubSort'),
+    preferredSelectedCenterAuthor: get('filter/preferredSelectedCenterAuthor'),
     preferredPersonTotal: get('filter/preferredPersonTotal'),
     preferredInstitutionReviewState: get('filter/preferredInstitutionReviewState'),
     selectedInstitutions: sync('filter/selectedInstitutions'),
     institutionOptions: get('filter/institutionOptions'),
+    centerAuthorOptions: sync('filter/centerAuthorOptions'),
     selectedPersonSort: sync('filter/selectedPersonSort'),
     selectedInstitutionReviewState: sync('filter/selectedInstitutionReviewState'),
     selectedPersonPubSort: sync('filter/selectedPersonPubSort'),
     selectedCenterPubSort: sync('filter/selectedCenterPubSort'),
+    selectedCenterAuthor: sync('filter/selectedCenterAuthor'),
     selectedPersonTotal: sync('filter/selectedPersonTotal'),
     filterReviewStates: get('filter/filterReviewStates'),
     selectedPubYears: sync('filter/selectedPubYears'),

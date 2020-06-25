@@ -94,7 +94,7 @@ scopus_author_data:
 	cd ingest && ts-node fetchScopusAuthorObjects.ts && cd ..
 
 dashboard-ingest:
-	cd dashboard-server && ts-node src/ingest.ts && cd ..
+	cd dashboard-search && ts-node src/ingest.ts && cd ..
 
 install: install_docker_compose install_hasura_cli install_yarn install_quasar install_js
 	echo 'Installing'
