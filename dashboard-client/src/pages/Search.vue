@@ -22,9 +22,9 @@
           <q-card class="my-card" flat bordered>
             <q-card-section>
               <q-scroll-area style="height: 200px; max-width: 300px;">
-                <q-list v-for="author in authors" :key="author.name" @click='addFacetFilter("author", author.name)'>
-                  <q-item clickable v-ripple v-if="author.count > 0">
-                    <q-item-section>{{author.name}} ({{author.count}})</q-item-section>
+                <q-list v-for="item in authors" :key="item.name" @click='addFacetFilter("author", item.name)'>
+                  <q-item clickable v-ripple v-if="item.count > 0">
+                    <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
                   </q-item>
                 </q-list>
               </q-scroll-area>
@@ -33,9 +33,9 @@
           <q-card class="my-card" flat bordered>
             <q-card-section>
               <q-scroll-area style="height: 200px; max-width: 300px;">
-                <q-list v-for="author in classifications" :key="author.name" @click='addFacetFilter("classifications", author.name)'>
-                  <q-item clickable v-ripple v-if="author.count > 0">
-                    <q-item-section>{{author.name}} ({{author.count}})</q-item-section>
+                <q-list v-for="item in classifications" :key="item.name" @click='addFacetFilter("classifications", item.name)'>
+                  <q-item clickable v-ripple v-if="item.count > 0">
+                    <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
                   </q-item>
                 </q-list>
               </q-scroll-area>
@@ -44,9 +44,9 @@
           <q-card class="my-card" flat bordered>
             <q-card-section>
               <q-scroll-area style="height: 200px; max-width: 300px;">
-                <q-list v-for="author in journals" :key="author.name" @click='addFacetFilter("journal", author.name)'>
-                  <q-item clickable v-ripple v-if="author.count > 0">
-                    <q-item-section>{{author.name}} ({{author.count}})</q-item-section>
+                <q-list v-for="item in journals" :key="item.name" @click='addFacetFilter("journal", item.name)'>
+                  <q-item clickable v-ripple v-if="item.count > 0">
+                    <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
                   </q-item>
                 </q-list>
               </q-scroll-area>
@@ -127,11 +127,12 @@ export default {
     $route: 'init',
     search: async function (newText, oldText) {
       // this.filters = ''
-      if (newText !== '') {
-        this.runSearch(newText)
-      } else {
-        this.runSearch('*')
-      }
+      this.runSearch()
+      // if (newText !== '') {
+      //   this.runSearch(newText)
+      // } else {
+      //   this.runSearch('*')
+      // }
     }
   },
   methods: {
