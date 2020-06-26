@@ -21,6 +21,11 @@
           </q-card>
           <q-card class="my-card" flat bordered>
             <q-card-section>
+              <apexchart width="250" type="pie" :options="paOptions" :series="paSeries"></apexchart>
+            </q-card-section>
+          </q-card>
+          <q-card class="my-card" flat bordered>
+            <q-card-section>
               <q-scroll-area style="height: 200px; max-width: 300px;">
                 <q-list v-for="item in authors" :key="item.name" @click='addFacetFilter("author", item.name)'>
                   <q-item clickable v-ripple v-if="item.count > 0">
@@ -110,6 +115,29 @@ export default {
       series: [{
         data: [1, 2, 3, 4]
       }],
+      paOptions: {
+        chart: {
+          type: 'pie',
+          events: {
+            dataPointSelection: function (event, chartContext, config) {
+              that.facetFilter('publicaccess', config.w.globals.labels[config.dataPointIndex])
+            }
+          }
+        },
+        tooltip: {
+          enabled: false
+        },
+        dataLabels: {
+          formatter: function (val, opt) {
+            return opt.w.globals.labels[opt.seriesIndex]
+          }
+        },
+        legend: {
+          show: false
+        },
+        labels: []
+      },
+      paSeries: [1, 2, 3],
       authors: {},
       classifications: {},
       journals: {},
