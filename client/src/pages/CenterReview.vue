@@ -83,7 +83,7 @@
               <download-csv
                 v-if="publicationsLoaded && !publicationsLoadedError"
                 class="cursor-pointer"
-                :name="`${reviewTypeFilter}_center_institute_review.csv`"
+                :name="`${reviewTypeFilter}_center_institute_review_${getSimpleFormatAuthorName(selectedCenterAuthor)}.csv`"
                 :data="getPublicationsCSVResult(personPublicationsCombinedMatches)">
                 <q-btn flat
                   style="align:left;width:100%"
@@ -497,6 +497,7 @@ export default {
     publicationCitation: undefined,
     publicationJournalClassifications: [],
     showReviewStates: [],
+    filteredPersonPubCounts: {},
     // for progress bar
     progress: 0,
     buffer: 0,
@@ -538,14 +539,12 @@ export default {
   watch: {
     $route: 'fetchData',
     selectedInstitutions: function () {
-      this.loadPersonsWithFilter()
       this.loadPublications()
     },
     changedPubYears: async function () {
       await this.loadPublications()
     },
     changedMemberYears: async function () {
-      await this.loadPersonsWithFilter()
       await this.loadPublications()
     },
     selectedPersonSort: function () {
@@ -556,6 +555,7 @@ export default {
       this.setCurrentPersonPublicationsCombinedMatches()
     },
     selectedInstitutionReviewState: async function () {
+      this.selectedCenterAuthor = this.preferredSelectedCenterAuthor
       this.loadPersonPublicationsCombinedMatches()
     },
     selectedCenterPubSort: async function () {
@@ -592,6 +592,11 @@ export default {
         // intended for switching drawer to "normal" mode only
         e.stopPropagation()
       }
+    },
+    getSimpleFormatAuthorName (authorName) {
+      let obj = (authorName) ? authorName.split('(')[0] : ''
+      obj = obj.replace(' ', '_').replace(',', '')
+      return obj.toLowerCase().trim()
     },
     getPublicationSourceId (personPublication) {
       if (personPublication.publication.source_name.toLowerCase() === 'scopus' &&
@@ -848,7 +853,7 @@ export default {
         // need to sort by total and then name, not guaranteed to be in order from what is returned from DB
         // first group items by count
         const peopleByCounts = await _.groupBy(this.people, (person) => {
-          return person.persons_publications_metadata_aggregate.aggregate.count
+          return this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person)
         })
 
         // sort each person array by name for each count
@@ -868,12 +873,12 @@ export default {
         this.people = await _.flatten(sortedPersons)
         // this.reportDuplicatePublications()
       }
-      this.loadCenterAuthorOptions()
+      await this.loadCenterAuthorOptions()
     },
     async loadCenterAuthorOptions () {
       let obj = ['All']
       _.each(this.people, (person) => {
-        obj.push(this.getAuthorString(person))
+        obj.push(`${this.getAuthorString(person)} (${this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person)})`)
       })
       this.centerAuthorOptions = obj
     },
@@ -1040,7 +1045,6 @@ export default {
     },
     async fetchData () {
       await this.loadReviewStates()
-      await this.loadPersonsWithFilter()
       await this.loadPublications()
     },
     async clearPublications () {
@@ -1054,6 +1058,7 @@ export default {
       this.publicationsGroupedByDoi = {}
       this.confidenceSetItems = []
       this.confidenceSet = undefined
+      this.filteredPersonPubCounts = {}
     },
     async setCurrentPersonPublicationsCombinedMatches () {
       let reviewType = 'pending'
@@ -1093,6 +1098,7 @@ export default {
         return `${personPub.publication.doi}`
       })
 
+      this.filteredPersonPubCounts = {}
       // group by institution (i.e., ND author) review and then by doi
       let pubsByDoi = {}
       this.publicationsGroupedByInstitutionReview = _.groupBy(this.publications, function (personPub) {
@@ -1119,6 +1125,7 @@ export default {
       })
       this.sortAuthorsByDoi = {}
       this.sortAuthorsByDoi['accepted'] = _.mapValues(this.matchedPublicationAuthorsByDoi, (matchedAuthors) => {
+        this.updateFilteredPersonPubCounts('accepted', matchedAuthors)
         return this.getAuthorsString(matchedAuthors)
       })
       this.sortAuthorsByDoi['rejected'] = _.mapValues(this.publicationsGroupedByDoiByInstitutionReview['rejected'], (personPubs, doi) => {
@@ -1161,6 +1168,8 @@ export default {
             }
           })
 
+          const unsureAuthors = this.getInstitutionReviewedAuthors(doi, 'unsure')
+          this.updateFilteredPersonPubCounts('unsure', unsureAuthors)
           doisPresent[doi] = true
           this.personPublicationsCombinedMatchesByReview['unsure'][doi] = currentPersonPub
         }
@@ -1178,6 +1187,8 @@ export default {
             }
           })
 
+          const rejectedAuthors = this.getInstitutionReviewedAuthors(doi, 'rejected')
+          this.updateFilteredPersonPubCounts('rejected', rejectedAuthors)
           doisPresent[doi] = true
           this.personPublicationsCombinedMatchesByReview['rejected'][doi] = currentPersonPub
         }
@@ -1227,11 +1238,29 @@ export default {
         })
       })
 
+      this.loadPersonsWithFilter()
+
       // initialize the list in view
       this.setCurrentPersonPublicationsCombinedMatches()
     },
-    // return the matched author with the lowest matched position
-    getPersonPublicationMatchedAuthors (personPublication, reviewedAuthors) {
+    getFilteredPersonPubCount (reviewType, person) {
+      if (this.filteredPersonPubCounts[reviewType] && this.filteredPersonPubCounts[reviewType][person.id]) {
+        return this.filteredPersonPubCounts[reviewType][person.id]
+      } else {
+        return 0
+      }
+    },
+    updateFilteredPersonPubCounts (reviewType, authors) {
+      _.each(authors, (author) => {
+        if (!this.filteredPersonPubCounts[reviewType]) {
+          this.filteredPersonPubCounts[reviewType] = {}
+        }
+        if (this.filteredPersonPubCounts[reviewType][author.id]) {
+          this.filteredPersonPubCounts[reviewType][author.id] += 1
+        } else {
+          this.filteredPersonPubCounts[reviewType][author.id] = 1
+        }
+      })
     },
     async filterPublications () {
       let filterOutCurrentPublication = false
