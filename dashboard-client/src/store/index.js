@@ -1,7 +1,10 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
+import createPersistedState from 'vuex-persistedstate'
 
 // import example from './module-example'
+import pathify from './pathify'
+import filter from './filter'
 
 Vue.use(Vuex)
 
@@ -16,8 +19,12 @@ Vue.use(Vuex)
 
 export default function (/* { ssrContext } */) {
   const Store = new Vuex.Store({
+    plugins: [createPersistedState({
+      paths: ['filter']
+    }), pathify.plugin],
+
     modules: {
-      // example
+      filter
     },
 
     // enable strict mode (adds overhead!)

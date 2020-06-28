@@ -54,6 +54,7 @@ async function main() {
             year
             journal {
               title
+              journal_type
               journals_classifications {
                 classification {
                   name
@@ -82,6 +83,7 @@ async function main() {
       year: _(_.get(doc.publication, 'year')).toString(),
       abstract: _.get(doc.publication, 'abstract', ''),
       journal: _.get(doc.publication, 'journal.title'),
+      journal_type: _.get(doc.publication, 'journal.journal_type'),
       classifications: _.map(_.get(doc.publication, 'journal.journals_classifications'), (c) => {
         return c.classification.name
       }),
@@ -98,7 +100,7 @@ async function main() {
 
   let status
   const { updateId } = await index.updateAttributesForFaceting([
-    'year', 'type', 'journal', 'classifications', 'author'
+    'year', 'type', 'journal', 'classifications', 'author', 'journal_type'
   ])
   do {
     await sleep(10)
