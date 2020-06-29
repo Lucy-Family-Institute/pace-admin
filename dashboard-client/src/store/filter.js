@@ -36,7 +36,7 @@ const state = {
   pubSearch: '',
   yearOptions: {
     chart: {
-      id: 'vuechart-example'
+      id: 'year-filter'
     },
     xaxis: {
       categories: [1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998]
@@ -64,6 +64,30 @@ const state = {
     labels: ['Journal', 'Book Series']
   },
   journalTypeSeries: ['Journal', 'Book Series'],
+  classificationOptions: {
+    chart: {
+      id: 'journal-subject'
+    },
+    xaxis: {
+      categories: [1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998]
+    }
+  },
+  classificationSeries: [{
+    name: 'series-1',
+    data: [30, 40, 45, 50, 49, 60, 70, 91]
+  }],
+  journalOptions: {
+    chart: {
+      id: 'journal-subject'
+    },
+    xaxis: {
+      categories: [1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998]
+    }
+  },
+  journalSeries: [{
+    name: 'series-1',
+    data: [30, 40, 45, 50, 49, 60, 70, 91]
+  }],
   dashboardMiniState: false
 }
 
