@@ -83,10 +83,15 @@
           </q-input>
           <download-csv
             class="cursor-pointer"
-            name='pace.csv'
+            :name="`pace_dashboard_results.csv`"
             :data="results">
-            Download Search Results
-            <q-icon name="cloud_download" />
+            <q-btn flat
+              style="align:left;width:100%"
+              icon="cloud_download"
+              color="blue"
+            >
+              <q-item-section header align="left">&nbsp;Download Results</q-item-section>
+            </q-btn>
           </download-csv>
           <div class="q-gutter-xs">
             <q-chip
@@ -127,6 +132,7 @@ export default {
   data () {
     const that = this
     return {
+      yearsInitialized: false,
       search: '',
       processingTime: undefined,
       numberOfHits: undefined,
@@ -135,7 +141,7 @@ export default {
         chart: {
           events: {
             dataPointSelection: function (event, chartContext, config) {
-              that.addFacetFilter('year', config.w.globals.labels[config.dataPointIndex])
+              that.toggleFacetFilter('year', config.w.globals.labels[config.dataPointIndex])
             }
           }
         },
@@ -212,11 +218,11 @@ export default {
         host: 'http://127.0.0.1:7700'
       })
       this.indexPublications = await searchClient.getIndex('publications')
-      this.runSearch()
       this.yearOptions = this.options
       this.yearSeries = this.series
       this.journalTypeOptions = this.paOptions
       this.journalTypeSeries = this.paSeries
+      await this.runSearch()
     },
     // async loadJournalTypes () {
     //   const journalTypesResult = await this.$apollo.query({
@@ -264,15 +270,29 @@ export default {
           return { name: key, count: value }
         }), 'count', 'desc'
       ))
-      this.yearSeries = [{
-        name: 'series-1',
-        data: _.values(results.facetsDistribution.year)
-      }]
+      if (!this.yearsInitialized) {
+        this.yearSeries = [{
+          name: 'series-1',
+          data: _.values(results.facetsDistribution.year)
+        }]
+        this.yearsInitialized = true
+      }
       this.journalTypeSeries = _.values(results.facetsDistribution.journal_type)
     },
     async reset () {
       this.facetFilters = []
       this.search = ''
+      this.runSearch()
+    },
+    async removeSelectedFacet (key) {
+      this.facetFilters = _.filter(this.facetFilters, (facetFilter) => {
+        const testKey = facetFilter.split(':')[0]
+        return (key !== testKey)
+      })
+    },
+    async toggleFacetFilter (key, value) {
+      this.removeSelectedFacet(key)
+      this.facetFilters.push(`${key}:${value}`)
       this.runSearch()
     },
     async addFacetFilter (key, value) {
