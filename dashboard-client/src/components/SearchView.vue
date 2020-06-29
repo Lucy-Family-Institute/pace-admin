@@ -88,6 +88,15 @@
             Download Search Results
             <q-icon name="cloud_download" />
           </download-csv>
+          <div class="q-gutter-xs">
+            <q-chip
+              v-for="option in queryOptions"
+              v-bind:key="option"
+              removable @remove="removeFilter(option)" color="primary" text-color="white"
+            >
+              {{option}}
+            </q-chip>
+          </div>
           <q-list bordered separator v-for="result in results" :key="result.id">
             <q-item clickable v-ripple>
               <q-item-section>
@@ -180,7 +189,10 @@ export default {
     yearSeries: sync('filter/yearSeries'),
     journalTypeOptions: sync('filter/journalTypeOptions'),
     journalTypeSeries: sync('filter/journalTypeSeries'),
-    dashboardMiniState: sync('filter/dashboardMiniState')
+    dashboardMiniState: sync('filter/dashboardMiniState'),
+    queryOptions: function () {
+      return this.facetFilters // _.concat
+    }
   },
   watch: {
     $route: 'init',
@@ -265,6 +277,10 @@ export default {
     },
     async addFacetFilter (key, value) {
       this.facetFilters.push(`${key}:${value}`)
+      this.runSearch()
+    },
+    async removeFilter (key) {
+      this.$delete(this.facetFilters, _.indexOf(this.facetFilters, key))
       this.runSearch()
     }
   }
