@@ -20,6 +20,7 @@
     "quasar": "^1.0.0",
     "vue-apexcharts": "^1.5.3",
     "vue-json-csv": "^1.2.11",
+    "vuex-pathify": "^1.4.1",
     "vuex-persistedstate": "^3.0.1"
   },
   "devDependencies": {
