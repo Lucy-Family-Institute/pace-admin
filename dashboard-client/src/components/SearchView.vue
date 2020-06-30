@@ -3,85 +3,6 @@
     <div class="">
       <div class="row no-wrap">
         <div v-if="dashboardMiniState" class="col-auto">
-          <q-input v-model="search" filled type="search" bottom-slots debounce="100">
-          <template v-slot:append>
-            <q-icon name="close" @click="reset()" class="cursor-pointer" />
-          </template>
-            <template v-slot:prepend>
-              <q-icon name="search" />
-            </template>
-            <template v-slot:hint v-if="results">
-              {{numberOfHits}} hits in {{processingTime}} ms
-            </template>
-          </q-input>
-          <q-card class="my-card" flat bordered>
-            <q-card-section>
-              <q-scroll-area style="height: 200px; max-width: 300px;">
-                <q-list v-for="item in authors" :key="item.name" @click='addFacetFilter("author", item.name)'>
-                  <q-item clickable v-ripple v-if="item.count > 0">
-                    <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
-                  </q-item>
-                </q-list>
-              </q-scroll-area>
-            </q-card-section>
-          </q-card>
-          <q-card class="my-card" flat bordered>
-            <q-card-section>
-              <q-scroll-area style="height: 200px; max-width: 300px;">
-                <q-list v-for="item in classifications" :key="item.name" @click='addFacetFilter("classifications", item.name)'>
-                  <q-item clickable v-ripple v-if="item.count > 0">
-                    <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
-                  </q-item>
-                </q-list>
-              </q-scroll-area>
-            </q-card-section>
-          </q-card>
-          <q-card class="my-card" flat bordered>
-            <q-card-section>
-              <q-scroll-area style="height: 200px; max-width: 300px;">
-                <q-list v-for="item in journals" :key="item.name" @click='addFacetFilter("journal", item.name)'>
-                  <q-item clickable v-ripple v-if="item.count > 0">
-                    <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
-                  </q-item>
-                </q-list>
-              </q-scroll-area>
-            </q-card-section>
-          </q-card>
-          <q-card class="my-card" flat bordered>
-            <q-card-section>
-              <q-scroll-area style="height: 200px; max-width: 300px;">
-                <q-list v-for="item in publishers" :key="item.name" @click='addFacetFilter("publisher", item.name)'>
-                  <q-item clickable v-ripple v-if="item.count > 0">
-                    <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
-                  </q-item>
-                </q-list>
-              </q-scroll-area>
-            </q-card-section>
-          </q-card>
-          <q-card class="my-card" flat bordered>
-            <q-card-section>
-              <q-scroll-area style="height: 200px; max-width: 300px;">
-                <q-list v-for="item in journal_types" :key="item.name" @click='addFacetFilter("journal_type", item.name)'>
-                  <q-item clickable v-ripple v-if="item.count > 0">
-                    <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
-                  </q-item>
-                </q-list>
-              </q-scroll-area>
-            </q-card-section>
-          </q-card>
-        </div>
-        <div class="col-10">
-          <q-input v-if="!dashboardMiniState" v-model="search" filled type="search" bottom-slots debounce="100">
-          <template v-slot:append>
-            <q-icon name="close" @click="reset()" class="cursor-pointer" />
-          </template>
-            <template v-slot:prepend>
-              <q-icon name="search" />
-            </template>
-            <template v-slot:hint v-if="results">
-              {{numberOfHits}} hits in {{processingTime}} ms
-            </template>
-          </q-input>
           <div class="q-gutter-xs">
             <q-chip
               v-for="option in queryOptions"
@@ -94,7 +15,7 @@
           <download-csv
             class="cursor-pointer"
             :name="`pace_dashboard_results.csv`"
-            :data="results">
+            :data="getPublicationsCSVResult(results)">
             <q-btn flat
               style="align:left;width:100%"
               icon="cloud_download"
@@ -103,15 +24,147 @@
               <q-item-section header align="left">&nbsp;Download Results</q-item-section>
             </q-btn>
           </download-csv>
-          <q-list bordered separator v-for="result in results" :key="result.id">
-            <q-item clickable v-ripple>
-              <q-item-section>
-                <q-item-label v-html="result._formatted.title" />
-                <q-item-label caption v-html="result._formatted.abstract" v-if="result.abstract" />
-              </q-item-section>
-            </q-item>
-          </q-list>
         </div>
+      </div>
+      <div class="row no-wrap">
+        <q-splitter
+          unit="px"
+          :style="{height: ($q.screen.height-56-16)+'px'}"
+        >
+          <template v-slot:before>
+            <div v-if="dashboardMiniState" style="width:300">
+              <q-input v-model="search" filled type="search" bottom-slots debounce="100">
+              <template v-slot:append>
+                <q-icon name="close" @click="reset()" class="cursor-pointer" />
+              </template>
+                <template v-slot:prepend>
+                  <q-icon name="search" />
+                </template>
+                <template v-slot:hint v-if="results">
+                  {{numberOfHits}} hits in {{processingTime}} ms
+                </template>
+              </q-input>
+              <q-card class="my-card" flat bordered>
+                <q-card-section>
+                  <q-scroll-area style="height: 200px; max-width: 300px;">
+                    <q-list v-for="item in authors" :key="item.name" @click='addFacetFilter("author", item.name)'>
+                      <q-item clickable v-ripple v-if="item.count > 0">
+                        <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-scroll-area>
+                </q-card-section>
+              </q-card>
+              <q-card class="my-card" flat bordered>
+                <q-card-section>
+                  <q-scroll-area style="height: 200px; max-width: 300px;">
+                    <q-list v-for="item in classifications" :key="item.name" @click='addFacetFilter("classifications", item.name)'>
+                      <q-item clickable v-ripple v-if="item.count > 0">
+                        <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-scroll-area>
+                </q-card-section>
+              </q-card>
+              <q-card class="my-card" flat bordered>
+                <q-card-section>
+                  <q-scroll-area style="height: 200px; max-width: 300px;">
+                    <q-list v-for="item in journals" :key="item.name" @click='addFacetFilter("journal", item.name)'>
+                      <q-item clickable v-ripple v-if="item.count > 0">
+                        <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-scroll-area>
+                </q-card-section>
+              </q-card>
+              <q-card class="my-card" flat bordered>
+                <q-card-section>
+                  <q-scroll-area style="height: 200px; max-width: 300px;">
+                    <q-list v-for="item in publishers" :key="item.name" @click='addFacetFilter("publisher", item.name)'>
+                      <q-item clickable v-ripple v-if="item.count > 0">
+                        <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-scroll-area>
+                </q-card-section>
+              </q-card>
+              <q-card class="my-card" flat bordered>
+                <q-card-section>
+                  <q-scroll-area style="height: 200px; max-width: 300px;">
+                    <q-list v-for="item in journal_types" :key="item.name" @click='addFacetFilter("journal_type", item.name)'>
+                      <q-item clickable v-ripple v-if="item.count > 0">
+                        <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-scroll-area>
+                </q-card-section>
+              </q-card>
+            </div>
+          </template>
+          <template v-slot:after>
+            <div class="col-10">
+              <div>
+                <q-input v-if="!dashboardMiniState" v-model="search" filled type="search" bottom-slots debounce="100">
+                <template v-slot:append>
+                  <q-icon name="close" @click="reset()" class="cursor-pointer" />
+                </template>
+                  <template v-slot:prepend>
+                    <q-icon name="search" />
+                  </template>
+                  <template v-slot:hint v-if="results">
+                    {{numberOfHits}} hits in {{processingTime}} ms
+                  </template>
+                </q-input>
+                <div class="q-gutter-xs">
+                  <q-chip
+                    v-for="option in queryOptions"
+                    v-bind:key="option"
+                    removable @remove="removeFilter(option)" color="primary" text-color="white"
+                  >
+                    {{option}}
+                  </q-chip>
+                </div>
+                <div v-if="!dashboardMiniState">
+                <download-csv
+                  class="cursor-pointer"
+                  :name="`pace_dashboard_results.csv`"
+                  :data="getPublicationsCSVResult(results)">
+                  <q-btn flat
+                    style="align:left;width:100%"
+                    icon="cloud_download"
+                    color="blue"
+                  >
+                    <q-item-section header align="left">&nbsp;Download Results</q-item-section>
+                  </q-btn>
+                </download-csv>
+                </div>
+              </div>
+              <q-virtual-scroll
+                :items="results"
+                separator
+                bordered
+                :virtual-scroll-item-size="50"
+              >
+                <template v-slot="{ item, index }">
+                  <q-item clickable v-ripple>
+                  <q-item-section :ref="`personPub${index}`">
+                    <q-item-label v-html="item._formatted.title" />
+                    <q-item-label caption v-html="item._formatted.abstract" v-if="item.abstract" />
+                  </q-item-section>
+                </q-item>
+                </template>
+              </q-virtual-scroll>
+              <!--<q-list bordered separator v-for="result in results" :key="result.id">
+                <q-item clickable v-ripple>
+                  <q-item-section>
+                    <q-item-label v-html="result._formatted.title" />
+                    <q-item-label caption v-html="result._formatted.abstract" v-if="result.abstract" />
+                  </q-item-section>
+                </q-item>
+              </q-list>-->
+            </div>
+          </template>
+        </q-splitter>
       </div>
     </div>
   </q-page>
@@ -301,7 +354,8 @@ export default {
 
       const options = {
         facetsDistribution: ['year', 'author', 'classifications', 'journal', 'journal_type', 'publisher'],
-        attributesToHighlight: ['title', 'abstract']
+        attributesToHighlight: ['title', 'abstract'],
+        limit: 1000
       }
       // if (filter) {
       //   options.filters = filter
@@ -372,6 +426,30 @@ export default {
       this.publisherOptions.labels = _.map(_.keys(results.facetsDistribution.publisher), (label) => {
         return _.startCase(label)
       })
+    },
+    getPublicationsCSVResult (results) {
+      return _.map(results, (result) => {
+        return this.getPubCSVResultObject(result)
+      })
+    },
+    getPubCSVResultObject (result) {
+      return {
+        authors: result.author,
+        title: result.title.replace(/\n/g, ' '),
+        doi: this.getCSVHyperLinkString(result.doi, this.getDoiUrl(result.doi)),
+        journal: (result.journal) ? result.journal : '',
+        publisher: (result.publisher) ? result.publisher : '',
+        year: result.year,
+        classification: (result.classification) ? result.classification : '',
+        abstract: (result.abstract) ? result.abstract : ''
+      }
+    },
+    getCSVHyperLinkString (showText, url) {
+      return `=HYPERLINK("${url}", "${showText}")`
+    },
+    getDoiUrl (doi) {
+      const doiBaseUrl = 'https://dx.doi.org'
+      return `${doiBaseUrl}/${doi}`
     },
     async reset () {
       this.facetFilters = []
