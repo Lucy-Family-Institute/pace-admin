@@ -60,6 +60,7 @@ async function main() {
                   name
                 }
               }
+              publisher
             }
           }
           person {
@@ -87,6 +88,7 @@ async function main() {
       classifications: _.map(_.get(doc.publication, 'journal.journals_classifications'), (c) => {
         return c.classification.name
       }),
+      publisher: _.get(doc.publication, 'journal.publisher'),
       author: `${_.get(doc.person, 'family_name')}, ${_.get(doc.person, 'given_name')}`,
       wildcard: "*" // required for empty search (i.e., return all)
     }
@@ -100,7 +102,7 @@ async function main() {
 
   let status
   const { updateId } = await index.updateAttributesForFaceting([
-    'year', 'type', 'journal', 'classifications', 'author', 'journal_type'
+    'year', 'type', 'journal', 'classifications', 'author', 'journal_type', 'publisher'
   ])
   do {
     await sleep(10)

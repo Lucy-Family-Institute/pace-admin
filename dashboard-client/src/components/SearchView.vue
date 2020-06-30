@@ -14,16 +14,6 @@
               {{numberOfHits}} hits in {{processingTime}} ms
             </template>
           </q-input>
-          <!--<q-card class="my-card" flat bordered>
-            <q-card-section>
-              <apexchart width="250" type="bar" :options="yearOptions" :series="yearSeries"></apexchart>
-            </q-card-section>
-          </q-card>-->
-          <!--<q-card class="my-card" flat bordered>
-            <q-card-section>
-              <apexchart width="250" type="pie" :options="paOptions" :series="paSeries"></apexchart>
-            </q-card-section>
-          </q-card>-->
           <q-card class="my-card" flat bordered>
             <q-card-section>
               <q-scroll-area style="height: 200px; max-width: 300px;">
@@ -50,6 +40,17 @@
             <q-card-section>
               <q-scroll-area style="height: 200px; max-width: 300px;">
                 <q-list v-for="item in journals" :key="item.name" @click='addFacetFilter("journal", item.name)'>
+                  <q-item clickable v-ripple v-if="item.count > 0">
+                    <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-scroll-area>
+            </q-card-section>
+          </q-card>
+          <q-card class="my-card" flat bordered>
+            <q-card-section>
+              <q-scroll-area style="height: 200px; max-width: 300px;">
+                <q-list v-for="item in publishers" :key="item.name" @click='addFacetFilter("publisher", item.name)'>
                   <q-item clickable v-ripple v-if="item.count > 0">
                     <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
                   </q-item>
@@ -122,7 +123,6 @@ import JsonCSV from 'vue-json-csv'
 import { sync } from 'vuex-pathify'
 
 import _ from 'lodash'
-// import readJournalTypes from '../gql/readJournalTypes'
 
 export default {
   name: 'Search',
@@ -141,7 +141,7 @@ export default {
         chart: {
           events: {
             dataPointSelection: function (event, chartContext, config) {
-              that.toggleFacetFilter('year', config.w.globals.labels[config.dataPointIndex])
+              that.addFacetFilter('year', config.w.globals.labels[config.dataPointIndex])
             }
           }
         },
@@ -178,6 +178,30 @@ export default {
         labels: ['Journal', 'Book Series']
       },
       paSeries: [2017, 2018, 2019, 2020],
+      initClassificationBarOptions: {
+        chart: {
+          events: {
+            dataPointSelection: function (event, chartContext, config) {
+              that.addFacetFilter('classifications', config.w.globals.labels[config.dataPointIndex])
+            }
+          },
+          height: 3000
+        },
+        tooltip: {
+          enabled: false
+        },
+        xaxis: {
+          categories: [2017, 2018, 2019, 2020]
+        },
+        plotOptions: {
+          bar: {
+            horizontal: true
+          }
+        },
+        legend: {
+          show: true
+        }
+      },
       initClassificationOptions: {
         chart: {
           type: 'pie',
@@ -201,8 +225,32 @@ export default {
         labels: [2017, 2018, 2019, 2020]
       },
       initClassificationSeries: [2017, 2018, 2019, 2020],
+      initPublisherOptions: {
+        chart: {
+          type: 'pie',
+          events: {
+            dataPointSelection: function (event, chartContext, config) {
+              that.addFacetFilter('publisher', config.w.globals.labels[config.dataPointIndex])
+            }
+          }
+        },
+        tooltip: {
+          enabled: false
+        },
+        dataLabels: {
+          formatter: function (val, opt) {
+            return opt.w.globals.labels[opt.seriesIndex]
+          }
+        },
+        legend: {
+          show: false
+        },
+        labels: ['Cambridge University Press', 'Ave Maria Press']
+      },
+      initPublisherSeries: ['Cambridge University Press', 'Ave Maria Press'],
       authors: {},
       classifications: {},
+      publishers: {},
       journals: {},
       journal_types: {},
       // filters: '',
@@ -220,6 +268,8 @@ export default {
     journalTypeSeries: sync('filter/journalTypeSeries'),
     classificationOptions: sync('filter/classificationOptions'),
     classificationSeries: sync('filter/classificationSeries'),
+    publisherOptions: sync('filter/publisherOptions'),
+    publisherSeries: sync('filter/publisherSeries'),
     refreshCharts: sync('filter/refreshCharts'),
     dashboardMiniState: sync('filter/dashboardMiniState'),
     queryOptions: function () {
@@ -246,19 +296,11 @@ export default {
       this.indexPublications = await searchClient.getIndex('publications')
       await this.runSearch()
     },
-    // async loadJournalTypes () {
-    //   const journalTypesResult = await this.$apollo.query({
-    //     query: readJournalTypes
-    //   })
-    //   this.journalTypes = await _.uniq(_.map(journalTypesResult.data.journal, (journal) => {
-    //     return _.startCase(journal.journal_type).trim()
-    //   }))
-    // },
     async runSearch () {
       const searchfor = this.search ? this.search : '*'
 
       const options = {
-        facetsDistribution: ['year', 'author', 'classifications', 'journal', 'journal_type'],
+        facetsDistribution: ['year', 'author', 'classifications', 'journal', 'journal_type', 'publisher'],
         attributesToHighlight: ['title', 'abstract']
       }
       // if (filter) {
@@ -292,6 +334,11 @@ export default {
           return { name: key, count: value }
         }), 'count', 'desc'
       ))
+      this.publishers = Object.freeze(_.orderBy(
+        _.map(results.facetsDistribution.publisher, (value, key) => {
+          return { name: key, count: value }
+        }), 'count', 'desc'
+      ))
       this.classificationOptions = this.initClassificationOptions
       this.yearOptions = this.options
       this.journalTypeOptions = this.paOptions
@@ -312,9 +359,19 @@ export default {
       this.classificationOptions.labels = _.map(_.keys(results.facetsDistribution.classifications), (label) => {
         return _.startCase(label)
       })
-      console.log(`Classification labels is: ${JSON.stringify(this.classificationOptions.labels, null, 2)}`)
-      console.log(`Classification series is: ${JSON.stringify(results.facetsDistribution.classifications, null, 2)}`)
-      // this.classificationOptions.xaxis.categories = _.values(results.facetsDistribution.classifications)
+      // this.classificationSeries = [{
+      //   name: 'series-3',
+      //   data: _.values(results.facetsDistribution.classifications)
+      // }]
+      // this.classificationOptions.xaxis.categories = _.map(_.keys(results.facetsDistribution.classifications), (label) => {
+      //   return _.startCase(label)
+      // })
+      this.publisherOptions = this.initPublisherOptions
+      console.log(`Publisher facets: ${JSON.stringify(results.facetsDistribution.publisher, null, 2)}`)
+      this.publisherSeries = _.values(results.facetsDistribution.publisher)
+      this.publisherOptions.labels = _.map(_.keys(results.facetsDistribution.publisher), (label) => {
+        return _.startCase(label)
+      })
     },
     async reset () {
       this.facetFilters = []

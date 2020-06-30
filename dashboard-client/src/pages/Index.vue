@@ -25,7 +25,7 @@
           </q-card>
           <q-card class="my-card" flat bordered>
             <q-card-section>
-              <apexchart :key="refreshCharts" :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="bar" :options="journalOptions" :series="journalSeries"></apexchart>
+              <apexchart :key="refreshCharts" :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="pie" :options="publisherOptions" :series="publisherSeries"></apexchart>
             </q-card-section>
           </q-card>
         </div>
@@ -51,7 +51,6 @@
 
 <script>
 import { sync } from 'vuex-pathify'
-// import MeiliSearch from 'meilisearch'
 import SearchView from '../components/SearchView.vue'
 
 export default {
@@ -63,22 +62,9 @@ export default {
     return {
       firstModel: 1000,
       search: '',
-      drawer: true,
       processingTime: undefined,
       numberOfHits: undefined,
-      results: [],
-      options: {
-        chart: {
-          id: 'vuechart-example'
-        },
-        xaxis: {
-          categories: [1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998]
-        }
-      },
-      series: [{
-        name: 'series-1',
-        data: [30, 40, 45, 50, 49, 60, 70, 91]
-      }]
+      results: []
     }
   },
   async created () {
@@ -97,17 +83,12 @@ export default {
     refreshCharts: sync('filter/refreshCharts'),
     journalOptions: sync('filter/journalOptions'),
     journalSeries: sync('filter/journalSeries'),
+    publisherOptions: sync('filter/publisherOptions'),
+    publisherSeries: sync('filter/publisherSeries'),
     dashboardMiniState: sync('filter/dashboardMiniState')
   },
   watch: {
     $route: 'init'
-    // search: async function (newText, oldText) {
-    //   if (newText !== '') {
-    //     this.runSearch(newText)
-    //   } else {
-    //     this.runSearch('*')
-    //   }
-    // }
   },
   methods: {
     toggleMiniState (e) {
@@ -124,22 +105,8 @@ export default {
       }
     },
     async init () {
-      // const searchClient = new MeiliSearch({
-      //   host: 'http://127.0.0.1:7700'
-      // })
-      // this.indexPublications = await searchClient.getIndex('publications')
-      // this.runSearch('*')
       this.firstModel = this.getFirstModelWidth(this.dashboardMiniState)
-    } //,
-    // async runSearch (query) {
-    //   const results = await this.indexPublications.search(query, {
-    //     facetsDistribution: ['year', 'author', 'classifications']
-    //   })
-    //   this.processingTime = results.processingTimeMs
-    //   this.numberOfHits = results.nbHits
-    //   console.log(`${JSON.stringify(results.facetsDistribution.author)}`)
-    //   this.results = results.hits
-    // }
+    }
   }
 }
 </script>

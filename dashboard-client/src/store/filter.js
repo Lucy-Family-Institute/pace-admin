@@ -83,18 +83,24 @@ const state = {
   },
   classificationSeries: ['Journal', 'Book Series'],
   refreshCharts: 0,
-  journalOptions: {
+  publisherOptions: {
     chart: {
-      id: 'journal-subject'
+      type: 'pie'
     },
-    xaxis: {
-      categories: [1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998]
-    }
+    tooltip: {
+      enabled: false
+    },
+    dataLabels: {
+      formatter: function (val, opt) {
+        return opt.w.globals.labels[opt.seriesIndex]
+      }
+    },
+    legend: {
+      show: false
+    },
+    labels: ['Journal', 'Book Series']
   },
-  journalSeries: [{
-    name: 'series-1',
-    data: [30, 40, 45, 50, 49, 60, 70, 91]
-  }],
+  publisherSeries: ['Cambridge University Press', 'Ave Maria Press'],
   dashboardMiniState: false
 }
 
