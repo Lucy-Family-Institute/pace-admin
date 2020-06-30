@@ -10,22 +10,22 @@
         <div class="q-pa-md row items-start q-gutter-md">
           <q-card class="my-card" flat bordered>
             <q-card-section>
-              <apexchart :width="`${(dashboardMiniState) ? 250: $q.screen.width * .25}`" type="bar" :options="yearOptions" :series="yearSeries"></apexchart>
+              <apexchart :key="refreshCharts" :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="bar" :options="yearOptions" :series="yearSeries"></apexchart>
             </q-card-section>
           </q-card>
           <q-card class="my-card" flat bordered>
             <q-card-section>
-              <apexchart :width="`${(dashboardMiniState) ? 250: $q.screen.width * .25}`" type="pie" :options="journalTypeOptions" :series="journalTypeSeries"></apexchart>
+              <apexchart :key="refreshCharts" :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="pie" :options="classificationOptions" :series="classificationSeries"></apexchart>
             </q-card-section>
           </q-card>
           <q-card class="my-card" flat bordered>
             <q-card-section>
-              <apexchart :width="`${(dashboardMiniState) ? 250: $q.screen.width * .25}`" type="bar" :options="classificationOptions" :series="classificationSeries"></apexchart>
+              <apexchart :key="refreshCharts" :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="pie" :options="journalTypeOptions" :series="journalTypeSeries"></apexchart>
             </q-card-section>
           </q-card>
           <q-card class="my-card" flat bordered>
             <q-card-section>
-              <apexchart :width="`${(dashboardMiniState) ? 250: $q.screen.width * .25}`" type="bar" :options="journalOptions" :series="journalSeries"></apexchart>
+              <apexchart :key="refreshCharts" :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="bar" :options="journalOptions" :series="journalSeries"></apexchart>
             </q-card-section>
           </q-card>
         </div>
@@ -40,8 +40,8 @@
             @click="toggleMiniState"
           />
       </template>
-      <template v-slot:after>
-        <div>
+      <template v-slot:after :style="{height: ($q.screen.height-56-16)+'px'}">
+        <div style="padding-top: 16px">
           <SearchView />
         </div>
       </template>
@@ -61,7 +61,7 @@ export default {
   },
   data () {
     return {
-      firstModel: this.$q.screen.width * 0.8,
+      firstModel: 1000,
       search: '',
       drawer: true,
       processingTime: undefined,
@@ -93,37 +93,35 @@ export default {
     journalTypeOptions: sync('filter/journalTypeOptions'),
     journalTypeSeries: sync('filter/journalTypeSeries'),
     classificationOptions: sync('filter/classificationOptions'),
-    classificationSeries: sync('filter/classificiationSeries'),
+    classificationSeries: sync('filter/classificationSeries'),
+    refreshCharts: sync('filter/refreshCharts'),
     journalOptions: sync('filter/journalOptions'),
     journalSeries: sync('filter/journalSeries'),
     dashboardMiniState: sync('filter/dashboardMiniState')
   },
   watch: {
-    $route: 'init',
-    search: async function (newText, oldText) {
-      if (newText !== '') {
-        this.runSearch(newText)
-      } else {
-        this.runSearch('*')
-      }
-    }
+    $route: 'init'
+    // search: async function (newText, oldText) {
+    //   if (newText !== '') {
+    //     this.runSearch(newText)
+    //   } else {
+    //     this.runSearch('*')
+    //   }
+    // }
   },
   methods: {
     toggleMiniState (e) {
       // if in "mini" state and user
       // click on drawer, we switch it to "normal" mode
+      this.dashboardMiniState = !this.dashboardMiniState
+      this.firstModel = this.getFirstModelWidth(this.dashboardMiniState)
+    },
+    getFirstModelWidth (dashboardMiniState) {
       if (this.dashboardMiniState) {
-        this.dashboardMiniState = false
-        this.firstModel = this.$q.screen.width * 0.8
-
-        // notice we have registered an event with capture flag;
-        // we need to stop further propagation as this click is
-        // intended for switching drawer to "normal" mode only
+        return this.$q.screen.width * 0.25
       } else {
-        this.dashboardMiniState = true
-        this.firstModel = this.$q.screen.width * 0.2
+        return this.$q.screen.width * 0.75
       }
-      // e.stopPropagation()
     },
     async init () {
       // const searchClient = new MeiliSearch({
@@ -131,17 +129,17 @@ export default {
       // })
       // this.indexPublications = await searchClient.getIndex('publications')
       // this.runSearch('*')
-
-    },
-    async runSearch (query) {
-      const results = await this.indexPublications.search(query, {
-        facetsDistribution: ['year', 'author', 'classifications']
-      })
-      this.processingTime = results.processingTimeMs
-      this.numberOfHits = results.nbHits
-      console.log(`${JSON.stringify(results.facetsDistribution.author)}`)
-      this.results = results.hits
-    }
+      this.firstModel = this.getFirstModelWidth(this.dashboardMiniState)
+    } //,
+    // async runSearch (query) {
+    //   const results = await this.indexPublications.search(query, {
+    //     facetsDistribution: ['year', 'author', 'classifications']
+    //   })
+    //   this.processingTime = results.processingTimeMs
+    //   this.numberOfHits = results.nbHits
+    //   console.log(`${JSON.stringify(results.facetsDistribution.author)}`)
+    //   this.results = results.hits
+    // }
   }
 }
 </script>
