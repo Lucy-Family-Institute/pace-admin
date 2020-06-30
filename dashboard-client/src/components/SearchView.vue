@@ -1,5 +1,5 @@
 <template>
-  <q-page class="flex"  style="background-color:white">
+  <q-page class="flex" style="background-color:white">
     <div class="">
       <div class="row no-wrap">
         <div v-if="dashboardMiniState" class="col-auto">
@@ -81,6 +81,15 @@
               {{numberOfHits}} hits in {{processingTime}} ms
             </template>
           </q-input>
+          <div class="q-gutter-xs">
+            <q-chip
+              v-for="option in queryOptions"
+              v-bind:key="option"
+              removable @remove="removeFilter(option)" color="primary" text-color="white"
+            >
+              {{option}}
+            </q-chip>
+          </div>
           <download-csv
             class="cursor-pointer"
             :name="`pace_dashboard_results.csv`"
@@ -93,15 +102,6 @@
               <q-item-section header align="left">&nbsp;Download Results</q-item-section>
             </q-btn>
           </download-csv>
-          <div class="q-gutter-xs">
-            <q-chip
-              v-for="option in queryOptions"
-              v-bind:key="option"
-              removable @remove="removeFilter(option)" color="primary" text-color="white"
-            >
-              {{option}}
-            </q-chip>
-          </div>
           <q-list bordered separator v-for="result in results" :key="result.id">
             <q-item clickable v-ripple>
               <q-item-section>
@@ -178,6 +178,29 @@ export default {
         labels: ['Journal', 'Book Series']
       },
       paSeries: [2017, 2018, 2019, 2020],
+      initClassificationOptions: {
+        chart: {
+          type: 'pie',
+          events: {
+            dataPointSelection: function (event, chartContext, config) {
+              that.addFacetFilter('classifications', config.w.globals.labels[config.dataPointIndex])
+            }
+          }
+        },
+        tooltip: {
+          enabled: false
+        },
+        dataLabels: {
+          formatter: function (val, opt) {
+            return opt.w.globals.labels[opt.seriesIndex]
+          }
+        },
+        legend: {
+          show: false
+        },
+        labels: [2017, 2018, 2019, 2020]
+      },
+      initClassificationSeries: [2017, 2018, 2019, 2020],
       authors: {},
       classifications: {},
       journals: {},
@@ -195,6 +218,9 @@ export default {
     yearSeries: sync('filter/yearSeries'),
     journalTypeOptions: sync('filter/journalTypeOptions'),
     journalTypeSeries: sync('filter/journalTypeSeries'),
+    classificationOptions: sync('filter/classificationOptions'),
+    classificationSeries: sync('filter/classificationSeries'),
+    refreshCharts: sync('filter/refreshCharts'),
     dashboardMiniState: sync('filter/dashboardMiniState'),
     queryOptions: function () {
       return this.facetFilters // _.concat
@@ -218,10 +244,6 @@ export default {
         host: 'http://127.0.0.1:7700'
       })
       this.indexPublications = await searchClient.getIndex('publications')
-      this.yearOptions = this.options
-      this.yearSeries = this.series
-      this.journalTypeOptions = this.paOptions
-      this.journalTypeSeries = this.paSeries
       await this.runSearch()
     },
     // async loadJournalTypes () {
@@ -252,7 +274,7 @@ export default {
 
       this.classifications = Object.freeze(_.orderBy(
         _.map(results.facetsDistribution.classifications, (value, key) => {
-          return { name: key, count: value }
+          return { name: _.startCase(key), count: value }
         }), 'count', 'desc'
       ))
       this.authors = Object.freeze(_.orderBy(
@@ -270,19 +292,34 @@ export default {
           return { name: key, count: value }
         }), 'count', 'desc'
       ))
-      if (!this.yearsInitialized) {
-        this.yearSeries = [{
-          name: 'series-1',
-          data: _.values(results.facetsDistribution.year)
-        }]
-        this.yearsInitialized = true
-      }
+      this.classificationOptions = this.initClassificationOptions
+      this.yearOptions = this.options
+      this.journalTypeOptions = this.paOptions
+      this.journalTypeSeries = this.paSeries
+      // this.yearSeries = this.series
+      // if (!this.yearsInitialized) {
+      this.yearSeries = [{
+        name: 'series-1',
+        data: _.values(results.facetsDistribution.year)
+      }]
+      //  this.yearsInitialized = true
+      // }
       this.journalTypeSeries = _.values(results.facetsDistribution.journal_type)
+      this.journalTypeOptions.labels = _.map(_.keys(results.facetsDistribution.journal_type), (label) => {
+        return _.startCase(label)
+      })
+      this.classificationSeries = _.values(results.facetsDistribution.classifications)
+      this.classificationOptions.labels = _.map(_.keys(results.facetsDistribution.classifications), (label) => {
+        return _.startCase(label)
+      })
+      console.log(`Classification labels is: ${JSON.stringify(this.classificationOptions.labels, null, 2)}`)
+      console.log(`Classification series is: ${JSON.stringify(results.facetsDistribution.classifications, null, 2)}`)
+      // this.classificationOptions.xaxis.categories = _.values(results.facetsDistribution.classifications)
     },
     async reset () {
       this.facetFilters = []
       this.search = ''
-      this.runSearch()
+      await this.runSearch()
     },
     async removeSelectedFacet (key) {
       this.facetFilters = _.filter(this.facetFilters, (facetFilter) => {
@@ -293,15 +330,18 @@ export default {
     async toggleFacetFilter (key, value) {
       this.removeSelectedFacet(key)
       this.facetFilters.push(`${key}:${value}`)
-      this.runSearch()
+      await this.runSearch()
+      this.refreshCharts += 1
     },
     async addFacetFilter (key, value) {
       this.facetFilters.push(`${key}:${value}`)
-      this.runSearch()
+      await this.runSearch()
+      this.refreshCharts += 1
     },
     async removeFilter (key) {
       this.$delete(this.facetFilters, _.indexOf(this.facetFilters, key))
-      this.runSearch()
+      await this.runSearch()
+      this.refreshCharts += 1
     }
   }
 }
