@@ -84,7 +84,12 @@ export default {
           enabled: false
         },
         xaxis: {
-          categories: [2017, 2018, 2019, 2020]
+          categories: [2017, 2018, 2019, 2020],
+          labels: {
+            style: {
+              cssClass: 'clickable'
+            }
+          }
         }
       },
       yearBarSeries: [{
@@ -95,7 +100,7 @@ export default {
           type: 'pie',
           events: {
             dataPointSelection: function (event, chartContext, config) {
-              this.addFacetFilter('classifications', config.w.globals.labels[config.dataPointIndex])
+              this.addFacetFilter('classificationsTopLevel', config.w.globals.labels[config.dataPointIndex])
             }.bind(this)
           }
         },
@@ -146,7 +151,7 @@ export default {
           }
         },
         tooltip: {
-          enabled: false
+          enabled: true
         },
         dataLabels: {
           formatter: function (val, opt) {
@@ -208,17 +213,24 @@ export default {
       this.yearBarSeries = [{
         data: _.values(this.facetsDistribution.year)
       }]
-      this.classificationPieSeries = _.values(this.facetsDistribution.classifications)
+      const classificationData = _.orderBy(
+        _.map(this.facetsDistribution.classificationsTopLevel, (value, key) => {
+          return { name: key, count: value }
+        }),
+        'count',
+        'desc'
+      )
+      this.classificationPieSeries = _.map(classificationData, 'count')
       this.classificationPieOptions = {
         chart: {
           type: 'pie',
           events: {
             dataPointSelection: function (event, chartContext, config) {
-              this.addFacetFilter('classifications', config.w.globals.labels[config.dataPointIndex])
+              this.addFacetFilter('classificationsTopLevel', config.w.globals.labels[config.dataPointIndex])
             }.bind(this)
           }
         },
-        labels: _.map(_.keys(this.facetsDistribution.classifications), _.startCase),
+        labels: _.map(_.map(classificationData, 'name'), _.startCase),
         legend: {
           show: false
         },
@@ -254,7 +266,14 @@ export default {
           enabled: false
         }
       }
-      this.publisherPieSeries = _.values(this.facetsDistribution.publisher)
+      const publisherData = _.orderBy(
+        _.map(this.facetsDistribution.publisher, (value, key) => {
+          return { name: key, count: value }
+        }),
+        'count',
+        'desc'
+      )
+      this.publisherPieSeries = _.map(publisherData, 'count')
       this.publisherPieOptions = {
         chart: {
           type: 'pie',
@@ -264,7 +283,7 @@ export default {
             }.bind(this)
           }
         },
-        labels: _.map(_.keys(this.facetsDistribution.publisher), _.startCase),
+        labels: _.map(_.map(publisherData, 'name'), _.startCase),
         legend: {
           show: false
         },
@@ -274,7 +293,7 @@ export default {
           }
         },
         tooltip: {
-          enabled: false
+          enabled: true
         }
       }
     }
@@ -282,8 +301,11 @@ export default {
 }
 </script>
 
-<style lang="sass" scoped>
+<style lang="sass">
 .my-card
   width: 100%
   max-width: 450px
+
+.clickable
+   text-decoration: underline
 </style>
