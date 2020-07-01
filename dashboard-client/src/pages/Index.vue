@@ -13,7 +13,7 @@
               <apexchart :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="bar" :options="yearBarOptions" :series="yearBarSeries"></apexchart>
             </q-card-section>
           </q-card>
-          <!-- <q-card class="my-card" flat bordered>
+          <q-card class="my-card" flat bordered>
             <q-card-section>
               <apexchart :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="pie" :options="classificationPieOptions" :series="classificationPieSeries"></apexchart>
             </q-card-section>
@@ -27,7 +27,7 @@
             <q-card-section>
               <apexchart :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="pie" :options="publisherPieOptions" :series="publisherPieSeries"></apexchart>
             </q-card-section>
-          </q-card> -->
+          </q-card>
         </div>
       </template>
       <template v-slot:separator>
