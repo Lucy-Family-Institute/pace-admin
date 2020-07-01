@@ -160,6 +160,7 @@ export default {
     dashboardMiniState: sync('filter/dashboardMiniState'),
     facetFilters: sync('filter/facetFilters'),
     facetsDistribution: sync('filter/facetsDistribution')
+    // refreshCharts: sync('filter/refreshCharts')
   },
   watch: {
     $route: 'init',
@@ -193,15 +194,72 @@ export default {
       }]
       this.classificationPieSeries = _.values(this.facetsDistribution.classifications)
       this.classificationPieOptions = {
-        labels: _.map(_.keys(this.facetsDistribution.classifications), _.startCase)
+        chart: {
+          type: 'pie',
+          events: {
+            dataPointSelection: function (event, chartContext, config) {
+              this.addFacetFilter('classifications', config.w.globals.labels[config.dataPointIndex])
+            }.bind(this)
+          }
+        },
+        labels: _.map(_.keys(this.facetsDistribution.classifications), _.startCase),
+        legend: {
+          show: false
+        },
+        dataLabels: {
+          formatter: function (val, opt) {
+            return opt.w.globals.labels[opt.seriesIndex]
+          }
+        },
+        tooltip: {
+          enabled: false
+        }
       }
       this.journalTypePieSeries = _.values(this.facetsDistribution.journal_type)
       this.journalTypePieOptions = {
-        labels: _.map(_.keys(this.facetsDistribution.journal_type), _.startCase)
+        chart: {
+          type: 'pie',
+          events: {
+            dataPointSelection: function (event, chartContext, config) {
+              this.addFacetFilter('journal_type', config.w.globals.labels[config.dataPointIndex])
+            }.bind(this)
+          }
+        },
+        labels: _.map(_.keys(this.facetsDistribution.journal_type), _.startCase),
+        legend: {
+          show: false
+        },
+        dataLabels: {
+          formatter: function (val, opt) {
+            return opt.w.globals.labels[opt.seriesIndex]
+          }
+        },
+        tooltip: {
+          enabled: false
+        }
       }
       this.publisherPieSeries = _.values(this.facetsDistribution.publisher)
       this.publisherPieOptions = {
-        labels: _.map(_.keys(this.facetsDistribution.publisher), _.startCase)
+        chart: {
+          type: 'pie',
+          events: {
+            dataPointSelection: function (event, chartContext, config) {
+              this.addFacetFilter('publisher', config.w.globals.labels[config.dataPointIndex])
+            }.bind(this)
+          }
+        },
+        labels: _.map(_.keys(this.facetsDistribution.publisher), _.startCase),
+        legend: {
+          show: false
+        },
+        dataLabels: {
+          formatter: function (val, opt) {
+            return opt.w.globals.labels[opt.seriesIndex]
+          }
+        },
+        tooltip: {
+          enabled: false
+        }
       }
     }
   }

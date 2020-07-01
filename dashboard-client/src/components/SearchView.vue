@@ -3,15 +3,6 @@
     <div class="">
       <div class="row no-wrap">
         <div v-if="dashboardMiniState" class="col-auto">
-          <div class="q-gutter-xs">
-            <q-chip
-              v-for="option in queryOptions"
-              v-bind:key="option"
-              removable @remove="removeFilter(option)" color="primary" text-color="white"
-            >
-              {{option}}
-            </q-chip>
-          </div>
           <download-csv
             class="cursor-pointer"
             :name="`pace_dashboard_results.csv`"
@@ -25,13 +16,22 @@
             </q-btn>
           </download-csv>
         </div>
+        <div v-if="dashboardMiniState" class="q-gutter-xs">
+          <q-chip
+            v-for="option in queryOptions"
+            v-bind:key="option"
+            removable @remove="removeFilter(option)" color="primary" text-color="white"
+          >
+            {{option}}
+          </q-chip>
+        </div>
       </div>
       <div class="row no-wrap">
-        <q-splitter
+        <!--<q-splitter
           unit="px"
           :style="{height: ($q.screen.height-56-16)+'px'}"
-        >
-          <template v-slot:before>
+        >-->
+          <!--<template v-slot:before>-->
             <div v-if="dashboardMiniState" style="width:300">
               <q-input v-model="search" filled type="search" bottom-slots debounce="100">
               <template v-slot:append>
@@ -91,7 +91,7 @@
               <q-card class="my-card" flat bordered>
                 <q-card-section>
                   <q-scroll-area style="height: 200px; max-width: 300px;">
-                    <q-list v-for="item in facetLists.journal_types" :key="item.name" @click='addFacetFilter("journal_type", item.name)'>
+                    <q-list v-for="item in facetLists.journal_type" :key="item.name" @click='addFacetFilter("journal_type", item.name)'>
                       <q-item clickable v-ripple v-if="item.count > 0">
                         <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
                       </q-item>
@@ -100,11 +100,11 @@
                 </q-card-section>
               </q-card>
             </div>
-          </template>
-          <template v-slot:after>
-            <div class="col-10">
-              <div>
-                <q-input v-if="!dashboardMiniState" v-model="search" filled type="search" bottom-slots debounce="100">
+          <!--</template>
+          <template v-slot:after>-->
+            <div :class="(dashboardMiniState) ? 'col-9' : 'col-auto'">
+              <div v-if="!dashboardMiniState" class="col-9">
+                <q-input v-model="search" filled type="search" bottom-slots debounce="100">
                 <template v-slot:append>
                   <q-icon name="close" @click="reset()" class="cursor-pointer" />
                 </template>
@@ -124,7 +124,6 @@
                     {{option}}
                   </q-chip>
                 </div>
-                <div v-if="!dashboardMiniState">
                 <download-csv
                   class="cursor-pointer"
                   :name="`pace_dashboard_results.csv`"
@@ -137,9 +136,8 @@
                     <q-item-section header align="left">&nbsp;Download Results</q-item-section>
                   </q-btn>
                 </download-csv>
-                </div>
               </div>
-              <q-virtual-scroll
+              <!--<q-virtual-scroll
                 :items="results"
                 separator
                 bordered
@@ -153,18 +151,18 @@
                   </q-item-section>
                 </q-item>
                 </template>
-              </q-virtual-scroll>
-              <!--<q-list bordered separator v-for="result in results" :key="result.id">
+              </q-virtual-scroll>-->
+              <q-list bordered separator v-for="result in results" :key="result.id">
                 <q-item clickable v-ripple>
                   <q-item-section>
                     <q-item-label v-html="result._formatted.title" />
                     <q-item-label caption v-html="result._formatted.abstract" v-if="result.abstract" />
                   </q-item-section>
                 </q-item>
-              </q-list>-->
+              </q-list>
             </div>
-          </template>
-        </q-splitter>
+          <!--</template>
+        </q-splitter>-->
       </div>
     </div>
   </q-page>
@@ -201,6 +199,7 @@ export default {
     dashboardMiniState: sync('filter/dashboardMiniState'),
     facetFilters: sync('filter/facetFilters'),
     facetsDistribution: sync('filter/facetsDistribution'),
+    // refreshCharts: sync('filter/refreshCharts'),
     queryOptions: function () {
       return this.facetFilters // _.concat
     }
@@ -233,12 +232,16 @@ export default {
         options.facetFilters = this.facetFilters
       }
       const results = await this.indexPublications.search(searchfor, options)
+      // if (forDownload) {
+      //   this.downloadResults = results.hits
+      // } else {
       this.results = results.hits
       this.processingTime = results.processingTimeMs
       this.numberOfHits = results.nbHits
       this.facetsDistribution = Object.freeze(results.facetsDistribution)
 
       this.sortFacets(['classifications', 'authors', 'journal', 'journal_type', 'publisher'], this.facetsDistribution)
+      // }
     },
     async sortFacets (fields, data) {
       pMap(fields, async (field) => {
@@ -266,7 +269,7 @@ export default {
         journal: (result.journal) ? result.journal : '',
         publisher: (result.publisher) ? result.publisher : '',
         year: result.year,
-        classification: (result.classification) ? result.classification : '',
+        classification: (result.classifications) ? result.classifications : '',
         abstract: (result.abstract) ? result.abstract : ''
       }
     },
@@ -295,6 +298,8 @@ export default {
     },
     async addFacetFilter (key, value) {
       this.facetFilters.push(`${key}:${value}`)
+      // await this.runSearch()
+      // this.refreshCharts += 1
     },
     async removeFilter (key) {
       this.$delete(this.facetFilters, _.indexOf(this.facetFilters, key))
