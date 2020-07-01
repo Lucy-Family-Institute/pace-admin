@@ -22,7 +22,7 @@
             v-bind:key="option"
             removable @remove="removeFacetFilter(option)" color="primary" text-color="white"
           >
-            {{option}}
+            {{cleanChip(option)}}
           </q-chip>
         </div>
       </div>
@@ -121,7 +121,7 @@
                     v-bind:key="option"
                     removable @remove="removeFacetFilter(option)" color="primary" text-color="white"
                   >
-                    {{option}}
+                    {{cleanChip(option)}}
                   </q-chip>
                 </div>
                 <download-csv
@@ -317,6 +317,9 @@ export default {
     },
     async browseTo (doi) {
       openURL(this.getDoiUrl(doi))
+    },
+    cleanChip (label) {
+      return _.replace(label, /(.*):/, '')
     }
   }
 }
