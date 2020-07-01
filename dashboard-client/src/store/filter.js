@@ -37,6 +37,7 @@ const state = {
   dashboardMiniState: false,
   facetFilters: [],
   facetsDistribution: null
+  // refreshCharts: 0
 }
 
 const getters = {
