@@ -47,7 +47,7 @@
               <q-card class="my-card" flat bordered>
                 <q-card-section>
                   <q-scroll-area style="height: 200px; max-width: 300px;">
-                    <q-list v-for="item in authors" :key="item.name" @click='addFacetFilter("author", item.name)'>
+                    <q-list v-for="item in authors" :key="item.name" @click='addFacetFilter("authors", item.name)'>
                       <q-item clickable v-ripple v-if="item.count > 0">
                         <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
                       </q-item>
@@ -353,7 +353,7 @@ export default {
       const searchfor = this.search ? this.search : '*'
 
       const options = {
-        facetsDistribution: ['year', 'author', 'classifications', 'journal', 'journal_type', 'publisher'],
+        facetsDistribution: ['year', 'authors', 'classifications', 'journal', 'journal_type', 'publisher'],
         attributesToHighlight: ['title', 'abstract'],
         limit: 1000
       }
@@ -374,7 +374,7 @@ export default {
         }), 'count', 'desc'
       ))
       this.authors = Object.freeze(_.orderBy(
-        _.map(results.facetsDistribution.author, (value, key) => {
+        _.map(results.facetsDistribution.authors, (value, key) => {
           return { name: key, count: value }
         }), 'count', 'desc'
       ))
@@ -434,7 +434,7 @@ export default {
     },
     getPubCSVResultObject (result) {
       return {
-        authors: result.author,
+        authors: result.authors,
         title: result.title.replace(/\n/g, ' '),
         doi: this.getCSVHyperLinkString(result.doi, this.getDoiUrl(result.doi)),
         journal: (result.journal) ? result.journal : '',
