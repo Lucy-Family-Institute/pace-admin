@@ -13,7 +13,7 @@
               <apexchart :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="bar" :options="yearBarOptions" :series="yearBarSeries"></apexchart>
             </q-card-section>
           </q-card>
-          <q-card class="my-card" flat bordered>
+          <!-- <q-card class="my-card" flat bordered>
             <q-card-section>
               <apexchart :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="pie" :options="classificationPieOptions" :series="classificationPieSeries"></apexchart>
             </q-card-section>
@@ -27,7 +27,7 @@
             <q-card-section>
               <apexchart :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="pie" :options="publisherPieOptions" :series="publisherPieSeries"></apexchart>
             </q-card-section>
-          </q-card>
+          </q-card> -->
         </div>
       </template>
       <template v-slot:separator>
@@ -68,6 +68,15 @@ export default {
           events: {
             dataPointSelection: function (event, chartContext, config) {
               this.addFacetFilter('year', config.w.globals.labels[config.dataPointIndex])
+            }.bind(this),
+            click: function ({ clientX, clientY }, chartContext, { config, globals }) {
+              const xCoords = globals.seriesXvalues[0]
+              const categories = config.xaxis.categories
+              // Find the x-axis + translation closest to the click
+              const categoryIndex = _.indexOf(xCoords, _.reduce(xCoords, function (prev, curr) {
+                return (Math.abs(curr + globals.translateX - clientX) < Math.abs(prev + globals.translateX - clientX) ? curr : prev)
+              }))
+              this.addFacetFilter('year', categories[categoryIndex])
             }.bind(this)
           }
         },
@@ -186,7 +195,14 @@ export default {
       this.firstModel = this.getFirstModelWidth(this.dashboardMiniState)
     },
     async addFacetFilter (key, value) {
+      if (_.includes(this.facetFilters, `${key}:${value}`)) return
+      if (key === 'year') {
+        this.removeFacetFilter(_.find(this.facetFilters, (val) => _.startsWith(val, key)))
+      }
       this.facetFilters.push(`${key}:${value}`)
+    },
+    async removeFacetFilter (key) {
+      this.$delete(this.facetFilters, _.indexOf(this.facetFilters, key))
     },
     async updateGraphs () {
       this.yearBarSeries = [{

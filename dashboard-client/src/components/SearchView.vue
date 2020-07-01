@@ -303,9 +303,11 @@ export default {
       await this.runSearch()
     },
     async addFacetFilter (key, value) {
+      if (_.includes(this.facetFilters, `${key}:${value}`)) return
+      if (key === 'year') {
+        this.removeFacetFilter(_.find(this.facetFilters, (val) => _.startsWith(val, key)))
+      }
       this.facetFilters.push(`${key}:${value}`)
-      // await this.runSearch()
-      // this.refreshCharts += 1
     },
     async setFilter () {
       // this.filters = `ages > ${this.ages.min} AND ages < ${this.ages.max}`
