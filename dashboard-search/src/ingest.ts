@@ -73,26 +73,31 @@ async function main() {
     `
   })
 
-  const documents = _.uniqBy(_.uniqBy(_.compact(_.map(results.data.persons_publications, (doc) => {
-    if (doc.reviews[0].reviewType !== 'accepted')
-      return null
-    return {
-      id: `publication_${_.get(doc.publication, 'id')}`,
-      type: 'publication',
-      doi: _.get(doc.publication, 'doi'),
-      title: _.get(doc.publication, 'title'),
-      year: _(_.get(doc.publication, 'year')).toString(),
-      abstract: _.get(doc.publication, 'abstract', ''),
-      journal: _.get(doc.publication, 'journal.title'),
-      journal_type: _.get(doc.publication, 'journal.journal_type'),
-      classifications: _.map(_.get(doc.publication, 'journal.journals_classifications'), (c) => {
-        return c.classification.name
-      }),
-      publisher: _.get(doc.publication, 'journal.publisher'),
-      author: `${_.get(doc.person, 'family_name')}, ${_.get(doc.person, 'given_name')}`,
-      wildcard: "*" // required for empty search (i.e., return all)
-    }
-  })), 'id'), 'doi')
+  const documents = _.chain(results.data.persons_publications)
+    .map((doc) => {
+      if (doc.reviews[0].reviewType !== 'accepted')
+        return null
+      return {
+        id: `p${doc.publication.id}`,
+        type: 'publication',
+        doi: _.get(doc.publication, 'doi'),
+        title: _.get(doc.publication, 'title'),
+        year: _(_.get(doc.publication, 'year')).toString(),
+        abstract: _.get(doc.publication, 'abstract', null),
+        journal: _.get(doc.publication, 'journal.title', null),
+        journal_type: _.get(doc.publication, 'journal.journal_type', null),
+        classifications: _.map(_.get(doc.publication, 'journal.journals_classifications', []), c => c.classification.name),
+        authors: `${_.get(doc.person, 'family_name')}, ${_.get(doc.person, 'given_name')}`,
+        publisher: _.get(doc.publication, 'journal.publisher', null),
+        wildcard: "*" // required for empty search (i.e., return all)
+      }
+    })
+    .compact()
+    .groupBy('id')
+    .map(doc => _.mergeWith(
+      {authors: []}, ...doc, (o, v, k) =>  k === 'authors' ? o.concat(v) : v)
+    )
+    .value()
 
   console.log(`Mapped #: ${documents.length}`)
 
@@ -102,7 +107,7 @@ async function main() {
 
   let status
   const { updateId } = await index.updateAttributesForFaceting([
-    'year', 'type', 'journal', 'classifications', 'author', 'journal_type', 'publisher'
+    'year', 'type', 'journal', 'classifications', 'authors', 'journal_type', 'publisher'
   ])
   do {
     await sleep(10)
