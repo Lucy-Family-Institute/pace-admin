@@ -10,22 +10,22 @@
         <div class="q-pa-md row items-start q-gutter-md">
           <q-card class="my-card" flat bordered>
             <q-card-section>
-              <apexchart :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="bar" :options="yearBarOptions" :series="yearBarSeries"></apexchart>
+              <apexchart style="max-width:425px" :width="`${(dashboardMiniState) ? 250: 425}`" type="bar" :options="yearBarOptions" :series="yearBarSeries"></apexchart>
             </q-card-section>
           </q-card>
           <q-card class="my-card" flat bordered>
             <q-card-section>
-              <apexchart :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="pie" :options="classificationPieOptions" :series="classificationPieSeries"></apexchart>
+              <apexchart style="max-width:425px" :width="`${(dashboardMiniState) ? 250: 425}`" type="pie" :options="classificationPieOptions" :series="classificationPieSeries"></apexchart>
             </q-card-section>
           </q-card>
           <q-card class="my-card" flat bordered>
             <q-card-section>
-              <apexchart :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="pie" :options="journalTypePieOptions" :series="journalTypePieSeries"></apexchart>
+              <apexchart style="max-width:425px" :width="`${(dashboardMiniState) ? 250: 425}`" type="pie" :options="journalTypePieOptions" :series="journalTypePieSeries"></apexchart>
             </q-card-section>
           </q-card>
           <q-card class="my-card" flat bordered>
             <q-card-section>
-              <apexchart :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="pie" :options="publisherPieOptions" :series="publisherPieSeries"></apexchart>
+              <apexchart style="max-width:425px" :width="`${(dashboardMiniState) ? 250: 425}`" type="pie" :options="publisherPieOptions" :series="publisherPieSeries"></apexchart>
             </q-card-section>
           </q-card>
         </div>
