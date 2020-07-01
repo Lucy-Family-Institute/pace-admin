@@ -16,6 +16,15 @@
             </q-btn>
           </download-csv>
         </div>
+        <div v-if="dashboardMiniState" class="q-gutter-xs">
+          <q-chip
+            v-for="option in queryOptions"
+            v-bind:key="option"
+            removable @remove="removeFilter(option)" color="primary" text-color="white"
+          >
+            {{option}}
+          </q-chip>
+        </div>
       </div>
       <div class="row no-wrap">
         <!--<q-splitter
@@ -115,7 +124,6 @@
                     {{option}}
                   </q-chip>
                 </div>
-                <div v-if="!dashboardMiniState">
                 <download-csv
                   class="cursor-pointer"
                   :name="`pace_dashboard_results.csv`"
@@ -128,7 +136,6 @@
                     <q-item-section header align="left">&nbsp;Download Results</q-item-section>
                   </q-btn>
                 </download-csv>
-                </div>
               </div>
               <!--<q-virtual-scroll
                 :items="results"
