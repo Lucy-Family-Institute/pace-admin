@@ -97,6 +97,7 @@ async function main() {
     .map(doc => _.mergeWith(
       {authors: []}, ...doc, (o, v, k) =>  k === 'authors' ? o.concat(v) : v)
     )
+    .uniqBy('doi')
     .value()
 
   console.log(`Mapped #: ${documents.length}`)
