@@ -231,6 +231,7 @@ export default {
       if (!_.isEmpty(this.facetFilters)) {
         options.facetFilters = this.facetFilters
       }
+      // options.filters = 'classifications_identifiers < 2000'
       const results = await this.indexPublications.search(searchfor, options)
       // if (forDownload) {
       //   this.downloadResults = results.hits
@@ -274,7 +275,7 @@ export default {
       }
     },
     getCSVHyperLinkString (showText, url) {
-      return `=HYPERLINK("${url}", "${showText}")`
+      return `${url}`
     },
     getDoiUrl (doi) {
       const doiBaseUrl = 'https://dx.doi.org'
