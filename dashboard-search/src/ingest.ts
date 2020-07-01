@@ -57,6 +57,7 @@ async function main() {
               journal_type
               journals_classifications {
                 classification {
+                  identifier
                   name
                 }
               }
@@ -73,6 +74,36 @@ async function main() {
     `
   })
 
+  const topLevelClassifications = {
+    '10': 'Multidisciplinary',
+    '11':  'Agricultural and Biological Sciences',
+    '12' : 'Arts and Humanities',
+    '13' : 'Biochemistry, Genetics and Molecular Biology',
+    '14' : 'Business, Management and Accounting',
+    '15' : 'Chemical Engineering',
+    '16' : 'Chemistry',
+    '17' : 'Computer Science',
+    '18' : 'Decision Sciences',
+    '19' : 'Earth and Planetary Sciences',
+    '20' : 'Economics, Econometrics and Finance',
+    '21' : 'Energy',
+    '22' : 'Engineering',
+    '23' : 'Environmental Science',
+    '24' : 'Immunology and Microbiology',
+    '25' : 'Materials Science',
+    '26' : 'Mathematics',
+    '27' : 'Medicine',
+    '28' : 'Neuroscience',
+    '29' : 'Nursing',
+    '30' : 'Pharmacology, Toxicology and Pharmaceutics',
+    '31' : 'Physics and Astronomy',
+    '32' : 'Psychology',
+    '33' : 'Social Sciences',
+    '34' : 'Veterinary',
+    '35' : 'Dentistry',
+    '36' : 'Health Professions'
+  }
+
   const documents = _.chain(results.data.persons_publications)
     .map((doc) => {
       if (doc.reviews[0].reviewType !== 'accepted')
@@ -86,6 +117,13 @@ async function main() {
         abstract: _.get(doc.publication, 'abstract', null),
         journal: _.get(doc.publication, 'journal.title', null),
         journal_type: _.get(doc.publication, 'journal.journal_type', null),
+        classificationsTopLevel: _.uniq(_.map(
+          _.get(doc.publication, 'journal.journals_classifications', []),
+          function ( obj ) {
+            const sliced = _.chain(obj.classification.identifier).slice(0, 2).join('').value()
+            return topLevelClassifications[sliced]
+          }
+        )),
         classifications: _.map(_.get(doc.publication, 'journal.journals_classifications', []), c => c.classification.name),
         authors: `${_.get(doc.person, 'family_name')}, ${_.get(doc.person, 'given_name')}`,
         publisher: _.get(doc.publication, 'journal.publisher', null),
@@ -108,7 +146,7 @@ async function main() {
 
   let status
   const { updateId } = await index.updateAttributesForFaceting([
-    'year', 'type', 'journal', 'classifications', 'authors', 'journal_type', 'publisher'
+    'year', 'type', 'journal', 'classifications', 'authors', 'journal_type', 'publisher', 'classificationsTopLevel'
   ])
   do {
     await sleep(10)
