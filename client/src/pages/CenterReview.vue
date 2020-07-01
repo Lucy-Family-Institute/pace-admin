@@ -1090,7 +1090,7 @@ export default {
       }
     },
     getCSVHyperLinkString (showText, url) {
-      return `=HYPERLINK("${url}", "${showText}")`
+      return `${url}`
     },
     async loadPersonPublicationsCombinedMatches () {
       console.log(`Start group by publications ${moment().format('HH:mm:ss:SSS')}`)
