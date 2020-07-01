@@ -20,7 +20,7 @@
           <q-chip
             v-for="option in queryOptions"
             v-bind:key="option"
-            removable @remove="removeFilter(option)" color="primary" text-color="white"
+            removable @remove="removeFacetFilter(option)" color="primary" text-color="white"
           >
             {{option}}
           </q-chip>
@@ -119,7 +119,7 @@
                   <q-chip
                     v-for="option in queryOptions"
                     v-bind:key="option"
-                    removable @remove="removeFilter(option)" color="primary" text-color="white"
+                    removable @remove="removeFacetFilter(option)" color="primary" text-color="white"
                   >
                     {{option}}
                   </q-chip>
@@ -153,7 +153,7 @@
                 </template>
               </q-virtual-scroll>-->
               <q-list bordered separator v-for="result in results" :key="result.id">
-                <q-item clickable v-ripple>
+                <q-item clickable v-ripple @click="browseTo(result.doi)">
                   <q-item-section>
                     <q-item-label v-html="result._formatted.title" />
                     <q-item-label caption v-html="result._formatted.abstract" v-if="result.abstract" />
@@ -174,7 +174,7 @@ import JsonCSV from 'vue-json-csv'
 import { sync } from 'vuex-pathify'
 import pMap from 'p-map'
 import _ from 'lodash'
-import { debounce } from 'quasar'
+import { debounce, openURL } from 'quasar'
 
 export default {
   name: 'Search',
@@ -188,7 +188,8 @@ export default {
       processingTime: undefined,
       numberOfHits: undefined,
       results: [],
-      facetLists: {}
+      facetLists: {},
+      filters: ''
     }
   },
   async created () {
@@ -231,6 +232,10 @@ export default {
       if (!_.isEmpty(this.facetFilters)) {
         options.facetFilters = this.facetFilters
       }
+      if (this.filters !== '') {
+        options.filters = this.filters
+      }
+
       // options.filters = 'classifications_identifiers < 2000'
       const results = await this.indexPublications.search(searchfor, options)
       // if (forDownload) {
@@ -302,8 +307,14 @@ export default {
       // await this.runSearch()
       // this.refreshCharts += 1
     },
-    async removeFilter (key) {
+    async setFilter () {
+      // this.filters = `ages > ${this.ages.min} AND ages < ${this.ages.max}`
+    },
+    async removeFacetFilter (key) {
       this.$delete(this.facetFilters, _.indexOf(this.facetFilters, key))
+    },
+    async browseTo (doi) {
+      openURL(this.getDoiUrl(doi))
     }
   }
 }
