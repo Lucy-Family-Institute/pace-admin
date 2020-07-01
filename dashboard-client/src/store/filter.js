@@ -34,74 +34,9 @@ const state = {
     max: 2200
   },
   pubSearch: '',
-  yearOptions: {
-    chart: {
-      id: 'year-filter'
-    },
-    xaxis: {
-      categories: [1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998]
-    }
-  },
-  yearSeries: [{
-    name: 'series-1',
-    data: [30, 40, 45, 50, 49, 60, 70, 91]
-  }],
-  journalTypeOptions: {
-    chart: {
-      type: 'pie'
-    },
-    tooltip: {
-      enabled: false
-    },
-    dataLabels: {
-      formatter: function (val, opt) {
-        return opt.w.globals.labels[opt.seriesIndex]
-      }
-    },
-    legend: {
-      show: false
-    },
-    labels: ['Journal', 'Book Series']
-  },
-  journalTypeSeries: ['Journal', 'Book Series'],
-  classificationOptions: {
-    chart: {
-      type: 'pie'
-    },
-    tooltip: {
-      enabled: false
-    },
-    dataLabels: {
-      formatter: function (val, opt) {
-        return opt.w.globals.labels[opt.seriesIndex]
-      }
-    },
-    legend: {
-      show: false
-    },
-    labels: ['Journal', 'Book Series']
-  },
-  classificationSeries: ['Journal', 'Book Series'],
-  refreshCharts: 0,
-  publisherOptions: {
-    chart: {
-      type: 'pie'
-    },
-    tooltip: {
-      enabled: false
-    },
-    dataLabels: {
-      formatter: function (val, opt) {
-        return opt.w.globals.labels[opt.seriesIndex]
-      }
-    },
-    legend: {
-      show: false
-    },
-    labels: ['Journal', 'Book Series']
-  },
-  publisherSeries: ['Cambridge University Press', 'Ave Maria Press'],
-  dashboardMiniState: false
+  dashboardMiniState: false,
+  facetFilters: [],
+  facetsDistribution: null
 }
 
 const getters = {

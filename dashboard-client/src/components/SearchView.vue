@@ -47,7 +47,7 @@
               <q-card class="my-card" flat bordered>
                 <q-card-section>
                   <q-scroll-area style="height: 200px; max-width: 300px;">
-                    <q-list v-for="item in authors" :key="item.name" @click='addFacetFilter("authors", item.name)'>
+                    <q-list v-for="item in facetLists.authors" :key="item.name" @click='addFacetFilter("authors", item.name)'>
                       <q-item clickable v-ripple v-if="item.count > 0">
                         <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
                       </q-item>
@@ -58,7 +58,7 @@
               <q-card class="my-card" flat bordered>
                 <q-card-section>
                   <q-scroll-area style="height: 200px; max-width: 300px;">
-                    <q-list v-for="item in classifications" :key="item.name" @click='addFacetFilter("classifications", item.name)'>
+                    <q-list v-for="item in facetLists.classifications" :key="item.name" @click='addFacetFilter("classifications", item.name)'>
                       <q-item clickable v-ripple v-if="item.count > 0">
                         <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
                       </q-item>
@@ -69,7 +69,7 @@
               <q-card class="my-card" flat bordered>
                 <q-card-section>
                   <q-scroll-area style="height: 200px; max-width: 300px;">
-                    <q-list v-for="item in journals" :key="item.name" @click='addFacetFilter("journal", item.name)'>
+                    <q-list v-for="item in facetLists.journal" :key="item.name" @click='addFacetFilter("journal", item.name)'>
                       <q-item clickable v-ripple v-if="item.count > 0">
                         <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
                       </q-item>
@@ -80,7 +80,7 @@
               <q-card class="my-card" flat bordered>
                 <q-card-section>
                   <q-scroll-area style="height: 200px; max-width: 300px;">
-                    <q-list v-for="item in publishers" :key="item.name" @click='addFacetFilter("publisher", item.name)'>
+                    <q-list v-for="item in facetLists.publisher" :key="item.name" @click='addFacetFilter("publisher", item.name)'>
                       <q-item clickable v-ripple v-if="item.count > 0">
                         <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
                       </q-item>
@@ -91,7 +91,7 @@
               <q-card class="my-card" flat bordered>
                 <q-card-section>
                   <q-scroll-area style="height: 200px; max-width: 300px;">
-                    <q-list v-for="item in journal_types" :key="item.name" @click='addFacetFilter("journal_type", item.name)'>
+                    <q-list v-for="item in facetLists.journal_types" :key="item.name" @click='addFacetFilter("journal_type", item.name)'>
                       <q-item clickable v-ripple v-if="item.count > 0">
                         <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
                       </q-item>
@@ -174,8 +174,9 @@
 import MeiliSearch from 'meilisearch'
 import JsonCSV from 'vue-json-csv'
 import { sync } from 'vuex-pathify'
-
+import pMap from 'p-map'
 import _ from 'lodash'
+import { debounce } from 'quasar'
 
 export default {
   name: 'Search',
@@ -183,148 +184,23 @@ export default {
     'download-csv': JsonCSV
   },
   data () {
-    const that = this
     return {
       yearsInitialized: false,
       search: '',
       processingTime: undefined,
       numberOfHits: undefined,
       results: [],
-      options: {
-        chart: {
-          events: {
-            dataPointSelection: function (event, chartContext, config) {
-              that.addFacetFilter('year', config.w.globals.labels[config.dataPointIndex])
-            }
-          }
-        },
-        tooltip: {
-          enabled: false
-        },
-        xaxis: {
-          categories: [2017, 2018, 2019, 2020]
-        }
-      },
-      series: [{
-        data: [2017, 2018, 2019, 2020]
-      }],
-      paOptions: {
-        chart: {
-          type: 'pie',
-          events: {
-            dataPointSelection: function (event, chartContext, config) {
-              that.addFacetFilter('journal_type', config.w.globals.labels[config.dataPointIndex])
-            }
-          }
-        },
-        tooltip: {
-          enabled: false
-        },
-        dataLabels: {
-          formatter: function (val, opt) {
-            return opt.w.globals.labels[opt.seriesIndex]
-          }
-        },
-        legend: {
-          show: false
-        },
-        labels: ['Journal', 'Book Series']
-      },
-      paSeries: [2017, 2018, 2019, 2020],
-      initClassificationBarOptions: {
-        chart: {
-          events: {
-            dataPointSelection: function (event, chartContext, config) {
-              that.addFacetFilter('classifications', config.w.globals.labels[config.dataPointIndex])
-            }
-          },
-          height: 3000
-        },
-        tooltip: {
-          enabled: false
-        },
-        xaxis: {
-          categories: [2017, 2018, 2019, 2020]
-        },
-        plotOptions: {
-          bar: {
-            horizontal: true
-          }
-        },
-        legend: {
-          show: true
-        }
-      },
-      initClassificationOptions: {
-        chart: {
-          type: 'pie',
-          events: {
-            dataPointSelection: function (event, chartContext, config) {
-              that.addFacetFilter('classifications', config.w.globals.labels[config.dataPointIndex])
-            }
-          }
-        },
-        tooltip: {
-          enabled: false
-        },
-        dataLabels: {
-          formatter: function (val, opt) {
-            return opt.w.globals.labels[opt.seriesIndex]
-          }
-        },
-        legend: {
-          show: false
-        },
-        labels: [2017, 2018, 2019, 2020]
-      },
-      initClassificationSeries: [2017, 2018, 2019, 2020],
-      initPublisherOptions: {
-        chart: {
-          type: 'pie',
-          events: {
-            dataPointSelection: function (event, chartContext, config) {
-              that.addFacetFilter('publisher', config.w.globals.labels[config.dataPointIndex])
-            }
-          }
-        },
-        tooltip: {
-          enabled: false
-        },
-        dataLabels: {
-          formatter: function (val, opt) {
-            return opt.w.globals.labels[opt.seriesIndex]
-          }
-        },
-        legend: {
-          show: false
-        },
-        labels: ['Cambridge University Press', 'Ave Maria Press']
-      },
-      initPublisherSeries: ['Cambridge University Press', 'Ave Maria Press'],
-      authors: {},
-      classifications: {},
-      publishers: {},
-      journals: {},
-      journal_types: {},
-      // filters: '',
-      facetFilters: [],
-      distributions: []
+      facetLists: {}
     }
   },
   async created () {
     await this.init()
+    this.sortFacets = debounce(this.sortFacets, 500)
   },
   computed: {
-    yearOptions: sync('filter/yearOptions'),
-    yearSeries: sync('filter/yearSeries'),
-    journalTypeOptions: sync('filter/journalTypeOptions'),
-    journalTypeSeries: sync('filter/journalTypeSeries'),
-    classificationOptions: sync('filter/classificationOptions'),
-    classificationSeries: sync('filter/classificationSeries'),
-    publisherOptions: sync('filter/publisherOptions'),
-    publisherSeries: sync('filter/publisherSeries'),
-    refreshCharts: sync('filter/refreshCharts'),
     dashboardMiniState: sync('filter/dashboardMiniState'),
+    facetFilters: sync('filter/facetFilters'),
+    facetsDistribution: sync('filter/facetsDistribution'),
     queryOptions: function () {
       return this.facetFilters // _.concat
     }
@@ -332,13 +208,10 @@ export default {
   watch: {
     $route: 'init',
     search: async function (newText, oldText) {
-      // this.filters = ''
       this.runSearch()
-      // if (newText !== '') {
-      //   this.runSearch(newText)
-      // } else {
-      //   this.runSearch('*')
-      // }
+    },
+    facetFilters: async function () {
+      this.runSearch()
     }
   },
   methods: {
@@ -347,19 +220,15 @@ export default {
         host: 'http://127.0.0.1:7700'
       })
       this.indexPublications = await searchClient.getIndex('publications')
-      await this.runSearch()
+      this.runSearch()
     },
     async runSearch () {
       const searchfor = this.search ? this.search : '*'
-
       const options = {
         facetsDistribution: ['year', 'authors', 'classifications', 'journal', 'journal_type', 'publisher'],
         attributesToHighlight: ['title', 'abstract'],
         limit: 1000
       }
-      // if (filter) {
-      //   options.filters = filter
-      // }
       if (!_.isEmpty(this.facetFilters)) {
         options.facetFilters = this.facetFilters
       }
@@ -367,64 +236,21 @@ export default {
       this.results = results.hits
       this.processingTime = results.processingTimeMs
       this.numberOfHits = results.nbHits
+      this.facetsDistribution = Object.freeze(results.facetsDistribution)
 
-      this.classifications = Object.freeze(_.orderBy(
-        _.map(results.facetsDistribution.classifications, (value, key) => {
-          return { name: _.startCase(key), count: value }
-        }), 'count', 'desc'
-      ))
-      this.authors = Object.freeze(_.orderBy(
-        _.map(results.facetsDistribution.authors, (value, key) => {
-          return { name: key, count: value }
-        }), 'count', 'desc'
-      ))
-      this.journals = Object.freeze(_.orderBy(
-        _.map(results.facetsDistribution.journal, (value, key) => {
-          return { name: key, count: value }
-        }), 'count', 'desc'
-      ))
-      this.journal_types = Object.freeze(_.orderBy(
-        _.map(results.facetsDistribution.journal_type, (value, key) => {
-          return { name: key, count: value }
-        }), 'count', 'desc'
-      ))
-      this.publishers = Object.freeze(_.orderBy(
-        _.map(results.facetsDistribution.publisher, (value, key) => {
-          return { name: key, count: value }
-        }), 'count', 'desc'
-      ))
-      this.classificationOptions = this.initClassificationOptions
-      this.yearOptions = this.options
-      this.journalTypeOptions = this.paOptions
-      this.journalTypeSeries = this.paSeries
-      // this.yearSeries = this.series
-      // if (!this.yearsInitialized) {
-      this.yearSeries = [{
-        name: 'series-1',
-        data: _.values(results.facetsDistribution.year)
-      }]
-      //  this.yearsInitialized = true
-      // }
-      this.journalTypeSeries = _.values(results.facetsDistribution.journal_type)
-      this.journalTypeOptions.labels = _.map(_.keys(results.facetsDistribution.journal_type), (label) => {
-        return _.startCase(label)
-      })
-      this.classificationSeries = _.values(results.facetsDistribution.classifications)
-      this.classificationOptions.labels = _.map(_.keys(results.facetsDistribution.classifications), (label) => {
-        return _.startCase(label)
-      })
-      // this.classificationSeries = [{
-      //   name: 'series-3',
-      //   data: _.values(results.facetsDistribution.classifications)
-      // }]
-      // this.classificationOptions.xaxis.categories = _.map(_.keys(results.facetsDistribution.classifications), (label) => {
-      //   return _.startCase(label)
-      // })
-      this.publisherOptions = this.initPublisherOptions
-      console.log(`Publisher facets: ${JSON.stringify(results.facetsDistribution.publisher, null, 2)}`)
-      this.publisherSeries = _.values(results.facetsDistribution.publisher)
-      this.publisherOptions.labels = _.map(_.keys(results.facetsDistribution.publisher), (label) => {
-        return _.startCase(label)
+      this.sortFacets(['classifications', 'authors', 'journal', 'journal_type', 'publisher'], this.facetsDistribution)
+    },
+    async sortFacets (fields, data) {
+      pMap(fields, async (field) => {
+        this.$set(this.facetLists, field, Object.freeze(
+          _.orderBy(
+            _.map(data[field], (value, key) => {
+              return { name: key, count: value }
+            }),
+            'count',
+            'desc'
+          )
+        ))
       })
     },
     getPublicationsCSVResult (results) {
@@ -466,17 +292,12 @@ export default {
       this.removeSelectedFacet(key)
       this.facetFilters.push(`${key}:${value}`)
       await this.runSearch()
-      this.refreshCharts += 1
     },
     async addFacetFilter (key, value) {
       this.facetFilters.push(`${key}:${value}`)
-      await this.runSearch()
-      this.refreshCharts += 1
     },
     async removeFilter (key) {
       this.$delete(this.facetFilters, _.indexOf(this.facetFilters, key))
-      await this.runSearch()
-      this.refreshCharts += 1
     }
   }
 }

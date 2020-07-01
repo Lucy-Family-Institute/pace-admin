@@ -10,22 +10,22 @@
         <div class="q-pa-md row items-start q-gutter-md">
           <q-card class="my-card" flat bordered>
             <q-card-section>
-              <apexchart :key="refreshCharts" :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="bar" :options="yearOptions" :series="yearSeries"></apexchart>
+              <apexchart :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="bar" :options="yearBarOptions" :series="yearBarSeries"></apexchart>
             </q-card-section>
           </q-card>
           <q-card class="my-card" flat bordered>
             <q-card-section>
-              <apexchart :key="refreshCharts" :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="pie" :options="classificationOptions" :series="classificationSeries"></apexchart>
+              <apexchart :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="pie" :options="classificationPieOptions" :series="classificationPieSeries"></apexchart>
             </q-card-section>
           </q-card>
           <q-card class="my-card" flat bordered>
             <q-card-section>
-              <apexchart :key="refreshCharts" :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="pie" :options="journalTypeOptions" :series="journalTypeSeries"></apexchart>
+              <apexchart :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="pie" :options="journalTypePieOptions" :series="journalTypePieSeries"></apexchart>
             </q-card-section>
           </q-card>
           <q-card class="my-card" flat bordered>
             <q-card-section>
-              <apexchart :key="refreshCharts" :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="pie" :options="publisherOptions" :series="publisherSeries"></apexchart>
+              <apexchart :width="`${(dashboardMiniState) ? 250: $q.screen.width * .3}`" type="pie" :options="publisherPieOptions" :series="publisherPieSeries"></apexchart>
             </q-card-section>
           </q-card>
         </div>
@@ -52,6 +52,8 @@
 <script>
 import { sync } from 'vuex-pathify'
 import SearchView from '../components/SearchView.vue'
+import _ from 'lodash'
+import { debounce } from 'quasar'
 
 export default {
   name: 'PageIndex',
@@ -61,34 +63,109 @@ export default {
   data () {
     return {
       firstModel: 1000,
-      search: '',
-      processingTime: undefined,
-      numberOfHits: undefined,
-      results: []
+      yearBarOptions: {
+        chart: {
+          events: {
+            dataPointSelection: function (event, chartContext, config) {
+              this.addFacetFilter('year', config.w.globals.labels[config.dataPointIndex])
+            }.bind(this)
+          }
+        },
+        tooltip: {
+          enabled: false
+        },
+        xaxis: {
+          categories: [2017, 2018, 2019, 2020]
+        }
+      },
+      yearBarSeries: [{
+        data: [2017, 2018, 2019, 2020]
+      }],
+      classificationPieOptions: {
+        chart: {
+          type: 'pie',
+          events: {
+            dataPointSelection: function (event, chartContext, config) {
+              this.addFacetFilter('classifications', config.w.globals.labels[config.dataPointIndex])
+            }.bind(this)
+          }
+        },
+        tooltip: {
+          enabled: false
+        },
+        dataLabels: {
+          formatter: function (val, opt) {
+            return opt.w.globals.labels[opt.seriesIndex]
+          }
+        },
+        legend: {
+          show: false
+        },
+        labels: []
+      },
+      classificationPieSeries: [],
+      journalTypePieOptions: {
+        chart: {
+          type: 'pie',
+          events: {
+            dataPointSelection: function (event, chartContext, config) {
+              this.addFacetFilter('journal_type', config.w.globals.labels[config.dataPointIndex])
+            }.bind(this)
+          }
+        },
+        tooltip: {
+          enabled: false
+        },
+        dataLabels: {
+          formatter: function (val, opt) {
+            return opt.w.globals.labels[opt.seriesIndex]
+          }
+        },
+        legend: {
+          show: false
+        },
+        labels: ['Journal', 'Book Series']
+      },
+      journalTypePieSeries: [2017, 2018, 2019, 2020],
+      publisherPieOptions: {
+        chart: {
+          type: 'pie',
+          events: {
+            dataPointSelection: function (event, chartContext, config) {
+              this.addFacetFilter('publisher', config.w.globals.labels[config.dataPointIndex])
+            }.bind(this)
+          }
+        },
+        tooltip: {
+          enabled: false
+        },
+        dataLabels: {
+          formatter: function (val, opt) {
+            return opt.w.globals.labels[opt.seriesIndex]
+          }
+        },
+        legend: {
+          show: false
+        },
+        labels: ['Cambridge University Press', 'Ave Maria Press']
+      },
+      publisherPieSeries: ['Cambridge University Press', 'Ave Maria Press']
     }
   },
   async created () {
     await this.init()
+    this.updateGraphs = debounce(this.updateGraphs, 500)
   },
   computed: {
-    hint: function () {
-      return this.results ? `${this.numberOfHits} hits in ${this.processingTime} ms` : ''
-    },
-    yearOptions: sync('filter/yearOptions'),
-    yearSeries: sync('filter/yearSeries'),
-    journalTypeOptions: sync('filter/journalTypeOptions'),
-    journalTypeSeries: sync('filter/journalTypeSeries'),
-    classificationOptions: sync('filter/classificationOptions'),
-    classificationSeries: sync('filter/classificationSeries'),
-    refreshCharts: sync('filter/refreshCharts'),
-    journalOptions: sync('filter/journalOptions'),
-    journalSeries: sync('filter/journalSeries'),
-    publisherOptions: sync('filter/publisherOptions'),
-    publisherSeries: sync('filter/publisherSeries'),
-    dashboardMiniState: sync('filter/dashboardMiniState')
+    dashboardMiniState: sync('filter/dashboardMiniState'),
+    facetFilters: sync('filter/facetFilters'),
+    facetsDistribution: sync('filter/facetsDistribution')
   },
   watch: {
-    $route: 'init'
+    $route: 'init',
+    facetsDistribution: async function () {
+      this.updateGraphs()
+    }
   },
   methods: {
     toggleMiniState (e) {
@@ -106,6 +183,26 @@ export default {
     },
     async init () {
       this.firstModel = this.getFirstModelWidth(this.dashboardMiniState)
+    },
+    async addFacetFilter (key, value) {
+      this.facetFilters.push(`${key}:${value}`)
+    },
+    async updateGraphs () {
+      this.yearBarSeries = [{
+        data: _.values(this.facetsDistribution.year)
+      }]
+      this.classificationPieSeries = _.values(this.facetsDistribution.classifications)
+      this.classificationPieOptions = {
+        labels: _.map(_.keys(this.facetsDistribution.classifications), _.startCase)
+      }
+      this.journalTypePieSeries = _.values(this.facetsDistribution.journal_type)
+      this.journalTypePieOptions = {
+        labels: _.map(_.keys(this.facetsDistribution.journal_type), _.startCase)
+      }
+      this.publisherPieSeries = _.values(this.facetsDistribution.publisher)
+      this.publisherPieOptions = {
+        labels: _.map(_.keys(this.facetsDistribution.publisher), _.startCase)
+      }
     }
   }
 }
