@@ -225,7 +225,7 @@ export default {
     async runSearch () {
       const searchfor = this.search ? this.search : '*'
       const options = {
-        facetsDistribution: ['year', 'authors', 'classifications', 'journal', 'journal_type', 'publisher'],
+        facetsDistribution: ['year', 'authors', 'classifications', 'journal', 'journal_type', 'publisher', 'classificationsTopLevel'],
         attributesToHighlight: ['title', 'abstract'],
         limit: 1000
       }
