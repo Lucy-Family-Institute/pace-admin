@@ -303,6 +303,49 @@ export default {
       this.$delete(this.facetFilters, _.indexOf(this.facetFilters, key))
     },
     async updateGraphs () {
+      this.yearBarOptions = {
+        chart: {
+          events: {
+            dataPointSelection: function (event, chartContext, config) {
+              this.addFacetFilter('year', config.w.globals.labels[config.dataPointIndex])
+            }.bind(this),
+            click: function ({ clientX, clientY }, chartContext, { config, globals }) {
+              const xCoords = globals.seriesXvalues[0]
+              const categories = config.xaxis.categories
+              // Find the x-axis + translation closest to the click
+              const categoryIndex = _.indexOf(xCoords, _.reduce(xCoords, function (prev, curr) {
+                return (Math.abs(curr + globals.translateX - clientX) < Math.abs(prev + globals.translateX - clientX) ? curr : prev)
+              }))
+              this.addFacetFilter('year', categories[categoryIndex])
+            }.bind(this)
+          }
+        },
+        tooltip: {
+          enabled: false
+        },
+        xaxis: {
+          categories: _.keys(this.facetsDistribution.year),
+          labels: {
+            style: {
+              cssClass: 'clickable'
+            }
+          }
+        },
+        title: {
+          text: 'Year',
+          align: 'left',
+          margin: 10,
+          offsetX: 0,
+          offsetY: 0,
+          floating: false,
+          style: {
+            fontSize: '18px',
+            fontWeight: 'bold',
+            fontFamily: undefined,
+            color: '#263238'
+          }
+        }
+      }
       this.yearBarSeries = [{
         data: _.values(this.facetsDistribution.year)
       }]
