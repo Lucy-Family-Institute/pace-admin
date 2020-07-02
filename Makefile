@@ -22,7 +22,7 @@ ifeq ($(SYSTEM),Linux)
 	DOCKER_HOST_IP=$(shell ip -4 addr show docker0 | grep -Po 'inet \K[\d.]+')
 endif
 
-.PHONY: install client
+.PHONY: install client dashboard-client server
 
 info:
 	@echo $(UNAME), $(WSL), $(SYSTEM), $(DOCKER_HOST_IP)
@@ -108,6 +108,10 @@ client:
 	cd client && quasar dev && cd ..
 server:
 	cd server && ts-node src/index.ts && cd ..
+
+dashboard-client:
+	cd dashboard-client && quasar dev && cd ..
+
 docker:
 	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose up 
 
