@@ -181,6 +181,7 @@
                 <q-item clickable v-ripple @click="browseTo(result.doi)">
                   <q-item-section>
                     <q-item-label v-html="result._formatted.title" />
+                    <q-item-label caption v-html="makeAuthorList(result._formatted.authors)" v-if="result.authors" />
                     <q-item-label caption v-html="result._formatted.abstract" v-if="result.abstract" />
                   </q-item-section>
                 </q-item>
@@ -241,16 +242,20 @@ export default {
   methods: {
     async init () {
       const searchClient = new MeiliSearch({
-        host: 'http://127.0.0.1:7700'
+        host: process.env.MEILI_PUBLIC_URL,
+        apiKey: process.env.MEILI_PUBLIC_KEY
       })
       this.indexPublications = await searchClient.getIndex('publications')
       this.runSearch()
+    },
+    makeAuthorList (authors) {
+      return _.join(authors, '; ')
     },
     async runSearch () {
       const searchfor = this.search ? this.search : '*'
       const options = {
         facetsDistribution: ['year', 'authors', 'classifications', 'journal', 'journal_type', 'publisher', 'classificationsTopLevel'],
-        attributesToHighlight: ['title', 'abstract'],
+        attributesToHighlight: ['title', 'abstract', 'authors'],
         limit: 1000
       }
       if (!_.isEmpty(this.facetFilters)) {
@@ -273,12 +278,16 @@ export default {
       this.sortFacets(['classifications', 'authors', 'journal', 'journal_type', 'publisher'], this.facetsDistribution)
       // }
     },
+    makeStartCase (word) {
+      // doing this instead of lodash startcase as that removes characters
+      return word.replace(/\w+/g, _.capitalize)
+    },
     async sortFacets (fields, data) {
       pMap(fields, async (field) => {
         this.$set(this.facetLists, field, Object.freeze(
           _.orderBy(
             _.map(data[field], (value, key) => {
-              return { name: key, count: value }
+              return { name: this.makeStartCase(key), count: value }
             }),
             'count',
             'desc'
@@ -332,6 +341,7 @@ export default {
         this.removeFacetFilter(_.find(this.facetFilters, (val) => _.startsWith(val, key)))
       }
       this.facetFilters.push(`${key}:${value}`)
+      this.dashboardMiniState = true
     },
     async setFilter () {
       // this.filters = `ages > ${this.ages.min} AND ages < ${this.ages.max}`

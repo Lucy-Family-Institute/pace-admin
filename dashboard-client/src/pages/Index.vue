@@ -88,7 +88,7 @@ export default {
           }
         },
         tooltip: {
-          enabled: true
+          enabled: false
         },
         xaxis: {
           categories: [2017, 2018, 2019, 2020],
@@ -136,7 +136,7 @@ export default {
         },
         dataLabels: {
           formatter: function (val, opt) {
-            return opt.w.globals.labels[opt.seriesIndex]
+            return _.truncate(opt.w.globals.labels[opt.seriesIndex], { length: 15 })
           }
         },
         legend: {
@@ -179,7 +179,7 @@ export default {
         },
         dataLabels: {
           formatter: function (val, opt) {
-            return opt.w.globals.labels[opt.seriesIndex]
+            return _.truncate(opt.w.globals.labels[opt.seriesIndex], { length: 15 })
           }
         },
         legend: {
@@ -222,7 +222,7 @@ export default {
         },
         dataLabels: {
           formatter: function (val, opt) {
-            return opt.w.globals.labels[opt.seriesIndex]
+            return _.truncate(opt.w.globals.labels[opt.seriesIndex], { length: 15 })
           }
         },
         legend: {
@@ -335,7 +335,7 @@ export default {
         },
         dataLabels: {
           formatter: function (val, opt) {
-            return opt.w.globals.labels[opt.seriesIndex]
+            return _.truncate(opt.w.globals.labels[opt.seriesIndex], { length: 15 })
           }
         },
         tooltip: {
@@ -378,7 +378,7 @@ export default {
         },
         dataLabels: {
           formatter: function (val, opt) {
-            return opt.w.globals.labels[opt.seriesIndex]
+            return _.truncate(opt.w.globals.labels[opt.seriesIndex], { length: 15 })
           }
         },
         tooltip: {
@@ -428,7 +428,7 @@ export default {
         },
         dataLabels: {
           formatter: function (val, opt) {
-            return opt.w.globals.labels[opt.seriesIndex]
+            return _.truncate(opt.w.globals.labels[opt.seriesIndex], { length: 15 })
           }
         },
         tooltip: {

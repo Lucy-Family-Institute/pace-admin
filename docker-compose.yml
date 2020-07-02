@@ -57,6 +57,8 @@ services:
   
   search:
     image: getmeili/meilisearch:v0.11.0
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_KEY}
     ports:
       - 7700:7700
     restart: always
