@@ -81,7 +81,7 @@ export default {
           }
         },
         tooltip: {
-          enabled: false
+          enabled: true
         },
         xaxis: {
           categories: [2017, 2018, 2019, 2020],
@@ -89,6 +89,20 @@ export default {
             style: {
               cssClass: 'clickable'
             }
+          }
+        },
+        title: {
+          text: 'Year',
+          align: 'left',
+          margin: 10,
+          offsetX: 0,
+          offsetY: 0,
+          floating: false,
+          style: {
+            fontSize: '18px',
+            fontWeight: 'bold',
+            fontFamily: undefined,
+            color: '#263238'
           }
         }
       },
@@ -102,10 +116,16 @@ export default {
             dataPointSelection: function (event, chartContext, config) {
               this.addFacetFilter('classificationsTopLevel', config.w.globals.labels[config.dataPointIndex])
             }.bind(this)
+          },
+          toolbar: {
+            show: true,
+            tools: {
+              download: true
+            }
           }
         },
         tooltip: {
-          enabled: false
+          enabled: true
         },
         dataLabels: {
           formatter: function (val, opt) {
@@ -115,7 +135,21 @@ export default {
         legend: {
           show: false
         },
-        labels: []
+        labels: [],
+        title: {
+          text: 'Subjects',
+          align: 'left',
+          margin: 10,
+          offsetX: 0,
+          offsetY: 0,
+          floating: false,
+          style: {
+            fontSize: '18px',
+            fontWeight: 'bold',
+            fontFamily: undefined,
+            color: '#263238'
+          }
+        }
       },
       classificationPieSeries: [],
       journalTypePieOptions: {
@@ -125,10 +159,16 @@ export default {
             dataPointSelection: function (event, chartContext, config) {
               this.addFacetFilter('journal_type', config.w.globals.labels[config.dataPointIndex])
             }.bind(this)
+          },
+          toolbar: {
+            show: true,
+            tools: {
+              download: true
+            }
           }
         },
         tooltip: {
-          enabled: false
+          enabled: true
         },
         dataLabels: {
           formatter: function (val, opt) {
@@ -138,7 +178,21 @@ export default {
         legend: {
           show: false
         },
-        labels: ['Journal', 'Book Series']
+        labels: ['Journal', 'Book Series'],
+        title: {
+          text: 'Publication Type',
+          align: 'left',
+          margin: 10,
+          offsetX: 0,
+          offsetY: 0,
+          floating: false,
+          style: {
+            fontSize: '18px',
+            fontWeight: 'bold',
+            fontFamily: undefined,
+            color: '#263238'
+          }
+        }
       },
       journalTypePieSeries: [2017, 2018, 2019, 2020],
       publisherPieOptions: {
@@ -148,6 +202,12 @@ export default {
             dataPointSelection: function (event, chartContext, config) {
               this.addFacetFilter('publisher', config.w.globals.labels[config.dataPointIndex])
             }.bind(this)
+          },
+          toolbar: {
+            show: true,
+            tools: {
+              download: true
+            }
           }
         },
         tooltip: {
@@ -163,7 +223,21 @@ export default {
         },
         labels: ['Cambridge University Press', 'Ave Maria Press']
       },
-      publisherPieSeries: ['Cambridge University Press', 'Ave Maria Press']
+      publisherPieSeries: ['Cambridge University Press', 'Ave Maria Press'],
+      title: {
+        text: 'Publisher',
+        align: 'left',
+        margin: 10,
+        offsetX: 0,
+        offsetY: 0,
+        floating: false,
+        style: {
+          fontSize: '18px',
+          fontWeight: 'bold',
+          fontFamily: undefined,
+          color: '#263238'
+        }
+      }
     }
   },
   async created () {
@@ -180,14 +254,25 @@ export default {
     $route: 'init',
     facetsDistribution: async function () {
       this.updateGraphs()
+    },
+    dashboardMiniState: async function () {
+      console.log(`Watching dashboardministate: ${this.dashboardMiniState}`)
+      this.updateModelWidth()
     }
   },
   methods: {
+    makeStartCase (word) {
+      // doing this instead of lodash startcase as that removes characters
+      return word.replace(/\w+/g, _.capitalize)
+    },
+    updateModelWidth () {
+      this.firstModel = this.getFirstModelWidth(this.dashboardMiniState)
+    },
     toggleMiniState (e) {
       // if in "mini" state and user
       // click on drawer, we switch it to "normal" mode
       this.dashboardMiniState = !this.dashboardMiniState
-      this.firstModel = this.getFirstModelWidth(this.dashboardMiniState)
+      this.updateModelWidth()
     },
     getFirstModelWidth (dashboardMiniState) {
       if (this.dashboardMiniState) {
@@ -205,6 +290,7 @@ export default {
         this.removeFacetFilter(_.find(this.facetFilters, (val) => _.startsWith(val, key)))
       }
       this.facetFilters.push(`${key}:${value}`)
+      this.dashboardMiniState = true
     },
     async removeFacetFilter (key) {
       this.$delete(this.facetFilters, _.indexOf(this.facetFilters, key))
@@ -228,9 +314,15 @@ export default {
             dataPointSelection: function (event, chartContext, config) {
               this.addFacetFilter('classificationsTopLevel', config.w.globals.labels[config.dataPointIndex])
             }.bind(this)
+          },
+          toolbar: {
+            show: true,
+            tools: {
+              download: true
+            }
           }
         },
-        labels: _.map(_.map(classificationData, 'name'), _.startCase),
+        labels: _.map(_.map(classificationData, 'name'), this.makeStartCase),
         legend: {
           show: false
         },
@@ -240,7 +332,21 @@ export default {
           }
         },
         tooltip: {
-          enabled: false
+          enabled: true
+        },
+        title: {
+          text: 'Subjects',
+          align: 'left',
+          margin: 10,
+          offsetX: 0,
+          offsetY: 0,
+          floating: false,
+          style: {
+            fontSize: '18px',
+            fontWeight: 'bold',
+            fontFamily: undefined,
+            color: '#263238'
+          }
         }
       }
       this.journalTypePieSeries = _.values(this.facetsDistribution.journal_type)
@@ -251,9 +357,15 @@ export default {
             dataPointSelection: function (event, chartContext, config) {
               this.addFacetFilter('journal_type', config.w.globals.labels[config.dataPointIndex])
             }.bind(this)
+          },
+          toolbar: {
+            show: true,
+            tools: {
+              download: true
+            }
           }
         },
-        labels: _.map(_.keys(this.facetsDistribution.journal_type), _.startCase),
+        labels: _.map(_.keys(this.facetsDistribution.journal_type), this.makeStartCase),
         legend: {
           show: false
         },
@@ -263,7 +375,21 @@ export default {
           }
         },
         tooltip: {
-          enabled: false
+          enabled: true
+        },
+        title: {
+          text: 'Publication Type',
+          align: 'left',
+          margin: 10,
+          offsetX: 0,
+          offsetY: 0,
+          floating: false,
+          style: {
+            fontSize: '18px',
+            fontWeight: 'bold',
+            fontFamily: undefined,
+            color: '#263238'
+          }
         }
       }
       const publisherData = _.orderBy(
@@ -281,9 +407,15 @@ export default {
             dataPointSelection: function (event, chartContext, config) {
               this.addFacetFilter('publisher', config.w.globals.labels[config.dataPointIndex])
             }.bind(this)
+          },
+          toolbar: {
+            show: true,
+            tools: {
+              download: true
+            }
           }
         },
-        labels: _.map(_.map(publisherData, 'name'), _.startCase),
+        labels: _.map(_.map(publisherData, 'name'), this.makeStartCase),
         legend: {
           show: false
         },
@@ -294,6 +426,20 @@ export default {
         },
         tooltip: {
           enabled: true
+        },
+        title: {
+          text: 'Publisher',
+          align: 'left',
+          margin: 10,
+          offsetX: 0,
+          offsetY: 0,
+          floating: false,
+          style: {
+            fontSize: '18px',
+            fontWeight: 'bold',
+            fontFamily: undefined,
+            color: '#263238'
+          }
         }
       }
     }
