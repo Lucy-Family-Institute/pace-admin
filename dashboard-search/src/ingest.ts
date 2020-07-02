@@ -7,17 +7,29 @@ import gql from 'graphql-tag'
 import MeiliSearch from 'meilisearch'
 import util from 'util'
 
+import dotenv from 'dotenv'
+
+dotenv.config({
+  path: '../.env'
+})
+
+const hasuraSecret = process.env.HASURA_SECRET
+const graphQlEndPoint = process.env.GRAPHQL_END_POINT
+const meiliKey = process.env.MEILI_KEY
+const meiliUrl = process.env.MEILI_PRIVATE_URL
+
 const sleep = util.promisify(setTimeout)
 
 const searchClient = new MeiliSearch({
-  host: 'http://127.0.0.1:7700'
+  host: meiliUrl,
+  apiKey: meiliKey
 })
 
 const gqlClient = new ApolloClient({
   link: createHttpLink({
-    uri: 'http://localhost:8002/v1/graphql',
+    uri: graphQlEndPoint,
     headers: {
-      'x-hasura-admin-secret': 'mysecret'
+      'x-hasura-admin-secret': hasuraSecret
     },
     fetch: fetch as any
   }),
@@ -25,6 +37,7 @@ const gqlClient = new ApolloClient({
 })
 
 async function main() {
+  console.log(await searchClient.getKeys())
   try {
     await searchClient.getIndex('publications').deleteIndex()
   } catch ( err ) {
