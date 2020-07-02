@@ -28,6 +28,11 @@
               <apexchart style="max-width:425px" :width="`${(dashboardMiniState) ? 250: 425}`" type="pie" :options="publisherPieOptions" :series="publisherPieSeries"></apexchart>
             </q-card-section>
           </q-card>
+          <q-card class="my-card" flat bordered>
+            <q-card-section>
+              <NetworkD3 />
+            </q-card-section>
+          </q-card>
         </div>
       </template>
       <template v-slot:separator>
@@ -52,12 +57,14 @@
 <script>
 import { sync } from 'vuex-pathify'
 import SearchView from '../components/SearchView.vue'
+import NetworkD3 from '../components/NetworkD3.vue'
 import _ from 'lodash'
 import { debounce } from 'quasar'
 
 export default {
   name: 'PageIndex',
   components: {
+    NetworkD3,
     SearchView
   },
   data () {

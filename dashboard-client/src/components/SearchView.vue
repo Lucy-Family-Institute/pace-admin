@@ -212,7 +212,6 @@ export default {
       search: '',
       processingTime: undefined,
       numberOfHits: undefined,
-      results: [],
       facetLists: {},
       filters: ''
     }
@@ -225,7 +224,7 @@ export default {
     dashboardMiniState: sync('filter/dashboardMiniState'),
     facetFilters: sync('filter/facetFilters'),
     facetsDistribution: sync('filter/facetsDistribution'),
-    // refreshCharts: sync('filter/refreshCharts'),
+    results: sync('filter/results'),
     queryOptions: function () {
       return this.facetFilters // _.concat
     }
