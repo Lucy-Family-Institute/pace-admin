@@ -1,6 +1,6 @@
 <template>
   <q-page class="flex" style="background-color:white">
-    <div class="">
+    <div class="" :style="(dashboardMiniState) ? 'width:1000px' : ''">
       <div class="row no-wrap">
         <div v-if="dashboardMiniState" class="col-auto">
           <download-csv
@@ -45,8 +45,13 @@
                 </template>
               </q-input>
               <q-card class="my-card" flat bordered>
+                <q-card class="my-card" bordered>
+                  <q-card-section>
+                    <q-item-label align="center"><strong>Author</strong></q-item-label>
+                  </q-card-section>
+                </q-card>
                 <q-card-section>
-                  <q-scroll-area style="height: 200px; max-width: 300px;">
+                  <q-scroll-area :visible="true" style="height: 200px; max-width: 300px;">
                     <q-list v-for="item in facetLists.authors" :key="item.name" @click='addFacetFilter("authors", item.name)'>
                       <q-item clickable v-ripple v-if="item.count > 0">
                         <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
@@ -56,8 +61,13 @@
                 </q-card-section>
               </q-card>
               <q-card class="my-card" flat bordered>
+                <q-card class="my-card" bordered>
+                  <q-card-section>
+                    <q-item-label align="center"><strong>Subject</strong></q-item-label>
+                  </q-card-section>
+                </q-card>
                 <q-card-section>
-                  <q-scroll-area style="height: 200px; max-width: 300px;">
+                  <q-scroll-area :visible="true" style="height: 200px; max-width: 300px;">
                     <q-list v-for="item in facetLists.classifications" :key="item.name" @click='addFacetFilter("classifications", item.name)'>
                       <q-item clickable v-ripple v-if="item.count > 0">
                         <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
@@ -67,8 +77,13 @@
                 </q-card-section>
               </q-card>
               <q-card class="my-card" flat bordered>
+                <q-card class="my-card" bordered>
+                  <q-card-section>
+                    <q-item-label align="center"><strong>Journal</strong></q-item-label>
+                  </q-card-section>
+                </q-card>
                 <q-card-section>
-                  <q-scroll-area style="height: 200px; max-width: 300px;">
+                  <q-scroll-area :visible="true" style="height: 200px; max-width: 300px;">
                     <q-list v-for="item in facetLists.journal" :key="item.name" @click='addFacetFilter("journal", item.name)'>
                       <q-item clickable v-ripple v-if="item.count > 0">
                         <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
@@ -78,8 +93,13 @@
                 </q-card-section>
               </q-card>
               <q-card class="my-card" flat bordered>
+                <q-card class="my-card" bordered>
+                  <q-card-section>
+                    <q-item-label align="center"><strong>Publisher</strong></q-item-label>
+                  </q-card-section>
+                </q-card>
                 <q-card-section>
-                  <q-scroll-area style="height: 200px; max-width: 300px;">
+                  <q-scroll-area :visible="true" style="height: 200px; max-width: 300px;">
                     <q-list v-for="item in facetLists.publisher" :key="item.name" @click='addFacetFilter("publisher", item.name)'>
                       <q-item clickable v-ripple v-if="item.count > 0">
                         <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
@@ -89,8 +109,13 @@
                 </q-card-section>
               </q-card>
               <q-card class="my-card" flat bordered>
+                <q-card class="my-card" bordered>
+                  <q-card-section>
+                    <q-item-label align="center"><strong>Publication Type</strong></q-item-label>
+                  </q-card-section>
+                </q-card>
                 <q-card-section>
-                  <q-scroll-area style="height: 200px; max-width: 300px;">
+                  <q-scroll-area :visible="true" style="height: 200px; max-width: 300px;">
                     <q-list v-for="item in facetLists.journal_type" :key="item.name" @click='addFacetFilter("journal_type", item.name)'>
                       <q-item clickable v-ripple v-if="item.count > 0">
                         <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
