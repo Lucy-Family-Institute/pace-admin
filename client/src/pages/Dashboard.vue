@@ -552,7 +552,7 @@ export default {
       console.log(`Start group by publications ${moment().format('HH:mm:ss:SSS')}`)
       this.publicationsGroupedByReview = _.groupBy(this.publications, function (pub) {
         if (pub.reviews_aggregate.nodes && pub.reviews_aggregate.nodes.length > 0) {
-          return pub.reviews_aggregate.nodes[0].reviewType
+          return pub.reviews_aggregate.nodes[0].review_type
         } else {
           return 'pending'
         }

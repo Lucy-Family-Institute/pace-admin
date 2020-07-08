@@ -55,10 +55,14 @@ async function main() {
   const results = await gqlClient.query({
     query: gql`
       query MyQuery {
-        persons_publications(where: {reviews: {reviewType: {_eq: accepted}, review_organization_value: {_eq: ${meiliCenterSearch}}}}) {
+        persons_publications(where: {reviews: {review_type: {_eq: accepted}, review_organization_value: {_eq: ${meiliCenterSearch}}},
+          org_reviews: {review_type: {_eq: "accepted"}, review_organization_value: {_eq: "ND"}}}) {
           id
+          org_reviews(order_by: {datetime: desc}, limit: 1) {
+            review_type
+          }
           reviews(order_by: {datetime: desc}, limit: 1) {
-            reviewType
+            review_type
           }
           publication {
             id
@@ -120,7 +124,7 @@ async function main() {
 
   const documents = _.chain(results.data.persons_publications)
     .map((doc) => {
-      if (doc.reviews[0].reviewType !== 'accepted')
+      if (doc.reviews[0].review_type !== 'accepted')
         return null
       return {
         id: `p${doc.publication.id}`,

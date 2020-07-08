@@ -4,7 +4,7 @@ query MyQuery ($personId: Int!, $userId: Int!, $reviewType: type_review_enum!, $
       person_id: {_eq: $personId},
       reviews: {
         user_id: {_eq: $userId},
-        reviewType: {_eq: $reviewType}
+        review_type: {_eq: $reviewType}
       },
       publication: {
         year: {_gte: $yearMin, _lte: $yearMax}
@@ -28,7 +28,7 @@ query MyQuery ($personId: Int!, $userId: Int!, $reviewType: type_review_enum!, $
     }
     confidence
     reviews {
-      reviewType
+      review_type
     }
   }
 }

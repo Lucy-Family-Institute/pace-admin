@@ -1,0 +1,20 @@
+- args:
+    permission:
+      allow_upsert: true
+      check: {}
+      columns:
+      - id
+      - user_id
+      - persons_publications_id
+      - datetime
+      - review_type
+      - review_organization_value
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: org_reviews
+      schema: public
+  type: create_insert_permission
