@@ -1,0 +1,17 @@
+- args:
+    permission:
+      allow_aggregations: true
+      columns:
+      - id
+      - persons_publications_id
+      - user_id
+      - review_organization_value
+      - review_type
+      - datetime
+      filter: {}
+      limit: null
+    role: user
+    table:
+      name: org_reviews
+      schema: public
+  type: create_select_permission

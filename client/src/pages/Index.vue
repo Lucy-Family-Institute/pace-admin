@@ -469,6 +469,7 @@ export default {
     reviewQueueKey: 0,
     publicationCitation: undefined,
     showReviewStates: [],
+    // fundersByDoi: {},
     // for progress bar
     progress: 0,
     buffer: 0,
@@ -873,10 +874,11 @@ export default {
       this.showCurrentSelectedPublication()
     },
     async loadPersonPublicationsCombinedMatches () {
+      // this.fundersByDoi = {}
       console.log(`Start group by publications for person id: ${this.person.id} ${moment().format('HH:mm:ss:SSS')}`)
       this.publicationsGroupedByReview = _.groupBy(this.publications, function (pub) {
         if (pub.reviews_aggregate.nodes && pub.reviews_aggregate.nodes.length > 0) {
-          return pub.reviews_aggregate.nodes[0].reviewType
+          return pub.reviews_aggregate.nodes[0].review_type
         } else {
           return 'pending'
         }
@@ -899,6 +901,12 @@ export default {
           _.each(personPubs, (personPub, index) => {
             if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
               currentPersonPub = personPub
+              // if (currentPersonPub.publication.funders && currentPersonPub.publication.funders.length > 0) {
+              //   this.fundersByDoi[doi] = (currentPersonPub.publication.funders) ? currentPersonPub.publication.funders : []
+              //   _.each(this.fundersByDoi[doi], (funder) => {
+              //     console.log(`doi: ${doi} funders: ${JSON.stringify(funder, null, 2)}`)
+              //   })
+              // }
             }
           })
           return currentPersonPub
@@ -906,6 +914,7 @@ export default {
       })
       // initialize the list in view
       this.setCurrentPersonPublicationsCombinedMatches()
+      // console.log(`Funders by Doi ${JSON.stringify(_.keys(this.fundersByDoi).length, null, 2)}`)
     },
     async filterPublications () {
       let filterOutCurrentPublication = false

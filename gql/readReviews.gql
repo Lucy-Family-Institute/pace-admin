@@ -1,6 +1,6 @@
 query MyQuery ($userId: Int!, $personId: Int!, $reviewType: String!) {
   reviews(where: 
-    {reviewType: {_eq: $reviewType}, 
+    {review_type: {_eq: $reviewType}, 
     user_id: {_eq: $userId}}) {
     id
     persons_publication (order_by: {confidence: desc}) {

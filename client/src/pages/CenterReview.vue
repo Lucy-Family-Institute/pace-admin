@@ -1105,7 +1105,7 @@ export default {
         let reviewType = 'pending'
         const doi = personPub.publication.doi
         if (personPub.reviews_aggregate.nodes && personPub.reviews_aggregate.nodes.length > 0) {
-          reviewType = personPub.reviews_aggregate.nodes[0].reviewType
+          reviewType = personPub.reviews_aggregate.nodes[0].review_type
         }
         if (!pubsByDoi[reviewType]) {
           pubsByDoi[reviewType] = {}
@@ -1216,7 +1216,7 @@ export default {
       }
       this.personPublicationsCombinedMatchesByOrgReview = _.groupBy(this.personPublicationsCombinedMatchesByReview[this.selectedInstitutionReviewState.toLowerCase()], function (pub) {
         if (pub.org_reviews_aggregate.nodes && pub.org_reviews_aggregate.nodes.length > 0) {
-          return pub.org_reviews_aggregate.nodes[0].reviewType
+          return pub.org_reviews_aggregate.nodes[0].review_type
         } else {
           return 'pending'
         }

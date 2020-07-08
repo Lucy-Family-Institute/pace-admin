@@ -1,0 +1,16 @@
+- args:
+    cascade: false
+    sql: |-
+      CREATE VIEW org_reviews AS SELECT
+          reviews.id,
+          reviews.user_id,
+          reviews.persons_publications_id,
+          reviews.datetime,
+          reviews.review_type,
+          reviews.review_organization_value
+      FROM reviews
+  type: run_sql
+- args:
+    name: org_reviews
+    schema: public
+  type: add_existing_table_or_view

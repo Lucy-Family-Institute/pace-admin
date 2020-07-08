@@ -60,14 +60,14 @@ export default function readPersonPublicationsAllJS (institutionNames, pubYearMi
           confidence
           reviews_aggregate(where: {review_organization_value: {_eq: ND}}, limit: 1, order_by: {datetime: desc}) {
             nodes {
-              reviewType
+              review_type
               id
               datetime
             }
           }
           org_reviews_aggregate: reviews_aggregate(where: {review_organization_value: {_eq: HCRI}}, limit: 1, order_by: {datetime: desc}) {
             nodes {
-              reviewType
+              review_type
               id
               datetime
             }
@@ -84,14 +84,14 @@ export default function readPersonPublicationsAllJS (institutionNames, pubYearMi
     `
 // reviews_aggregate(where: {review_organization_value: {_eq: ND}}, limit: 1, order_by: {datetime: desc}) {
 //   nodes {
-//     reviewType
+//     review_type
 //     id
 //     datetime
 //   }
 // }
 //       org_reviews_aggregate: reviews_aggregate(where: {review_organization_value: {_eq: HCRI}}, limit: 1, order_by: {datetime: desc}) {
 //         nodes {
-//           reviewType
+//           review_type
 //           id
 //           datetime
 //         }

@@ -28,7 +28,7 @@ query MyQuery ($personId: Int!, $yearMin: Int!, $yearMax: Int!) {
     confidence
     reviews_aggregate(where: {review_organization_value: {_eq: ND}}, limit: 1, order_by: {datetime: desc}) {
       nodes {
-        reviewType
+        review_type
         id
         datetime
       }

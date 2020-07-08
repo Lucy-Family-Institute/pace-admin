@@ -504,4 +504,5 @@ export default {
 
 .clickable
    text-decoration: underline
+   cursor: pointer
 </style>

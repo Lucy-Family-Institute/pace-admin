@@ -1,0 +1,13 @@
+- args:
+    name: type_review
+    table:
+      name: org_reviews
+      schema: public
+    using:
+      manual_configuration:
+        column_mapping:
+          review_type: value
+        remote_table:
+          name: type_review
+          schema: public
+  type: create_object_relationship
