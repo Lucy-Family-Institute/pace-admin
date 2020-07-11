@@ -55,8 +55,8 @@ install_js:
 	cd dashboard-search && yarn && cd ..
 	cd dashboard-client && yarn && cd ..
 
-calculate_confidence:
-	cd ingest && ts-node calculateConfidence.ts && cd ..
+update_confidence_reviews:
+	cd ingest && ts-node updateConfidenceReviewState.ts && cd ..
 
 cleardb:
 	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose down -v
@@ -66,16 +66,28 @@ newdb:
 	cd ingest && ts-node loadAuthors.ts && cd ..
 	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
-	cd ingest && ts-node calculateConfidence.ts && cd ..
+	cd ingest && ts-node updateConfidenceReviewState.ts && cd ..
 	cd ingest && ts-node loadAbstracts.ts && cd ..
 	cd ingest && ts-node loadJournals.ts && cd ..
+	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
+
+reharvest:
+	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
+	cd ingest && ts-node updateConfidenceReviewState.ts && cd ..
+	cd ingest && ts-node loadAbstracts.ts && cd ..
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
 
 load_name_variances:
 	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
 
+load_new_confidence_sets:
+	cd ingest && ts-node pdateConfidenceReviewState.ts && cd ..
+
 update_pubmed_data:
 	cd ingest && ts-node fetchPubmedData.js && cd ..
+	cd ingest && ts-node joinAuthorAwards.js && cd ..
+	cd ingest && ts-node fetchPubmedDataByAuthor.js && cd ..
+	cd ingest && ts-node joinAuthorPubmedPubs.js && cd ..
 
 update_scopus_data:
 	cd ingest && ts-node fetchScopusFullTextData.ts && cd ..

@@ -7,7 +7,9 @@ import { command as nameParser } from './units/nameParser'
 import humanparser from 'humanparser'
 import readConfidenceTypes from './gql/readConfidenceTypes'
 import readPersons from '../client/src/gql/readPersons'
+import readLastPersonPubConfidenceSet from './gql/readLastPersonPubConfidenceSet'
 import readPersonPublications from './gql/readPersonPublications'
+import readNewPersonPublications from './gql/readNewPersonPublications'
 import insertConfidenceSets from './gql/insertConfidenceSets'
 import insertConfidenceSetItems from './gql/insertConfidenceSetItems'
 import pMap from 'p-map'
@@ -16,6 +18,9 @@ import Cite from 'citation-js'
 
 const Fuse = require('fuse.js')
 import dotenv from 'dotenv'
+import readAllNewPersonPublications from './gql/readAllNewPersonPublications'
+import insertReview from '../client/src/gql/insertReview'
+import readPersonPublicationsByDoi from './gql/readPersonPublicationsByDoi'
 
 dotenv.config({
   path: '../.env'
@@ -47,9 +52,30 @@ const client = new ApolloClient({
 //   cache: new InMemoryCache()
 // })
 
-async function getPersonPublications (personId) {
-  const queryResult = await client.query(readPersonPublications(personId))
-  return queryResult.data.persons_publications
+// get the confidence set from the last run to know where to start calculating new confidence sets
+async function getLastPersonPubConfidenceSet () {
+  const queryResult = await client.query(readLastPersonPubConfidenceSet())
+  const confidenceSets = queryResult.data.confidencesets
+  if (confidenceSets.length > 0) {
+    return confidenceSets[0]
+  } else {
+    return null
+  }
+}
+
+async function getPersonPublications (personId, mostRecentPersonPubId) {
+  if (mostRecentPersonPubId===undefined) {
+    const queryResult = await client.query(readPersonPublications(personId))
+    return queryResult.data.persons_publications
+  } else {
+    const queryResult = await client.query(readNewPersonPublications(personId, mostRecentPersonPubId))
+    return queryResult.data.persons_publications
+  }
+}
+
+async function getDoiPersonPublications (doi, personId) {
+  const queryResult = await client.query(readPersonPublicationsByDoi(doi, personId))
+  return queryResult.data.persons_publications_metadata
 }
 
 async function getAllSimplifiedPersons () {
@@ -329,7 +355,7 @@ function normalizeString (value) {
     // the u0027 also normalizes the curly apostrophe to the straight one
     const norm2 = norm1.replace(/[\u2019]/g, '\u0027')
     // remove periods and other remaining special characters
-    const norm3 = norm2.replace(/[&\/\\#,+()$~%.'":*?<>{}!]/g,'');
+    const norm3 = _.lowerCase(norm2.replace(/[&\/\\#,+()$~%.'":*?<>{}!]/g,''));
     return norm3
   } else {
     return value
@@ -369,10 +395,13 @@ function removeSpacesObjectProperities (object, properties) {
 function lastNameMatchFuzzy (last, lastKey, nameMap){
   // first normalize the diacritics
   const testNameMap = _.map(nameMap, (name) => {
-     return normalizeObjectProperties(name, [lastKey])
+    let norm = normalizeObjectProperties(name, [lastKey])
+    norm = removeSpacesObjectProperities(norm, [lastKey])
+    return norm
   })
   // normalize last name checking against as well
-  const testLast = normalizeString(last)
+  let testLast = normalizeString(last)
+  testLast = removeSpaces(testLast)
   // console.log(`After diacritic switch ${JSON.stringify(nameMap, null, 2)} converted to: ${JSON.stringify(testNameMap, null, 2)}`)
   const lastFuzzy = new Fuse(testNameMap, {
     caseSensitive: false,
@@ -380,7 +409,7 @@ function lastNameMatchFuzzy (last, lastKey, nameMap){
     includeScore: false,
     keys: [lastKey],
     findAllMatches: true,
-    threshold: 0.067,
+    threshold: 0.100,
   });
 
   const lastNameResults = lastFuzzy.search(testLast)
@@ -403,7 +432,7 @@ function nameMatchFuzzy (searchLast, lastKey, searchFirst, firstKey, nameMap) {
 
   // console.log(`search first: ${searchFirst} test first after norm: ${testFirst}`)
   testFirst = removeSpaces(testFirst)
-  testLast = removeSpaces(testLast)
+  testLast =  removeSpaces(testLast)
 
 
   const lastFuzzy = new Fuse(testNameMap, {
@@ -429,7 +458,7 @@ function nameMatchFuzzy (searchLast, lastKey, searchFirst, firstKey, nameMap) {
     includeScore: false,
     keys: [firstKey],
     findAllMatches: true,
-    threshold: 0.001,
+    threshold: 0.100,
   });
   // console.log(`search first: ${searchFirst} test first is: ${testFirst}`)
   const results = fuzzyHarperFirst.search(testFirst);
@@ -462,7 +491,7 @@ function testConfirmedAuthor (author, publicationAuthorMap, confirmedAuthorMap) 
   if (confirmedAuthorMap && confirmedAuthorMap.length > 0){
     _.each(author['names'], (name) => {
       // console.log(`Checking ${JSON.stringify(name, null, 2)} against confirmed authors ${JSON.stringify(confirmedAuthorMap, null, 2)}`)
-      if (nameMatchFuzzy(name.lastName, 'lastName', name.firstName.toLowerCase(), 'firstName', confirmedAuthorMap)) {
+      if (nameMatchFuzzy(name.lastName, 'lastName', name['firstName'].toLowerCase(), 'firstName', confirmedAuthorMap)) {
         // find pub authors with fuzzy match to confirmed author
         // console.log(`matched last name confirmed author ${name.lastName}`)
         _.each(_.keys(publicationAuthorMap), (pubLastName) => {
@@ -500,22 +529,27 @@ function testAuthorGivenNamePart (author, publicationAuthorMap, initialOnly) {
         _.each(publicationAuthorMap[pubLastName], (pubAuthor) => {
           // split given names into separate parts and check initial against each one
           let matched = false
-          const givenParts = _.split(pubAuthor.given, ' ')
-          //console.log(`Testing given parts: ${JSON.stringify(givenParts, null, 2)}`)
+          const givenParts = _.split(pubAuthor['given'], ' ')
           let firstKey = 'firstName'
           _.each(givenParts, (part) => {
             if (initialOnly){
               part = part[0]
               firstKey = 'firstInitial'
             } 
-            if (nameMatchFuzzy(pubLastName, 'lastName', part.toLowerCase(), firstKey, nameVariations[nameLastName])) {
+            if (part===undefined){
+              console.log(`splitting given parts pubAuthor is: ${JSON.stringify(pubAuthor, null, 2)}`)
+            }
+            // if (pubAuthor['given']==='Hsueh-Chia') {
+            //   console.log(`Testing author ${pubAuthor['given']} given part: ${JSON.stringify(part, null, 2)} to lowercase is: ${part.toLowerCase()} name variations: ${JSON.stringify(nameVariations[nameLastName], null, 2)}`)
+            // }
+            if (part && nameMatchFuzzy(pubLastName, 'lastName', part.toLowerCase(), firstKey, nameVariations[nameLastName])) {
               (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
               matched = true
             }
           })
           // if not matched try matching without breaking it into parts
           if (!matched && givenParts.length > 1) {
-            if (nameMatchFuzzy(pubLastName, 'lastName', pubAuthor.given, firstKey, nameVariations[nameLastName])) {
+            if (nameMatchFuzzy(pubLastName, 'lastName', pubAuthor['given'], firstKey, nameVariations[nameLastName])) {
               (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
             }
           }
@@ -545,8 +579,8 @@ function testAuthorAffiliation (author, publicationAuthorMap) {
       // check for a fuzzy match of name variant last names to lastname in pub author list
       if (lastNameMatchFuzzy(pubLastName, 'lastName', nameVariations[nameLastName])){
         _.each(publicationAuthorMap[pubLastName], async (pubAuthor) => {
-          if(!_.isEmpty(pubAuthor.affiliation)) {
-            if(/notre dame/gi.test(pubAuthor.affiliation[0].name)) {
+          if(!_.isEmpty(pubAuthor['affiliation'])) {
+            if(/notre dame/gi.test(pubAuthor['affiliation'][0].name)) {
               (matchedAuthors[nameLastName] || (matchedAuthors[nameLastName] = [])).push(pubAuthor)
             }
           }
@@ -698,7 +732,7 @@ async function calculateAuthorConfidence (passedConfidenceTests) {
 // testAuthors: are authors for a given center/institute for the given year to test if there is a match
 // confirmedAuthors: is an optional parameter map of doi to a confirmed author if present and if so will make confidence highest
 //
-async function calculateConfidence (testAuthors, confirmedAuthors) {
+async function calculateConfidence (mostRecentPersonPubId, testAuthors, confirmedAuthors) {
   // get the set of tests to run
   const confidenceTypesByRank = await getConfidenceTypesByRank()
   // console.log(`Confidence Types By Rank: ${JSON.stringify(confidenceTypesByRank, null, 2)}`)
@@ -706,9 +740,11 @@ async function calculateConfidence (testAuthors, confirmedAuthors) {
   const passedTests = []
   const failedTests = []
   const warningTests = []
+
   await pMap(testAuthors, async (testAuthor) => {
     console.log(`Confidence Test Author is: ${testAuthor['names'][0]['lastName']}, ${testAuthor['names'][0]['firstName']}`)
-    const personPublications = await getPersonPublications(testAuthor['id'])
+    // if most recent person pub id is defined, it will not recalculate past confidence sets
+    const personPublications = await getPersonPublications(testAuthor['id'], mostRecentPersonPubId)
     await pMap(personPublications, async (personPublication) => {
       const publicationCsl = JSON.parse(personPublication['publication']['csl_string'])
       const passedConfidenceTests = await performAuthorConfidenceTests (testAuthor, publicationCsl, confirmedAuthors[personPublication['publication']['doi']], confidenceTypesByRank)
@@ -731,9 +767,9 @@ async function calculateConfidence (testAuthors, confirmedAuthors) {
       let publicationAuthorMap = await getPublicationAuthorMap(publicationCsl)
       const newTest = {
         author: testAuthor,
-        // confirmedAuthors: confirmedAuthors[personPublication['publication']['doi']],
-        // pubAuthors: publicationAuthorMap[testAuthor['names'][0]['lastName']],
-        confidenceItems: passedConfidenceTestsWithConf,
+        confirmedAuthors: confirmedAuthors[personPublication['publication']['doi']],
+        // pubAuthors: publicationAuthorMap[testAuthor['names'][0]['lastName']] || publicationAuthorMap || 'undefined',
+        // confidenceItems: passedConfidenceTestsWithConf,
         persons_publications_id: personPublication['id'],
         doi: personPublication['publication']['doi'],
         prevConf: personPublication['confidence'],
@@ -767,7 +803,9 @@ async function calculateConfidence (testAuthors, confirmedAuthors) {
     console.log(`${warningTestsByNewConf[conf].length} Warning Tests By Confidence: ${conf}`)
   })
   _.each(_.keys(failedTestsByNewConf), (conf) => {
-    // console.log(`${JSON.stringify(failedTestsByNewConf[conf], null, 2)} Failed Test By Confidence ${conf}`)
+    // if (conf==='0.7 -> 0' || conf === '0.45 -> 0') {
+    //   console.log(`${JSON.stringify(failedTestsByNewConf[conf], null, 2)} Failed Test By Confidence ${conf}`)
+    // }
     console.log(`${failedTestsByNewConf[conf].length} Failed Tests By Confidence: ${conf}`)
   })
   console.log(`Passed tests: ${passedTests.length} Warning tests: ${warningTests.length} Failed Tests: ${failedTests.length}`)
@@ -829,6 +867,33 @@ async function insertConfidenceTestToDB (confidenceTest, confidenceAlgorithmVers
   }
 }
 
+async function synchronizeReviews(doi, personId, newPersonPubId, index) {
+  // check if the publication is already in the DB
+  const personPubsInDB = await getDoiPersonPublications(doi, personId)
+  const reviews = {}
+  // assume reviews are ordered by datetime desc
+  _.each(personPubsInDB, (personPub) => {
+    // console.log(`Person Pub returned for review check is: ${JSON.stringify(personPub, null, 2)}`)
+    _.each(personPub.reviews_aggregate.nodes, (review) => {
+      if (!reviews[review.review_organization_value]) {
+        reviews[review.review_organization_value] = review
+      }
+    })
+  })
+  
+  if (_.keys(reviews).length > 0) {
+    console.log(`Item #${index} New Person Pub Id: ${JSON.stringify(newPersonPubId, null, 2)} inserting reviews: ${_.keys(reviews).length}`)
+    await pMap(_.keys(reviews), async (reviewOrgValue) => {
+      // insert with same org value and most recent status to get in sync with other pubs in DB
+      const review = reviews[reviewOrgValue]
+      // console.log(`Inserting review for New Person Pub Id: ${JSON.stringify(newPersonPubId, null, 2)}`)
+      const mutateResult = await client.mutate(
+        insertReview(review.user_id, newPersonPubId, review.review_type, reviewOrgValue)
+      )
+    }, { concurrency: 1})
+  }
+}
+
 async function main() {
 
   // use related github commit hash for the version when algorithm last completed
@@ -881,9 +946,17 @@ async function main() {
   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===78}))
   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===48}))
   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===61}))
-  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===24}))
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===45}))
   // console.log(`Test authors: ${JSON.stringify(testAuthors2, null, 2)}`)
-  const confidenceTests = await calculateConfidence (testAuthors, (confirmedAuthorsByDoi || {}))
+
+  // get where last confidence test left off
+  const lastConfidenceSet = await getLastPersonPubConfidenceSet()
+  let mostRecentPersonPubId = undefined
+  if (lastConfidenceSet) {
+    mostRecentPersonPubId = lastConfidenceSet.persons_publications_id
+    // mostRecentPersonPubId = 5747
+  }
+  const confidenceTests = await calculateConfidence (mostRecentPersonPubId, testAuthors, (confirmedAuthorsByDoi || {}))
 
   // next need to write checks found to DB and then calculate confidence accordingly
   let errorsInsert = []
@@ -922,6 +995,22 @@ async function main() {
   console.log(`Total Sets Tried: ${totalConfidenceSets} Passed: ${passedInsert.length} Failed: ${errorsInsert.length}`)
   console.log(`Total Set Items Tried: ${totalSetItems} Passed: ${totalSetItemsInserted}`)
   console.log(`Passed tests: ${confidenceTests['passed'].length} Warning tests: ${confidenceTests['warning'].length} Failed Tests: ${confidenceTests['failed'].length}`)
+
+  // add any reviews as needed
+  console.log('Synchronizing reviews with pre-existing publications...')
+  // console.log(`New Person pubs by doi: ${JSON.stringify(newPersonPublicationsByDoi, null, 2)}`)
+  let loopCounter3 = 0
+  console.log(`Most recent person pub id: ${mostRecentPersonPubId}`)
+  const newPubsQueryResult = await client.query(
+    readAllNewPersonPublications(mostRecentPersonPubId)
+  )
+  const newPersonPubs = newPubsQueryResult.data.persons_publications
+  await pMap(newPersonPubs, async (newPersonPub) => {
+    loopCounter3 += 1
+    //have each wait a pseudo-random amount of time between 1-5 seconds
+    await randomWait(1000, loopCounter3)
+    await synchronizeReviews(newPersonPub['publication']['doi'], newPersonPub['person_id'], newPersonPub['id'], loopCounter3)
+  }, {concurrency: 10})
 }
 
 main()
