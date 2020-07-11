@@ -19,6 +19,9 @@ import { command as nameParser } from './units/nameParser'
 import humanparser from 'humanparser'
 
 import dotenv from 'dotenv'
+import readPublicationsByDoi from './gql/readPublicationsByDoi'
+import readPersonPublicationsByDoi from './gql/readPersonPublicationsByDoi'
+// import insertReview from '../client/src/gql/insertReview'
 
 dotenv.config({
   path: '../.env'
@@ -374,11 +377,29 @@ async function matchPeopleToPaperAuthors(personMap, authors, confirmedAuthors){
   return matchedPersonMap
 }
 
+async function isPublicationAlreadyInDB (doi, sourceName) {
+  const queryResult = await client.query(readPublicationsByDoi(doi))
+  let foundPub = false
+  _.each(queryResult.data.publications, (publication) => {
+    if (publication.doi === doi && _.toLower(publication.source_name) === _.toLower(sourceName)) {
+      foundPub = true
+    }
+  })
+  return foundPub
+}
+
+async function getPersonPublications (doi, personId) {
+  const queryResult = await client.query(readPersonPublicationsByDoi(doi, personId))
+  return queryResult.data.persons_publications_metadata
+}
+
 //returns a map of three arrays: 'addedDOIs','failedDOIs', 'errorMessages'
 async function loadPersonPapersFromCSV (personMap, path) {
+  let count = 0
   try {
     const papersByDoi = await getPapersByDoi(path)
     const dois = _.keys(papersByDoi)
+    count = dois.length
     console.log(`Papers by DOI Count: ${JSON.stringify(dois.length,null,2)}`)
    
     const confirmedAuthorColumn = 'nd author (last, first)'
@@ -400,13 +421,17 @@ async function loadPersonPapersFromCSV (personMap, path) {
 
     let doiStatus = {
       'addedDOIs': [],
+      'skippedDOIs': [],
       'failedDOIs': [],
       'errorMessages': []
     }
 
+    // let newPersonPublicationsByDoi = {}
+
+    let processedCount = 0
     await pMap(_.keys(papersByDoi), async (doi) => {
       try {
-
+        processedCount += 1
         loopCounter += 1
         //have each wait a pseudo-random amount of time between 1-5 seconds
         await randomWait(1000, loopCounter)
@@ -447,33 +472,54 @@ async function loadPersonPapersFromCSV (personMap, path) {
             if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
             console.log(`Pubmed Source metadata found`)//is: ${JSON.stringify(sourceMetadata,null,2)}`)
           }
-          console.log(`Inserting Publication DOI: ${doi} from source: ${sourceName}`)
-          const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authors, sourceName, sourceMetadata)
-          console.log('Finished Running Insert and starting next thread')
-          //console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
 
-          //console.log(`Publication Id: ${publicationId} Matched Persons count: ${_.keys(matchedPersons).length}`)
-          // now insert a person publication record for each matched Person
-          let loopCounter2 = 0
-          _.forEach(matchedPersons, async function (person, id){
-            try {
-              loopCounter2 += 1
-            //have each wait a pseudo-random amount of time between 1-5 seconds
-              await randomWait(1000, loopCounter2)
-              const mutateResult = await client.mutate(
-                insertPersonPublication(id, publicationId, person['confidence'])        
-              )
-            //console.log(`added person publication id: ${ mutateResult.data.insert_persons_publications.returning[0].id }`)
-            } catch (error) {
-              const errorMessage = `Error on add person ${JSON.stringify(person,null,2)} to publication id: ${publicationId}`
-              console.log(errorMessage)
-              doiStatus.errorMessages.push(errorMessage)
-            }
-          })
-          //if we make it this far succeeded
-          doiStatus.addedDOIs.push(doi)
-          console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
-          console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
+          const pubFound = await isPublicationAlreadyInDB(doi, sourceName)
+          if (!pubFound) {
+            console.log(`Inserting Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${sourceName}`)
+            const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authors, sourceName, sourceMetadata)
+            console.log('Finished Running Insert and starting next thread')
+            //console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
+
+            //console.log(`Publication Id: ${publicationId} Matched Persons count: ${_.keys(matchedPersons).length}`)
+            // now insert a person publication record for each matched Person
+            let loopCounter2 = 0
+            await pMap(_.keys(matchedPersons), async function (personId){
+              try {
+                const person = matchedPersons[personId]
+                loopCounter2 += 1
+              //have each wait a pseudo-random amount of time between 1-5 seconds
+                await randomWait(1000, loopCounter2)
+                const mutateResult = await client.mutate(
+                  insertPersonPublication(personId, publicationId, person['confidence'])        
+                )
+              
+                const newPersonPubId = await mutateResult.data.insert_persons_publications.returning[0]['id']
+                // if (!newPersonPublicationsByDoi[doi]) {
+                //   newPersonPublicationsByDoi[doi] = []
+                // }
+                // const obj = {
+                //   id: newPersonPubId,
+                //   person_id: personId
+                // }
+                // // console.log(`Capturing added person pub: ${JSON.stringify(obj, null, 2)}`)
+                // newPersonPublicationsByDoi[doi].push(obj)
+              
+              //console.log(`added person publication id: ${ mutateResult.data.insert_persons_publications.returning[0].id }`)
+              } catch (error) {
+                const errorMessage = `Error on add person id ${JSON.stringify(personId,null,2)} to publication id: ${publicationId}`
+                console.log(errorMessage)
+                doiStatus.errorMessages.push(errorMessage)
+              }
+            }, { concurrency: 1 })
+            //if we make it this far succeeded
+            doiStatus.addedDOIs.push(doi)
+            console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
+            console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
+            console.log(`Skipped DOIs: ${JSON.stringify(doiStatus.skippedDOIs,null,2)}`)
+          } else {
+            doiStatus.skippedDOIs.push(doi)
+            console.log(`Skipping doi already in DB #${processedCount} of total ${count}: ${doi} for source: ${sourceName}`)
+          }
         } else {
           if (_.keys(matchedPersons).length <= 0){
             const errorMessage = `No author match found for ${doi} and not added to DB` 
@@ -498,18 +544,57 @@ async function loadPersonPapersFromCSV (personMap, path) {
       }
     }, { concurrency: 5 })
 
+    // // add any reviews as needed
+    // console.log('Synchronizing reviews with pre-existing publications...')
+    // // console.log(`New Person pubs by doi: ${JSON.stringify(newPersonPublicationsByDoi, null, 2)}`)
+    // let loopCounter3 = 0
+    // await pMap(_.keys(newPersonPublicationsByDoi), async (doi) => {
+    //   loopCounter3 += 1
+    //   //have each wait a pseudo-random amount of time between 1-5 seconds
+    //   await randomWait(1000, loopCounter3)
+    //   await pMap(newPersonPublicationsByDoi[doi], async (personPub) => {
+    //     await synchronizeReviews(doi, personPub['person_id'], personPub['id'])
+    //   }, {concurrency: 1})
+    // }, {concurrency: 5})
+
     return doiStatus
   } catch (error){
     console.log(`Error on get path ${path}: ${error}`)
   }
 }
 
+// async function synchronizeReviews(doi, personId, newPersonPubId) {
+//   // check if the publication is already in the DB
+//   const personPubsInDB = await getPersonPublications(doi, personId)
+//   const reviews = {}
+//   // assume reviews are ordered by datetime desc
+//   _.each(personPubsInDB, (personPub) => {
+//     // console.log(`Person Pub returned for review check is: ${JSON.stringify(personPub, null, 2)}`)
+//     _.each(personPub.reviews_aggregate.nodes, (review) => {
+//       if (!reviews[review.review_organization_value]) {
+//         reviews[review.review_organization_value] = review
+//       }
+//     })
+//   })
+  
+//   console.log(`New Person Pub Id is: ${JSON.stringify(newPersonPubId, null, 2)} inserting reviews: ${_.keys(reviews).length}`)
+//   await pMap(_.keys(reviews), async (reviewOrgValue) => {
+//     // insert with same org value and most recent status to get in sync with other pubs in DB
+//     const review = reviews[reviewOrgValue]
+//     // console.log(`Inserting review for New Person Pub Id: ${JSON.stringify(newPersonPubId, null, 2)}`)
+//     const mutateResult = await client.mutate(
+//       insertReview(review.user_id, newPersonPubId, review.review_type, reviewOrgValue)
+//     )
+//   }, { concurrency: 1})
+// }
+
 //returns status map of what was done
 async function main() {
 
   const pathsByYear = {
-    // 2019: ['../data/scopus.2019.20200320103319.csv']
-    2019: ['../data/HCRI-pubs-2019_-_Faculty_Selected_2.csv', '../data/scopus.2019.20200320103319.csv'],
+    // 2019: ['../data/pubmedPubsByAuthor.20200709113001.csv']
+    // 2019: ['../data/scopus.2019.20200320103319.csv', '../data/pubmedPubsByAuthor.20200709113001.csv']
+    2019: ['../data/HCRI-pubs-2019_-_Faculty_Selected_2.csv', '../data/scopus.2019.20200320103319.csv', '../data/pubmedPubsByAuthor.20200709113001.csv'],
     2018: ['../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv'],
     2017: ['../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv', '../data/authorsByAwards.20200409094731.csv']
   }

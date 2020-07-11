@@ -6,10 +6,11 @@ import fetch from 'node-fetch'
 import _ from 'lodash'
 import { command as loadCsv } from './units/loadCsv'
 import readPersons from '../client/src/gql/readPersons'
-import readPublications from './gql/readPublications'
+import readPublicationsWoutAbstract from './gql/readPublicationsWoutAbstract'
 import updatePubAbstract from './gql/updatePubAbstract'
 import { __EnumValue } from 'graphql'
 import dotenv from 'dotenv'
+import pMap from 'p-map'
 
 dotenv.config({
   path: '../.env'
@@ -72,7 +73,7 @@ async function getScopusPaperAbstractData (pii) {
 }
 
 async function getPublications () {
-  const queryResult = await client.query(readPublications())
+  const queryResult = await client.query(readPublicationsWoutAbstract())
   return queryResult.data.publications
 }
 
@@ -92,6 +93,18 @@ async function getScopusDataFromCsv (csvPath) {
   } catch (error) {
     console.log (`Error on load csv: ${csvPath}`)
   }
+}
+
+async function wait(ms){
+  return new Promise((resolve, reject)=> {
+    setTimeout(() => resolve(true), ms );
+  });
+}
+
+async function randomWait(seedTime, index){
+  const waitTime = 1000 * (index % 5)
+  //console.log(`Thread Waiting for ${waitTime} ms`)
+  await wait(waitTime)
 }
 
 async function main (): Promise<void> {
@@ -119,28 +132,34 @@ async function main (): Promise<void> {
   })
 
   // write abstracts from PubMed
-  _.each(_.keys(pubMedAbstracts), (doi) => {
+  let counter = 0
+  await pMap(_.keys(pubMedAbstracts), async (doi) => {
+    counter += 1
+    randomWait(1000, counter)
     if (!pubMedAbstracts[doi]){
       console.log(`Found Doi with null abstract: ${doi}`)
     } else {
-      console.log('Found doi with existing abstract')
-      console.log(`Writing abstract for doi: ${doi} abstract: ${pubMedAbstracts[doi]}`)
+      // console.log('Found doi with existing abstract')
+      console.log(`Writing abstract for doi: ${doi}`)
       const resultUpdatePubAbstracts = client.mutate(updatePubAbstract(doi, pubMedAbstracts[doi]))
-      console.log(`Returned result pubmed: ${resultUpdatePubAbstracts}`)
+      // console.log(`Returned result pubmed: ${resultUpdatePubAbstracts}`)
     }
-  })
+  }, { concurrency: 5})
 
+  counter = 0
   // write scopus abstracts
-  _.each(_.keys(scopusAbstracts), (doi) => {
+  await pMap(_.keys(scopusAbstracts), async (doi) => {
+    counter += 1
+    randomWait(1000, counter)
     if (!scopusAbstracts[doi]){
       console.log(`Found Doi with null abstract: ${doi}`)
     } else {
-      console.log('Found doi with existing abstract')
-      console.log(`Writing abstract for doi: ${doi} abstract: ${pubMedAbstracts[doi]}`)
-      const resultUpdatePubAbstracts = client.mutate(updatePubAbstract(doi, scopusAbstracts[doi]))
-      console.log(`Returned result scopus: ${resultUpdatePubAbstracts}`)
+      // console.log('Found doi with existing abstract')
+      console.log(`Writing abstract for doi: ${doi}`)
+      const resultUpdatePubAbstracts = await client.mutate(updatePubAbstract(doi, scopusAbstracts[doi]))
+      // console.log(`Returned result scopus: ${resultUpdatePubAbstracts}`)
     }
-  })
+  }, { concurrency: 5})
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises

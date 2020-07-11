@@ -49,6 +49,9 @@ const funderIdentifierSchema = schema({
   funderIdentifier: 'GrantID._text',
 }));
 
+// const subjectIdenfierSchema = schema({
+  
+// });
 const shareWorkSchema = schema({
   title: {type: String, default: null},
   description: {type: String, default: null},
@@ -110,11 +113,15 @@ async function getEFetch(ids){
 
 function extractMetadata(rawJson){
   if (_.isArray(rawJson.PubmedArticleSet.PubmedArticle)) {
+    // console.log(`Found PubMed JSONL: ${JSON.stringify(rawJson, null, 2)}`)
     return _.map(rawJson.PubmedArticleSet.PubmedArticle, (value,key)=> {
       return shareWorkSchema.parse(value);
+      //return value;
     });
   } else {
-      return shareWorkSchema.parse(rawJson.PubmedArticleSet.PubmedArticle);
+    // console.log(`Found PubMed JSONL: ${JSON.stringify(rawJson, null, 2)}`)
+    // return rawJson;
+    return shareWorkSchema.parse(rawJson.PubmedArticleSet.PubmedArticle);
   }
 }
 

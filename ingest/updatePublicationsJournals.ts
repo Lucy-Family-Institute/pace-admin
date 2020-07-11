@@ -6,7 +6,7 @@ import fetch from 'node-fetch'
 import _ from 'lodash'
 import { command as loadCsv } from './units/loadCsv'
 import readJournals from './gql/readJournals'
-import readPublications from './gql/readPublications'
+import readPublicationsWoutJournal from './gql/readPublicationsWoutJournal'
 import updatePubJournal from './gql/updatePubJournal'
 import { __EnumValue } from 'graphql'
 import dotenv from 'dotenv'
@@ -124,7 +124,7 @@ function journalMatchFuzzy (journalTitle, titleKey, journalMap){
 }
 
 async function getPublications () {
-  const queryResult = await client.query(readPublications())
+  const queryResult = await client.query(readPublicationsWoutJournal())
   return queryResult.data.publications
 }
 
@@ -185,7 +185,7 @@ async function main (): Promise<void> {
         // singleMatches.push(`Matched journal for publication title - ${publication['title']}, journal - ${testTitle}: ${JSON.stringify(matchedJournals, null, 2)}`)
       }
     }
-  }, {concurrency: 30})
+  }, {concurrency: 60})
  
   console.log(`Multiple Matches: ${JSON.stringify(multipleMatches, null, 2)}`)
   console.log(`Multiple Matches Count: ${multipleMatches.length}`)
