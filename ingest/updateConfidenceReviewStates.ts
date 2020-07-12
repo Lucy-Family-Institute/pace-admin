@@ -769,7 +769,7 @@ async function calculateConfidence (mostRecentPersonPubId, testAuthors, confirme
         author: testAuthor,
         confirmedAuthors: confirmedAuthors[personPublication['publication']['doi']],
         // pubAuthors: publicationAuthorMap[testAuthor['names'][0]['lastName']] || publicationAuthorMap || 'undefined',
-        // confidenceItems: passedConfidenceTestsWithConf,
+        confidenceItems: passedConfidenceTestsWithConf,
         persons_publications_id: personPublication['id'],
         doi: personPublication['publication']['doi'],
         prevConf: personPublication['confidence'],
