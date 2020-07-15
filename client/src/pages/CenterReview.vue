@@ -733,7 +733,12 @@ export default {
     // return all duplicate publications
     async reportDuplicatePublications () {
       const pubResults = await this.$apollo.query(readPublications())
-      const publications = pubResults.data.publications
+      // convert all dois in pubs to lowercase
+      const publications = _.map(pubResults.data.publications, (pub) => {
+        _.set(pub, 'doi', _.toLower(pub.doi))
+        return pub
+      })
+
       // group pubs by doi
       const pubsByDoi = _.groupBy(publications, (pub) => { return pub.doi })
       _.forEach(_.keys(pubsByDoi), (doi) => {
@@ -1424,7 +1429,11 @@ export default {
         // console.log('***', pubsWithReviewResult)
         console.log(`Finished query publications ${moment().format('HH:mm:ss:SSS')}`)
         console.log(`Start query publications authors ${moment().format('HH:mm:ss:SSS')}`)
-        this.publications = pubsWithReviewResult.data.persons_publications
+        this.publications = _.map(pubsWithReviewResult.data.persons_publications, (personPub) => {
+          // change doi to lowercase
+          _.set(personPub.publication, 'doi', _.toLower(personPub.publication.doi))
+          return personPub
+        })
         const publicationIds = _.map(this.publications, (pub) => {
           return pub.publication.id
         })
@@ -1434,7 +1443,12 @@ export default {
           fetchPolicy: 'network-only'
         })
         console.log(`Finished query publications authors ${moment().format('HH:mm:ss:SSS')}`)
-        const pubsWithAuthorsByDoi = _.groupBy(pubsAuthorsResult.data.publications, (publication) => {
+        const authorsPubs = _.map(pubsAuthorsResult.data.publications, (pub) => {
+          // change doi to lowercase
+          _.set(pub, 'doi', _.toLower(pub.doi))
+          return pub
+        })
+        const pubsWithAuthorsByDoi = _.groupBy(authorsPubs, (publication) => {
           return publication.doi
         })
         // now reduce to first instance by doi and authors array
@@ -1489,6 +1503,7 @@ export default {
       })
       // const result = await this.$apollo.query(readPublication(publicationId))
       this.publication = result.data.publications[0]
+      _.set(this.publication, 'doi', _.toLower(this.publication.doi))
       console.log(`Loaded Publication: ${JSON.stringify(this.publication)}`)
       this.publicationCitation = this.getCitationApa(this.publication.csl_string)
       if (this.publication.journal && this.publication.journal.journals_classifications_aggregate) {
@@ -1555,6 +1570,17 @@ export default {
             this.publicationsGroupedByDoiByOrgReview[reviewType][personPublication.publication.doi] = personPubs
             this.personPublicationsCombinedMatchesByOrgReview[reviewType].push(personPub)
             this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType].push(personPub)
+            if (this.reviewTypeFilter === 'pending' && this.selectedPersonTotal === 'Pending') {
+              const currentPersonIndex = _.findIndex(this.people, (person) => {
+                return person.id === this.person.id
+              })
+              this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
+            } else if (this.selectedPersonTotal === 'Pending' && reviewType === 'pending') {
+              const currentPersonIndex = _.findIndex(this.people, (person) => {
+                return person.id === this.person.id
+              })
+              this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
+            }
           }
           mutateResults.push(mutateResult)
           this.publicationsReloadPending = true
