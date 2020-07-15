@@ -641,7 +641,10 @@ export default {
     // return all duplicate publications
     async reportDuplicatePublications () {
       const pubResults = await this.$apollo.query(readPublications())
-      const publications = pubResults.data.publications
+      const publications = _.map(pubResults.data.publications, (pub) => {
+        _.set(pub, 'doi', _.toLower(pub.doi))
+        return pub
+      })
       // group pubs by doi
       const pubsByDoi = _.groupBy(publications, (pub) => { return pub.doi })
       _.forEach(_.keys(pubsByDoi), (doi) => {
@@ -1045,7 +1048,11 @@ export default {
         })
         // console.log('***', pubsWithReviewResult)
         console.log(`Finished query publications for person id: ${this.person.id} ${moment().format('HH:mm:ss:SSS')}`)
-        this.publications = pubsWithReviewResult.data.persons_publications
+        this.publications = _.map(pubsWithReviewResult.data.persons_publications, (personPub) => {
+          // change doi to lowercase
+          _.set(personPub.publication, 'doi', _.toLower(personPub.publication.doi))
+          return personPub
+        })
         this.loadPersonPublicationsCombinedMatches()
       } catch (error) {
         this.publicationsLoaded = true
@@ -1069,6 +1076,7 @@ export default {
       })
       // const result = await this.$apollo.query(readPublication(publicationId))
       this.publication = result.data.publications[0]
+      _.set(this.publication, 'doi', _.toLower(this.publication.doi))
       console.log(`Loaded Publication: ${JSON.stringify(this.publication)}`)
       this.publicationCitation = this.getCitationApa(this.publication.csl_string)
       this.publicationJournalClassifications = _.map(this.publication.journal.journals_classifications_aggregate.nodes, (node) => {
@@ -1139,6 +1147,11 @@ export default {
                 return person.id === this.person.id
               })
               this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
+            } else if (this.selectedPersonTotal === 'Pending' && reviewType === 'pending') {
+              const currentPersonIndex = _.findIndex(this.people, (person) => {
+                return person.id === this.person.id
+              })
+              this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
             }
           }
           mutateResults.push(mutateResult)

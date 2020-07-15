@@ -75,7 +75,7 @@ async function randomWait(seedTime, index){
 async function getScopusAuthorData(authorGivenName, authorFamilyName, year, scopusAffiliationId, pageSize, offset){
     const baseUrl = 'https://api.elsevier.com/content/search/scopus'
     
-    const authorQuery = "AUTHFIRST("+ authorGivenName +") and AUTHLASTNAME("+ authorFamilyName+")" + " and AF-ID(" + scopusAffiliationId + ")"
+    const authorQuery = "AUTHFIRST("+ authorGivenName +") and AUTHLASTNAME("+ authorFamilyName+") and AF-ID(" + scopusAffiliationId + ")"
       
     console.log(`Querying scopus with date: ${year}, offset: ${offset}, and query: ${authorQuery}`)
     const response = await axios.get(baseUrl, {
@@ -277,15 +277,21 @@ async function main (): Promise<void> {
     console.log(`Simplified persons for ${year} are: ${JSON.stringify(simplifiedPersons,null,2)}`)
 
     //create map of last name to array of related persons with same last name
-    const personMap = _.transform(simplifiedPersons, function (result, value) {
-      (result[value.lastName] || (result[value.lastName] = [])).push(value)
-    }, {})
+    // const personMap = _.transform(simplifiedPersons, function (result, value) {
+    //   (result[value.lastName] || (result[value.lastName] = [])).push(value)
+    // }, {})
 
     console.log(`Loading ${year} Publication Data`)
     //load data from scopus
     let personCounter = 0
     let succeededScopusPapers = []
     let failedScopusPapers = []
+
+    // test a single person as needed
+    const simplifiedPersons2 = _.filter(simplifiedPersons, (person) => {
+      return person.id === 52
+    })
+
     await pMap(simplifiedPersons, async (person) => {
       //const person = simplifiedPersons[0]
       try {

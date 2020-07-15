@@ -593,8 +593,8 @@ async function main() {
 
   const pathsByYear = {
     // 2019: ['../data/pubmedPubsByAuthor.20200709113001.csv']
-    // 2019: ['../data/scopus.2019.20200320103319.csv', '../data/pubmedPubsByAuthor.20200709113001.csv']
-    2019: ['../data/HCRI-pubs-2019_-_Faculty_Selected_2.csv', '../data/scopus.2019.20200320103319.csv', '../data/pubmedPubsByAuthor.20200709113001.csv'],
+    // 2019: ['../data/scopus.2019.20200714133113.csv', '../data/pubmedPubsByAuthor.20200709113001.csv']
+    2019: ['../data/HCRI-pubs-2019_-_Faculty_Selected_2.csv', '../data/scopus.2019.20200714133113.csv', '../data/pubmedPubsByAuthor.20200709113001.csv'],
     2018: ['../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv'],
     2017: ['../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv', '../data/authorsByAwards.20200409094731.csv']
   }

@@ -6,7 +6,7 @@ export default function readPublicationsByDoi (doi) {
       query MyQuery ($doi: String!){
         publications (
           where: {
-            doi: {_eq: $doi}
+            doi: {_ilike: $doi}
           }
         ){
           id

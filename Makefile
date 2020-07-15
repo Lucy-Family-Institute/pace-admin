@@ -90,6 +90,7 @@ update_pubmed_data:
 	cd ingest && ts-node joinAuthorPubmedPubs.js && cd ..
 
 update_scopus_data:
+	cd ingest && ts-node fetchScopusAuthorData.ts && cd ..
 	cd ingest && ts-node fetchScopusFullTextData.ts && cd ..
 
 load_abstracts:
