@@ -3,6 +3,66 @@ remote_schemas: []
 query_collections: []
 allowlist: []
 tables:
+- table: awards
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      foreign_key_constraint_on: publication_id
+    name: publication
+    comment: null
+  array_relationships: []
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - publication_id
+      - funder_name
+      - funder_award_identifier
+      - source_metadata
+      - source_name
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - id
+      - publication_id
+      - source_metadata
+      - funder_award_identifier
+      - funder_name
+      - source_name
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - id
+      - publication_id
+      - source_metadata
+      - funder_award_identifier
+      - funder_name
+      - source_name
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
 - table: classifications
   is_enum: false
   configuration:
@@ -833,6 +893,13 @@ tables:
     comment: null
   - using:
       manual_configuration:
+        remote_table: awards
+        column_mapping:
+          publication_id: publication_id
+    name: awards
+    comment: null
+  - using:
+      manual_configuration:
         remote_table: reviews
         column_mapping:
           id: persons_publications_id
@@ -927,6 +994,12 @@ tables:
     name: journal
     comment: null
   array_relationships:
+  - using:
+      foreign_key_constraint_on:
+        column: publication_id
+        table: awards
+    name: awards
+    comment: null
   - using:
       foreign_key_constraint_on:
         column: publication_id

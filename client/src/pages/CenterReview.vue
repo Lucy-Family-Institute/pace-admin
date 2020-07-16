@@ -501,6 +501,7 @@ export default {
     // fundersByDoi: {},
     // pubMedFundersByDoi: {},
     // combinedFundersByDoi: {},
+    // uniqueFunders: {},
     // for progress bar
     progress: 0,
     buffer: 0,
@@ -1109,6 +1110,7 @@ export default {
       // this.fundersByDoi = {}
       // this.pubMedFundersByDoi = {}
       // this.combinedFundersByDoi = {}
+      // this.uniqueFunders = {}
       this.filteredPersonPubCounts = {}
       // group by institution (i.e., ND author) review and then by doi
       let pubsByDoi = {}
@@ -1161,11 +1163,23 @@ export default {
         _.each(personPubs, (personPub, index) => {
           if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
             currentPersonPub = personPub
-            // if (currentPersonPub.publication.funders && currentPersonPub.publication.funders.length > 0) {
-            //   this.fundersByDoi[doi] = (currentPersonPub.publication.funders) ? currentPersonPub.publication.funders : []
-            //   this.combinedFundersByDoi[doi] = (currentPersonPub.publication.funders) ? currentPersonPub.publication.funders : []
+            // if (currentPersonPub.publication.crossref_funders && currentPersonPub.publication.crossref_funders.length > 0) {
+            //   this.fundersByDoi[doi] = (currentPersonPub.publication.crossref_funders) ? currentPersonPub.publication.crossref_funders : []
+            //   this.combinedFundersByDoi[doi] = (currentPersonPub.publication.crossref_funders) ? currentPersonPub.publication.crossref_funders : []
             //   _.each(this.fundersByDoi[doi], (funder) => {
-            //     console.log(`doi: ${doi} funders: ${JSON.stringify(funder, null, 2)}`)
+            //     console.log(`Getting name from funder: ${JSON.stringify(funder, null, 2)}`)
+            //     const funderName = funder['name']
+            //     console.log(`Got name ${funderName} from funder: ${JSON.stringify(funder, null, 2)}`)
+            //     if (funderName) {
+            //       if (!this.uniqueFunders[funderName]) {
+            //         this.uniqueFunders[funderName] = []
+            //       }
+            //       if (this.uniqueFunders[funderName]) {
+            //         console.log(`Pushing funder name: ${funderName}`)
+            //         this.uniqueFunders[funderName].push(funder)
+            //       }
+            //     }
+            //     console.log(`doi: ${doi} crossref funders: ${JSON.stringify(funder, null, 2)}`)
             //   })
             // }
 
@@ -1173,7 +1187,19 @@ export default {
             //   this.pubMedFundersByDoi[doi] = (currentPersonPub.publication.pubmed_funders) ? currentPersonPub.publication.pubmed_funders : []
             //   this.combinedFundersByDoi[doi] = (currentPersonPub.publication.pubmed_funders) ? currentPersonPub.publication.pubmed_funders : []
             //   _.each(this.pubMedFundersByDoi[doi], (funder) => {
-            //     console.log(`doi: ${doi} funders: ${JSON.stringify(funder, null, 2)}`)
+            //     console.log(`Getting name from funder: ${JSON.stringify(funder, null, 2)}`)
+            //     const funderName = funder['funder']
+            //     console.log(`Got name ${funderName} from funder: ${JSON.stringify(funder, null, 2)}`)
+            //     if (funderName) {
+            //       if (!this.uniqueFunders[funderName]) {
+            //         this.uniqueFunders[funderName] = []
+            //       }
+            //       if (this.uniqueFunders[funderName]) {
+            //         console.log(`Pushing funder name: ${funderName}`)
+            //         this.uniqueFunders[funderName].push(funder)
+            //       }
+            //     }
+            //     console.log(`doi: ${doi} pubmed funders: ${JSON.stringify(funder, null, 2)}`)
             //   })
             // }
           }
@@ -1267,6 +1293,7 @@ export default {
       this.loadPersonsWithFilter()
 
       // initialize the list in view
+      // console.log(`Unique funder names found: ${JSON.stringify(_.keys(this.uniqueFunders), null, 2)}`)
       // console.log(`Crossref Funders by Doi ${JSON.stringify(_.keys(this.fundersByDoi).length, null, 2)}`)
       // console.log(`Pubmed Funders by Doi ${JSON.stringify(_.keys(this.pubMedFundersByDoi).length, null, 2)}`)
       // console.log(`Combined Funders by Doi ${JSON.stringify(_.keys(this.combinedFundersByDoi).length, null, 2)}`)

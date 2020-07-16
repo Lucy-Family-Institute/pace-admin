@@ -67,6 +67,7 @@ newdb:
 	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
 	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
+    cd ingest && ts-node loadAwards.ts && cd ..
 	cd ingest && ts-node loadAbstracts.ts && cd ..
 	cd ingest && ts-node loadJournals.ts && cd ..
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
@@ -74,6 +75,7 @@ newdb:
 reharvest:
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
 	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
+    cd ingest && ts-node loadAwards.ts && cd ..
 	cd ingest && ts-node loadAbstracts.ts && cd ..
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
 
@@ -95,6 +97,9 @@ update_scopus_data:
 
 load_abstracts:
 	cd ingest && ts-node loadAbstracts.ts && cd ..
+
+load_awards:
+	cd ingest && ts-node loadAwards.ts && cd ..
 
 load_journals:
 	cd ingest && ts-node loadJournals.ts && cd ..

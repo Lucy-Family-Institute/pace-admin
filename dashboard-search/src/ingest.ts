@@ -81,6 +81,12 @@ async function main() {
               }
               publisher
             }
+            awards {
+              id
+              funder_award_identifier
+              funder_name
+              source_name
+            }
           }
           person {
             family_name
@@ -145,6 +151,12 @@ async function main() {
         classifications: _.map(_.get(doc.publication, 'journal.journals_classifications', []), c => c.classification.name),
         authors: `${_.get(doc.person, 'family_name')}, ${_.get(doc.person, 'given_name')}`,
         publisher: _.get(doc.publication, 'journal.publisher', null),
+        funder: _.uniq(_.map(
+          _.get(doc.publication, 'awards', []),
+          function ( award ) {
+            return award.funder_name
+          }
+        )),
         wildcard: "*" // required for empty search (i.e., return all)
       }
     })
@@ -164,7 +176,7 @@ async function main() {
 
   let status
   const { updateId } = await index.updateAttributesForFaceting([
-    'year', 'type', 'journal', 'classifications', 'authors', 'journal_type', 'publisher', 'classificationsTopLevel'
+    'year', 'type', 'journal', 'classifications', 'authors', 'journal_type', 'publisher', 'classificationsTopLevel', 'funder'
   ])
   do {
     await sleep(10)
