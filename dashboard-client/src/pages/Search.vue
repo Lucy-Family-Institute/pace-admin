@@ -57,6 +57,17 @@
               </q-scroll-area>
             </q-card-section>
           </q-card>
+          <q-card class="my-card" flat bordered>
+            <q-card-section>
+              <q-scroll-area style="height: 200px; max-width: 300px;">
+                <q-list v-for="item in funders" :key="item.name" @click='addFacetFilter("funder", item.name)'>
+                  <q-item clickable v-ripple v-if="item.count > 0">
+                    <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-scroll-area>
+            </q-card-section>
+          </q-card>
         </div>
         <div class="col-10">
           <download-csv
@@ -143,7 +154,8 @@ export default {
       journals: {},
       // filters: '',
       facetFilters: [],
-      distributions: []
+      distributions: [],
+      funders: {}
     }
   },
   async created () {
@@ -175,7 +187,7 @@ export default {
       const searchfor = this.search ? this.search : '*'
 
       const options = {
-        facetsDistribution: ['year', 'author', 'classifications', 'journal'],
+        facetsDistribution: ['year', 'author', 'classifications', 'journal', 'funder'],
         attributesToHighlight: ['title', 'abstract']
       }
       // if (filter) {
@@ -201,6 +213,11 @@ export default {
       ))
       this.journals = Object.freeze(_.orderBy(
         _.map(results.facetsDistribution.journal, (value, key) => {
+          return { name: key, count: value }
+        }), 'count', 'desc'
+      ))
+      this.funders = Object.freeze(_.orderBy(
+        _.map(results.facetsDistribution.funder, (value, key) => {
           return { name: key, count: value }
         }), 'count', 'desc'
       ))

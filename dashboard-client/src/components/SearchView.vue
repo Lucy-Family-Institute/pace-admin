@@ -63,12 +63,12 @@
               <q-card class="my-card" flat bordered>
                 <q-card class="my-card" bordered>
                   <q-card-section>
-                    <q-item-label align="center"><strong>Subject</strong></q-item-label>
+                    <q-item-label align="center"><strong>Journal</strong></q-item-label>
                   </q-card-section>
                 </q-card>
                 <q-card-section>
                   <q-scroll-area :visible="true" style="height: 200px; max-width: 300px;">
-                    <q-list v-for="item in facetLists.classifications" :key="item.name" @click='addFacetFilter("classifications", item.name)'>
+                    <q-list v-for="item in facetLists.journal" :key="item.name" @click='addFacetFilter("journal", item.name)'>
                       <q-item clickable v-ripple v-if="item.count > 0">
                         <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
                       </q-item>
@@ -79,12 +79,12 @@
               <q-card class="my-card" flat bordered>
                 <q-card class="my-card" bordered>
                   <q-card-section>
-                    <q-item-label align="center"><strong>Journal</strong></q-item-label>
+                    <q-item-label align="center"><strong>Subject</strong></q-item-label>
                   </q-card-section>
                 </q-card>
                 <q-card-section>
                   <q-scroll-area :visible="true" style="height: 200px; max-width: 300px;">
-                    <q-list v-for="item in facetLists.journal" :key="item.name" @click='addFacetFilter("journal", item.name)'>
+                    <q-list v-for="item in facetLists.classifications" :key="item.name" @click='addFacetFilter("classifications", item.name)'>
                       <q-item clickable v-ripple v-if="item.count > 0">
                         <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
                       </q-item>
@@ -117,6 +117,22 @@
                 <q-card-section>
                   <q-scroll-area :visible="true" style="height: 200px; max-width: 300px;">
                     <q-list v-for="item in facetLists.journal_type" :key="item.name" @click='addFacetFilter("journal_type", item.name)'>
+                      <q-item clickable v-ripple v-if="item.count > 0">
+                        <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-scroll-area>
+                </q-card-section>
+              </q-card>
+              <q-card class="my-card" flat bordered>
+                <q-card class="my-card" bordered>
+                  <q-card-section>
+                    <q-item-label align="center"><strong>Funder</strong></q-item-label>
+                  </q-card-section>
+                </q-card>
+                <q-card-section>
+                  <q-scroll-area :visible="true" style="height: 200px; max-width: 300px;">
+                    <q-list v-for="item in facetLists.funder" :key="item.name" @click='addFacetFilter("funder", item.name)'>
                       <q-item clickable v-ripple v-if="item.count > 0">
                         <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
                       </q-item>
@@ -254,7 +270,7 @@ export default {
     async runSearch () {
       const searchfor = this.search ? this.search : '*'
       const options = {
-        facetsDistribution: ['year', 'authors', 'classifications', 'journal', 'journal_type', 'publisher', 'classificationsTopLevel'],
+        facetsDistribution: ['year', 'authors', 'classifications', 'journal', 'journal_type', 'publisher', 'classificationsTopLevel', 'funder'],
         attributesToHighlight: ['title', 'abstract', 'authors'],
         limit: 1000
       }
@@ -275,7 +291,7 @@ export default {
       this.numberOfHits = results.nbHits
       this.facetsDistribution = Object.freeze(results.facetsDistribution)
 
-      this.sortFacets(['classifications', 'authors', 'journal', 'journal_type', 'publisher'], this.facetsDistribution)
+      this.sortFacets(['classifications', 'authors', 'journal', 'journal_type', 'publisher', 'funder'], this.facetsDistribution)
       // }
     },
     makeStartCase (word) {
