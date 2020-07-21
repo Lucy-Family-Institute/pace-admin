@@ -23,11 +23,11 @@
               <apexchart style="max-width:425px" :width="`${(dashboardMiniState) ? 250: 425}`" type="pie" :options="journalTypePieOptions" :series="journalTypePieSeries"></apexchart>
             </q-card-section>
           </q-card>
-          <q-card class="my-card" flat bordered>
+          <!-- <q-card class="my-card" flat bordered>
             <q-card-section>
               <apexchart style="max-width:425px" :width="`${(dashboardMiniState) ? 250: 425}`" type="pie" :options="publisherPieOptions" :series="publisherPieSeries"></apexchart>
             </q-card-section>
-          </q-card>
+          </q-card> -->
           <q-card class="my-card" flat bordered>
             <q-card-section>
               <NetworkD3 />
@@ -201,50 +201,50 @@ export default {
           }
         }
       },
-      journalTypePieSeries: [2017, 2018, 2019, 2020],
-      publisherPieOptions: {
-        chart: {
-          type: 'pie',
-          events: {
-            dataPointSelection: function (event, chartContext, config) {
-              this.addFacetFilter('publisher', config.w.globals.labels[config.dataPointIndex])
-            }.bind(this)
-          },
-          toolbar: {
-            show: true,
-            tools: {
-              download: true
-            }
-          }
-        },
-        tooltip: {
-          enabled: true
-        },
-        dataLabels: {
-          formatter: function (val, opt) {
-            return _.truncate(opt.w.globals.labels[opt.seriesIndex], { length: 15 })
-          }
-        },
-        legend: {
-          show: false
-        },
-        labels: ['Cambridge University Press', 'Ave Maria Press']
-      },
-      publisherPieSeries: ['Cambridge University Press', 'Ave Maria Press'],
-      title: {
-        text: 'Publisher',
-        align: 'left',
-        margin: 10,
-        offsetX: 0,
-        offsetY: 0,
-        floating: false,
-        style: {
-          fontSize: '18px',
-          fontWeight: 'bold',
-          fontFamily: undefined,
-          color: '#263238'
-        }
-      }
+      journalTypePieSeries: [2017, 2018, 2019, 2020]
+      // publisherPieOptions: {
+      //   chart: {
+      //     type: 'pie',
+      //     events: {
+      //       dataPointSelection: function (event, chartContext, config) {
+      //         this.addFacetFilter('publisher', config.w.globals.labels[config.dataPointIndex])
+      //       }.bind(this)
+      //     },
+      //     toolbar: {
+      //       show: true,
+      //       tools: {
+      //         download: true
+      //       }
+      //     }
+      //   },
+      //   tooltip: {
+      //     enabled: true
+      //   },
+      //   dataLabels: {
+      //     formatter: function (val, opt) {
+      //       return _.truncate(opt.w.globals.labels[opt.seriesIndex], { length: 15 })
+      //     }
+      //   },
+      //   legend: {
+      //     show: false
+      //   },
+      //   labels: ['Cambridge University Press', 'Ave Maria Press']
+      // },
+      // publisherPieSeries: ['Cambridge University Press', 'Ave Maria Press'],
+      // title: {
+      //   text: 'Publisher',
+      //   align: 'left',
+      //   margin: 10,
+      //   offsetX: 0,
+      //   offsetY: 0,
+      //   floating: false,
+      //   style: {
+      //     fontSize: '18px',
+      //     fontWeight: 'bold',
+      //     fontFamily: undefined,
+      //     color: '#263238'
+      //   }
+      // }
     }
   },
   async created () {
@@ -442,56 +442,56 @@ export default {
           }
         }
       }
-      const publisherData = _.orderBy(
-        _.map(this.facetsDistribution.publisher, (value, key) => {
-          return { name: key, count: value }
-        }),
-        'count',
-        'desc'
-      )
-      this.publisherPieSeries = _.map(publisherData, 'count')
-      this.publisherPieOptions = {
-        chart: {
-          type: 'pie',
-          events: {
-            dataPointSelection: function (event, chartContext, config) {
-              this.addFacetFilter('publisher', config.w.globals.labels[config.dataPointIndex])
-            }.bind(this)
-          },
-          toolbar: {
-            show: true,
-            tools: {
-              download: true
-            }
-          }
-        },
-        labels: _.map(_.map(publisherData, 'name'), this.makeStartCase),
-        legend: {
-          show: false
-        },
-        dataLabels: {
-          formatter: function (val, opt) {
-            return _.truncate(opt.w.globals.labels[opt.seriesIndex], { length: 15 })
-          }
-        },
-        tooltip: {
-          enabled: true
-        },
-        title: {
-          text: 'Publisher',
-          align: 'left',
-          margin: 10,
-          offsetX: 0,
-          offsetY: 0,
-          floating: false,
-          style: {
-            fontSize: '18px',
-            fontWeight: 'bold',
-            fontFamily: undefined,
-            color: '#263238'
-          }
-        }
-      }
+      // const publisherData = _.orderBy(
+      //   _.map(this.facetsDistribution.publisher, (value, key) => {
+      //     return { name: key, count: value }
+      //   }),
+      //   'count',
+      //   'desc'
+      // )
+      // this.publisherPieSeries = _.map(publisherData, 'count')
+      // this.publisherPieOptions = {
+      //   chart: {
+      //     type: 'pie',
+      //     events: {
+      //       dataPointSelection: function (event, chartContext, config) {
+      //         this.addFacetFilter('publisher', config.w.globals.labels[config.dataPointIndex])
+      //       }.bind(this)
+      //     },
+      //     toolbar: {
+      //       show: true,
+      //       tools: {
+      //         download: true
+      //       }
+      //     }
+      //   },
+      //   labels: _.map(_.map(publisherData, 'name'), this.makeStartCase),
+      //   legend: {
+      //     show: false
+      //   },
+      //   dataLabels: {
+      //     formatter: function (val, opt) {
+      //       return _.truncate(opt.w.globals.labels[opt.seriesIndex], { length: 15 })
+      //     }
+      //   },
+      //   tooltip: {
+      //     enabled: true
+      //   },
+      //   title: {
+      //     text: 'Publisher',
+      //     align: 'left',
+      //     margin: 10,
+      //     offsetX: 0,
+      //     offsetY: 0,
+      //     floating: false,
+      //     style: {
+      //       fontSize: '18px',
+      //       fontWeight: 'bold',
+      //       fontFamily: undefined,
+      //       color: '#263238'
+      //     }
+      //   }
+      // }
     }
   }
 }
