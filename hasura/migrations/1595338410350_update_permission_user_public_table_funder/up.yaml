@@ -1,0 +1,15 @@
+- args:
+    permission:
+      allow_aggregations: true
+      columns:
+      - id
+      - name
+      - short_name
+      - uri
+      filter: {}
+      limit: null
+    role: user
+    table:
+      name: funder
+      schema: public
+  type: create_select_permission

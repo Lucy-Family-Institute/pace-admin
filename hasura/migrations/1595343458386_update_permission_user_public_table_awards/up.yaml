@@ -1,0 +1,25 @@
+- args:
+    role: user
+    table:
+      name: awards
+      schema: public
+  type: drop_select_permission
+- args:
+    permission:
+      allow_aggregations: true
+      columns:
+      - funder_id
+      - id
+      - publication_id
+      - subfunder_id
+      - source_metadata
+      - funder_award_identifier
+      - funder_name
+      - source_name
+      computed_fields: []
+      filter: {}
+    role: user
+    table:
+      name: awards
+      schema: public
+  type: create_select_permission

@@ -1,0 +1,6 @@
+- args:
+    relationship: funder
+    table:
+      name: funders_namevariances
+      schema: public
+  type: drop_relationship

@@ -1,0 +1,6 @@
+- args:
+    relationship: awards
+    table:
+      name: subfunders
+      schema: public
+  type: drop_relationship

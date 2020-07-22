@@ -16,8 +16,16 @@ tables:
     custom_column_names: {}
   object_relationships:
   - using:
+      foreign_key_constraint_on: funder_id
+    name: funder
+    comment: null
+  - using:
       foreign_key_constraint_on: publication_id
     name: publication
+    comment: null
+  - using:
+      foreign_key_constraint_on: subfunder_id
+    name: subfunder
     comment: null
   array_relationships: []
   insert_permissions:
@@ -33,6 +41,8 @@ tables:
       - funder_award_identifier
       - source_metadata
       - source_name
+      - funder_id
+      - subfunder_id
   select_permissions:
   - role: user
     comment: null
@@ -40,8 +50,10 @@ tables:
       allow_aggregations: true
       computed_fields: []
       columns:
+      - funder_id
       - id
       - publication_id
+      - subfunder_id
       - source_metadata
       - funder_award_identifier
       - funder_name
@@ -53,8 +65,10 @@ tables:
     permission:
       set: {}
       columns:
+      - funder_id
       - id
       - publication_id
+      - subfunder_id
       - source_metadata
       - funder_award_identifier
       - funder_name
@@ -354,6 +368,125 @@ tables:
       set: {}
       columns:
       - id
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: funders
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships: []
+  array_relationships:
+  - using:
+      foreign_key_constraint_on:
+        column: funder_id
+        table: awards
+    name: awards
+    comment: null
+  - using:
+      foreign_key_constraint_on:
+        column: funder_id
+        table: funders_namevariances
+    name: funders_namevariances
+    comment: null
+  - using:
+      foreign_key_constraint_on:
+        column: funder_id
+        table: subfunders
+    name: subfunders
+    comment: null
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - name
+      - short_name
+      - uri
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - id
+      - name
+      - short_name
+      - uri
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - id
+      - name
+      - short_name
+      - uri
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: funders_namevariances
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      foreign_key_constraint_on: funder_id
+    name: funder
+    comment: null
+  array_relationships: []
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - name
+      - funder_id
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - funder_id
+      - id
+      - name
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - funder_id
+      - id
+      - name
       filter: {}
   delete_permissions: []
   event_triggers: []
@@ -1234,6 +1367,126 @@ tables:
       - review_organization_value
       - review_type
       - datetime
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: subfunders
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      foreign_key_constraint_on: funder_id
+    name: funder
+    comment: null
+  array_relationships:
+  - using:
+      foreign_key_constraint_on:
+        column: subfunder_id
+        table: awards
+    name: awards
+    comment: null
+  - using:
+      foreign_key_constraint_on:
+        column: subfunder_id
+        table: subfunders_namevariances
+    name: subfunders_namevariances
+    comment: null
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - funder_id
+      - name
+      - short_name
+      - uri
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - funder_id
+      - id
+      - name
+      - short_name
+      - uri
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - funder_id
+      - id
+      - name
+      - short_name
+      - uri
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: subfunders_namevariances
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      foreign_key_constraint_on: subfunder_id
+    name: subfunder
+    comment: null
+  array_relationships: []
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - name
+      - subfunder_id
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - id
+      - subfunder_id
+      - name
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - id
+      - subfunder_id
+      - name
       filter: {}
   delete_permissions: []
   event_triggers: []

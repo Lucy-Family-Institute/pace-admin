@@ -1,0 +1,6 @@
+- args:
+    sql: ALTER TABLE "public"."funders" ALTER COLUMN "uri" DROP NOT NULL;
+  type: run_sql
+- args:
+    sql: COMMENT ON COLUMN "public"."funders"."uri" IS E''
+  type: run_sql
