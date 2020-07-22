@@ -7,6 +7,13 @@ export default function insertSubfunder (subfunders) {
         insert_subfunders(objects: $objects){
           returning {
             id
+            name
+            short_name
+            funder {
+              id
+              name
+              short_name
+            }
           }
         }
       }
