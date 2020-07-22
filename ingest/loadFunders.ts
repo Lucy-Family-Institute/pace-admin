@@ -8,6 +8,8 @@ import { command as loadCsv } from './units/loadCsv'
 import readFunders from './gql/readFunders'
 import insertFunder from './gql/insertFunder'
 import insertSubfunder from './gql/insertSubfunder'
+import insertFunderNameVariances from './gql/insertFunderNameVariances'
+import insertSubfunderNameVariances from './gql/insertSubfunderNameVariances'
 import { __EnumValue } from 'graphql'
 import dotenv from 'dotenv'
 import pMap from 'p-map'
@@ -44,15 +46,63 @@ async function randomWait(seedTime, index){
   await wait(waitTime)
 }
 
-function createNameVarianceObjects(nameVariances) {
-  let newVariances = []
-  _.each(nameVariances.split(';'), (variance) => {
-    let obj = {
-      name: variance
+function createSubfunderNameVarianceObjects (newSubfundersFromCSV, existingSubfundersByShortName) {
+  let newFunderNamevariances = []
+  _.each(newSubfundersFromCSV, (subfunder) => {
+    // console.log(`Creating name variances for ${JSON.stringify(subfunder, null, 2)}`)
+    // only add if the funder already exists in DB
+    if (subfunder['parent_short_name'] &&
+    subfunder['short_name'] &&
+    existingSubfundersByShortName[subfunder['parent_short_name']] &&
+    existingSubfundersByShortName[subfunder['parent_short_name']][subfunder['short_name']]){
+      const existingSubfunder = existingSubfundersByShortName[subfunder['parent_short_name']][subfunder['short_name']]
+      // console.log(`Existing subfunder is: ${JSON.stringify(existingSubfunder, null, 2)}`)
+      newFunderNamevariances = _.concat(newFunderNamevariances, createSubfunderNameVarianceObject(subfunder['name_variances'], existingSubfunder.id))
     }
-    newVariances.push(obj)
   })
-  return newVariances
+  return newFunderNamevariances
+}
+
+function createFunderNameVarianceObjects (newFundersFromCSV, existingFundersByShortName) {
+  let newFunderNamevariances = []
+  _.each(newFundersFromCSV, (funder) => {
+    // only add if the funder already exists in DB
+    if (funder['short_name'] && existingFundersByShortName[funder['short_name']]){
+      const existingFunder = existingFundersByShortName[funder['short_name']]
+      newFunderNamevariances = _.concat(newFunderNamevariances, createFunderNameVarianceObject(funder['name_variances'], existingFunder.id))
+    }
+  })
+  return newFunderNamevariances
+}
+
+function createFunderNameVarianceObject (nameVariances, funderId) {
+  let newNameVariances = []
+  _.each(nameVariances.split(';'), (variance) => {
+    const newVariant = variance.trim()
+    if (newVariant!=='') {
+      let obj = {
+        name: newVariant,
+        funder_id: funderId
+      }
+      newNameVariances.push(obj)
+    }
+  })
+  return newNameVariances
+}
+
+function createSubfunderNameVarianceObject (nameVariances, subfunderId) {
+  let newNameVariances = []
+  _.each(nameVariances.split(';'), (variance) => {
+    const newVariant = variance.trim()
+    if (newVariant!=='') {
+      let obj = {
+        name: newVariant,
+        subfunder_id: subfunderId
+      }
+      newNameVariances.push(obj)
+    }
+  })
+  return newNameVariances
 }
 
 function createFunderObject(funderName, shortName) {
@@ -72,12 +122,13 @@ function createFunderObjects(fundersFromCSV) {
 
 function createSubfunderObjects(subfundersFromCSV, existingFundersByShortName) {
   let newSubfunders = []
+  // console.log(`Creating subfunder objects`)
   _.each(subfundersFromCSV, (subfunder) => {
     if (existingFundersByShortName[subfunder['parent_short_name']]){
       let obj = {
         name: subfunder[_.keys(subfunder)[0]],
         short_name: subfunder['short_name'],
-        funder_id: existingFundersByShortName[subfunder['parent_short_name']].id
+        funder_id: existingFundersByShortName[subfunder['parent_short_name']]['id']
       }
       newSubfunders.push(obj)
     }
@@ -131,7 +182,7 @@ async function main (): Promise<void> {
     return !existingFundersByShortName[funder['short_name']]
   })
 
-  console.log(`New Funders loaded are: ${JSON.stringify(newFunders, null, 2)}`)
+  // console.log(`New Funders loaded are: ${JSON.stringify(newFunders, null, 2)}`)
 
   const newSubfunders = _.filter(funderByType['subfunder'], (subfunder) => {
     // include subfunders that do not already exist in DB
@@ -143,48 +194,41 @@ async function main (): Promise<void> {
     return true
   })
 
-  console.log(`New Subfunders loaded are: ${JSON.stringify(newSubfunders, null, 2)}`)
+  // console.log(`New Subfunders loaded are: ${JSON.stringify(newSubfunders, null, 2)}`)
 
   // prep funder, subfunders, and their name variances for insert into the DB
   const newFundersToInsert = createFunderObjects(newFunders)
-  console.log(`New Funders prepped for insert are: ${JSON.stringify(newFundersToInsert, null, 2)}`)
+  // console.log(`New Funders prepped for insert are: ${JSON.stringify(newFundersToInsert, null, 2)}`)
 
   const resultInsertFunders = await client.mutate(insertFunder(newFundersToInsert))
   // add new funders to the existing funders map
   existingFundersByShortName = _.merge(existingFundersByShortName, getFundersByShortName(resultInsertFunders.data.insert_funders.returning, 'short_name'))
-  console.log(`Inserted ${resultInsertFunders.data.insert_funders.returning.length} total funders existing funders now: ${_.keys(existingFundersByShortName).length}`)
+  console.log(`Inserted ${resultInsertFunders.data.insert_funders.returning.length} total funders, now ${_.keys(existingFundersByShortName).length} total funders`)
 
   const newSubfundersToInsert = createSubfunderObjects(newSubfunders, existingFundersByShortName)
+  // console.log(`Prepped new subfunders for insert: ${JSON.stringify(newSubfundersToInsert, null, 2)}`)
   const resultInsertSubfunders = await client.mutate(insertSubfunder(newSubfundersToInsert))
+  // merge in the newly inserted subfunders
+  const insertedSubfunders = resultInsertSubfunders.data.insert_subfunders.returning
+  _.each(insertedSubfunders, (inserted) => {
+    const parentShortName = inserted.funder.short_name
+    if (!existingSubfundersByShortName[parentShortName]) {
+      existingSubfundersByShortName[parentShortName] = {}
+    }
+    existingSubfundersByShortName[parentShortName][inserted.short_name] = inserted
+  })
+  // console.log(`After insert existing subfunders are: ${JSON.stringify(existingSubfundersByShortName, null, 2)}`)
   console.log(`Inserted ${resultInsertSubfunders.data.insert_subfunders.returning.length} total subfunders`)
 
-  // // console.log(`Inserted ${resultInsertPubAward.data.insert_awards.returning.length} total awards`)
-  // let newFunderNamevariances = []
-  // _.each(newFunders, (funder) => {
-  //   newFunderNamevariances = _.concat(newFunderNamevariances, createNameVarianceObjects(funder))
-  // })
-  // let newSubfunderNamevariances = []
-  // _.each(newSubfunders, (subfunder) => {
-  //   newSubfunderNamevariances = _.concat(newSubfunderNamevariances, createNameVarianceObjects(subfunder))
-  // })
-  
-  // console.log(`Funders loaded are: ${JSON.stringify(funderByType, null, 2)}`)
+  const newFunderNameVariancesToInsert = createFunderNameVarianceObjects(newFunders, existingFundersByShortName)
+  // console.log(`Prepped new funder name variances for insert: ${JSON.stringify(newFunderNameVariancesToInsert, null, 2)}`)
+  const resultInsertFunderVariances = await client.mutate(insertFunderNameVariances(newFunderNameVariancesToInsert))
+  console.log(`Inserted ${resultInsertFunderVariances.data.insert_funders_namevariances.returning.length} funder name variances`)
 
-  // const publications = await getPublications()
-  // const awardsByPubIdBySource = await getAwardsByPubIdBySource(publications)
-
-  // // get new awards to insert later
-  // let newAwardsToInsert = []
-  // _.each(publications, (publication) => {
-  //   // add any missing crossref awards
-  //   newAwardsToInsert = _.concat(newAwardsToInsert, getNewAwardsFromCrossref(awardsByPubIdBySource, publication))
-  //   newAwardsToInsert = _.concat(newAwardsToInsert, getNewAwardsFromPubmed(awardsByPubIdBySource, publication))
-  // })
-
-  // // console.log(`New awards to insert are: ${JSON.stringify(newAwardsToInsert, null, 2)}`)
-  // // now insert the awards in a batch
-  // const resultInsertPubAward = await client.mutate(insertPubAward(newAwardsToInsert))
-  // console.log(`Inserted ${resultInsertPubAward.data.insert_awards.returning.length} total awards`)
+  const newSubfunderNameVariancesToInsert = createSubfunderNameVarianceObjects(newSubfunders, existingSubfundersByShortName)
+  // console.log(`Prepped new subfunder name variances for insert: ${JSON.stringify(newSubfunderNameVariancesToInsert, null, 2)}`)
+  const resultInsertSubfunderVariances = await client.mutate(insertSubfunderNameVariances(newSubfunderNameVariancesToInsert))
+  console.log(`Inserted ${resultInsertSubfunderVariances.data.insert_subfunders_namevariances.returning.length} subfunder name variances`)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
