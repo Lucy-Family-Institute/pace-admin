@@ -1,0 +1,16 @@
+- args:
+    permission:
+      columns:
+      - id
+      - subfunder_id
+      - name
+      filter: {}
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: subfunders_namevariances
+      schema: public
+  type: create_update_permission

@@ -1,0 +1,17 @@
+- args:
+    permission:
+      allow_upsert: true
+      check: {}
+      columns:
+      - id
+      - name
+      - funder_id
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: funders_namevariances
+      schema: public
+  type: create_insert_permission

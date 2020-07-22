@@ -1,0 +1,8 @@
+- args:
+    name: subfunder
+    table:
+      name: subfunders_namevariances
+      schema: public
+    using:
+      foreign_key_constraint_on: subfunder_id
+  type: create_object_relationship

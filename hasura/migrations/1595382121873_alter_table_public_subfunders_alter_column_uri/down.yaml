@@ -1,0 +1,6 @@
+- args:
+    sql: ALTER TABLE "public"."subfunders" ALTER COLUMN "uri" SET NOT NULL;
+  type: run_sql
+- args:
+    sql: COMMENT ON COLUMN "public"."subfunders"."uri" IS E'null'
+  type: run_sql

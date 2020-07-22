@@ -1,0 +1,12 @@
+- args:
+    name: subfunders
+    table:
+      name: funders
+      schema: public
+    using:
+      foreign_key_constraint_on:
+        column: funder_id
+        table:
+          name: subfunders
+          schema: public
+  type: create_array_relationship
