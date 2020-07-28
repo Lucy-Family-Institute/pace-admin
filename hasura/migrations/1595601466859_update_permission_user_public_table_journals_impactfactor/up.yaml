@@ -1,0 +1,17 @@
+- args:
+    permission:
+      columns:
+      - impactfactor
+      - id
+      - journal_id
+      - year
+      filter: {}
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: journals_impactfactor
+      schema: public
+  type: create_update_permission
