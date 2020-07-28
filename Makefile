@@ -67,15 +67,17 @@ newdb:
 	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
 	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
-    cd ingest && ts-node loadAwards.ts && cd ..
+	cd ingest && ts-node loadAwards.ts && cd ..
+	cd ingest && ts-node loadFunders.ts && cd ..
 	cd ingest && ts-node loadAbstracts.ts && cd ..
 	cd ingest && ts-node loadJournals.ts && cd ..
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
+	cd ingest && ts-node loadJournalsImpactFactors.ts && cd ..
 
 reharvest:
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
 	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
-    cd ingest && ts-node loadAwards.ts && cd ..
+	cd ingest && ts-node loadAwards.ts && cd ..
 	cd ingest && ts-node loadAbstracts.ts && cd ..
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
 
@@ -104,6 +106,16 @@ load_awards:
 load_journals:
 	cd ingest && ts-node loadJournals.ts && cd ..
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
+	cd ingest && ts-node loadJournalsImpactFactors.ts && cd ..
+
+load_impact_factors:
+	cd ingest && ts-node loadJournalsImpactFactors.ts && cd ..
+
+load_funders:
+	cd ingest && ts-node loadFunders.ts && cd ..
+
+update_awards_funders:
+	cd ingest && ts-node updateAwardsFunders.ts && cd ..
 
 update_pub_journals:
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..

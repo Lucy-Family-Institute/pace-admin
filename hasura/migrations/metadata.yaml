@@ -573,6 +573,18 @@ tables:
         table: journals_classifications
     name: journals_classifications
     comment: null
+  - using:
+      foreign_key_constraint_on:
+        column: journal_id
+        table: journals_impactfactors
+    name: journals_impactfactors
+    comment: null
+  - using:
+      foreign_key_constraint_on:
+        column: journal_id
+        table: publications
+    name: publications
+    comment: null
   insert_permissions:
   - role: user
     comment: null
@@ -667,6 +679,63 @@ tables:
       - classification_id
       - id
       - journal_id
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: journals_impactfactors
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      foreign_key_constraint_on: journal_id
+    name: journal
+    comment: null
+  array_relationships: []
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - journal_id
+      - year
+      - impactfactor
+      - title
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - impactfactor
+      - id
+      - journal_id
+      - year
+      - title
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - impactfactor
+      - id
+      - journal_id
+      - year
+      - title
       filter: {}
   delete_permissions: []
   event_triggers: []

@@ -41,10 +41,16 @@ export default function readPersonsByInstitutionByYearPendingPubs (institutionNa
             distinct_on: doi,
             where: {
               year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}, 
-              _not: {
+              _or: {
                 reviews: {
+                  review_type: {_eq: pending},
                   review_organization_value: {_eq: ND}
-                }
+                },
+                _not: {
+                  reviews: {
+                    review_organization_value: {_eq: ND}
+                  }
+                },
               }
             }) {
             aggregate {

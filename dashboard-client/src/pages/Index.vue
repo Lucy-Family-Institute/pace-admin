@@ -15,6 +15,11 @@
           </q-card>
           <q-card class="my-card" flat bordered>
             <q-card-section>
+              <apexchart style="max-width:425px" :width="`${(dashboardMiniState) ? 250: 425}`" type="pie" :options="impactFactorPieOptions" :series="impactFactorPieSeries"></apexchart>
+            </q-card-section>
+          </q-card>
+          <q-card class="my-card" flat bordered>
+            <q-card-section>
               <apexchart style="max-width:425px" :width="`${(dashboardMiniState) ? 250: 425}`" type="pie" :options="classificationPieOptions" :series="classificationPieSeries"></apexchart>
             </q-card-section>
           </q-card>
@@ -159,6 +164,50 @@ export default {
         }
       },
       classificationPieSeries: [],
+      impactFactorPieOptions: {
+        chart: {
+          type: 'pie',
+          events: {
+            dataPointSelection: function (event, chartContext, config) {
+              this.addFacetFilter('impact_factor_range', config.w.globals.labels[config.dataPointIndex])
+            }.bind(this)
+          },
+          toolbar: {
+            show: true,
+            tools: {
+              download: true
+            }
+          }
+        },
+        tooltip: {
+          enabled: true
+        },
+        dataLabels: {
+          style: { color: 'black' },
+          formatter: function (val, opt) {
+            return _.truncate(opt.w.globals.labels[opt.seriesIndex], { length: 15 })
+          }
+        },
+        legend: {
+          show: false
+        },
+        labels: [],
+        title: {
+          text: 'Journal Impact Factor',
+          align: 'left',
+          margin: 10,
+          offsetX: 0,
+          offsetY: 0,
+          floating: false,
+          style: {
+            fontSize: '18px',
+            fontWeight: 'bold',
+            fontFamily: undefined,
+            color: '#263238'
+          }
+        }
+      },
+      impactFactorPieSeries: [],
       journalTypePieOptions: {
         chart: {
           type: 'pie',
@@ -386,6 +435,50 @@ export default {
         },
         title: {
           text: 'Subjects',
+          align: 'left',
+          margin: 10,
+          offsetX: 0,
+          offsetY: 0,
+          floating: false,
+          style: {
+            fontSize: '18px',
+            fontWeight: 'bold',
+            fontFamily: undefined,
+            color: '#263238'
+          }
+        }
+      }
+      this.impactFactorPieSeries = _.values(this.facetsDistribution.impact_factor_range)
+      this.impactFactorPieOptions = {
+        chart: {
+          type: 'pie',
+          events: {
+            dataPointSelection: function (event, chartContext, config) {
+              this.addFacetFilter('impact_factor_range', config.w.globals.labels[config.dataPointIndex])
+            }.bind(this)
+          },
+          toolbar: {
+            show: true,
+            tools: {
+              download: true
+            }
+          }
+        },
+        labels: _.map(_.keys(this.facetsDistribution.impact_factor_range), this.makeStartCase),
+        legend: {
+          show: false
+        },
+        dataLabels: {
+          style: { color: '#FFFFFF' },
+          formatter: function (val, opt) {
+            return _.truncate(opt.w.globals.labels[opt.seriesIndex], { length: 15 })
+          }
+        },
+        tooltip: {
+          enabled: true
+        },
+        title: {
+          text: 'Journal Impact Factor',
           align: 'left',
           margin: 10,
           offsetX: 0,

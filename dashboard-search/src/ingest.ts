@@ -37,6 +37,30 @@ const gqlClient = new ApolloClient({
   cache: new InMemoryCache()
 })
 
+function getImpactFactorValue (doc) {
+  return _.find(
+    _.get(doc.publication, 'journal.journals_impactfactors', []), 
+    function ( factor ) {
+      // console.log(`Processing impact factors: ${JSON.stringify(factor, null, 2)}`)
+      // console.log(`Testing ${JSON.stringify(factor, null, 2)} against ${_.get(doc.publication, 'year')}`)
+      return Number.parseInt(factor.year) === Number.parseInt(_.get(doc.publication, 'year'))
+    }
+  )
+}
+
+function getImpactFactorRange (impactFactor) {
+  let impactFactorLevel = 'Low (0-1)'
+  if (impactFactor && impactFactor['impactfactor']) {
+    const factorVal = Number.parseFloat(impactFactor['impactfactor'])
+    if (factorVal >= 10) {
+      impactFactorLevel = 'High (10+)'
+    } else if (factorVal >= 2) {
+      impactFactorLevel = 'Medium (2-9)'
+    }
+  }
+  return impactFactorLevel
+}
+
 async function main() {
   console.log(await searchClient.getKeys())
   try {
@@ -78,6 +102,10 @@ async function main() {
                   identifier
                   name
                 }
+              }
+              journals_impactfactors {
+                year
+                impactfactor
               }
               publisher
             }
@@ -132,8 +160,11 @@ async function main() {
     .map((doc) => {
       if (doc.reviews[0].review_type !== 'accepted')
         return null
+      const impactFactor =  getImpactFactorValue(doc)
+      //set range value for impact factor
+      const impactFactorLevel = getImpactFactorRange(impactFactor)
       return {
-        id: `p${doc.publication.id}`,
+        id: `${doc.publication.id}`,
         type: 'publication',
         doi: _.get(doc.publication, 'doi'),
         title: _.get(doc.publication, 'title'),
@@ -148,6 +179,8 @@ async function main() {
             return topLevelClassifications[sliced]
           }
         )),
+        impact_factor: (impactFactor) ? impactFactor['impactfactor'] : 'Unavailable',
+        impact_factor_range: impactFactorLevel,
         classifications: _.map(_.get(doc.publication, 'journal.journals_classifications', []), c => c.classification.name),
         authors: `${_.get(doc.person, 'family_name')}, ${_.get(doc.person, 'given_name')}`,
         publisher: _.get(doc.publication, 'journal.publisher', null),
@@ -176,7 +209,7 @@ async function main() {
 
   let status
   const { updateId } = await index.updateAttributesForFaceting([
-    'year', 'type', 'journal', 'classifications', 'authors', 'journal_type', 'publisher', 'classificationsTopLevel', 'funder'
+    'year', 'type', 'journal', 'classifications', 'authors', 'journal_type', 'publisher', 'classificationsTopLevel', 'funder', 'impact_factor_range'
   ])
   do {
     await sleep(10)

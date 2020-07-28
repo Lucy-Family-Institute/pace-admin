@@ -63,6 +63,22 @@
               <q-card class="my-card" flat bordered>
                 <q-card class="my-card" bordered>
                   <q-card-section>
+                    <q-item-label align="center"><strong>Journal Impact Factor</strong></q-item-label>
+                  </q-card-section>
+                </q-card>
+                <q-card-section>
+                  <q-scroll-area :visible="true" style="height: 200px; max-width: 300px;">
+                    <q-list v-for="item in facetLists.impact_factor_range" :key="item.name" @click='addFacetFilter("impact_factor_range", item.name)'>
+                      <q-item clickable v-ripple v-if="item.count > 0">
+                        <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-scroll-area>
+                </q-card-section>
+              </q-card>
+              <q-card class="my-card" flat bordered>
+                <q-card class="my-card" bordered>
+                  <q-card-section>
                     <q-item-label align="center"><strong>Journal</strong></q-item-label>
                   </q-card-section>
                 </q-card>
@@ -198,6 +214,7 @@
                   <q-item-section>
                     <q-item-label v-html="result._formatted.title" />
                     <q-item-label caption v-html="makeAuthorList(result._formatted.authors)" v-if="result.authors" />
+                    <q-item-label caption v-html="`Journal: ${result.journal} (IF ${result.impact_factor})`" v-if="result.journal" />
                     <q-item-label caption v-html="result._formatted.abstract" v-if="result.abstract" />
                   </q-item-section>
                 </q-item>
@@ -270,7 +287,7 @@ export default {
     async runSearch () {
       const searchfor = this.search ? this.search : '*'
       const options = {
-        facetsDistribution: ['year', 'authors', 'classifications', 'journal', 'journal_type', 'publisher', 'classificationsTopLevel', 'funder'],
+        facetsDistribution: ['year', 'authors', 'classifications', 'journal', 'journal_type', 'publisher', 'classificationsTopLevel', 'funder', 'impact_factor_range'],
         attributesToHighlight: ['title', 'abstract', 'authors'],
         limit: 1000
       }
@@ -291,7 +308,7 @@ export default {
       this.numberOfHits = results.nbHits
       this.facetsDistribution = Object.freeze(results.facetsDistribution)
 
-      this.sortFacets(['classifications', 'authors', 'journal', 'journal_type', 'publisher', 'funder'], this.facetsDistribution)
+      this.sortFacets(['classifications', 'authors', 'journal', 'journal_type', 'publisher', 'funder', 'impact_factor_range'], this.facetsDistribution)
       // }
     },
     makeStartCase (word) {
@@ -324,6 +341,7 @@ export default {
         journal: (result.journal) ? result.journal : '',
         publisher: (result.publisher) ? result.publisher : '',
         year: result.year,
+        journal_impact_factor: (result.impact_factor) ? result.impact_factor : '',
         classification: (result.classifications) ? result.classifications : '',
         abstract: (result.abstract) ? result.abstract : ''
       }
