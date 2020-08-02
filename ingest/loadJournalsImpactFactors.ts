@@ -15,10 +15,12 @@ import pMap from 'p-map'
 import { command as nameParser } from './units/nameParser'
 import humanparser from 'humanparser'
 import dotenv from 'dotenv'
+import { split } from 'apollo-link'
 const Fuse = require('fuse.js')
 const moment = require('moment')
 const pify = require('pify')
 const fs = require('fs')
+const writeCsv = require('./units/writeCsv').command;
 
 dotenv.config({
   path: '../.env'
@@ -60,7 +62,7 @@ function normalizeString (value) {
     // the u0027 also normalizes the curly apostrophe to the straight one
     const norm2 = norm1.replace(/[\u2019]/g, '\u0027')
     // remove periods and other remaining special characters
-    const norm3 = norm2.replace(/[&\/\\#,+()$~%.'":*?<>{}!]/g,'');
+    const norm3 = norm2.replace(/[&\/\\#,+()$~%.'":*?<>{}!-]/g,'');
     return removeSpaces(norm3)
   } else {
     return value
@@ -149,7 +151,7 @@ async function insertJournalImpactFactorsToDB (journalImpactFactors) {
     const mutateFactorResult = await client.mutate(
       insertJournalsImpactFactors (journalImpactFactors)
     )
-    console.log(`mutate result keys are: ${_.keys(mutateFactorResult.data)}`)
+    // console.log(`mutate result keys are: ${_.keys(mutateFactorResult.data)}`)
     return mutateFactorResult.data.insert_journals_impactfactors.returning
   } catch (error) {
     throw error
@@ -173,6 +175,15 @@ function createImpactFactorObject(title, year, factor, journal_id) {
     impactfactor: factor,
     journal_id: journal_id
   }
+}
+
+function getSimpleMatch (matchedInfo) {
+  let obj = {
+    journal_if_title: matchedInfo['title'],
+    matched_journal_id: matchedInfo['Matches'][0]['id'],
+    matched_journal_title: matchedInfo['Matches'][0]['title']
+  }
+  return obj
 }
 
 async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, currentJournalImpactFactorsByJournalId) {
@@ -230,15 +241,31 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
       console.log(`${factorCounter} - Checking match for journal factor: ${journalFactorTitle}`)
       let matchedJournal = undefined
       const testTitle = normalizeString(journalFactorTitle)
+      // console.log(`checking test title: ${testTitle}`)
       // console.log(`Journal Map is: ${JSON.stringify(journalMap, null, 2)}`)
       const matchedJournals = journalMatchFuzzy(testTitle, journalFuzzyIndex)
+      // console.log(`matched journals are: ${JSON.stringify(matchedJournals, null, 2)}`)
+
+      let otherMatchedJournals = []
+      let otherMatchString = ''
+      // check with prefix stripped off as well if there is one
+      const splitJournalTitle = journalFactorTitle.split('-')
+      // only test again if only one word before the hyphen
+      if (splitJournalTitle.length>1 && splitJournalTitle[0].indexOf(' ') < 0){
+        // check to see if has prefix to strip
+        otherMatchString = journalFactorTitle.substr(journalFactorTitle.indexOf('-')+1)
+        otherMatchString = normalizeString(otherMatchString)
+        // console.log(`Checking new match string ${otherMatchString}`)
+        otherMatchedJournals = journalMatchFuzzy(otherMatchString, journalFuzzyIndex)
+      }
       let matchedInfo = {
         'title': journalFactorTitle
         // 'year': journalFactor['year'],
         // 'factor': journalFactor['impact_factor']
       }
-      if (matchedJournals.length > 1) {
+      if (matchedJournals.length > 1 || otherMatchedJournals.length > 1) {
         // console.log('here')
+        let extraMatch = []
         _.each(matchedJournals, (matched) => {
           // console.log(`Checking multiple matched journal test title ${testTitle}: ${JSON.stringify(matched, null, 2)}`)
           // try to grab exact match if it exists
@@ -247,20 +274,37 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
             matchedInfo['Matches'] = [matched]
           }
         })
+        _.each(otherMatchedJournals, (otherMatched) => {
+          if (_.toLower(otherMatched['title']) === _.toLower(otherMatchString)) {
+            // console.log(`Found exact match for multiple matched journal: ${JSON.stringify(matched, null, 2)}`)
+            extraMatch.push(otherMatched)
+          }
+        })
+       
         if (matchedInfo['Matches'] && matchedInfo['Matches'].length === 1) {
           singleMatches.push(matchedInfo)
-        } else {
+        } else if (extraMatch.length === 1) {
+          matchedInfo['Matches'] = extraMatch
+          singleMatches.push(matchedInfo)
+        } else if (matchedJournals.length > 1){
           matchedInfo['Matches'] = matchedJournals
           multipleMatches.push(matchedInfo)
+        } else if (otherMatchedJournals.length > 1){
+          matchedInfo['Matches'] = otherMatchedJournals
+          multipleMatches.push(matchedInfo)
         }
-      } else if (matchedJournals.length <= 0) {
+      } else if (matchedJournals.length <= 0 && otherMatchedJournals.length <= 0) {
         zeroMatches.push(matchedInfo)
         // zeroMatches.push(`No Matched journals for publication title - ${publication['title']}, journal - ${testTitle}: ${JSON.stringify(matchedJournals, null, 2)}`)
-      } else {
-        if (_.toLower(matchedJournals[0]['title']) === _.toLower(testTitle)) {
+      } else if (matchedJournals.length === 1 || otherMatchedJournals.length === 1){
+        if (matchedJournals.length === 1 && _.toLower(matchedJournals[0]['title']) === _.toLower(testTitle)) {
           matchedInfo['Matches'] = matchedJournals
           singleMatches.push(matchedInfo)
-        } else {
+        } else if (otherMatchedJournals.length === 1 && _.toLower(otherMatchedJournals[0]['title']) === _.toLower(otherMatchString)) {
+          matchedInfo['Matches'] = otherMatchedJournals
+          singleMatches.push(matchedInfo)
+        } 
+        else {
           zeroMatches.push(matchedInfo)
         }
         // console.log(`Matched journal - ${testTitle}: ${JSON.stringify(matchedJournals, null, 2)}`)
@@ -287,6 +331,18 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
     await pify(fs.writeFile)(multipleFilename, JSON.stringify(multipleMatches))
     console.log(`Writing ${zeroFilename}`);
     await pify(fs.writeFile)(zeroFilename, JSON.stringify(zeroMatches))
+
+    //write out single matches as csv
+    const singleCSVFileName = `${dataFolderPath}/journal_impact_factor_single_match.${moment().format('YYYYMMDDHHmmss')}.csv`
+    const data = _.map(singleMatches, (match) => {
+      return getSimpleMatch(match)
+    })
+    console.log(`data is: ${JSON.stringify(data, null, 2)}`)
+    await writeCsv({
+      path: singleCSVFileName,
+      data
+    });
+    
 
     // get current ones in DB and only insert if not already there
     // load the journal map into a map of id to year to existing impact factors
