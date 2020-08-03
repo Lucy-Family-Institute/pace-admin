@@ -20,9 +20,9 @@
             to="/center_review"
             exact
           />
-          <q-route-tab
+          <q-tab
             icon="poll"
-            to="/dashboard"
+            @click="openDashboard()"
             exact
           />
         </q-tabs>
@@ -86,6 +86,9 @@ export default {
   },
   methods: {
     openURL,
+    async openDashboard () {
+      openURL(process.env.DASHBOARD_BASE_URL)
+    },
     async syncSessionAndStore () {
       if (
         this.isLoggedIn === null ||
