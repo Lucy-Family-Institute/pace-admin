@@ -62,8 +62,14 @@ function normalizeString (value) {
     // the u0027 also normalizes the curly apostrophe to the straight one
     const norm2 = norm1.replace(/[\u2019]/g, '\u0027')
     // remove periods and other remaining special characters
-    const norm3 = norm2.replace(/[&\/\\#,+()$~%.'":*?<>{}!-]/g,'');
-    return removeSpaces(norm3)
+    const norm3 = norm2.replace(/[&\/\\#,+()$~%.'":*?<>{}!-]/g,'')
+    // replace any 'and' characters in case it is there instead of '&' or vice versa
+    let norm4 = norm3.replace(' and ', '')
+    // replace any leading 'the' with ''
+    if (_.startsWith(_.toLower(norm4), 'the ')) {
+      norm4 = norm4.substr(4)
+    }
+    return removeSpaces(norm4)
   } else {
     return value
   }
