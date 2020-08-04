@@ -1,7 +1,7 @@
 import gql from 'graphql-tag'
 // import _ from 'lodash'
 
-export default function readPersonPublicationsNDReviews (personPubIds) {
+export default function readPersonPublicationsReviewsConfSets (personPubIds) {
   const idsString = JSON.stringify(personPubIds)
   // let idsString = ''
   // for now manually construct the string for names in the array
@@ -25,7 +25,21 @@ export default function readPersonPublicationsNDReviews (personPubIds) {
             id
             doi
           }
+          confidencesets_aggregate(limit: 1, order_by: {datetime: desc}) {
+            nodes {
+              id
+              value
+              datetime
+            }
+          }
           reviews_aggregate(where: {review_organization_value: {_eq: ND}}, limit: 1, order_by: {datetime: desc}) {
+            nodes {
+              review_type
+              id
+              datetime
+            }
+          }
+          org_reviews_aggregate: reviews_aggregate(where: {review_organization_value: {_eq: HCRI}}, limit: 1, order_by: {datetime: desc}) {
             nodes {
               review_type
               id
