@@ -1472,7 +1472,7 @@ export default {
         console.log(`Starting query publications ND Reviews ${moment().format('HH:mm:ss:SSS')}`)
         // for now assume only one review, needs to be fixed later
         const pubsWithReviewResultNDReviews = await this.$apollo.query({
-          query: readPersonPublicationsNDReviews(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max),
+          query: readPersonPublicationsNDReviews(_.keys(personPubConfidenceSets)),
           fetchPolicy: 'network-only'
         })
         // console.log('***', pubsWithReviewResult)
