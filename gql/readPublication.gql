@@ -26,6 +26,12 @@ query MyQuery ($publicationId: Int!) {
         }
       }
     }
+    awards {
+      id
+      funder_award_identifier
+      funder_name
+      source_name
+    }
     csl_subject: csl(path: "subject")
   }
 }
