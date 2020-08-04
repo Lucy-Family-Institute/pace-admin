@@ -1,7 +1,7 @@
 import gql from 'graphql-tag'
 import _ from 'lodash'
 
-export default function readPersonPublicationsAllJS (institutionNames, pubYearMin, pubYearMax, memberYearMin, memberYearMax) {
+export default function readPersonPublicationsNDReviews (institutionNames, pubYearMin, pubYearMax, memberYearMin, memberYearMax) {
   const startDateLT = `1/1/${memberYearMax + 1}`
   const endDateGT = `12/31/${memberYearMin - 1}`
   let namesString = ''
@@ -41,23 +41,15 @@ export default function readPersonPublicationsAllJS (institutionNames, pubYearMi
           publication_id
           publication {
             id
-            title
             doi
-            source_name
-            scopus_eid: source_metadata(path: "eid")
-            pubmed_resource_identifiers: source_metadata(path: "resourceIdentifiers")
-            abstract
-            year
-            journal {
-              title
+          }
+          reviews_aggregate(where: {review_organization_value: {_eq: ND}}, limit: 1, order_by: {datetime: desc}) {
+            nodes {
+              review_type
+              id
+              datetime
             }
           }
-          person {
-            id
-            family_name
-            given_name
-          }
-          confidence
         }
       }
     `
