@@ -44,8 +44,6 @@ export default function readPersonPublicationsAllJS (institutionNames, pubYearMi
             title
             doi
             source_name
-            pubmed_funders: source_metadata(path: "funderIdentifiers")
-            crossref_funders: csl(path:"funder")
             scopus_eid: source_metadata(path: "eid")
             pubmed_resource_identifiers: source_metadata(path: "resourceIdentifiers")
             abstract
