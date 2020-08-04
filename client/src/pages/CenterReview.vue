@@ -424,7 +424,7 @@ import readReviewTypes from '../../../gql/readReviewTypes.gql'
 import readPublications from '../gql/readPublications'
 // import readPendingPublications from '../../../gql/readPendingPublications.gql'
 import readPersonPublicationsAll from '../gql/readPersonPublicationsAll'
-import readPersonPublicationsConfidenceSets from '../gql/readPersonPublicationsConfidenceSets'
+// import readPersonPublicationsConfidenceSets from '../gql/readPersonPublicationsConfidenceSets'
 import readPersonPublicationsNDReviews from '../gql/readPersonPublicationsNDReviews'
 import readPersonPublicationsHCRIReviews from '../gql/readPersonPublicationsHCRIReviews'
 import readAuthorsByPublications from '../gql/readAuthorsByPublications'
@@ -1458,17 +1458,17 @@ export default {
         })
         // console.log('***', pubsWithReviewResult)
         console.log(`Finished query publications ${moment().format('HH:mm:ss:SSS')}`)
-        console.log(`Starting query publications confidence sets ${moment().format('HH:mm:ss:SSS')}`)
-        // for now assume only one review, needs to be fixed later
-        const pubsWithReviewResultConf = await this.$apollo.query({
-          query: readPersonPublicationsConfidenceSets(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max),
-          fetchPolicy: 'network-only'
-        })
-        // console.log('***', pubsWithReviewResult)
-        console.log(`Finished query publications confidence sets ${moment().format('HH:mm:ss:SSS')}`)
-        const personPubConfidenceSets = _.mapKeys(pubsWithReviewResultConf.data.persons_publications, (personPub) => {
-          return personPub.id
-        })
+        // console.log(`Starting query publications confidence sets ${moment().format('HH:mm:ss:SSS')}`)
+        // // for now assume only one review, needs to be fixed later
+        // const pubsWithReviewResultConf = await this.$apollo.query({
+        //   query: readPersonPublicationsConfidenceSets(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max),
+        //   fetchPolicy: 'network-only'
+        // })
+        // // console.log('***', pubsWithReviewResult)
+        // console.log(`Finished query publications confidence sets ${moment().format('HH:mm:ss:SSS')}`)
+        // const personPubConfidenceSets = _.mapKeys(pubsWithReviewResultConf.data.persons_publications, (personPub) => {
+        //   return personPub.id
+        // })
         console.log(`Starting query publications ND Reviews ${moment().format('HH:mm:ss:SSS')}`)
         // for now assume only one review, needs to be fixed later
         const pubsWithReviewResultNDReviews = await this.$apollo.query({
@@ -1496,7 +1496,7 @@ export default {
         this.publications = _.map(pubsWithReviewResult.data.persons_publications, (personPub) => {
           // change doi to lowercase
           _.set(personPub.publication, 'doi', _.toLower(personPub.publication.doi))
-          _.set(personPub, 'confidencesets_aggregate', _.cloneDeep(personPubConfidenceSets[personPub.id].confidencesets_aggregate))
+          // _.set(personPub, 'confidencesets_aggregate', _.cloneDeep(personPubConfidenceSets[personPub.id].confidencesets_aggregate))
           _.set(personPub, 'reviews_aggregate', _.cloneDeep(personPubNDReviews[personPub.id]['reviews_aggregate']))
           _.set(personPub, 'org_reviews_aggregate', _.cloneDeep(personPubHCRIReviews[personPub.id]['org_reviews_aggregate']))
           return personPub
