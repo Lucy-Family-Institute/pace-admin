@@ -222,10 +222,6 @@
                       <q-item-label><b>Funding Awards:</b></q-item-label>
                       <q-item-label :key="index" v-for="(award, index) in publication.uniqueAwards" lines="1">- {{award.funder_name}} ({{award.funder_award_identifier}})</q-item-label>
                     </q-card-section>
-                    <q-card-section v-if="publication&&publication.journal!==undefined" class="text-left">
-                      <q-item-label><b>Journal Subjects:</b></q-item-label>
-                      <q-item-label :key="index" v-for="(classification, index) in publicationJournalClassifications" lines="1">- {{classification.name}}</q-item-label>
-                    </q-card-section>
                     <!--<q-card-section v-if="personPublication.publication.csl_subject && personPublication.publication.csl_subject.length > 0" dense class="text-left">
                       <q-item-label><b>Subjects:</b></q-item-label>
                       <q-item>{{personPublication.publication.csl_subjects}}</q-item>
@@ -239,6 +235,10 @@
                     </q-card-section>
                     <q-card-section v-else dense class="text-left">
                       <q-item-label><b>Abstract:</b> Unavailable</q-item-label>
+                    </q-card-section>
+                    <q-card-section v-if="publication&&publication.journal!==undefined" class="text-left">
+                      <q-item-label><b>Journal Subjects:</b></q-item-label>
+                      <q-item-label :key="index" v-for="(classification, index) in publicationJournalClassifications" lines="1">- {{classification.name}}</q-item-label>
                     </q-card-section>
                   </q-card>
                   <q-card v-if="unpaywall" class="col-xs-5" style="min-width:200px; max-height:300px" @click="pdf()">
