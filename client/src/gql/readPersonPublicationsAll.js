@@ -58,13 +58,6 @@ export default function readPersonPublicationsAllJS (institutionNames, pubYearMi
             given_name
           }
           confidence
-          confidencesets_aggregate(limit: 1, order_by: {datetime: desc}) {
-            nodes {
-              id
-              value
-              datetime
-            }
-          }
         }
       }
     `
