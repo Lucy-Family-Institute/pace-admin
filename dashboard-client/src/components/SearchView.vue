@@ -95,6 +95,22 @@
               <q-card class="my-card" flat bordered>
                 <q-card class="my-card" bordered>
                   <q-card-section>
+                    <q-item-label align="center"><strong>Funder</strong></q-item-label>
+                  </q-card-section>
+                </q-card>
+                <q-card-section>
+                  <q-scroll-area :visible="true" style="height: 200px; max-width: 300px;">
+                    <q-list v-for="item in facetLists.funder" :key="item.name" @click='addFacetFilter("funder", item.name)'>
+                      <q-item clickable v-ripple v-if="item.count > 0">
+                        <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-scroll-area>
+                </q-card-section>
+              </q-card>
+              <q-card class="my-card" flat bordered>
+                <q-card class="my-card" bordered>
+                  <q-card-section>
                     <q-item-label align="center"><strong>Subject</strong></q-item-label>
                   </q-card-section>
                 </q-card>
@@ -133,22 +149,6 @@
                 <q-card-section>
                   <q-scroll-area :visible="true" style="height: 200px; max-width: 300px;">
                     <q-list v-for="item in facetLists.journal_type" :key="item.name" @click='addFacetFilter("journal_type", item.name)'>
-                      <q-item clickable v-ripple v-if="item.count > 0">
-                        <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
-                      </q-item>
-                    </q-list>
-                  </q-scroll-area>
-                </q-card-section>
-              </q-card>
-              <q-card class="my-card" flat bordered>
-                <q-card class="my-card" bordered>
-                  <q-card-section>
-                    <q-item-label align="center"><strong>Funder</strong></q-item-label>
-                  </q-card-section>
-                </q-card>
-                <q-card-section>
-                  <q-scroll-area :visible="true" style="height: 200px; max-width: 300px;">
-                    <q-list v-for="item in facetLists.funder" :key="item.name" @click='addFacetFilter("funder", item.name)'>
                       <q-item clickable v-ripple v-if="item.count > 0">
                         <q-item-section>{{item.name}} ({{item.count}})</q-item-section>
                       </q-item>
@@ -320,7 +320,11 @@ export default {
         this.$set(this.facetLists, field, Object.freeze(
           _.orderBy(
             _.map(data[field], (value, key) => {
-              return { name: this.makeStartCase(key), count: value }
+              if (field === 'funder') {
+                return { name: _.toUpper(key), count: value }
+              } else {
+                return { name: this.makeStartCase(key), count: value }
+              }
             }),
             'count',
             'desc'
