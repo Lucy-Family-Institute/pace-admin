@@ -75,7 +75,7 @@ async function wait(ms){
 }
 
 async function randomWait(seedTime, index){
-  const waitTime = 1000 * (index % 10)
+  const waitTime = 1000 * (index % 5)
   //console.log(`Thread Waiting for ${waitTime} ms`)
   await wait(waitTime)
 }
@@ -119,35 +119,116 @@ async function randomWait(seedTime, index){
 //   return xmlToJson.xml2js(response.data, {compact:true});
 // }
 
-async function getShareSearch (curOffset, size) {
+async function getShareSources () {
+  let sources = []
+  let nextUrl = `https://share.osf.io/api/v2/sources/`
+
+  while (nextUrl!==null) {
+    const response = await axios.get(nextUrl, {})
+    // console.log(`Response keys: ${JSON.stringify(_.keys(response.data), null, 2)}`)
+    sources = _.concat(sources, response.data.data)
+    // console.log(`Sources length: ${sources.length}`)
+    nextUrl = response.data.links.next
+  }
+
+  return sources
+}
+
+async function getShareSourceSearch (source, curOffset, size) {
+  const query = createSearchQuery(source, null, null)
+  return await getShareSearch(query, curOffset, size)
+}
+
+async function getShareSourceDateSearch (source, startDate, endDate, curOffset, size) {
+  const query = createSearchQuery(source, startDate, endDate)
+  return await getShareSearch(query, curOffset, size)
+}
+
+// function getCenturyDates () {
+//   // return [
+//   //   {
+//   //     startDate: '1800-01-01',
+//   //     endDate: '1899-12-31'
+//   //   },
+//   //   {
+//   //     startDate: '1900-01-01',
+//   //     endDate: '1999-12-31'
+//   //   },
+//   //   {
+//   //     startDate: '2000-01-01',
+//   //     endDate: '2099-12-31'
+//   //   }
+//   // ]
+//   return getCenturyDates
+// }
+
+function getDecadeDates (startYear, endYear) {
+  return getYearDates(startYear, endYear, 10)
+}
+
+function getHalfCenturyDates (startYear, endYear) {
+  return getYearDates(startYear, endYear, 50)
+}
+
+function getCenturyDates () {
+  return getYearDates(1800, 2099, 100)
+}
+
+function getYearDates (startYear, endYear, increment) {
+  let dates = []
+  let curStartYear = startYear
+  while (curStartYear <= endYear) {
+    const curEndYear = curStartYear + increment - 1
+    const date = {
+      startYear: curStartYear,
+      endYear: curEndYear,
+      startDate: `${curStartYear}-01-01`,
+      endDate: `${curStartYear + increment - 1}-12-31`
+    }
+    dates.push(date)
+    curStartYear += increment
+  }
+  return dates
+}
+
+function createSearchQuery(source, startDate, endDate) {
+  let filter = []
+  filter.push({
+    term: {
+      sources: source
+    } 
+  })
+  if (startDate && endDate) {
+    filter.push({
+      range: {
+        date: {
+          gte: `${startDate}||/d`,
+          lte: `${endDate}||/d`
+        }
+      }
+    })
+  }
+  const query = {
+    query: {
+      bool: {
+        filter: filter
+      }
+    }
+  }
+  return query
+}
+
+async function getShareSearch (query, curOffset, size) {
   const url = `https://share.osf.io/api/v2/search/creativeworks/_search`
-  // const url = 'https://share.osf.io/api/v2/normalizeddata/'
+
+  // console.log(`Query is: ${JSON.stringify(query, null, 2)}`)
   const response = await axios.get(url, {
     params: {
-      size: size,
-      from: curOffset
+      source: JSON.stringify(query),
+      from: curOffset,
+      size: size
     }
   })
-  // console.log(`Returned response status: ${JSON.stringify(response.status, null, 2)}`)
-  // console.log(`Returned response statusText: ${JSON.stringify(response.statusText, null, 2)}`)
-  // console.log(`Returned response headers: ${JSON.stringify(response.headers, null, 2)}`)
-  // console.log(`Returned response config: ${JSON.stringify(response.config, null, 2)}`)
-  // console.log(`Returned response data keys: ${JSON.stringify(_.keys(response.data), null, 2)}`)
-  // console.log(`Returned response data links: ${JSON.stringify(response.data.links, null, 2)}`)
-  // console.log(`Returned response data data keys: ${JSON.stringify(_.keys(response.data.data), null, 2)}`)
-  // console.log(`Returned response data data: ${JSON.stringify(response.data.data, null, 2)}`)
-  // console.log(`Returned response data timed_out: ${JSON.stringify(response.data.timed_out, null, 2)}`)
-  // console.log(`Returned response data _shards: ${JSON.stringify(response.data._shards, null, 2)}`)
-  // console.log(`Returned response data hits keys: ${JSON.stringify(_.keys(response.data.hits), null, 2)}`)
-  // console.log(`Returned response data hits total: ${JSON.stringify(response.data.hits.total, null, 2)}`)
-  // console.log(`Returned response data hits max_score: ${JSON.stringify(response.data.hits.max_score, null, 2)}`)
-  // // console.log(`Returned response data hits length: ${JSON.stringify(response.data.hits.hits.length, null, 2)}`)
-  // // console.log(`Returned response data hits keys: ${JSON.stringify(_.keys(response.data.hits), null, 2)}`)
-  // // console.log(`Returned response data hits first: ${JSON.stringify(response.data.hits.hits[0], null, 2)}`)
-  // console.log(`Returned response request: ${JSON.stringify(_.keys(response.request), null, 2)}`)
-  // console.log(`Returned response: ${JSON.stringify(_.keys(response), null, 2)}`)
-  // console.log(`Returned response total results: ${JSON.stringify(response.data.data.length, null, 2)}`)
-  // console.log(`Response keys: ${_.keys(response)}`)
 
   // const urlNext = response.data.links.next
   // const responseNex = await axios.get(urlNext, {
@@ -229,71 +310,101 @@ async function writeSearchResult (dataDir, startIndex, results) {
 
 async function main() {
 
-  const pageSize = 1000
-  const startOffset = 10000
-  let offset = startOffset
-
   // create results directory
   const dataDir = path.join(process.cwd(), dataFolderPath, `share_${moment().format('YYYYMMDDHHmmss')}`)
-  fs.mkdirSync(dataDir);
+  fs.mkdirSync(dataDir)
 
-  const results = await getShareSearch(offset, pageSize)
-  if (results && results.total > 0) {
-    writeSearchResult(dataDir, offset, results.hits)
-    const totalResults = results.total - offset
-    // const totalResults = 2546
-    if (totalResults > pageSize) {
-      let numberOfRequests = parseInt(`${totalResults / pageSize}`) //convert to an integer to drop any decimal
-      if ((totalResults % pageSize) <= 0) {
-        numberOfRequests -= 1
-      }
-      console.log(`Making ${numberOfRequests} requests for ${totalResults} results`)
-      await pTimes (numberOfRequests, async function (index) {
-        randomWait(1000,index)
-        const curOffset = (pageSize * index) + pageSize + startOffset
-        // if (curOffset > totalResults) {
-        //   curOffset -= pageSize
-        //   curOffset += totalResults - curOffset
-        // }
-        // if (offset + pageSize < totalResults){
-        //   offset = pageSize * index
-        // } else {
-        //   offset += totalResults - offset
-        // }
-        if (curOffset < totalResults) {
-          // const curPage = (curOffset) / pageSize
-          // curOffset = index
-          try {
-            const nextResults = await getShareSearch(curOffset, pageSize)
-            if (nextResults && nextResults.total > 0) {
-              // console.log(`Offset is: ${curOffset}`)
-              writeSearchResult(dataDir, curOffset, nextResults.hits)
+  const shareSources = await getShareSources()
+  console.log(`Found ${shareSources.length} Share sources`)
+
+  const centuryDates = getCenturyDates()
+  console.log(`Century dates are: ${JSON.stringify(centuryDates, null, 2)}`)
+
+  let loopCounter = 0
+  const maxLimit = 9999
+  const subset = _.chunk(shareSources, 1)
+  await pMap (subset[4], async (source) => {
+    const pageSize = 1000
+    const startOffset = 0
+    let offset = startOffset
+    const sourceTitle = source.attributes['longTitle']
+    randomWait(1000, loopCounter)
+    const results = await getShareSourceSearch(source.attributes['longTitle'], offset, pageSize)
+    console.log(`${loopCounter} - Source '${sourceTitle}' found and getting ${results.total} results`)
+    if (results.total > maxLimit) {
+      console.log(`Too many results for source '${sourceTitle}', getting records by century...`)
+      await pMap(centuryDates, async (century) => {
+        // console.log(`${loopCounter} - Source '${sourceTitle}' getting ${century.startDate} to ${century.endDate}...`)
+        const centuryResults = await getShareSourceDateSearch(source.attributes['longTitle'], century.startDate, century.endDate, offset, pageSize)
+        console.log(`${loopCounter} - Source '${sourceTitle}' found ${century.startDate} to ${century.endDate} ${centuryResults.total} results`)
+        if (centuryResults.total > maxLimit) {
+          console.log(`${loopCounter} - Source '${sourceTitle}' too many results found ${century.startDate} to ${century.endDate} ${centuryResults.total} results, getting by half century`)
+          const halfCenturyDates = getHalfCenturyDates(century.startYear, century.endYear)
+          await pMap(halfCenturyDates, async (halfCentury) => {
+            const halfCenturyResults = await getShareSourceDateSearch(source.attributes['longTitle'], halfCentury.startDate, halfCentury.endDate, offset, pageSize)
+            console.log(`${loopCounter} - Source '${sourceTitle}' found ${halfCentury.startDate} to ${halfCentury.endDate} ${halfCenturyResults.total} results`)
+            if (halfCenturyResults.total > maxLimit) {
+              console.log(`${loopCounter} - Source '${sourceTitle}' too many results found ${halfCentury.startDate} to ${halfCentury.endDate} ${centuryResults.total} results, getting by decade`)
+              const decadeDates = getDecadeDates(halfCentury.startYear, halfCentury.endYear)
+              await pMap(decadeDates, async (decade) => {
+                const decadeResults = await getShareSourceDateSearch(source.attributes['longTitle'], decade.startDate, decade.endDate, offset, pageSize)
+                console.log(`${loopCounter} - Source '${sourceTitle}' found ${decade.startDate} to ${decade.endDate} ${decadeResults.total} results`)
+                if (decadeResults.total > maxLimit) {
+                  console.log(`${loopCounter} - Source '${sourceTitle}' too many results found ${decade.startDate} to ${decade.endDate} ${decadeResults.total} results, getting by year`)
+                  const yearDates = getYearDates(decade.startYear, decade.endYear, 1)
+                  await pMap(yearDates, async (year) => {
+                    const yearResults = await getShareSourceDateSearch(source.attributes['longTitle'], year.startDate, year.endDate, offset, pageSize)
+                    console.log(`${loopCounter} - Source '${sourceTitle}' found ${year.startDate} to ${year.endDate} ${yearResults.total} results`)
+                  }, { concurrency: 1})
+                }
+              }, { concurrency: 1 })
             }
-          } catch (error) {
-            console.log(`Error on offset: ${curOffset}`)
-          }
+          }, { concurrency: 1 })
         }
-      }, { concurrency: 1})
+      }, {concurrency: 1})
     }
-    // writeSearchResult(dataDir, startIndex, results.hits)
-  }
-  // const awardIds = await getIds();
-  // console.log(`Award ids are: ${JSON.stringify(awardIds, null, 2)}`)
-  // const uniqueAwardIds = _.uniq(awardIds);
-  // //let uniqueAwardIds = ['GM067079','CA212964'];
-  // console.log(`Found ${awardIds.length} awards; ${uniqueAwardIds.length} unique`);
-
-  // const mapper = async (awardId) => {
-  //   console.log(`Working on ${awardId}`);
-  //   const response = await getAwardPublications(awardId);
-  //   const filename = path.join(process.cwd(), dataFolderPath, 'awards', `${awardId}.json`);
-  //   if( response ) {
-  //     console.log(`Writing ${filename}`);
-  //     await pify(fs.writeFile)(filename, JSON.stringify(response));
+    loopCounter += 1
+  }, { concurrency: 30})
+  
+  // if (results && results.total > 0) {
+  //   writeSearchResult(dataDir, offset, results.hits)
+  //   const totalResults = results.total - offset
+  //   // const totalResults = 2546
+  //   if (totalResults > pageSize) {
+  //     let numberOfRequests = parseInt(`${totalResults / pageSize}`) //convert to an integer to drop any decimal
+  //     if ((totalResults % pageSize) <= 0) {
+  //       numberOfRequests -= 1
+  //     }
+  //     console.log(`Making ${numberOfRequests} requests for ${totalResults} results`)
+  //     await pTimes (numberOfRequests, async function (index) {
+  //       randomWait(1000,index)
+  //       const curOffset = (pageSize * index) + pageSize + startOffset
+  //       // if (curOffset > totalResults) {
+  //       //   curOffset -= pageSize
+  //       //   curOffset += totalResults - curOffset
+  //       // }
+  //       // if (offset + pageSize < totalResults){
+  //       //   offset = pageSize * index
+  //       // } else {
+  //       //   offset += totalResults - offset
+  //       // }
+  //       if (curOffset < totalResults) {
+  //         // const curPage = (curOffset) / pageSize
+  //         // curOffset = index
+  //         try {
+  //           const nextResults = await getShareSearch(curOffset, pageSize)
+  //           if (nextResults && nextResults.total > 0) {
+  //             // console.log(`Offset is: ${curOffset}`)
+  //             writeSearchResult(dataDir, curOffset, nextResults.hits)
+  //           }
+  //         } catch (error) {
+  //           console.log(`Error on offset: ${curOffset}`)
+  //         }
+  //       }
+  //     }, { concurrency: 1})
   //   }
-  // };
-  // //actually run the method above to getAwardPublications against each awardId in the awardsIds array, timeout enabled to avoid exceeded request limit to PMC
-  // const result = await pMap(uniqueAwardIds, mapper, {concurrency: 2});
+  //   // writeSearchResult(dataDir, startIndex, results.hits)
+  // }
 }
 
 main()
