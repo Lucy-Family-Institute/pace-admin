@@ -21,8 +21,9 @@ dotenv.config({
 })
 
 const axios = require('axios');
-const wosUsername = process.env.WOS_USERNAME 
-const wosPassword = process.env.WOS_PASSWORD
+const WOS_USERNAME = process.env.WOS_USERNAME 
+const WOS_PASSWORD = process.env.WOS_PASSWORD
+const WOS_API_LITE_KEY = process.env.WOS_API_LITE_KEY
 
 // environment variables
 process.env.NODE_ENV = 'development';
@@ -78,7 +79,7 @@ async function randomWait(seedTime, index){
 async function wosAuthenticate() {
   const baseUrl = 'http://search.webofknowledge.com/esti/wokmws/ws/WOKMWSAuthenticate'
   //encode authstring in base64, need to send as bytes, not character
-  const authString = `${wosUsername}:${wosPassword}`
+  const authString = `${WOS_USERNAME}:${WOS_PASSWORD}`
   console.log(`auth info: ${authString}`)
   const authB64 = Buffer.from(authString).toString('base64')
   
@@ -106,6 +107,11 @@ async function wosAuthenticate() {
   // }
   // console.log(cookie)
   return cookie
+}
+
+function getWoSRESTQueryString(authorFamilyName, authorGivenName) {
+  const query = `AU = (${authorFamilyName}, ${authorGivenName})`
+  return query  
 }
 
 function getWoSQuerySOAPString(authorFamilyName, authorGivenName) {
@@ -149,7 +155,31 @@ function getWoSRetrieveRecordString(queryId, offset, limit) {
                           </ns2:retrieve>\
                         </soap:Body>\
                       </soap:Envelope>`
+  // console.log(`soap string is: ${soapRetrieve}`)
   return soapRetrieve
+}
+
+async function getWoSAuthorDataREST(authorFamilyName, authorGivenName) {
+  const WOS_API_URL = 'https://wos-api.clarivate.com/api/wos'
+  const WOS_API_LITE_URL = 'https://wos-api.clarivate.com/api/woslite'
+  const baseUrl = WOS_API_LITE_URL
+  const count = 100
+  const db = 'WOS'
+  let firstRecord = 1
+  const userQuery = getWoSRESTQueryString(authorFamilyName, authorGivenName)
+  const query = {'databaseId': db, 'usrQuery': userQuery, 'count': count,
+                     'firstRecord': firstRecord}
+  const response = await axios.get(baseUrl, {
+    headers: {
+      'X-ApiKey' : WOS_API_LITE_KEY,
+      'Accept': 'application/json'
+    },
+    params: {
+      query : 'Smith' //query
+    }
+  });
+  console.log(`WoS REST query response: ${response}}`)
+  return response.data
 }
 
 async function getWoSAuthorData(sessionId, authorFamilyName, authorGivenName) { //, year, scopusAffiliationId, pageSize, offset){
@@ -194,16 +224,42 @@ async function retrieveWoSAuthorResults(sessionId, queryId, offset) {
   return jsonData
 }
 
+async function getWoSRESTAuthorPapers(authorFamilyName, authorGivenName) {
+  console.log('here')
+  const authorData = await getWoSAuthorDataREST(authorFamilyName, authorGivenName)
+  console.log(`Author data for ${authorFamilyName}, ${authorGivenName} is: ${authorData}`)
+  return authorData
+}
+
 async function getWoSAuthorPapers(sessionId, authorFamilyName, authorGivenName) {
+  const pageSize = 100
+  let offset = 1
+
   const authorData = await getWoSAuthorData(sessionId, authorFamilyName, authorGivenName)
+  // console.log(`Author data: ${JSON.stringify(authorData, null, 2)}`)
   const queryId = authorData['soap:Envelope']['soap:Body']['ns2:searchResponse'].return.queryId._text
+  const recordsFound = authorData['soap:Envelope']['soap:Body']['ns2:searchResponse'].return.recordsFound._text
+  console.log(`Total Records for Author - ${authorFamilyName}, ${authorGivenName}: ${recordsFound}`)
   await wait(1500)
-  const results = await retrieveWoSAuthorResults(sessionId, queryId, 1)
+  let numberOfRequests = parseInt(`${recordsFound / pageSize}`)
+  // check for a remainder
+  if (recordsFound % pageSize > 0) {
+    // add one more
+    numberOfRequests += 1
+  }
+  //loop to get the result of the results
+  console.log(`Making ${numberOfRequests} requests for ${authorFamilyName}, ${authorGivenName}`)
   let papers = []
-  _.each(results['soap:Envelope']['soap:Body']['ns2:retrieveResponse'].return.records, (record) => {
-    // console.log(record['title']['value']['_text'])
-    papers.push(record)
-  })
+  await pTimes (numberOfRequests, async function (index) {
+    randomWait(1000,index)
+    const results = await retrieveWoSAuthorResults(sessionId, queryId, offset)
+    // console.log(`First record is: ${JSON.stringify(results['soap:Envelope']['soap:Body']['ns2:retrieveResponse'].return.records[0], null, 2)}`)
+    offset += pageSize
+    _.each(results['soap:Envelope']['soap:Body']['ns2:retrieveResponse'].return.records, (record) => {
+      // console.log(record['title']['value']['_text'])
+      papers.push(record)
+    })
+  }, { concurrency: 1})
   return papers
 }
 
@@ -375,6 +431,7 @@ async function main (): Promise<void> {
         await wait(1500)
         // console.log(`Finished wait Getting papers for ${person.lastName}, ${person.firstName}`)
         const records = await getWoSAuthorPapers(sessionId, person.lastName, person.firstName)
+        //const records = await getWoSRESTAuthorPapers(person.lastName, person.firstName)
         const simplifiedPapers = getSimplifliedWoSPapers(records, person)
         // console.log(`simplified papers are: ${JSON.stringify(simplifiedPapers, null, 2)}`)
         //push in whole array for now and flatten later
