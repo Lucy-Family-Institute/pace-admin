@@ -14,7 +14,6 @@ export default function readAllNewPersonPublications (greaterThanPersonPubId) {
             id
             title
             doi
-            csl_string
           }
           confidence,
           id,
