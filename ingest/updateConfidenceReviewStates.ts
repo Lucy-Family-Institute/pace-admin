@@ -621,6 +621,7 @@ async function performConfidenceTest (confidenceType, publicationCsl, author, pu
 async function performAuthorConfidenceTests (author, publicationCsl, confirmedAuthors, confidenceTypesByRank) {
   // array of arrays for each rank sorted 1 to highest number
   // iterate through each group by rank if no matches in one rank, do no execute the next rank
+  // console.log(`Beginning Author Confidence Test for Author ${author['names'][0]['lastName']}, ${author['names'][0]['firstName']}`)
   const sortedRanks = _.sortBy(_.keys(confidenceTypesByRank), (value) => { return value })
   // now just push arrays in order into another array
 
@@ -741,10 +742,14 @@ async function calculateConfidence (mostRecentPersonPubId, testAuthors, confirme
   const failedTests = []
   const warningTests = []
 
+  console.log('Entering loop 1...')
+
   await pMap(testAuthors, async (testAuthor) => {
     console.log(`Confidence Test Author is: ${testAuthor['names'][0]['lastName']}, ${testAuthor['names'][0]['firstName']}`)
     // if most recent person pub id is defined, it will not recalculate past confidence sets
     const personPublications = await getPersonPublications(testAuthor['id'], mostRecentPersonPubId)
+    console.log(`Found '${personPublications.length}' new possible pub matches for Test Author: ${testAuthor['names'][0]['lastName']}, ${testAuthor['names'][0]['firstName']}`)
+    console.log(`Entering loop 2 Test Author: ${testAuthor['names'][0]['lastName']}`)
     await pMap(personPublications, async (personPublication) => {
       const publicationCsl = JSON.parse(personPublication['publication']['csl_string'])
       const passedConfidenceTests = await performAuthorConfidenceTests (testAuthor, publicationCsl, confirmedAuthors[personPublication['publication']['doi']], confidenceTypesByRank)
@@ -783,8 +788,11 @@ async function calculateConfidence (mostRecentPersonPubId, testAuthors, confirme
         failedTests.push(newTest)
       }
       // console.log(`Confidence found for ${JSON.stringify(testAuthor, null, 2)}: ${confidenceTotal}`)
-    }, {concurrency: 3})
-  }, { concurrency: 3 })
+    }, {concurrency: 1})
+    console.log(`Exiting loop 2 Test Author: ${testAuthor['names'][0]['lastName']}`)
+  }, { concurrency: 1 })
+
+  console.log('Exited loop 1')
   // console.log(`Failed Tests: ${JSON.stringify(failedTests, null, 2)}`)
   // console.log(`Confirmed authors: ${JSON.stringify(confirmedAuthors, null, 2)}`)
   const failedTestsByNewConf = _.groupBy(failedTests, (failedTest) => {
@@ -946,7 +954,7 @@ async function main() {
   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===78}))
   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===48}))
   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===61}))
-  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===45}))
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===77}))
   // console.log(`Test authors: ${JSON.stringify(testAuthors2, null, 2)}`)
 
   // get where last confidence test left off
@@ -954,7 +962,10 @@ async function main() {
   let mostRecentPersonPubId = undefined
   if (lastConfidenceSet) {
     mostRecentPersonPubId = lastConfidenceSet.persons_publications_id
+    console.log(`Last Person Pub Confidence set is: ${mostRecentPersonPubId}`)
     // mostRecentPersonPubId = 5747
+  } else {
+    console.log(`Last Person Pub Confidence set is undefined`)
   }
   const confidenceTests = await calculateConfidence (mostRecentPersonPubId, testAuthors, (confirmedAuthorsByDoi || {}))
 
@@ -1000,11 +1011,14 @@ async function main() {
   console.log('Synchronizing reviews with pre-existing publications...')
   // console.log(`New Person pubs by doi: ${JSON.stringify(newPersonPublicationsByDoi, null, 2)}`)
   let loopCounter3 = 0
+
+  // const mostRecentPersonPubId2 = 16943
   console.log(`Most recent person pub id: ${mostRecentPersonPubId}`)
   const newPubsQueryResult = await client.query(
     readAllNewPersonPublications(mostRecentPersonPubId)
   )
   const newPersonPubs = newPubsQueryResult.data.persons_publications
+  console.log(`Found ${newPersonPubs.length} New Person Pubs`)
   await pMap(newPersonPubs, async (newPersonPub) => {
     loopCounter3 += 1
     //have each wait a pseudo-random amount of time between 1-5 seconds

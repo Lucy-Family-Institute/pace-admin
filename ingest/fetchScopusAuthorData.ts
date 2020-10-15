@@ -270,7 +270,7 @@ async function getSimplifliedScopusPapers(scopusPapers, simplifiedPerson){
 
 async function main (): Promise<void> {
     
-  const years = [ 2019 ]
+  const years = [ 2019, 2018, 2017, 2016 ]
   const scopusAffiliationId = "60021508"
   await pMap(years, async (year) => {
     const simplifiedPersons = await getSimplifiedPersons(year)
