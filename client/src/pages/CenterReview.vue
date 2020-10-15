@@ -731,11 +731,13 @@ export default {
           return 'orange'
         } else if (sourceName.toLowerCase() === 'crossref') {
           return 'purple'
-        } else {
+        } else if (sourceName.toLowerCase() === 'webofscience') {
           return 'teal'
+        } else {
+          return 'indigo'
         }
       } else {
-        return 'teal'
+        return 'indigo'
       }
     },
     // return all duplicate publications
@@ -1101,6 +1103,7 @@ export default {
         doi: this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi)),
         journal: (personPublication.publication.journal) ? personPublication.publication.journal.title : '',
         year: personPublication.publication.year,
+        source_names: JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.publicationsGroupedByDoi[personPublication.publication.doi]), (pub) => { return pub.publication.source_name })),
         sources: this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.publicationsGroupedByDoi[personPublication.publication.doi])),
         abstract: personPublication.publication.abstract
       }

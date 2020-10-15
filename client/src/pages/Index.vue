@@ -631,11 +631,13 @@ export default {
           return 'orange'
         } else if (sourceName.toLowerCase() === 'crossref') {
           return 'purple'
-        } else {
+        } else if (sourceName.toLowerCase() === 'webofscience') {
           return 'teal'
+        } else {
+          return 'indigo'
         }
       } else {
-        return 'teal'
+        return 'indigo'
       }
     },
     // return all duplicate publications
