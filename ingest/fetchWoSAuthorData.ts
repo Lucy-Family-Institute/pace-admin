@@ -122,7 +122,7 @@ function getWoSQuerySOAPString(authorFamilyName, authorGivenName) {
                       <woksearchlite:search>\
                         <queryParameters>\
                             <databaseId>WOS</databaseId>\   
-                            <userQuery>AU = (${authorFamilyName}, ${authorGivenName})  </userQuery>\
+                            <userQuery>AU = (${authorFamilyName}, ${authorGivenName}) AND OG = (University of Notre Dame) </userQuery>\
                             <editions>\
                               <collection>WOS</collection>\
                               <edition>SCI</edition>\
@@ -411,7 +411,7 @@ async function main (): Promise<void> {
   // _.each(results['soap:Envelope']['soap:Body']['ns2:retrieveResponse'].return.records, (record) => {
   //   console.log(record['title']['value']['_text'])
   // })
-  const years = [ 2019 ]
+  const years = [ 2019, 2018, 2017, 2016 ]
   // const scopusAffiliationId = "60021508"
   let succeededPapers = []
   let failedPapers = []
