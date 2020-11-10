@@ -18,7 +18,7 @@ ifeq ($(UNAME),Linux)
 endif
 
 DOCKER_HOST_IP = host.docker.internal
-ifeq ($(SYSTEM),Linux) 	
+ifeq ($(SYSTEM),Linux)
 	DOCKER_HOST_IP=$(shell ip -4 addr show docker0 | grep -Po 'inet \K[\d.]+')
 endif
 
@@ -46,6 +46,7 @@ endif
 install_quasar:
 ifeq (,$(shell which quasar))
 	npm -g install quasar
+	npm install -g @quasar/cli
 endif
 
 install_js:
@@ -143,7 +144,7 @@ dashboard-client:
 	cd dashboard-client && quasar dev && cd ..
 
 docker:
-	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose up 
+	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose up
 
 clear_pdfs:
 	rm data/pdfs/*
