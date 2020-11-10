@@ -45,6 +45,10 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "lint": "./node_modules/.bin/eslint loadAuthors.ts --fix"
+    "lint": "./node_modules/.bin/eslint loadAuthors.ts --fix",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^26.6.3"
   }
 }
