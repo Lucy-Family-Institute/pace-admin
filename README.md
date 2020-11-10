@@ -1,7 +1,7 @@
 # pace-admin
 Publication Activity Collection Environment (PACE) Admin Tools and DB
 
-A pilot project under development to investigate ways to streamline and improve the collection, reporting, and analysis of related publication information for the subsequent annual reporting process for campus centers and institutes. It is a time consuming process for each center/institute to determine scholarly productivity by polling faculty, reviewing their CVs, etc., where confidence in the data collected is crucial to ensure good investment decisions of University resources. 
+A pilot project under development to investigate ways to streamline and improve the collection, reporting, and analysis of related publication information for the subsequent annual reporting process for campus centers and institutes. It is a time consuming process for each center/institute to determine scholarly productivity by polling faculty, reviewing their CVs, etc., where confidence in the data collected is crucial to ensure good investment decisions of University resources.
 
 This pilot project will prototype a new process that automates data collection from internal and external sources and reporting, as well as integrate validation steps to increase confidence in data considered.
 
@@ -21,6 +21,22 @@ This pilot project will prototype a new process that automates data collection f
     make migration_console
 
 It's worth running ``make install_js`` every now and then to make sure your packages are up-to-date.
+
+# User Management
+
+Create your Auth Front End Credentials:
+
+- http://localhost:8001
+- Select User admin
+- Use Keycloak credentials in `.env`
+- Go to Manage > Users and add a user for yourself
+- Edit user's Credentials; Add a password and uncheck "Temporary"
+
+Propogate your email into the Hasura users table:
+
+- In http://localhost:9695/console
+- Select the "Data" tab and scroll to `users` table.
+- Select "Insert Role" and add the email address from the above Auth Front End Credentials.
 
 # Production
 
