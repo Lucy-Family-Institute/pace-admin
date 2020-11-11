@@ -21,6 +21,7 @@ const moment = require('moment')
 const pify = require('pify')
 const fs = require('fs')
 const writeCsv = require('./units/writeCsv').command;
+import { randomWait } from './units/randomWait'
 
 dotenv.config({
   path: '../.env'
@@ -39,18 +40,6 @@ const client = new ApolloClient({
   }),
   cache: new InMemoryCache()
 })
-
-async function wait(ms){
-  return new Promise((resolve, reject)=> {
-    setTimeout(() => resolve(true), ms );
-  });
-}
-
-async function randomWait(seedTime, index){
-  const waitTime = 1000 * (index % 5)
-  //console.log(`Thread Waiting for ${waitTime} ms`)
-  await wait(waitTime)
-}
 
 // replace diacritics with alphabetic character equivalents
 function normalizeString (value) {
@@ -110,7 +99,7 @@ function createFuzzyIndex (titleKey, journalMap) {
   const testJournalMap = _.map(journalMap, (journal) => {
     return normalizeObjectProperties(journal, [titleKey])
  })
-  
+
  const journalFuzzy = new Fuse(testJournalMap, {
    caseSensitive: false,
    shouldSort: true,
@@ -286,7 +275,7 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
             extraMatch.push(otherMatched)
           }
         })
-       
+
         if (matchedInfo['Matches'] && matchedInfo['Matches'].length === 1) {
           singleMatches.push(matchedInfo)
         } else if (extraMatch.length === 1) {
@@ -309,14 +298,14 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
         } else if (otherMatchedJournals.length === 1 && _.toLower(otherMatchedJournals[0]['title']) === _.toLower(otherMatchString)) {
           matchedInfo['Matches'] = otherMatchedJournals
           singleMatches.push(matchedInfo)
-        } 
+        }
         else {
           zeroMatches.push(matchedInfo)
         }
         // console.log(`Matched journal - ${testTitle}: ${JSON.stringify(matchedJournals, null, 2)}`)
       }
     }, {concurrency: 60})
- 
+
     // console.log(`Multiple Matches: ${JSON.stringify(multipleMatches, null, 2)}`)
     // _.each(zeroMatches, (zeroMatch) => {
     //    console.log(`No Match Title: ${zeroMatch['title']}`)
@@ -348,7 +337,7 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
       path: singleCSVFileName,
       data
     });
-    
+
 
     // get current ones in DB and only insert if not already there
     // load the journal map into a map of id to year to existing impact factors
@@ -403,13 +392,13 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
       loopCounter += 1
       console.log(`Trying to insert ${journalImpactFactors.length} journal impact factors for loop ${loopCounter}`)
       //prepare batch
-      
+
       //have each wait a pseudo-random amount of time between 1-5 seconds
-      await randomWait(1000, loopCounter)
+      await randomWait(loopCounter)
       const insertedJournalImpactFactors = await insertJournalImpactFactorsToDB(journalImpactFactors)
       console.log(`Inserted ${insertedJournalImpactFactors.length} Journal Impact Factors`)
     }, {concurrency: 1})
-    
+
     // return journals
   } catch (error){
     throw error

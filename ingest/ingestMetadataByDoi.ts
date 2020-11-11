@@ -17,6 +17,7 @@ import Cite from 'citation-js'
 import pMap from 'p-map'
 import { command as nameParser } from './units/nameParser'
 import humanparser from 'humanparser'
+import { randomWait } from './units/randomWait'
 
 import dotenv from 'dotenv'
 import readPublicationsByDoi from './gql/readPublicationsByDoi'
@@ -40,18 +41,6 @@ const client = new ApolloClient({
   }),
   cache: new InMemoryCache()
 })
-
-async function wait(ms){
-  return new Promise((resolve, reject)=> {
-    setTimeout(() => resolve(true), ms );
-  });
-}
-
-async function randomWait(index, seedTime = 1000){
-  const waitTime = seedTime * (1 + (index % 5))
-  //console.log(`Thread Waiting for ${waitTime} ms`)
-  await wait(waitTime)
-}
 
 // var publicationId= undefined;
 
@@ -426,7 +415,7 @@ async function loadPersonPapersFromCSV (personMap, path) {
         processedCount += 1
         loopCounter += 1
         //have each wait a pseudo-random amount of time between 1-5 seconds
-        
+
         await randomWait(loopCounter)
 
         //get CSL (citation style language) record by doi from dx.dio.org
@@ -581,7 +570,7 @@ async function loadPersonPapersFromCSV (personMap, path) {
 //   }, { concurrency: 1})
 // }
 
-const getIngestFilePathsByYear = require('../getIngestFilePathsByYear');
+const getIngestFilePathsByYear = require('./getIngestFilePathsByYear');
 
 //returns status map of what was done
 async function main() {
