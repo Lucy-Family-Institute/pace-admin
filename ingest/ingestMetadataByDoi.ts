@@ -173,10 +173,8 @@ async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName
   }
 }
 
-async function getAllSimplifiedPersons() {
-  const queryResult = await client.query(readPersons())
-
-  const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
+function mapToSimplifiedPeople(people) {
+  const simplifiedPersons = _.map(people, (person) => {
     return {
       id: person.id,
       lastName: _.lowerCase(person.family_name),
@@ -189,20 +187,14 @@ async function getAllSimplifiedPersons() {
   return simplifiedPersons
 }
 
+async function getAllSimplifiedPersons() {
+  const queryResult = await client.query(readPersons())
+  return mapToSimplifiedPeople(queryResult.data.persons)
+}
+
 async function getSimplifiedPersonsByYear(year) {
   const queryResult = await client.query(readPersonsByYear(year))
-
-  const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
-    return {
-      id: person.id,
-      lastName: _.lowerCase(person.family_name),
-      firstInitial: _.lowerCase(person.given_name[0]),
-      firstName: _.lowerCase(person.given_name),
-      startYear: person.start_date,
-      endYear: person.end_date
-    }
-  })
-  return simplifiedPersons
+  return mapToSimplifiedPeople(queryResult.data.persons)
 }
 
 async function getPapersByDoi (csvPath) {
