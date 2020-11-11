@@ -434,6 +434,7 @@ async function loadPersonPapersFromCSV (personMap, path) {
         processedCount += 1
         loopCounter += 1
         //have each wait a pseudo-random amount of time between 1-5 seconds
+        
         await randomWait(loopCounter)
 
         //get CSL (citation style language) record by doi from dx.dio.org
@@ -588,16 +589,12 @@ async function loadPersonPapersFromCSV (personMap, path) {
 //   }, { concurrency: 1})
 // }
 
+const getIngestFilePathsByYear = require('../getIngestFilePathsByYear');
+
 //returns status map of what was done
 async function main() {
 
-  const pathsByYear = {
-    // 2019: ['../data/pubmedPubsByAuthor.20200709113001.csv']
-    // 2019: ['../data/scopus.2019.20200714133113.csv', '../data/pubmedPubsByAuthor.20200709113001.csv']
-    2019: ['../data/HCRI-pubs-2019_-_Faculty_Selected_2.csv', '../data/scopus.2019.20200714133113.csv', '../data/pubmedPubsByAuthor.20200709113001.csv'],
-    2018: ['../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv'],
-    2017: ['../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv', '../data/authorsByAwards.20200409094731.csv']
-  }
+  const pathsByYear = await getIngestFilePathsByYear()
 
   //just get all simplified persons as will filter later
   const simplifiedPersons = await getAllSimplifiedPersons()

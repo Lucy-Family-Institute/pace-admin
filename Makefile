@@ -18,7 +18,7 @@ ifeq ($(UNAME),Linux)
 endif
 
 DOCKER_HOST_IP = host.docker.internal
-ifeq ($(SYSTEM),Linux) 	
+ifeq ($(SYSTEM),Linux)
 	DOCKER_HOST_IP=$(shell ip -4 addr show docker0 | grep -Po 'inet \K[\d.]+')
 endif
 
@@ -46,6 +46,12 @@ endif
 install_quasar:
 ifeq (,$(shell which quasar))
 	npm -g install quasar
+	npm install -g @quasar/cli
+endif
+
+install_typescript:
+ifeq (,$(shell which tsc))
+	npm -g install tsc
 endif
 
 install_js:
@@ -54,6 +60,12 @@ install_js:
 	cd ingest && yarn && cd ..
 	cd dashboard-search && yarn && cd ..
 	cd dashboard-client && yarn && cd ..
+
+install_ts_node:
+ifeq (,$(shell which ts-node))
+	npm -g install ts-node
+endif
+
 
 update_confidence_reviews:
 	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
@@ -126,7 +138,7 @@ scopus_author_data:
 dashboard-ingest:
 	cd dashboard-search && ts-node src/ingest.ts && cd ..
 
-install: install_docker_compose install_hasura_cli install_yarn install_quasar install_js
+install: install_docker_compose install_hasura_cli install_yarn install_quasar install_js install_ts_node install_typescript
 	echo 'Installing'
 
 start_docker:
@@ -143,7 +155,7 @@ dashboard-client:
 	cd dashboard-client && quasar dev && cd ..
 
 docker:
-	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose up 
+	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose up
 
 clear_pdfs:
 	rm data/pdfs/*

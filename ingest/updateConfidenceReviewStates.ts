@@ -21,6 +21,7 @@ import dotenv from 'dotenv'
 import readAllNewPersonPublications from './gql/readAllNewPersonPublications'
 import insertReview from '../client/src/gql/insertReview'
 import readPersonPublicationsByDoi from './gql/readPersonPublicationsByDoi'
+const getIngestFilePathsByYear = require('../getIngestFilePathsByYear');
 
 dotenv.config({
   path: '../.env'
@@ -142,7 +143,7 @@ async function getPapersByDoi (csvPath) {
     const papersByDoi = _.groupBy(authorLowerPapers, function(paper) {
       //strip off 'doi:' if present
       //console.log('in loop')
-      return _.replace(paper['doi'], 'doi:', '') 
+      return _.replace(paper['doi'], 'doi:', '')
     })
     //console.log('Finished load')
     return papersByDoi
@@ -150,7 +151,7 @@ async function getPapersByDoi (csvPath) {
     console.log(`Error on paper load for path ${csvPath}, error: ${error}`)
     return undefined
   }
-} 
+}
 
 async function getConfirmedAuthorsByDoi (papersByDoi, csvColumn) {
   const confirmedAuthorsByDoi = _.mapValues(papersByDoi, function (papers) {
@@ -171,16 +172,16 @@ async function getConfirmedAuthorsByDoiFromCSV (path) {
     const papersByDoi = await getPapersByDoi(path)
     const dois = _.keys(papersByDoi)
     console.log(`Papers by DOI Count: ${JSON.stringify(dois.length,null,2)}`)
-   
+
     const confirmedAuthorColumn = 'nd author (last, first)'
     const firstDoiConfirmedList = papersByDoi[dois[0]]
-  
+
     //check if confirmed column exists first, if not ignore this step
     let confirmedAuthorsByDoi = {}
     if (papersByDoi && dois.length > 0 && firstDoiConfirmedList && firstDoiConfirmedList.length > 0 && firstDoiConfirmedList[0][confirmedAuthorColumn]){
       //get map of DOI's to an array of confirmed authors from the load table
       confirmedAuthorsByDoi = await getConfirmedAuthorsByDoi(papersByDoi, confirmedAuthorColumn)
-     
+
       // console.log(`Confirmed Authors By Doi are: ${JSON.stringify(confirmedAuthorsByDoi,null,2)}`)
     }
     return confirmedAuthorsByDoi
@@ -217,7 +218,7 @@ async function matchPeopleToPaperAuthors(personMap, authors, confirmedAuthors){
 
         //match on last name found increment confidence by 0.3
         confidenceVal += 0.3
-        
+
         if (_.lowerCase(author.given)[0] === testPerson.firstInitial){
           firstInitialFound = true
 
@@ -261,7 +262,7 @@ async function matchPeopleToPaperAuthors(personMap, authors, confirmedAuthors){
           console.log(`Match found for Author: ${author.family}, ${author.given}`)
           matchedPersonMap[testPerson.id] = {'person': testPerson, 'confidence': confidenceVal}
           //console.log(`After add matched persons map is: ${JSON.stringify(matchedPersonMap,null,2)}`)
-        } 
+        }
       })
     } else {
       //console.log(`No match found for Author: ${author.family}, ${author.given}`)
@@ -286,7 +287,7 @@ async function getCSLAuthors(paperCsl){
     firstAuthors : [],
     otherAuthors : []
   }
-  
+
   let authorCount = 0
   //console.log(`Before author loop paper csl: ${JSON.stringify(paperCsl,null,2)}`)
   _.each(paperCsl.author, async (author) => {
@@ -294,7 +295,7 @@ async function getCSLAuthors(paperCsl){
     if (author.family != undefined){
       //console.log(`Adding author ${JSON.stringify(author,null,2)}`)
       authorCount += 1
-            
+
       //if given name empty change to empty string instead of null, so that insert completes
       if (author.given === undefined) author.given = ''
 
@@ -525,7 +526,7 @@ function testAuthorGivenNamePart (author, publicationAuthorMap, initialOnly) {
         //console.log(`Found lastname match pub: ${pubLastName} and variation: ${nameLastName}`)
         // now check for first initial or given name match
         // split the given name based on spaces
-        
+
         _.each(publicationAuthorMap[pubLastName], (pubAuthor) => {
           // split given names into separate parts and check initial against each one
           let matched = false
@@ -535,7 +536,7 @@ function testAuthorGivenNamePart (author, publicationAuthorMap, initialOnly) {
             if (initialOnly){
               part = part[0]
               firstKey = 'firstInitial'
-            } 
+            }
             if (part===undefined){
               console.log(`splitting given parts pubAuthor is: ${JSON.stringify(pubAuthor, null, 2)}`)
             }
@@ -725,7 +726,7 @@ async function calculateAuthorConfidence (passedConfidenceTests) {
     newPassedConfidenceTests[rank] = newConfidenceTests
   })
   return newPassedConfidenceTests
-} 
+}
 
 // Calculate the confidence of a match for each given test author and publication
 //
@@ -784,7 +785,7 @@ async function calculateConfidence (mostRecentPersonPubId, testAuthors, confirme
         passedTests.push(newTest)
       } else if (confidenceTotal > personPublication['confidence']) {
         warningTests.push(newTest)
-      } else { 
+      } else {
         failedTests.push(newTest)
       }
       // console.log(`Confidence found for ${JSON.stringify(testAuthor, null, 2)}: ${confidenceTotal}`)
@@ -888,7 +889,7 @@ async function synchronizeReviews(doi, personId, newPersonPubId, index) {
       }
     })
   })
-  
+
   if (_.keys(reviews).length > 0) {
     console.log(`Item #${index} New Person Pub Id: ${JSON.stringify(newPersonPubId, null, 2)} inserting reviews: ${_.keys(reviews).length}`)
     await pMap(_.keys(reviews), async (reviewOrgValue) => {
@@ -905,14 +906,10 @@ async function synchronizeReviews(doi, personId, newPersonPubId, index) {
 async function main() {
 
   // use related github commit hash for the version when algorithm last completed
+  // @todo: Extract to ENV?
   const confidenceAlgorithmVersion = '876b7bd06e1ca819f5fe2f77ee48ea8c491f1ab1'
   // get confirmed author lists to papers
-  const pathsByYear = {
-    // 2019: ['../data/scopus.2019.20200320103319.csv']
-    2019: ['../data/HCRI-pubs-2019_-_Faculty_Selected_2.csv'],
-    2018: ['../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv'],
-    2017: ['../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv']
-  }
+  const pathsByYear = await getIngestFilePathsByYear("../admin/config/ingestConfidenceReviewFilePaths.json")
 
   // get the set of persons to test
   const testAuthors = await getAllSimplifiedPersons()
@@ -939,7 +936,7 @@ async function main() {
   _.each(_.keys(confirmedAuthorsByDoiByYear), (year) => {
     _.each(_.keys(confirmedAuthorsByDoiByYear[year]), (doi) => {
       confirmedAuthorsByDoi[doi] = _.concat((confirmedAuthorsByDoi[doi] || []), _.values(confirmedAuthorsByDoiByYear[year][doi]))
-    }) 
+    })
   })
 
   // console.log(`Confirmed Authors: ${JSON.stringify(confirmedAuthorsByDoi['10.1158/1541-7786.mcr-16-0312'], null, 2)}`)
