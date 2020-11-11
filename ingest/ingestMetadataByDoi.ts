@@ -84,10 +84,6 @@ async function getCitationApa (doi) {
     return apaCitation
 }
 
-function getSimpleName (lastName, firstInitial){
-  return `${lastName}, ${firstInitial}`
-}
-
 function getPublicationYear (csl) {
   // look for both online and print dates, and make newer date win if different
   // put in array sorted by date
