@@ -11,6 +11,7 @@ import updatePubJournal from './gql/updatePubJournal'
 import { __EnumValue } from 'graphql'
 import dotenv from 'dotenv'
 import pMap from 'p-map'
+import { randomWait } from './units/randomWait'
 const Fuse = require('fuse.js')
 
 
@@ -38,18 +39,6 @@ const client = new ApolloClient({
   }),
   cache: new InMemoryCache()
 })
-
-async function wait(ms){
-  return new Promise((resolve, reject)=> {
-    setTimeout(() => resolve(true), ms );
-  });
-}
-
-async function randomWait(seedTime, index){
-  const waitTime = 1000 * (index % 5)
-  //console.log(`Thread Waiting for ${waitTime} ms`)
-  await wait(waitTime)
-}
 
 // replace diacritics with alphabetic character equivalents
 function normalizeString (value) {
@@ -186,17 +175,17 @@ async function main (): Promise<void> {
       }
     }
   }, {concurrency: 60})
- 
+
   console.log(`Multiple Matches: ${JSON.stringify(multipleMatches, null, 2)}`)
   console.log(`Multiple Matches Count: ${multipleMatches.length}`)
   console.log(`No Matches Count: ${zeroMatches.length}`)
   console.log(`Single Matches Count: ${singleMatches.length}`)
- 
+
   //insert single matches
   let loopCounter = 0
   await pMap(singleMatches, async (matched) => {
     loopCounter += 1
-    await randomWait(1000, loopCounter)
+    await randomWait(loopCounter)
     console.log(`Updating journal of pub ${loopCounter} ${matched['Article']}`)
     const resultUpdatePubJournal = await client.mutate(updatePubJournal(matched['doi'], matched['Matches'][0]['id']))
     // console.log(`Returned result journal: ${JSON.stringify(resultUpdatePubJournal.data.update_publications.returning, null, 2)}`)

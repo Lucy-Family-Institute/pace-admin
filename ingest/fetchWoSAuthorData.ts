@@ -9,19 +9,20 @@ import readPersonsByYear from '../client/src/gql/readPersonsByYear'
 import readPublicationsByPersonByConfidence from '../client/src/gql/readPublicationsByPersonByConfidence'
 import { command as loadCsv } from './units/loadCsv'
 import { split } from 'apollo-link'
-import cslParser from './utils/cslParser' 
+import cslParser from './utils/cslParser'
 import { command as writeCsv } from './units/writeCsv'
 import moment from 'moment'
 import dotenv from 'dotenv'
 import resolve from 'path'
 const xmlToJson = require('xml-js');
+import { randomWait } from './units/randomWait'
 
 dotenv.config({
   path: '../.env'
 })
 
 const axios = require('axios');
-const WOS_USERNAME = process.env.WOS_USERNAME 
+const WOS_USERNAME = process.env.WOS_USERNAME
 const WOS_PASSWORD = process.env.WOS_PASSWORD
 const WOS_API_LITE_KEY = process.env.WOS_API_LITE_KEY
 
@@ -63,18 +64,6 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 })
 
-async function wait(ms){
-  return new Promise((resolve, reject)=> {
-    setTimeout(() => resolve(true), ms );
-  });
-}
-
-async function randomWait(seedTime, index){
-  const waitTime = seedTime * (index % 5)
-  //console.log(`Thread Waiting for ${waitTime} ms`)
-  await wait(waitTime)
-}
-
 // return the session id
 async function wosAuthenticate() {
   const baseUrl = 'http://search.webofknowledge.com/esti/wokmws/ws/WOKMWSAuthenticate'
@@ -82,7 +71,7 @@ async function wosAuthenticate() {
   const authString = `${WOS_USERNAME}:${WOS_PASSWORD}`
   console.log(`auth info: ${authString}`)
   const authB64 = Buffer.from(authString).toString('base64')
-  
+
   let soapAuthenticate = '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"\
                             xmlns:auth="http://auth.cxf.wokmws.thomsonreuters.com">\
                             <soapenv:Header/>\
@@ -95,7 +84,7 @@ async function wosAuthenticate() {
   const response = await axios.post(baseUrl, soapAuthenticate,
     {
       headers: {
-        'Authorization': `Basic ${authB64}`, 
+        'Authorization': `Basic ${authB64}`,
         'SOAPAction': '',
         'content-type' : 'text/xml;charset=UTF-8'
       }
@@ -111,22 +100,22 @@ async function wosAuthenticate() {
 
 function getWoSRESTQueryString(authorFamilyName, authorGivenName) {
   const query = `AU = (${authorFamilyName}, ${authorGivenName})`
-  return query  
+  return query
 }
 
 function getWoSQuerySOAPString(authorFamilyName, authorGivenName) {
-  let soapquery = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"\ 
+  let soapquery = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"\
                     xmlns:woksearchlite="http://woksearchlite.v3.wokmws.thomsonreuters.com">\
                     <soapenv:Header/>\
                     <soapenv:Body>\
                       <woksearchlite:search>\
                         <queryParameters>\
-                            <databaseId>WOS</databaseId>\   
+                            <databaseId>WOS</databaseId>\
                             <userQuery>AU = (${authorFamilyName}, ${authorGivenName}) AND OG = (University of Notre Dame) </userQuery>\
                             <editions>\
                               <collection>WOS</collection>\
                               <edition>SCI</edition>\
-                            </editions>\           
+                            </editions>\
                             <timeSpan>\
                               <begin>2015-01-01</begin>\
                               <end>2020-12-31</end>\
@@ -184,13 +173,13 @@ async function getWoSAuthorDataREST(authorFamilyName, authorGivenName) {
 
 async function getWoSAuthorData(sessionId, authorFamilyName, authorGivenName) { //, year, scopusAffiliationId, pageSize, offset){
   //const baseUrl = 'https://api.elsevier.com/content/search/scopus'
-  
+
   // const authorQuery = "AUTHFIRST("+ authorGivenName +") and AUTHLASTNAME("+ authorFamilyName+") and AF-ID(" + scopusAffiliationId + ")"
-  
+
   const soapQueryString = getWoSQuerySOAPString(authorFamilyName, authorGivenName)
   const baseUrl = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearchLite'
   const response = await axios.post(baseUrl, soapQueryString,
-    { 
+    {
       headers: {
         'Cookie': sessionId,
         'content-type' : 'application/json'// 'text/xml;charset=UTF-8'
@@ -209,7 +198,7 @@ async function retrieveWoSAuthorResults(sessionId, queryId, offset) {
   // console.log(`Retrieve soap string is: ${soapRetrieveString}`)
   const baseUrl = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearchLite'
   const response = await axios.post(baseUrl, soapRetrieveString,
-    { 
+    {
       headers: {
         'Cookie': sessionId,
         'content-type' : 'application/json'// 'text/xml;charset=UTF-8'
@@ -251,7 +240,7 @@ async function getWoSAuthorPapers(sessionId, authorFamilyName, authorGivenName) 
   console.log(`Making ${numberOfRequests} requests for ${authorFamilyName}, ${authorGivenName}`)
   let papers = []
   await pTimes (numberOfRequests, async function (index) {
-    randomWait(1000,index)
+    randomWait(index)
     const results = await retrieveWoSAuthorResults(sessionId, queryId, offset)
     // console.log(`First record is: ${JSON.stringify(results['soap:Envelope']['soap:Body']['ns2:retrieveResponse'].return.records[0], null, 2)}`)
     offset += pageSize
@@ -265,7 +254,7 @@ async function getWoSAuthorPapers(sessionId, authorFamilyName, authorGivenName) 
 
 async function getWoSPaperData(doi){
   // const baseUrl = 'https://api.elsevier.com/content/search/scopus'
-  
+
   // const affiliationId = "60021508"
 
   // //const authorQuery = (query) {
@@ -273,7 +262,7 @@ async function getWoSPaperData(doi){
   // //    "AF-ID("+ affiliationId + ")"
   // //  }
   // //}
-  // const doiQuery = "DOI(" + doi + ")" 
+  // const doiQuery = "DOI(" + doi + ")"
 
   // const response = await axios.get(baseUrl, {
   //     headers: {
@@ -285,7 +274,7 @@ async function getWoSPaperData(doi){
   //   });
 
   //   return response.data;
-  
+
 }
 
 
@@ -296,7 +285,7 @@ async function getConfirmedDOIsByPerson(){
   const personPubsByDoi = _.groupBy(queryResult.data.persons_publications, function (pub) {
     return pub.publication.doi
   })
-  
+
   //console.log(`Person Pubs by DOI confirmed count: ${_.keys(personPubsByDoi).length} person pubs are: ${JSON.stringify(personPubsByDoi,null,2)}`)
   return personPubsByDoi
 }
@@ -326,7 +315,7 @@ async function getSimplifiedPersons(year) {
 //     //set request set size
 //     const pageSize = 25
 //     let offset = 0
-    
+
 //     //get first page of results, do with first initial for now
 //     const authorSearchResult = await getScopusAuthorData(person.firstInitial, person.lastName, year, scopusAffiliationId, pageSize, offset)
 //     //console.log(`Author Search Result first page: ${JSON.stringify(authorSearchResult,null,2)}`)
@@ -345,14 +334,14 @@ async function getSimplifiedPersons(year) {
 //           //loop to get the result of the results
 //           console.log(`Making ${numberOfRequests} requests for ${person.lastName}, ${person.firstName}`)
 //           await pTimes (numberOfRequests, async function (index) {
-//             randomWait(1000,index)
+//             randomWait(index)
 //             if (offset + pageSize < totalResults){
 //               offset += pageSize
 //             } else {
 //               offset += totalResults - offset
 //             }
 //             const authorSearchResultNext = await getScopusAuthorData(person.firstInitial, person.lastName, year, scopusAffiliationId, pageSize, offset)
-            
+
 //             if (authorSearchResultNext['search-results']['entry']) {
 //               //console.log(`Getting Author Search Result page ${index+2}: ${authorSearchResultNext['search-results']['entry'].length} objects`)
 //               searchPageResults.push(authorSearchResultNext['search-results']['entry'])
@@ -363,7 +352,7 @@ async function getSimplifiedPersons(year) {
 //         }
 //       }
 //     }
-    
+
 //     //flatten the search results page as currently results one per page, and then keyBy scopus id
 //     return _.flattenDepth(searchPageResults, 1)
 //   } catch (error) {
@@ -371,7 +360,7 @@ async function getSimplifiedPersons(year) {
 //   }
 // }
 
-//takes an array of objects of form [element 1, element 2] where 
+//takes an array of objects of form [element 1, element 2] where
 // element is of form {"label": {_text: "property_name"}, "value": {actual_value}}
 // to form [property_name:actual_value]
 function getWoSMapLabelsToValues(properties) {
@@ -422,7 +411,7 @@ async function main (): Promise<void> {
     console.log(`Simplified persons for ${year} are: ${JSON.stringify(simplifiedPersons,null,2)}`)
 
     let personCounter = 0
-    
+
     const subset = _.chunk(simplifiedPersons, 1)
     await pMap(simplifiedPersons, async (person) => {
       try {
@@ -452,7 +441,7 @@ async function main (): Promise<void> {
 
   //   console.log(`Loading ${year} Publication Data`)
   //   //load data from scopus
-    
+
   //   let succeededScopusPapers = []
   //   let failedScopusPapers = []
 
@@ -465,12 +454,12 @@ async function main (): Promise<void> {
     //    //const person = simplifiedPersons[0]
     //    try {
     //      personCounter += 1
-    //      randomWait(1000,personCounter)
-        
+    //      randomWait(personCounter)
+
   //       const authorPapers = await getScopusAuthorPapers(person, year, scopusAffiliationId)
   //       //console.log(`Author Papers Found for ${person.lastName}, ${person.firstName}: ${JSON.stringify(authorPapers,null,2)}`)
   //       console.log(`Author papers total for ${person.lastName}, ${person.firstName}: ${JSON.stringify(_.keys(authorPapers).length,null,2)}`)
-        
+
   //       //get simplified scopus papers
   //       const simplifiedAuthorPapers = await getSimplifliedScopusPapers(authorPapers, person)
   //       //console.log(`Simplified Scopus Author ${person.lastName}, ${person.firstName} Papers: ${JSON.stringify(simplifiedAuthorPapers,null,2)}`)
@@ -478,7 +467,7 @@ async function main (): Promise<void> {
   //       //push in whole array for now and flatten later
   //       succeededScopusPapers.push(simplifiedAuthorPapers)
 
-      
+
         // } catch (error) {
   //       const errorMessage = `Error on get scopus papers for author: ${person.lastName}, ${person.firstName}: ${error}`
   //       failedScopusPapers.push(errorMessage)
@@ -502,18 +491,18 @@ async function main (): Promise<void> {
     console.log(`Total Succeeded Authors: ${succeededAuthors.length}`)
     console.log(`Total Failed Authors: ${failedAuthors.length}`)
     console.log(`Get error messages: ${JSON.stringify(failedPapers,null,2)}`)
-   
+
   }, { concurrency: 1 })
-  
+
   // // let loopCounter = 0
   // // // iterate through list of DOI's and...
   // // await pMap(_.keys(confirmedDOIsByPerson), async (doi) => {
   // //     console.log(`DOI is: ${ doi }`)
   // //   // fetch paper by DOI
   // //   try {
-     
+
   // //     loopCounter += 1
-  // //     randomWait(1000,loopCounter)
+  // //     randomWait(loopCounter)
 
   // //     const responseDoi = await getScopusPaperData(doi);
   // //     if( responseDoi ) {
@@ -592,7 +581,5 @@ async function main (): Promise<void> {
   //     // //}
   //     // console.log(`Config is: ${JSON.stringify(config)}`)
   }
-  
+
   main();
-
-
