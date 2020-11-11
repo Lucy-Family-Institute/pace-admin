@@ -47,8 +47,8 @@ async function wait(ms){
   });
 }
 
-async function randomWait(seedTime, index){
-  const waitTime = 1000 * (index % 5)
+async function randomWait(index, seedTime = 1000){
+  const waitTime = seedTime * (1 + (index % 5))
   //console.log(`Thread Waiting for ${waitTime} ms`)
   await wait(waitTime)
 }
@@ -434,7 +434,8 @@ async function loadPersonPapersFromCSV (personMap, path) {
         processedCount += 1
         loopCounter += 1
         //have each wait a pseudo-random amount of time between 1-5 seconds
-        await randomWait(1000, loopCounter)
+        
+        await randomWait(loopCounter)
 
         //get CSL (citation style language) record by doi from dx.dio.org
         const cslRecords = await Cite.inputAsync(doi)
@@ -488,7 +489,7 @@ async function loadPersonPapersFromCSV (personMap, path) {
                 const person = matchedPersons[personId]
                 loopCounter2 += 1
               //have each wait a pseudo-random amount of time between 1-5 seconds
-                await randomWait(1000, loopCounter2)
+                await randomWait(loopCounter2)
                 const mutateResult = await client.mutate(
                   insertPersonPublication(personId, publicationId, person['confidence'])
                 )
@@ -551,7 +552,7 @@ async function loadPersonPapersFromCSV (personMap, path) {
     // await pMap(_.keys(newPersonPublicationsByDoi), async (doi) => {
     //   loopCounter3 += 1
     //   //have each wait a pseudo-random amount of time between 1-5 seconds
-    //   await randomWait(1000, loopCounter3)
+    //   await randomWait(loopCounter3)
     //   await pMap(newPersonPublicationsByDoi[doi], async (personPub) => {
     //     await synchronizeReviews(doi, personPub['person_id'], personPub['id'])
     //   }, {concurrency: 1})
