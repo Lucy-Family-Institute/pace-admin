@@ -46,6 +46,7 @@ endif
 install_quasar:
 ifeq (,$(shell which quasar))
 	npm -g install quasar
+	npm install -g @quasar/cli
 endif
 
 install_js:
