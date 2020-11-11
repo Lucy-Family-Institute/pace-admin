@@ -69,21 +69,6 @@ async function randomWait(index, seedTime = 1000){
 //   return result.data;
 // }
 
-async function getCitationApa (doi) {
-
-    Cite.async()
-
-    const citeResult = await Cite.inputAsync(doi)
-    const citeObj = new Cite(citeResult)
-
-    // create formatted citation as test
-    const apaCitation = citeObj.format('bibliography', {
-      template: 'apa'
-    })
-    console.log(`Converted DOI: ${doi} to citation: ${apaCitation}`)
-    return apaCitation
-}
-
 function getPublicationYear (csl) {
   // look for both online and print dates, and make newer date win if different
   // put in array sorted by date
@@ -422,7 +407,7 @@ async function loadPersonPapersFromCSV (personMap, path) {
         processedCount += 1
         loopCounter += 1
         //have each wait a pseudo-random amount of time between 1-5 seconds
-        
+
         await randomWait(loopCounter)
 
         //get CSL (citation style language) record by doi from dx.dio.org
