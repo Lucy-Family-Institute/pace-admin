@@ -49,6 +49,11 @@ ifeq (,$(shell which quasar))
 	npm install -g @quasar/cli
 endif
 
+install_typescript:
+ifeq (,$(shell which tsc))
+	npm -g install tsc
+endif
+
 install_js:
 	cd client && yarn && cd ..
 	cd server && yarn && cd ..
@@ -133,7 +138,7 @@ scopus_author_data:
 dashboard-ingest:
 	cd dashboard-search && ts-node src/ingest.ts && cd ..
 
-install: install_docker_compose install_hasura_cli install_yarn install_quasar install_js install_ts_node
+install: install_docker_compose install_hasura_cli install_yarn install_quasar install_js install_ts_node install_typescript
 	echo 'Installing'
 
 start_docker:
