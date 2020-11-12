@@ -32,6 +32,22 @@ Note: When running `make migrate`, you may get the following error:
 
 It's worth running ``make install_js`` every now and then to make sure your packages are up-to-date.
 
+# User Management
+
+Create your Auth Front End Credentials:
+
+- http://localhost:8001
+- Select User admin
+- Use Keycloak credentials in `.env`
+- Go to Manage > Users and add a user for yourself
+- Edit user's Credentials; Add a password and uncheck "Temporary"
+
+Propogate your email into the Hasura users table:
+
+- In http://localhost:9695/console
+- Select the "Data" tab and scroll to `users` table.
+- Select "Insert Row" and add the email address from the above Auth Front End Credentials.
+
 # Production
 
 You may need to change the following variables in your .env file
