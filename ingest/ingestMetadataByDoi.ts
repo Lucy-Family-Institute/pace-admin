@@ -88,7 +88,7 @@ function getSimpleName (lastName, firstInitial){
   return `${lastName}, ${firstInitial}`
 }
 
-function getPublicationYear (csl) {
+function getPublicationYear (csl) : Number {
   // look for both online and print dates, and make newer date win if different
   // put in array sorted by date
   let years = []
@@ -115,7 +115,7 @@ function getPublicationYear (csl) {
       year = _.replace(year, ')', '')
       year = _.replace(year, '(', '')
       // remove any whitespace
-      return _.trim(year)
+      return Number.parseInt(_.trim(year))
     } else {
       throw(`Unable to determine publication year from csl: ${JSON.stringify(csl, null, 2)}`)
     }
