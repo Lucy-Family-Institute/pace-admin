@@ -36,6 +36,7 @@
     "sanitize-filename": "^1.6.3",
     "schm": "^0.4.1",
     "schm-translate": "^0.4.1",
+    "ts-jest": "^26.4.4",
     "ts-node": "^8.5.2",
     "typescript": "^3.7.2",
     "xml-js": "^1.6.11"
@@ -46,7 +47,7 @@
   "license": "MIT",
   "scripts": {
     "lint": "./node_modules/.bin/eslint loadAuthors.ts --fix",
-    "test": "jest"
+    "test": "jest --config jestconfig.json"
   },
   "devDependencies": {
     "jest": "^26.6.3"
