@@ -14,6 +14,8 @@ import pMap from 'p-map'
 import { randomWait } from './units/randomWait'
 const Fuse = require('fuse.js')
 
+import { removeSpaces, normalizeString } from './units/normalizer'
+
 
 dotenv.config({
   path: '../.env'
@@ -40,42 +42,13 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 })
 
-// replace diacritics with alphabetic character equivalents
-function normalizeString (value) {
-  if (_.isString(value)) {
-    const newValue = _.clone(value)
-    const norm1 = newValue
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-    // the u0027 also normalizes the curly apostrophe to the straight one
-    const norm2 = norm1.replace(/[\u2019]/g, '\u0027')
-    // remove periods and other remaining special characters
-    const norm3 = norm2.replace(/[&\/\\#,+()$~%.'":*?<>{}!]/g,'');
-    return removeSpaces(norm3)
-  } else {
-    return value
-  }
-}
-
 // remove diacritic characters (used later for fuzzy matching of names)
 function normalizeObjectProperties (object, properties) {
   const newObject = _.clone(object)
   _.each (properties, (property) => {
-    newObject[property] = normalizeString(newObject[property])
+    newObject[property] = normalizeString(newObject[property], { removeSpaces: true, skipLower: true })
   })
   return newObject
-}
-
-// replace diacritics with alphabetic character equivalents
-function removeSpaces (value) {
-  if (_.isString(value)) {
-    const newValue = _.clone(value)
-    let norm =  newValue.replace(/\s/g, '')
-    // console.log(`before replace space: ${value} after replace space: ${norm}`)
-    return norm
-  } else {
-    return value
-  }
 }
 
 // remove diacritic characters (used later for fuzzy matching of names)
@@ -93,7 +66,7 @@ function journalMatchFuzzy (journalTitle, titleKey, journalMap){
      return normalizeObjectProperties(journal, [titleKey])
   })
   // normalize last name checking against as well
-  const testTitle = normalizeString(journalTitle)
+  const testTitle = normalizeString(journalTitle, { removeSpaces: true, skipLower: true })
   // console.log(`After diacritic switch ${JSON.stringify(nameMap, null, 2)} converted to: ${JSON.stringify(testNameMap, null, 2)}`)
   const lastFuzzy = new Fuse(journalMap, {
     caseSensitive: false,
@@ -145,7 +118,7 @@ async function main (): Promise<void> {
     console.log(`${pubCounter} - Checking publication id: ${publication['id']}`)
     let matchedJournal = undefined
     if (publication['journal_title']) {
-      const testTitle = normalizeString(publication['journal_title'])
+      const testTitle = normalizeString(publication['journal_title'], { removeSpaces: true, skipLower: true })
       const matchedJournals = journalMatchFuzzy(testTitle, 'title', journalMap)
       let matchedInfo = {
         'doi': publication['doi'],
