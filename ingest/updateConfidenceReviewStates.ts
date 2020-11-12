@@ -21,7 +21,8 @@ import dotenv from 'dotenv'
 import readAllNewPersonPublications from './gql/readAllNewPersonPublications'
 import insertReview from '../client/src/gql/insertReview'
 import readPersonPublicationsByDoi from './gql/readPersonPublicationsByDoi'
-const getIngestFilePathsByYear = require('./getIngestFilePathsByYear');
+const getIngestFilePathsByYear = require('../getIngestFilePathsByYear');
+import { removeSpaces, normalizeString } from '../normalizer'
 
 dotenv.config({
   path: '../.env'
@@ -334,23 +335,6 @@ function getAuthorLastNames (author) {
   return lastNames
 }
 
-// replace diacritics with alphabetic character equivalents
-function normalizeString (value) {
-  if (_.isString(value)) {
-    const newValue = _.clone(value)
-    const norm1 = newValue
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-    // the u0027 also normalizes the curly apostrophe to the straight one
-    const norm2 = norm1.replace(/[\u2019]/g, '\u0027')
-    // remove periods and other remaining special characters
-    const norm3 = _.lowerCase(norm2.replace(/[&\/\\#,+()$~%.'":*?<>{}!]/g,''));
-    return norm3
-  } else {
-    return value
-  }
-}
-
 // remove diacritic characters (used later for fuzzy matching of names)
 function normalizeObjectProperties (object, properties) {
   const newObject = _.clone(object)
@@ -358,18 +342,6 @@ function normalizeObjectProperties (object, properties) {
     newObject[property] = normalizeString(newObject[property])
   })
   return newObject
-}
-
-// replace diacritics with alphabetic character equivalents
-function removeSpaces (value) {
-  if (_.isString(value)) {
-    const newValue = _.clone(value)
-    let norm =  newValue.replace(/\s/g, '')
-    // console.log(`before replace space: ${value} after replace space: ${norm}`)
-    return norm
-  } else {
-    return value
-  }
 }
 
 // remove diacritic characters (used later for fuzzy matching of names)
