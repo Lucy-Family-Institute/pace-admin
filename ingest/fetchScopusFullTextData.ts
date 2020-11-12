@@ -21,6 +21,7 @@ dotenv.config({
 import path from 'path'
 import pify from 'pify'
 import fs from 'fs'
+import { randomWait } from './units/randomWait'
 const axios = require('axios');
 
 const elsApiKey = process.env.SCOPUS_API_KEY
@@ -39,17 +40,6 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 })
 
-async function wait(ms){
-  return new Promise((resolve, reject)=> {
-    setTimeout(() => resolve(true), ms );
-  });
-}
-
-async function randomWait(seedTime, index){
-  const waitTime = 1000 * (index % 5)
-  //console.log(`Thread Waiting for ${waitTime} ms`)
-  await wait(waitTime)
-}
 
 async function getScopusPaperAbstractData (baseUrl) {
   const url = `${baseUrl}?apiKey=${elsApiKey}`
@@ -149,11 +139,11 @@ async function main (): Promise<void> {
 
   let paperCounter = 0
   await pMap(publicationsBySource['Scopus'], async (publication) => {
-    
+
     try {
       paperCounter += 1
-      randomWait(1000,paperCounter)
-      
+      randomWait(paperCounter)
+
       let scopusAbstractData = undefined
       const eid = publication.scopus_eid
       const piiParts = eid.split('-')

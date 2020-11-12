@@ -9,7 +9,7 @@ const translate = require('schm-translate');
 const xmlToJson = require('xml-js');
 const moment = require('moment');
 import pTimes from 'p-times'
-
+import { randomWait } from './units/randomWait'
 const getIds = require('./units/joinCsvs').command;
 
 const dataFolderPath = "../data";
@@ -52,7 +52,7 @@ const funderIdentifierSchema = schema({
 }));
 
 const subjectIdenfierSchema = schema({
-  
+
 });
 const shareWorkSchema = schema({
   title: {type: String, default: null},
@@ -67,18 +67,6 @@ const shareWorkSchema = schema({
   resourceIdentifiers: 'PubmedData.ArticleIdList.ArticleId',
   funderIdentifiers: 'MedlineCitation.Article.GrantList.Grant'
 }));
- 
-async function wait(ms){
-  return new Promise((resolve, reject)=> {
-    setTimeout(() => resolve(true), ms );
-  });
-}
-
-async function randomWait(seedTime, index){
-  const waitTime = 1000 * (index % 5)
-  //console.log(`Thread Waiting for ${waitTime} ms`)
-  await wait(waitTime)
-}
 
 async function getShareSources () {
   let sources = []
@@ -188,7 +176,7 @@ function createSearchQuery(source, startDate, endDate) {
   filter.push({
     term: {
       sources: source
-    } 
+    }
   })
   if (startDate && endDate) {
     filter.push({
@@ -297,7 +285,7 @@ async function writeSearchResults(dataDir, source, startDate, endDate) {
       }
       console.log(`Making ${numberOfRequests} requests for ${totalResults} results`)
       await pTimes (numberOfRequests, async function (index) {
-        randomWait(1000,index)
+        randomWait(index)
         let curOffset = (pageSize * index) + pageSize + startOffset
         if (curOffset > totalResults) {
           curOffset -= pageSize
@@ -352,7 +340,7 @@ async function main() {
     let offset = startOffset
     //const sourceTitle = source.attributes['longTitle']
     const sourceTitle = 'NIH Research Portal Online Reporting Tools'
-    randomWait(1000, loopCounter)
+    randomWait(loopCounter)
     const results = await getShareSourceSearch(sourceTitle, offset, pageSize)
     console.log(`${loopCounter} - Source '${sourceTitle}' found and getting ${results.total} results`)
     if (results.total > maxLimit) {
@@ -399,25 +387,25 @@ async function main() {
                             const singleDateResults = await getShareSourceDateSearch(sourceTitle, singleDate.startDate, singleDate.endDate, offset, pageSize)
                             console.log(`${loopCounter} - Source '${sourceTitle}' found ${singleDate.startDate} to ${singleDate.endDate} ${singleDateResults.total} results`)
                             if (singleDateResults.total > maxLimit) {
-                              console.log(`Error: ${loopCounter} - Source '${sourceTitle}' too many results found ${singleDate.startDate} to ${singleDate.endDate} ${singleDateResults.total} results, getting by day`)  
+                              console.log(`Error: ${loopCounter} - Source '${sourceTitle}' too many results found ${singleDate.startDate} to ${singleDate.endDate} ${singleDateResults.total} results, getting by day`)
                             } else {
-                              writeSearchResults(dataDir, sourceTitle, singleDate.startDate, singleDate.endDate)    
+                              writeSearchResults(dataDir, sourceTitle, singleDate.startDate, singleDate.endDate)
                             }
                           }, { concurrency: 1})
                         } else {
-                          writeSearchResults(dataDir, sourceTitle, month.startDate, month.endDate)    
+                          writeSearchResults(dataDir, sourceTitle, month.startDate, month.endDate)
                         }
                       }, { concurrency: 1})
                     } else {
-                      writeSearchResults(dataDir, sourceTitle, year.startDate, year.endDate)    
+                      writeSearchResults(dataDir, sourceTitle, year.startDate, year.endDate)
                     }
                   }, { concurrency: 1})
                 } else {
-                  writeSearchResults(dataDir, sourceTitle, decade.startDate, decade.endDate)    
+                  writeSearchResults(dataDir, sourceTitle, decade.startDate, decade.endDate)
                 }
               }, { concurrency: 1 })
             } else {
-              writeSearchResults(dataDir, sourceTitle, halfCentury.startDate, halfCentury.endDate)    
+              writeSearchResults(dataDir, sourceTitle, halfCentury.startDate, halfCentury.endDate)
             }
           }, { concurrency: 1 })
         } else {
@@ -430,8 +418,7 @@ async function main() {
     }
     loopCounter += 1
   }, { concurrency: 30})
-  
+
 }
 
 main()
-

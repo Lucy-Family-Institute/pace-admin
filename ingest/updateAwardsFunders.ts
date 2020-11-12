@@ -14,7 +14,7 @@ import { __EnumValue } from 'graphql'
 import dotenv from 'dotenv'
 import pMap from 'p-map'
 const Fuse = require('fuse.js')
-
+import { randomWait } from './units/randomWait'
 
 dotenv.config({
   path: '../.env'
@@ -38,18 +38,6 @@ const client = new ApolloClient({
   }),
   cache: new InMemoryCache()
 })
-
-async function wait(ms){
-  return new Promise((resolve, reject)=> {
-    setTimeout(() => resolve(true), ms );
-  });
-}
-
-async function randomWait(seedTime, index){
-  const waitTime = 1000 * (index % 5)
-  //console.log(`Thread Waiting for ${waitTime} ms`)
-  await wait(waitTime)
-}
 
 // replace diacritics with alphabetic character equivalents
 function normalizeString (value) {
@@ -103,7 +91,7 @@ function createFuzzyIndex (testKeys, funderMap) {
   const testFunderMap = _.map(funderMap, (funder) => {
     return normalizeObjectProperties(funder, testKeys)
  })
-  
+
  const funderFuzzy = new Fuse(testFunderMap, {
    caseSensitive: false,
    shouldSort: true,
@@ -302,7 +290,7 @@ async function main (): Promise<void> {
       // }
     }
   }, {concurrency: 60})
- 
+
   console.log(`Multiple Matches: ${JSON.stringify(multipleMatches, null, 2)}`)
   console.log(`Multiple Matches Count: ${multipleMatches.length}`)
   console.log(`No Matches Count: ${zeroMatches.length}`)
@@ -312,12 +300,12 @@ async function main (): Promise<void> {
   console.log(`Multiple Sub Matches Count: ${multipleSubMatches.length}`)
   console.log(`No Sub Matches Count: ${zeroSubMatches.length}`)
   console.log(`Single Sub Matches Count: ${singleSubMatches.length}`)
- 
+
   // //insert single matches
   // let loopCounter = 0
   // await pMap(singleMatches, async (matched) => {
   //   loopCounter += 1
-  //   await randomWait(1000, loopCounter)
+  //   await randomWait(loopCounter)
   //   console.log(`Updating funder of award ${loopCounter} ${matched['funder']}`)
   //   const resultUpdatePubJournal = await client.mutate(updatePubJournal(matched['doi'], matched['Matches'][0]['id']))
   //   // console.log(`Returned result journal: ${JSON.stringify(resultUpdatePubJournal.data.update_publications.returning, null, 2)}`)

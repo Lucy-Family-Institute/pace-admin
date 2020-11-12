@@ -15,6 +15,7 @@ import pMap from 'p-map'
 import { command as nameParser } from './units/nameParser'
 import humanparser from 'humanparser'
 import dotenv from 'dotenv'
+import { randomWait } from './units/randomWait'
 
 dotenv.config({
   path: '../.env'
@@ -33,18 +34,6 @@ const client = new ApolloClient({
   }),
   cache: new InMemoryCache()
 })
-
-async function wait(ms){
-  return new Promise((resolve, reject)=> {
-    setTimeout(() => resolve(true), ms );
-  });
-}
-
-async function randomWait(seedTime, index){
-  const waitTime = 1000 * (index % 5)
-  //console.log(`Thread Waiting for ${waitTime} ms`)
-  await wait(waitTime)
-}
 
 async function getSimplifiedJournals (journals) {
   return _.map(journals, (journal) => {
@@ -142,9 +131,9 @@ async function loadJournalsFromCSV (csvPath, classifications) {
       loopCounter += 1
       console.log(`Trying to insert ${journals.length} journals for loop ${loopCounter}`)
       //prepare batch
-      
+
       //have each wait a pseudo-random amount of time between 1-5 seconds
-      await randomWait(1000, loopCounter)
+      await randomWait(loopCounter)
       const insertedJournals = await insertJournalsToDB(journals)
       // map journal title to id
       const insertedJournalsByTitle = _.groupBy(insertedJournals, (journal) => {
@@ -153,7 +142,7 @@ async function loadJournalsFromCSV (csvPath, classifications) {
       _.each(_.keys(insertedJournalsByTitle), (title) => {
         console.log(`Inserted journal title: ${title}`)
       })
-      
+
       // insert associated classifications
       let insertClassifications = []
       _.each(_.keys(insertedJournalsByTitle), (title) => {
@@ -174,7 +163,7 @@ async function loadJournalsFromCSV (csvPath, classifications) {
       const insertedClassifications = await insertJournalClassificationsToDB(insertClassifications)
       console.log(`Added journal classifications for current batch ${JSON.stringify(insertedClassifications.length, null, 2)}`)
     }, {concurrency: 1})
-    
+
     return journals
   } catch (error){
     throw error

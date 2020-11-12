@@ -15,13 +15,13 @@ import insertConfidenceSetItems from './gql/insertConfidenceSetItems'
 import pMap from 'p-map'
 import { command as loadCsv } from './units/loadCsv'
 import Cite from 'citation-js'
-
+import { randomWait } from './units/randomWait'
 const Fuse = require('fuse.js')
 import dotenv from 'dotenv'
 import readAllNewPersonPublications from './gql/readAllNewPersonPublications'
 import insertReview from '../client/src/gql/insertReview'
 import readPersonPublicationsByDoi from './gql/readPersonPublicationsByDoi'
-const getIngestFilePathsByYear = require('../getIngestFilePathsByYear');
+const getIngestFilePathsByYear = require('./getIngestFilePathsByYear');
 
 dotenv.config({
   path: '../.env'
@@ -107,18 +107,6 @@ async function getAllSimplifiedPersons () {
     }
   })
   return simplifiedPersons
-}
-
-async function wait(ms){
-  return new Promise((resolve, reject)=> {
-    setTimeout(() => resolve(true), ms );
-  });
-}
-
-async function randomWait(seedTime, index){
-  const waitTime = 1000 * (index % 5)
-  //console.log(`Thread Waiting for ${waitTime} ms`)
-  await wait(waitTime)
 }
 
 async function getPapersByDoi (csvPath) {
@@ -846,7 +834,7 @@ async function insertConfidenceTestToDB (confidenceTest, confidenceAlgorithmVers
       let confidenceSetItems = []
       let loopCounter = 0
       await pMap(_.keys(confidenceTest['confidenceItems']), async (rank) => {
-        await randomWait(1000, loopCounter)
+        await randomWait(loopCounter)
         loopCounter += 1
         _.each(confidenceTest['confidenceItems'][rank], (confidenceType) => {
           // console.log(`Trying to create confidenceset item objects for personPub: ${confidenceTest['persons_publications_id']} item: ${JSON.stringify(confidenceType, null, 2)}`)
@@ -978,7 +966,7 @@ async function main() {
     let loopCounter = 1
     await pMap (confidenceTests[testStatus], async (confidenceTest) => {
       // console.log('trying to insert confidence values')
-      randomWait(1000, loopCounter)
+      randomWait(loopCounter)
       loopCounter += 1
       try {
         // console.log(`Tabulating total for ${JSON.stringify(confidenceTest, null, 2)}`)
@@ -1019,7 +1007,7 @@ async function main() {
   await pMap(newPersonPubs, async (newPersonPub) => {
     loopCounter3 += 1
     //have each wait a pseudo-random amount of time between 1-5 seconds
-    await randomWait(1000, loopCounter3)
+    await randomWait(loopCounter3)
     await synchronizeReviews(newPersonPub['publication']['doi'], newPersonPub['person_id'], newPersonPub['id'], loopCounter3)
   }, {concurrency: 10})
 }

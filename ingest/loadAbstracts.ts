@@ -11,6 +11,7 @@ import updatePubAbstract from './gql/updatePubAbstract'
 import { __EnumValue } from 'graphql'
 import dotenv from 'dotenv'
 import pMap from 'p-map'
+import { randomWait } from './units/randomWait'
 
 dotenv.config({
   path: '../.env'
@@ -95,18 +96,6 @@ async function getScopusDataFromCsv (csvPath) {
   }
 }
 
-async function wait(ms){
-  return new Promise((resolve, reject)=> {
-    setTimeout(() => resolve(true), ms );
-  });
-}
-
-async function randomWait(seedTime, index){
-  const waitTime = 1000 * (index % 5)
-  //console.log(`Thread Waiting for ${waitTime} ms`)
-  await wait(waitTime)
-}
-
 async function main (): Promise<void> {
 
   const publications = await getPublications()
@@ -135,7 +124,7 @@ async function main (): Promise<void> {
   let counter = 0
   await pMap(_.keys(pubMedAbstracts), async (doi) => {
     counter += 1
-    randomWait(1000, counter)
+    randomWait(counter)
     if (!pubMedAbstracts[doi]){
       console.log(`Found Doi with null abstract: ${doi}`)
     } else {
@@ -150,7 +139,7 @@ async function main (): Promise<void> {
   // write scopus abstracts
   await pMap(_.keys(scopusAbstracts), async (doi) => {
     counter += 1
-    randomWait(1000, counter)
+    randomWait(counter)
     if (!scopusAbstracts[doi]){
       console.log(`Found Doi with null abstract: ${doi}`)
     } else {
