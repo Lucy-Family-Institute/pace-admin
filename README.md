@@ -36,7 +36,7 @@ Propogate your email into the Hasura users table:
 
 - In http://localhost:9695/console
 - Select the "Data" tab and scroll to `users` table.
-- Select "Insert Role" and add the email address from the above Auth Front End Credentials.
+- Select "Insert Row" and add the email address from the above Auth Front End Credentials.
 
 # Production
 
