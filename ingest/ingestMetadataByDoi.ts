@@ -143,9 +143,18 @@ async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName
   }
 }
 
-function mapToSimplifiedPeople(people) {
+interface SimplifiedPerson {
+  id: number;
+  lastName: string;
+  firstInitial: string;
+  firstName: string;
+  startYear: string;
+  endYear: string;
+}
+
+function mapToSimplifiedPeople(people) : Array<SimplifiedPerson> {
   const simplifiedPersons = _.map(people, (person) => {
-    return {
+    let sp: SimplifiedPerson = {
       id: person.id,
       lastName: _.lowerCase(person.family_name),
       firstInitial: _.lowerCase(person.given_name[0]),
@@ -153,21 +162,22 @@ function mapToSimplifiedPeople(people) {
       startYear: person.start_date,
       endYear: person.end_date
     }
+    return sp
   })
   return simplifiedPersons
 }
 
-async function getAllSimplifiedPersons() {
+async function getAllSimplifiedPersons() : Promise<Array<SimplifiedPerson>> {
   const queryResult = await client.query(readPersons())
   return mapToSimplifiedPeople(queryResult.data.persons)
 }
 
-async function getSimplifiedPersonsByYear(year) {
+async function getSimplifiedPersonsByYear(year: number) : Promise<Array<SimplifiedPerson>> {
   const queryResult = await client.query(readPersonsByYear(year))
   return mapToSimplifiedPeople(queryResult.data.persons)
 }
 
-async function getPapersByDoi (csvPath) {
+async function getPapersByDoi (csvPath: string) {
   console.log(`Loading Papers from path: ${csvPath}`)
   // ingest list of DOI's from CSV and relevant center author name
   try {
@@ -199,7 +209,7 @@ async function getPapersByDoi (csvPath) {
   }
 }
 
-async function getConfirmedAuthorsByDoi (papersByDoi, csvColumn) {
+async function getConfirmedAuthorsByDoi (papersByDoi, csvColumn :string) {
   const confirmedAuthorsByDoi = _.mapValues(papersByDoi, function (papers) {
     //console.log(`Parsing names from papers ${JSON.stringify(papers,null,2)}`)
     return _.mapValues(papers, function (paper) {
@@ -257,11 +267,15 @@ async function getCSLAuthors(paperCsl){
   return authors
 }
 
+interface MatchedPerson {
+  person: any; // TODO: What is this creature?
+  confidence: number;
+}
 // person map assumed to be a map of simplename to simpleperson object
 // author map assumed to be doi mapped to two arrays: first authors and other authors
 // returns a map of person ids to the person object and confidence value for any persons that matched coauthor attributes
 // example: {1: {person: simplepersonObject, confidence: 0.5}, 51: {person: simplepersonObject, confidence: 0.8}}
-async function matchPeopleToPaperAuthors(personMap, authors, confirmedAuthors){
+async function matchPeopleToPaperAuthors(personMap, authors, confirmedAuthors) : Promise<Map<number,MatchedPerson>> {
 
   //match to last name
   //match to first initial (increase confidence)
@@ -326,7 +340,8 @@ async function matchPeopleToPaperAuthors(personMap, authors, confirmedAuthors){
         //add person to map with confidence value > 0
         if (confidenceVal > 0) {
           console.log(`Match found for Author: ${author.family}, ${author.given}`)
-          matchedPersonMap[testPerson.id] = {'person': testPerson, 'confidence': confidenceVal}
+          let matchedPerson: MatchedPerson = { 'person': testPerson, 'confidence': confidenceVal }
+          matchedPersonMap[testPerson.id] = matchedPerson
           //console.log(`After add matched persons map is: ${JSON.stringify(matchedPersonMap,null,2)}`)
         }
       })
@@ -339,7 +354,7 @@ async function matchPeopleToPaperAuthors(personMap, authors, confirmedAuthors){
   return matchedPersonMap
 }
 
-async function isPublicationAlreadyInDB (doi, sourceName) {
+async function isPublicationAlreadyInDB (doi, sourceName) : Promise<boolean> {
   const queryResult = await client.query(readPublicationsByDoi(doi))
   let foundPub = false
   _.each(queryResult.data.publications, (publication) => {
@@ -350,14 +365,27 @@ async function isPublicationAlreadyInDB (doi, sourceName) {
   return foundPub
 }
 
-async function getPersonPublications (doi, personId) {
+async function getPersonPublications (doi: string, personId: number) {
   const queryResult = await client.query(readPersonPublicationsByDoi(doi, personId))
   return queryResult.data.persons_publications_metadata
 }
 
+interface DoiStatus {
+  addedDOIs: Array<string>;
+  skippedDOIs: Array<string>;
+  failedDOIs: Array<string>;
+  errorMessages: Array<string>;
+}
+
 //returns a map of three arrays: 'addedDOIs','failedDOIs', 'errorMessages'
-async function loadPersonPapersFromCSV (personMap, path) {
+async function loadPersonPapersFromCSV (personMap, path) : Promise<DoiStatus> {
   let count = 0
+  let doiStatus: DoiStatus = {
+    addedDOIs: [],
+    skippedDOIs: [],
+    failedDOIs: [],
+    errorMessages: []
+  }
   try {
     const papersByDoi = await getPapersByDoi(path)
     const dois = _.keys(papersByDoi)
@@ -381,12 +409,6 @@ async function loadPersonPapersFromCSV (personMap, path) {
 
     let loopCounter = 0
 
-    let doiStatus = {
-      'addedDOIs': [],
-      'skippedDOIs': [],
-      'failedDOIs': [],
-      'errorMessages': []
-    }
 
     // let newPersonPublicationsByDoi = {}
 
@@ -523,6 +545,7 @@ async function loadPersonPapersFromCSV (personMap, path) {
     return doiStatus
   } catch (error){
     console.log(`Error on get path ${path}: ${error}`)
+    return doiStatus // Returning what has been completed
   }
 }
 

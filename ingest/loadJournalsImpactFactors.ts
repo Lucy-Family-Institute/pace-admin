@@ -123,13 +123,20 @@ function journalMatchFuzzy (journalTitle, fuzzyIndex){
   return reducedResults
 }
 
-async function getSimplifiedJournalFactors (journalFactors, year) {
+interface SimplifiedJournalFactor {
+  title: string;
+  impact_factor: number;
+  year: number;
+}
+
+async function getSimplifiedJournalFactors (journalFactors, year): Promise<Array<SimplifiedJournalFactor>> {
   return _.map(journalFactors, (journalFactor) => {
-    return {
+    let sjf: SimplifiedJournalFactor = {
       title: journalFactor['journal_title'],
       impact_factor: journalFactor['journal_impact_factor'],
       year: year
     }
+    return sjf
   })
 }
 
@@ -163,22 +170,35 @@ async function loadJournalsImpactFactors () {
   return queryResult.data.journals_impactfactors
 }
 
-function createImpactFactorObject(title, year, factor, journal_id) {
-  return {
+interface ImpactFactorObject {
+  title: string
+  year: number
+  impactfactor: number
+  journal_id: number
+}
+function createImpactFactorObject(title, year, factor, journal_id) : ImpactFactorObject {
+  let ifo: ImpactFactorObject = {
     title: title,
     year: year,
     impactfactor: factor,
     journal_id: journal_id
   }
+  return ifo
 }
 
-function getSimpleMatch (matchedInfo) {
-  let obj = {
+interface SimpleMatch {
+  journal_if_title: string;
+  matched_journal_id: number;
+  matched_journal_title: string
+}
+
+function getSimpleMatch (matchedInfo) : SimpleMatch {
+  let sm: SimpleMatch = {
     journal_if_title: matchedInfo['title'],
     matched_journal_id: matchedInfo['Matches'][0]['id'],
     matched_journal_title: matchedInfo['Matches'][0]['title']
   }
-  return obj
+  return sm
 }
 
 async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, currentJournalImpactFactorsByJournalId) {
