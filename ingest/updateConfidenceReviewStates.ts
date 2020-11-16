@@ -22,7 +22,7 @@ import readAllNewPersonPublications from './gql/readAllNewPersonPublications'
 import insertReview from '../client/src/gql/insertReview'
 import readPersonPublicationsByDoi from './gql/readPersonPublicationsByDoi'
 const getIngestFilePathsByYear = require('../getIngestFilePathsByYear');
-import { removeSpaces, normalizeString } from '../normalizer'
+import { removeSpaces, normalizeString, normalizeObjectProperties } from '../normalizer'
 
 dotenv.config({
   path: '../.env'
@@ -333,15 +333,6 @@ function getAuthorLastNames (author) {
     return true
   }, [])
   return lastNames
-}
-
-// remove diacritic characters (used later for fuzzy matching of names)
-function normalizeObjectProperties (object, properties) {
-  const newObject = _.clone(object)
-  _.each (properties, (property) => {
-    newObject[property] = normalizeString(newObject[property])
-  })
-  return newObject
 }
 
 // remove diacritic characters (used later for fuzzy matching of names)

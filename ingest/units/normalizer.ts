@@ -66,3 +66,26 @@ export function normalizeString(value, options = {}) {
     return value
   }
 }
+
+
+
+/**
+* @param object An object with properties, assumed to have already
+*               have each of the given `properties`.
+*
+* @param properties An array of named properties to on the given
+*                   `object` that this method will normalize.
+*
+* @param options These are passed to the normalizeString function; See
+*                that method's definition for valid options.
+*
+* @returns A clone of the given `object` with the named `properties`
+*          normalized via the `normalizeString()` function.
+*/
+export function normalizeObjectProperties (object: any, properties: Array<string>, options = {}) {
+  const newObject = _.clone(object)
+  _.each (properties, (property) => {
+    newObject[property] = normalizeString(newObject[property], options)
+  })
+  return newObject
+}

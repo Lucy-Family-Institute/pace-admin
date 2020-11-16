@@ -22,7 +22,7 @@ const pify = require('pify')
 const fs = require('fs')
 const writeCsv = require('./units/writeCsv').command;
 import { randomWait } from './units/randomWait'
-import { removeSpaces, normalizeString } from './units/normalizer'
+import { removeSpaces, normalizeString, normalizeObjectProperties } from './units/normalizer'
 
 dotenv.config({
   path: '../.env'
@@ -43,15 +43,6 @@ const client = new ApolloClient({
 })
 
 // remove diacritic characters (used later for fuzzy matching of names)
-function normalizeObjectProperties (object, properties) {
-  const newObject = _.clone(object)
-  _.each (properties, (property) => {
-    newObject[property] = normalizeString(newObject[property], { normalizeTitle: true, skipLower: true })
-  })
-  return newObject
-}
-
-// remove diacritic characters (used later for fuzzy matching of names)
 function removeSpacesObjectProperities (object, properties) {
   const newObject = _.clone(object)
   _.each (properties, (property) => {
@@ -63,7 +54,7 @@ function removeSpacesObjectProperities (object, properties) {
 function createFuzzyIndex (titleKey, journalMap) {
   // first normalize the diacritics
   const testJournalMap = _.map(journalMap, (journal) => {
-    return normalizeObjectProperties(journal, [titleKey])
+    return normalizeObjectProperties(journal, [titleKey], { normalizeTitle: true, skipLower: true })
  })
 
  const journalFuzzy = new Fuse(testJournalMap, {
@@ -393,7 +384,7 @@ async function main() {
   // first normalize the diacritics
   console.log(`Starting normalize journal properties ${moment().format('HH:mm:ss')}...`)
   let journalMap = _.map(journals, (journal) => {
-    return normalizeObjectProperties(journal, ['title'])
+    return normalizeObjectProperties(journal, ['title'], { normalizeTitle: true, skipLower: true })
   })
   console.log(`Finished normalize journal properties ${moment().format('HH:mm:ss')}`)
   // journalMap = _.filter(journalMap, (journal) => {
