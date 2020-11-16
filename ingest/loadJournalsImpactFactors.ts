@@ -42,15 +42,6 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 })
 
-// remove diacritic characters (used later for fuzzy matching of names)
-function removeSpacesObjectProperities (object, properties) {
-  const newObject = _.clone(object)
-  _.each (properties, (property) => {
-    newObject[property] = removeSpaces(newObject[property])
-  })
-  return newObject
-}
-
 function createFuzzyIndex (titleKey, journalMap) {
   // first normalize the diacritics
   const testJournalMap = _.map(journalMap, (journal) => {

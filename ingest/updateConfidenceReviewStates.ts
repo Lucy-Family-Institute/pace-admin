@@ -335,25 +335,14 @@ function getAuthorLastNames (author) {
   return lastNames
 }
 
-// remove diacritic characters (used later for fuzzy matching of names)
-function removeSpacesObjectProperities (object, properties) {
-  const newObject = _.clone(object)
-  _.each (properties, (property) => {
-    newObject[property] = removeSpaces(newObject[property])
-  })
-  return newObject
-}
-
 function lastNameMatchFuzzy (last, lastKey, nameMap){
   // first normalize the diacritics
   const testNameMap = _.map(nameMap, (name) => {
-    let norm = normalizeObjectProperties(name, [lastKey])
-    norm = removeSpacesObjectProperities(norm, [lastKey])
+    let norm = normalizeObjectProperties(name, [lastKey], { removeSpaces: true })
     return norm
   })
   // normalize last name checking against as well
-  let testLast = normalizeString(last)
-  testLast = removeSpaces(testLast)
+  let testLast = normalizeString(last, { removeSpaces: true })
   // console.log(`After diacritic switch ${JSON.stringify(nameMap, null, 2)} converted to: ${JSON.stringify(testNameMap, null, 2)}`)
   const lastFuzzy = new Fuse(testNameMap, {
     caseSensitive: false,
@@ -373,19 +362,12 @@ function nameMatchFuzzy (searchLast, lastKey, searchFirst, firstKey, nameMap) {
   // first normalize the diacritics
   // and if any spaces in search string replace spaces in both fields and search map with underscores for spaces
   const testNameMap = _.map(nameMap, (name) => {
-    let norm = normalizeObjectProperties(name, [lastKey, firstKey])
-    norm = removeSpacesObjectProperities(norm, [firstKey])
-    norm = removeSpacesObjectProperities(norm, [lastKey])
+    let norm = normalizeObjectProperties(name, [lastKey, firstKey], { removeSpaces: true })
     return norm
   })
   // normalize name checking against as well
-  let testLast = normalizeString(searchLast)
-  let testFirst = normalizeString(searchFirst)
-
-  // console.log(`search first: ${searchFirst} test first after norm: ${testFirst}`)
-  testFirst = removeSpaces(testFirst)
-  testLast =  removeSpaces(testLast)
-
+  let testLast = normalizeString(searchLast, { removeSpaces: true } )
+  let testFirst = normalizeString(searchFirst, { removeSpaces: true })
 
   const lastFuzzy = new Fuse(testNameMap, {
     caseSensitive: false,
