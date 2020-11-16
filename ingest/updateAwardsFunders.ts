@@ -15,7 +15,7 @@ import dotenv from 'dotenv'
 import pMap from 'p-map'
 const Fuse = require('fuse.js')
 import { randomWait } from './units/randomWait'
-import { removeSpaces, normalizeString } from './units/normalizer'
+import { removeSpaces, normalizeString, normalizeObjectProperties } from './units/normalizer'
 
 dotenv.config({
   path: '../.env'
@@ -40,28 +40,10 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 })
 
-// remove diacritic characters (used later for fuzzy matching of names)
-function normalizeObjectProperties (object, properties) {
-  const newObject = _.clone(object)
-  _.each (properties, (property) => {
-    newObject[property] = normalizeString(newObject[property], { skipLower: true })
-  })
-  return newObject
-}
-
-// remove diacritic characters (used later for fuzzy matching of names)
-function removeSpacesObjectProperities (object, properties) {
-  const newObject = _.clone(object)
-  _.each (properties, (property) => {
-    newObject[property] = removeSpaces(newObject[property])
-  })
-  return newObject
-}
-
 function createFuzzyIndex (testKeys, funderMap) {
   // first normalize the diacritics
   const testFunderMap = _.map(funderMap, (funder) => {
-    return normalizeObjectProperties(funder, testKeys)
+    return normalizeObjectProperties(funder, testKeys, { skipLower: true })
  })
 
  const funderFuzzy = new Fuse(testFunderMap, {

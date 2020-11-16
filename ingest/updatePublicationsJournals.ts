@@ -14,7 +14,7 @@ import pMap from 'p-map'
 import { randomWait } from './units/randomWait'
 const Fuse = require('fuse.js')
 
-import { removeSpaces, normalizeString } from './units/normalizer'
+import { removeSpaces, normalizeString, normalizeObjectProperties } from './units/normalizer'
 
 
 dotenv.config({
@@ -43,15 +43,6 @@ const client = new ApolloClient({
 })
 
 // remove diacritic characters (used later for fuzzy matching of names)
-function normalizeObjectProperties (object, properties) {
-  const newObject = _.clone(object)
-  _.each (properties, (property) => {
-    newObject[property] = normalizeString(newObject[property], { removeSpaces: true, skipLower: true })
-  })
-  return newObject
-}
-
-// remove diacritic characters (used later for fuzzy matching of names)
 function removeSpacesObjectProperities (object, properties) {
   const newObject = _.clone(object)
   _.each (properties, (property) => {
@@ -63,7 +54,7 @@ function removeSpacesObjectProperities (object, properties) {
 function journalMatchFuzzy (journalTitle, titleKey, journalMap){
   // first normalize the diacritics
   const testJournalMap = _.map(journalMap, (journal) => {
-     return normalizeObjectProperties(journal, [titleKey])
+     return normalizeObjectProperties(journal, [titleKey], { removeSpaces: true, skipLower: true })
   })
   // normalize last name checking against as well
   const testTitle = normalizeString(journalTitle, { removeSpaces: true, skipLower: true })
@@ -102,7 +93,7 @@ async function main (): Promise<void> {
 
   // first normalize the diacritics
   const journalMap = _.map(journals, (journal) => {
-    return normalizeObjectProperties(journal, ['title'])
+    return normalizeObjectProperties(journal, ['title'], { removeSpaces: true, skipLower: true })
   })
 
   const multipleMatches = []
