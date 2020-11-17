@@ -36,26 +36,6 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 })
 
-async function getAllSimplifiedPersons () {
-  const queryResult = await client.query(readPersons())
-
-  const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
-    return {
-      id: person.id,
-      lastName: person.family_name.toLowerCase(),
-      firstInitial: person.given_name[0].toLowerCase(),
-      firstName: person.given_name.toLowerCase(),
-      startYear: person.start_date,
-      endYear: person.end_date
-    }
-  })
-  return simplifiedPersons
-}
-
-function getNameKey (lastName, firstName) {
-  return `${_.toLower(lastName)}, ${_.toLower(firstName)}`
-}
-
 async function getScopusPaperAbstractData (pii) {
   const baseUrl = `https://api.elsevier.com/content/article/pii/${pii}`
   console.log(`Base url is: ${baseUrl}`)

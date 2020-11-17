@@ -7,6 +7,7 @@ import _ from 'lodash'
 import { command as loadCsv } from './units/loadCsv'
 import readPersons from '../client/src/gql/readPersons'
 import { __EnumValue } from 'graphql'
+import { getAllSimplifiedPersons, getNameKey } from './modules/queryNormalizedPeople'
 
 import dotenv from 'dotenv'
 
@@ -28,33 +29,13 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 })
 
-async function getAllSimplifiedPersons () {
-  const queryResult = await client.query(readPersons())
-
-  const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
-    return {
-      id: person.id,
-      lastName: person.family_name.toLowerCase(),
-      firstInitial: person.given_name[0].toLowerCase(),
-      firstName: person.given_name.toLowerCase(),
-      startYear: person.start_date,
-      endYear: person.end_date
-    }
-  })
-  return simplifiedPersons
-}
-
-function getNameKey (lastName, firstName) {
-  return `${_.toLower(lastName)}, ${_.toLower(firstName)}`
-}
-
 async function main (): Promise<void> {
   const authorsWithVariances: any = await loadCsv({
     path: '../data/hcri_researchers_2017-2019_load_name_variances.csv'
   })
 
   // get the set of persons to add variances to
-  const authors = await getAllSimplifiedPersons()
+  const authors = await getAllSimplifiedPersons(client)
   //create map of 'last_name, first_name' to array of related persons with same last name
   const personMap = _.transform(authors, function (result, value) {
     (result[getNameKey(value.lastName, value.firstName)] || (result[getNameKey(value.lastName, value.firstName)] = [])).push(value)
@@ -79,7 +60,7 @@ async function main (): Promise<void> {
       _.each(nameVariances, (nameVariance) => {
         let obj = {}
         obj['person_id'] = personId
-        
+
         const nameParts = nameVariance.split(',')
         const lastName = nameParts[0].trim()
         obj['family_name'] = lastName
@@ -94,7 +75,7 @@ async function main (): Promise<void> {
       })
     }
   }, [])
-   
+
   console.log(JSON.stringify(insertAuthorVariances, null, 2))
 
   const resultInsertNameVariances = await client.mutate({
