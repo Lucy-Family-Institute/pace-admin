@@ -10,6 +10,8 @@ const xmlToJson = require('xml-js');
 const moment = require('moment');
 import pTimes from 'p-times'
 import { randomWait } from './units/randomWait'
+import { removeSpaces, normalizeString } from './units/normalizer'
+
 const getIds = require('./units/joinCsvs').command;
 
 const dataFolderPath = "../data";
@@ -217,45 +219,12 @@ async function getShareSearch (query, curOffset, size) {
   return response.data.hits
 }
 
-// replace diacritics with alphabetic character equivalents
-function removeSpaces (value) {
-  if (_.isString(value)) {
-    const newValue = _.clone(value)
-    let norm =  newValue.replace(/\s/g, '')
-    // console.log(`before replace space: ${value} after replace space: ${norm}`)
-    return norm
-  } else {
-    return value
-  }
-}
-
-function normalizeString (value) {
-  if (_.isString(value)) {
-    const newValue = _.clone(value)
-    const norm1 = newValue
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-    // the u0027 also normalizes the curly apostrophe to the straight one
-    const norm2 = norm1.replace(/[\u2019]/g, '\u0027')
-    // remove periods and other remaining special characters
-    const norm3 = norm2.replace(/[&\/\\#,+()$~%.'":*?<>{}!-]/g,'');
-    let norm4 = norm3.replace(' and ', '')
-    // replace any leading 'the' with ''
-    if (_.startsWith(_.toLower(norm4), 'the ')) {
-      norm4 = norm4.substr(4)
-    }
-    return removeSpaces(norm4)
-  } else {
-    return value
-  }
-}
-
 async function writeSearchResult (dataDir, source, startDate, endDate, startIndex, results) {
   let dateString = 'all_dates'
   if (startDate && endDate) {
     dateString = `${startDate}_${endDate}`
   }
-  let sourceString = normalizeString(source)
+  let sourceString = normalizeString(source, { skipLower: true, normalizeTitle: true })
   const filename = path.join(dataDir, `share_metadata_${sourceString}_${dateString}_from_index_${startIndex}.json`);
   if( results && results.length > 0) {
     console.log(`Writing ${filename}`);

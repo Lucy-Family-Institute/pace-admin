@@ -15,6 +15,7 @@ import dotenv from 'dotenv'
 import pMap from 'p-map'
 const Fuse = require('fuse.js')
 import { randomWait } from './units/randomWait'
+import { removeSpaces, normalizeString, normalizeObjectProperties } from './units/normalizer'
 
 dotenv.config({
   path: '../.env'
@@ -39,57 +40,10 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 })
 
-// replace diacritics with alphabetic character equivalents
-function normalizeString (value) {
-  if (_.isString(value)) {
-    const newValue = _.clone(value)
-    const norm1 = newValue
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-    // the u0027 also normalizes the curly apostrophe to the straight one
-    const norm2 = norm1.replace(/[\u2019]/g, '\u0027')
-    // remove periods and other remaining special characters
-    const norm3 = norm2.replace(/[&\/\\#,+()$~%.'":*?<>{}!-]/g,'');
-    return removeSpaces(norm3)
-  } else {
-    return value
-  }
-}
-
-// remove diacritic characters (used later for fuzzy matching of names)
-function normalizeObjectProperties (object, properties) {
-  const newObject = _.clone(object)
-  _.each (properties, (property) => {
-    newObject[property] = normalizeString(newObject[property])
-  })
-  return newObject
-}
-
-// replace diacritics with alphabetic character equivalents
-function removeSpaces (value) {
-  if (_.isString(value)) {
-    const newValue = _.clone(value)
-    let norm =  newValue.replace(/\s/g, '')
-    // console.log(`before replace space: ${value} after replace space: ${norm}`)
-    return norm
-  } else {
-    return value
-  }
-}
-
-// remove diacritic characters (used later for fuzzy matching of names)
-function removeSpacesObjectProperities (object, properties) {
-  const newObject = _.clone(object)
-  _.each (properties, (property) => {
-    newObject[property] = removeSpaces(newObject[property])
-  })
-  return newObject
-}
-
 function createFuzzyIndex (testKeys, funderMap) {
   // first normalize the diacritics
   const testFunderMap = _.map(funderMap, (funder) => {
-    return normalizeObjectProperties(funder, testKeys)
+    return normalizeObjectProperties(funder, testKeys, { skipLower: true })
  })
 
  const funderFuzzy = new Fuse(testFunderMap, {
@@ -111,7 +65,7 @@ function funderMatchFuzzy (funderName, fuzzyIndex){
   //    return normalizeObjectProperties(funder, [nameKey])
   // })
   // normalize last name checking against as well
-  const testName = normalizeString(funderName)
+  const testName = normalizeString(funderName, { skipLower: true })
 
   // let matchedFunders = []
   // _.each(funderMap, (funder) => {
@@ -219,7 +173,8 @@ async function main (): Promise<void> {
     console.log(`${counter} - Checking award: ${JSON.stringify(award, null, 2)}`)
     let matchedFunder = undefined
     if (award['funder_name']) {
-      const testFunder = normalizeString(award['funder_name'])
+      // TODO: Should this actually skip lower?  Below we have lots of lower case conversions
+      const testFunder = normalizeString(award['funder_name'], { skipLower: true })
       const matchedFunders = funderMatchFuzzy(testFunder, funderFuzzyIndex)
       // const matchedNameFunders = funderMatchFuzzy(testFunder, 'name', funderMap)
       // const matchedSubfunders = funderMatchFuzzy(testFunder, 'name', subfunderMap)

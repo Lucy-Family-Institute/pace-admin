@@ -22,6 +22,7 @@ const pify = require('pify')
 const fs = require('fs')
 const writeCsv = require('./units/writeCsv').command;
 import { randomWait } from './units/randomWait'
+import { removeSpaces, normalizeString, normalizeObjectProperties } from './units/normalizer'
 
 dotenv.config({
   path: '../.env'
@@ -41,63 +42,10 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 })
 
-// replace diacritics with alphabetic character equivalents
-function normalizeString (value) {
-  if (_.isString(value)) {
-    const newValue = _.clone(value)
-    const norm1 = newValue
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-    // the u0027 also normalizes the curly apostrophe to the straight one
-    const norm2 = norm1.replace(/[\u2019]/g, '\u0027')
-    // remove periods and other remaining special characters
-    const norm3 = norm2.replace(/[&\/\\#,+()$~%.'":*?<>{}!-]/g,'')
-    // replace any 'and' characters in case it is there instead of '&' or vice versa
-    let norm4 = norm3.replace(' and ', '')
-    // replace any leading 'the' with ''
-    if (_.startsWith(_.toLower(norm4), 'the ')) {
-      norm4 = norm4.substr(4)
-    }
-    return removeSpaces(norm4)
-  } else {
-    return value
-  }
-}
-
-// remove diacritic characters (used later for fuzzy matching of names)
-function normalizeObjectProperties (object, properties) {
-  const newObject = _.clone(object)
-  _.each (properties, (property) => {
-    newObject[property] = normalizeString(newObject[property])
-  })
-  return newObject
-}
-
-// replace diacritics with alphabetic character equivalents
-function removeSpaces (value) {
-  if (_.isString(value)) {
-    const newValue = _.clone(value)
-    let norm =  newValue.replace(/\s/g, '')
-    // console.log(`before replace space: ${value} after replace space: ${norm}`)
-    return norm
-  } else {
-    return value
-  }
-}
-
-// remove diacritic characters (used later for fuzzy matching of names)
-function removeSpacesObjectProperities (object, properties) {
-  const newObject = _.clone(object)
-  _.each (properties, (property) => {
-    newObject[property] = removeSpaces(newObject[property])
-  })
-  return newObject
-}
-
 function createFuzzyIndex (titleKey, journalMap) {
   // first normalize the diacritics
   const testJournalMap = _.map(journalMap, (journal) => {
-    return normalizeObjectProperties(journal, [titleKey])
+    return normalizeObjectProperties(journal, [titleKey], { normalizeTitle: true, skipLower: true })
  })
 
  const journalFuzzy = new Fuse(testJournalMap, {
@@ -114,7 +62,7 @@ function createFuzzyIndex (titleKey, journalMap) {
 
 function journalMatchFuzzy (journalTitle, fuzzyIndex){
   // normalize last name checking against as well
-  const testTitle = normalizeString(journalTitle)
+  const testTitle = normalizeString(journalTitle, { normalizeTitle: true, skipLower: true })
   const journalResults = fuzzyIndex.search(testTitle)
   const reducedResults = _.map(journalResults, (result) => {
     return result['item'] ? result['item'] : result
@@ -255,7 +203,7 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
       factorCounter += 1
       console.log(`${factorCounter} - Checking match for journal factor: ${journalFactorTitle}`)
       let matchedJournal = undefined
-      const testTitle = normalizeString(journalFactorTitle)
+      const testTitle = normalizeString(journalFactorTitle, { normalizeTitle: true, skipLower: true })
       // console.log(`checking test title: ${testTitle}`)
       // console.log(`Journal Map is: ${JSON.stringify(journalMap, null, 2)}`)
       const matchedJournals = journalMatchFuzzy(testTitle, journalFuzzyIndex)
@@ -269,7 +217,7 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
       if (splitJournalTitle.length>1 && splitJournalTitle[0].indexOf(' ') < 0){
         // check to see if has prefix to strip
         otherMatchString = journalFactorTitle.substr(journalFactorTitle.indexOf('-')+1)
-        otherMatchString = normalizeString(otherMatchString)
+        otherMatchString = normalizeString(otherMatchString, { normalizeTitle: true, skipLower: true })
         // console.log(`Checking new match string ${otherMatchString}`)
         otherMatchedJournals = journalMatchFuzzy(otherMatchString, journalFuzzyIndex)
       }
@@ -447,7 +395,7 @@ async function main() {
   // first normalize the diacritics
   console.log(`Starting normalize journal properties ${moment().format('HH:mm:ss')}...`)
   let journalMap = _.map(journals, (journal) => {
-    return normalizeObjectProperties(journal, ['title'])
+    return normalizeObjectProperties(journal, ['title'], { normalizeTitle: true, skipLower: true })
   })
   console.log(`Finished normalize journal properties ${moment().format('HH:mm:ss')}`)
   // journalMap = _.filter(journalMap, (journal) => {
