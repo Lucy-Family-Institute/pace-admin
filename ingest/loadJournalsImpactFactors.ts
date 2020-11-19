@@ -21,6 +21,8 @@ const moment = require('moment')
 const pify = require('pify')
 const fs = require('fs')
 const writeCsv = require('./units/writeCsv').command;
+import { randomWait } from './units/randomWait'
+import { removeSpaces, normalizeString, normalizeObjectProperties } from './units/normalizer'
 
 dotenv.config({
   path: '../.env'
@@ -40,77 +42,12 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 })
 
-async function wait(ms){
-  return new Promise((resolve, reject)=> {
-    setTimeout(() => resolve(true), ms );
-  });
-}
-
-async function randomWait(seedTime, index){
-  const waitTime = 1000 * (index % 5)
-  //console.log(`Thread Waiting for ${waitTime} ms`)
-  await wait(waitTime)
-}
-
-// replace diacritics with alphabetic character equivalents
-function normalizeString (value) {
-  if (_.isString(value)) {
-    const newValue = _.clone(value)
-    const norm1 = newValue
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-    // the u0027 also normalizes the curly apostrophe to the straight one
-    const norm2 = norm1.replace(/[\u2019]/g, '\u0027')
-    // remove periods and other remaining special characters
-    const norm3 = norm2.replace(/[&\/\\#,+()$~%.'":*?<>{}!-]/g,'')
-    // replace any 'and' characters in case it is there instead of '&' or vice versa
-    let norm4 = norm3.replace(' and ', '')
-    // replace any leading 'the' with ''
-    if (_.startsWith(_.toLower(norm4), 'the ')) {
-      norm4 = norm4.substr(4)
-    }
-    return removeSpaces(norm4)
-  } else {
-    return value
-  }
-}
-
-// remove diacritic characters (used later for fuzzy matching of names)
-function normalizeObjectProperties (object, properties) {
-  const newObject = _.clone(object)
-  _.each (properties, (property) => {
-    newObject[property] = normalizeString(newObject[property])
-  })
-  return newObject
-}
-
-// replace diacritics with alphabetic character equivalents
-function removeSpaces (value) {
-  if (_.isString(value)) {
-    const newValue = _.clone(value)
-    let norm =  newValue.replace(/\s/g, '')
-    // console.log(`before replace space: ${value} after replace space: ${norm}`)
-    return norm
-  } else {
-    return value
-  }
-}
-
-// remove diacritic characters (used later for fuzzy matching of names)
-function removeSpacesObjectProperities (object, properties) {
-  const newObject = _.clone(object)
-  _.each (properties, (property) => {
-    newObject[property] = removeSpaces(newObject[property])
-  })
-  return newObject
-}
-
 function createFuzzyIndex (titleKey, journalMap) {
   // first normalize the diacritics
   const testJournalMap = _.map(journalMap, (journal) => {
-    return normalizeObjectProperties(journal, [titleKey])
+    return normalizeObjectProperties(journal, [titleKey], { normalizeTitle: true, skipLower: true })
  })
-  
+
  const journalFuzzy = new Fuse(testJournalMap, {
    caseSensitive: false,
    shouldSort: true,
@@ -125,7 +62,7 @@ function createFuzzyIndex (titleKey, journalMap) {
 
 function journalMatchFuzzy (journalTitle, fuzzyIndex){
   // normalize last name checking against as well
-  const testTitle = normalizeString(journalTitle)
+  const testTitle = normalizeString(journalTitle, { normalizeTitle: true, skipLower: true })
   const journalResults = fuzzyIndex.search(testTitle)
   const reducedResults = _.map(journalResults, (result) => {
     return result['item'] ? result['item'] : result
@@ -134,13 +71,20 @@ function journalMatchFuzzy (journalTitle, fuzzyIndex){
   return reducedResults
 }
 
-async function getSimplifiedJournalFactors (journalFactors, year) {
+interface SimplifiedJournalFactor {
+  title: string;
+  impact_factor: number;
+  year: number;
+}
+
+async function getSimplifiedJournalFactors (journalFactors, year): Promise<Array<SimplifiedJournalFactor>> {
   return _.map(journalFactors, (journalFactor) => {
-    return {
+    let sjf: SimplifiedJournalFactor = {
       title: journalFactor['journal_title'],
       impact_factor: journalFactor['journal_impact_factor'],
       year: year
     }
+    return sjf
   })
 }
 
@@ -174,22 +118,35 @@ async function loadJournalsImpactFactors () {
   return queryResult.data.journals_impactfactors
 }
 
-function createImpactFactorObject(title, year, factor, journal_id) {
-  return {
+interface ImpactFactorObject {
+  title: string
+  year: number
+  impactfactor: number
+  journal_id: number
+}
+function createImpactFactorObject(title, year, factor, journal_id) : ImpactFactorObject {
+  let ifo: ImpactFactorObject = {
     title: title,
     year: year,
     impactfactor: factor,
     journal_id: journal_id
   }
+  return ifo
 }
 
-function getSimpleMatch (matchedInfo) {
-  let obj = {
+interface SimpleMatch {
+  journal_if_title: string;
+  matched_journal_id: number;
+  matched_journal_title: string
+}
+
+function getSimpleMatch (matchedInfo) : SimpleMatch {
+  let sm: SimpleMatch = {
     journal_if_title: matchedInfo['title'],
     matched_journal_id: matchedInfo['Matches'][0]['id'],
     matched_journal_title: matchedInfo['Matches'][0]['title']
   }
-  return obj
+  return sm
 }
 
 async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, currentJournalImpactFactorsByJournalId) {
@@ -246,7 +203,7 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
       factorCounter += 1
       console.log(`${factorCounter} - Checking match for journal factor: ${journalFactorTitle}`)
       let matchedJournal = undefined
-      const testTitle = normalizeString(journalFactorTitle)
+      const testTitle = normalizeString(journalFactorTitle, { normalizeTitle: true, skipLower: true })
       // console.log(`checking test title: ${testTitle}`)
       // console.log(`Journal Map is: ${JSON.stringify(journalMap, null, 2)}`)
       const matchedJournals = journalMatchFuzzy(testTitle, journalFuzzyIndex)
@@ -260,7 +217,7 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
       if (splitJournalTitle.length>1 && splitJournalTitle[0].indexOf(' ') < 0){
         // check to see if has prefix to strip
         otherMatchString = journalFactorTitle.substr(journalFactorTitle.indexOf('-')+1)
-        otherMatchString = normalizeString(otherMatchString)
+        otherMatchString = normalizeString(otherMatchString, { normalizeTitle: true, skipLower: true })
         // console.log(`Checking new match string ${otherMatchString}`)
         otherMatchedJournals = journalMatchFuzzy(otherMatchString, journalFuzzyIndex)
       }
@@ -286,7 +243,7 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
             extraMatch.push(otherMatched)
           }
         })
-       
+
         if (matchedInfo['Matches'] && matchedInfo['Matches'].length === 1) {
           singleMatches.push(matchedInfo)
         } else if (extraMatch.length === 1) {
@@ -309,14 +266,14 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
         } else if (otherMatchedJournals.length === 1 && _.toLower(otherMatchedJournals[0]['title']) === _.toLower(otherMatchString)) {
           matchedInfo['Matches'] = otherMatchedJournals
           singleMatches.push(matchedInfo)
-        } 
+        }
         else {
           zeroMatches.push(matchedInfo)
         }
         // console.log(`Matched journal - ${testTitle}: ${JSON.stringify(matchedJournals, null, 2)}`)
       }
     }, {concurrency: 60})
- 
+
     // console.log(`Multiple Matches: ${JSON.stringify(multipleMatches, null, 2)}`)
     // _.each(zeroMatches, (zeroMatch) => {
     //    console.log(`No Match Title: ${zeroMatch['title']}`)
@@ -348,7 +305,7 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
       path: singleCSVFileName,
       data
     });
-    
+
 
     // get current ones in DB and only insert if not already there
     // load the journal map into a map of id to year to existing impact factors
@@ -403,13 +360,13 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
       loopCounter += 1
       console.log(`Trying to insert ${journalImpactFactors.length} journal impact factors for loop ${loopCounter}`)
       //prepare batch
-      
+
       //have each wait a pseudo-random amount of time between 1-5 seconds
-      await randomWait(1000, loopCounter)
+      await randomWait(loopCounter)
       const insertedJournalImpactFactors = await insertJournalImpactFactorsToDB(journalImpactFactors)
       console.log(`Inserted ${insertedJournalImpactFactors.length} Journal Impact Factors`)
     }, {concurrency: 1})
-    
+
     // return journals
   } catch (error){
     throw error
@@ -438,7 +395,7 @@ async function main() {
   // first normalize the diacritics
   console.log(`Starting normalize journal properties ${moment().format('HH:mm:ss')}...`)
   let journalMap = _.map(journals, (journal) => {
-    return normalizeObjectProperties(journal, ['title'])
+    return normalizeObjectProperties(journal, ['title'], { normalizeTitle: true, skipLower: true })
   })
   console.log(`Finished normalize journal properties ${moment().format('HH:mm:ss')}`)
   // journalMap = _.filter(journalMap, (journal) => {
