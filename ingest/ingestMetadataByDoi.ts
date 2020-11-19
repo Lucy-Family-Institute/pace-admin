@@ -471,6 +471,11 @@ async function loadPersonPapersFromCSV (personMap, path) {
             sourceMetadata = papersByDoi[doi][0]['pubmed_record']
             if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
             console.log(`Pubmed Source metadata found`)//is: ${JSON.stringify(sourceMetadata,null,2)}`)
+          } else if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['wos_record']){
+            sourceName = 'WebOfScience'
+            sourceMetadata = papersByDoi[doi][0]['wos_record']
+            if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
+            console.log(`WebOfScience Source metadata found`)//is: ${JSON.stringify(sourceMetadata,null,2)}`)
           }
 
           const pubFound = await isPublicationAlreadyInDB(doi, sourceName)
@@ -594,9 +599,12 @@ async function main() {
   const pathsByYear = {
     // 2019: ['../data/pubmedPubsByAuthor.20200709113001.csv']
     // 2019: ['../data/scopus.2019.20200714133113.csv', '../data/pubmedPubsByAuthor.20200709113001.csv']
-    2019: ['../data/HCRI-pubs-2019_-_Faculty_Selected_2.csv', '../data/scopus.2019.20200714133113.csv', '../data/pubmedPubsByAuthor.20200709113001.csv'],
-    2018: ['../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv'],
-    2017: ['../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv', '../data/authorsByAwards.20200409094731.csv']
+    // 2019: ['../data/wos.2019.20201001132024.csv', '../data/scopus.2019.20201001134420.csv'],
+    // 2018: ['../data/wos.2018.20201001132525.csv'],
+    // 2017: ['../data/wos.2017.20201001132914.csv']
+    2019: ['../data/HCRI-pubs-2019_-_Faculty_Selected_2.csv', '../data/scopus.2019.20201001134420.csv', '../data/pubmedPubsByAuthor.20200709113001.csv', '../data/wos.2019.20201001132024.csv'],
+    2018: ['../data/HCRI-pubs-2018_-_Faculty_Selected_2.csv', '../data/scopus.2018.20201001134742.csv', '../data/wos.2018.20201001132525.csv'],
+    2017: ['../data/HCRI-pubs-2017_-_Faculty_Selected_2.csv', '../data/authorsByAwards.20200409094731.csv', '../data/scopus.2017.20201001135020.csv', '../data/wos.2017.20201001132914.csv']
   }
 
   //just get all simplified persons as will filter later
