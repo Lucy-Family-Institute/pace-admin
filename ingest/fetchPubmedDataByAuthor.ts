@@ -20,6 +20,7 @@ import dotenv from 'dotenv'
 import resolve from 'path'
 import fetch from 'node-fetch'
 import readPersonsByYear from '../client/src/gql/readPersonsByYear'
+import { randomWait } from './units/randomWait'
 
 dotenv.config({
   path: '../.env'
@@ -80,7 +81,7 @@ const funderIdentifierSchema = schema({
 }));
 
 // const subjectIdenfierSchema = schema({
-  
+
 // });
 const shareWorkSchema = schema({
   title: {type: String, default: null},
@@ -95,12 +96,6 @@ const shareWorkSchema = schema({
   resourceIdentifiers: 'PubmedData.ArticleIdList.ArticleId',
   funderIdentifiers: 'MedlineCitation.Article.GrantList.Grant'
 }));
- 
-async function wait(ms){
-  return new Promise((resolve, reject)=> {
-    setTimeout(() => resolve(true), ms )
-  })
-}
 
 async function getAwardPublications(awardId){
   const ids = await getESearch(awardId)
@@ -215,15 +210,10 @@ async function getFileData(filePath){
  // } else {
  //   console.log('Reading data from Directory failed: File directory undefined');
  // }
-  
-  
+
+
 //}
 
-async function randomWait(seedTime, index){
-  const waitTime = 1000 * (index % 5)
-  //console.log(`Thread Waiting for ${waitTime} ms`)
-  await wait(waitTime)
-}
 
 async function getSimplifiedPersons(year) {
   const queryResult = await client.query(readPersonsByYear(year))
@@ -276,12 +266,12 @@ async function main(): Promise<void> {
     let personCounter = 0
     let succeededPubmedPapers = []
     let failedPubmedPapers = []
-  
+
     const personMapper = async (person) => {
       try {
         personCounter += 1
-        randomWait(1000,personCounter)
-        
+        randomWait(personCounter)
+
         console.log(`Working on Pubmed papers for ${person['lastName']}, ${person['firstName']}`)
         const response = await getPersonPublications(person)
         console.log(`Response is: ${JSON.stringify(response, null, 2)}`)
@@ -297,7 +287,7 @@ async function main(): Promise<void> {
         console.log(errorMessage)
       }
     }
-  
+
     // const simplifiedPersons2 = _.chunk(simplifiedPersons, 1)
     // console.log(`Simp 2: ${JSON.stringify(simplifiedPersons2, null, 2)}`)
     const personResult = await pMap(simplifiedPersons, personMapper, {concurrency: 3});
@@ -305,5 +295,3 @@ async function main(): Promise<void> {
 }
 
 main();
-
-

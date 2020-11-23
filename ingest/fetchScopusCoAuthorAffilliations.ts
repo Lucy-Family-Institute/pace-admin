@@ -9,11 +9,12 @@ import readPersonsByYear from '../client/src/gql/readPersonsByYear'
 import readPublicationsByPersonByConfidence from '../client/src/gql/readPublicationsByPersonByConfidence'
 import { command as loadCsv } from './units/loadCsv'
 import { split } from 'apollo-link'
-import cslParser from './utils/cslParser' 
+import cslParser from './utils/cslParser'
 import { command as writeCsv } from './units/writeCsv'
 import moment from 'moment'
 import dotenv from 'dotenv'
 import resolve from 'path'
+import { randomWait } from './units/randomWait'
 
 dotenv.config({
   path: '../.env'
@@ -48,23 +49,11 @@ async function fetchByDoi(doi) {
   return cslRecords[0]
 }
 
-async function wait(ms){
-  return new Promise((resolve, reject)=> {
-    setTimeout(() => resolve(true), ms );
-  });
-}
-
-async function randomWait(seedTime, index){
-  const waitTime = 1000 * (index % 5)
-  //console.log(`Thread Waiting for ${waitTime} ms`)
-  await wait(waitTime)
-}
-
 async function getScopusAuthorData(authorGivenName, authorFamilyName, authorScopusId, year, pageSize, offset){
     const baseUrl = 'https://api.elsevier.com/content/search/scopus'
-    
+
     const authorQuery = "AU-ID("+ authorScopusId +")"
-      
+
     console.log(`Querying scopus with year: ${year} authorId: ${authorScopusId}, offset: ${offset}, and query: ${authorQuery}`)
     const response = await axios.get(baseUrl, {
         headers: {
@@ -79,12 +68,12 @@ async function getScopusAuthorData(authorGivenName, authorFamilyName, authorScop
       });
 
       return response.data;
-    
+
 }
 
 async function getScopusPaperData(doi){
   const baseUrl = 'https://api.elsevier.com/content/search/scopus'
-  
+
   const affiliationId = "60021508"
 
   //const authorQuery = (query) {
@@ -92,7 +81,7 @@ async function getScopusPaperData(doi){
   //    "AF-ID("+ affiliationId + ")"
   //  }
   //}
-  const doiQuery = "DOI(" + doi + ")" 
+  const doiQuery = "DOI(" + doi + ")"
 
   const response = await axios.get(baseUrl, {
       headers: {
@@ -104,7 +93,7 @@ async function getScopusPaperData(doi){
     });
 
     return response.data;
-  
+
 }
 
 async function getScopusPaperAbstractData (scopusId) {
@@ -125,7 +114,7 @@ async function getScopusPaperFullText (doi) {
   const baseUrl = 'https://api.elsevier.com/content/article/eid/1-s2.0-S152500161830594X'
 
   const fullUrl = baseUrl + doi
-      
+
 
     const response = await axios.get(baseUrl, {
         headers: {
@@ -142,7 +131,7 @@ async function getScopusPaperAffiliation (scopusId) {
   const baseUrl = `https://api.elsevier.com/content/abstract/scopus_id/${scopusId}`
 
   //const fullUrl = baseUrl + doi
-      
+
 
   const response = await axios.get(baseUrl, {
     headers: {
@@ -168,7 +157,7 @@ async function getScopusPaperAffiliation (scopusId) {
 //   const personPubsByDoi = _.groupBy(queryResult.data.persons_publications, function (pub) {
 //     return pub.publication.doi
 //   })
-  
+
 //   //console.log(`Person Pubs by DOI confirmed count: ${_.keys(personPubsByDoi).length} person pubs are: ${JSON.stringify(personPubsByDoi,null,2)}`)
 //   return personPubsByDoi
 // }
@@ -214,7 +203,7 @@ async function getScopusAuthorPapers(person, year) {
     //set request set size
     const pageSize = 25
     let offset = 0
-    
+
     //get first page of results, do with first initial for now
     const authorSearchResult = await getScopusAuthorData(person.firstInitial, person.lastName, person.authorId, year, pageSize, offset)
     //console.log(`Author Search Result first page: ${JSON.stringify(authorSearchResult,null,2)}`)
@@ -233,14 +222,14 @@ async function getScopusAuthorPapers(person, year) {
           //loop to get the result of the results
           console.log(`Making ${numberOfRequests} requests for ${person.authorId}:${person.lastName}, ${person.firstName}`)
           await pTimes (numberOfRequests, async function (index) {
-            randomWait(1000,index)
+            randomWait(index)
             if (offset + pageSize < totalResults){
               offset += pageSize
             } else {
               offset += totalResults - offset
             }
             const authorSearchResultNext = await getScopusAuthorData(person.firstInitial, person.lastName, person.authorId, year, pageSize, offset)
-            
+
             if (authorSearchResultNext['search-results']['entry']) {
               //console.log(`Getting Author Search Result page ${index+2}: ${authorSearchResultNext['search-results']['entry'].length} objects`)
               searchPageResults.push(authorSearchResultNext['search-results']['entry'])
@@ -251,7 +240,7 @@ async function getScopusAuthorPapers(person, year) {
         }
       }
     }
-    
+
     //flatten the search results page as currently results one per page, and then keyBy scopus id
     return _.flattenDepth(searchPageResults, 1)
   } catch (error) {
@@ -300,23 +289,23 @@ async function main (): Promise<void> {
     if (err) throw err;
   });
 
-  
+
   // group affiliations by country and push for publication and then author
   // author -> publication -> convert to counts by country per year
   // collapse affiliation items together into overall total array
   // author -> counts by country per year (total co-authors and country)
   // author -> counts total over all years (total co-authors and country)
   // author -> counts by country per paper by year (i.e., duplicates for country removed per paper)
-  // in root -> year_author_total_pubs_by_country.csv (duplicates on co-authors removed) - one file for each year, 
-  //            year_author_total_coauthors_by_country.csv - one file for each year, 
+  // in root -> year_author_total_pubs_by_country.csv (duplicates on co-authors removed) - one file for each year,
+  //            year_author_total_coauthors_by_country.csv - one file for each year,
   //            all_author_total_pubs_by_country.csv (all years, duplicates on co-authors removed)
-  //            all_author_total_coauthors_by_country.csv (all years), 
+  //            all_author_total_coauthors_by_country.csv (all years),
   // folders -> raw_data -> all, 2020, 2019, 2018 -> lastName_scopusID -> pub -> affiliation items
-  let authorCoauthorAffiliationByCountryByYear = {} // 
-  
+  let authorCoauthorAffiliationByCountryByYear = {} //
+
   const simplifiedPersons = await getSimplifiedPersons()
   console.log(`Simplified persons are: ${JSON.stringify(simplifiedPersons,null,2)}`)
-  
+
   await pMap(years, async (year) => {
     // //create map of last name to array of related persons with same last name
     // const personMap = _.transform(simplifiedPersons, function (result, value) {
@@ -344,22 +333,22 @@ async function main (): Promise<void> {
 
     await pMap(simplifiedPersons, async (person) => {
       //const person = simplifiedPersons[0]
-  
+
       let succeededScopusPapers = []
       let failedScopusPapers = []
 
       try {
         personCounter += 1
-        randomWait(1000,personCounter)
+        randomWait(personCounter)
 
         // initialize the country count maps for this author
         coauthorCountsByCountryAllPapers[person.authorId] = {}
         distinctCountryCountsAllPapers[person.authorId] = {}
-        
+
         const authorPapers = await getScopusAuthorPapers(person, year)
         //console.log(`Author Papers Found for ${person.lastName}, ${person.firstName}: ${JSON.stringify(authorPapers,null,2)}`)
         console.log(`Paper total for year: ${year} and author: ${person.lastName}, ${person.firstName}: ${JSON.stringify(_.keys(authorPapers).length,null,2)}`)
-        
+
         //get simplified scopus papers
         const simplifiedAuthorPapers = await getSimplifliedScopusPapers(authorPapers, person)
         //console.log(`Simplified Scopus Author ${person.lastName}, ${person.firstName} Papers: ${JSON.stringify(simplifiedAuthorPapers,null,2)}`)
@@ -399,11 +388,11 @@ async function main (): Promise<void> {
           // }
           const paperAffiliations = await getScopusPaperAffiliation(paper.scopus_id)
 
-          
+
           //console.log(`Author total paper affiliations for ${paper.scopus_id}:${paper.title}: ${JSON.stringify(paperAffiliations.length,null,2)}`)
-        
+
           //console.log(`Paper affiliations for ${paper.scopus_id}:${paper.title}: ${JSON.stringify(paperAffiliations,null,2)}`)
-        
+
           // get simplified paper affiliations
           const simplifiedPaperAffiliations = getSimplifiedPaperAffiliations(paper, paperAffiliations, person)
 
@@ -434,9 +423,9 @@ async function main (): Promise<void> {
               coauthorCountsByCountryAllPapers[person.authorId][country] = countryCounts
             }
           })
-          
+
           //console.log(`Simplified Paper Affiliations: ${JSON.stringify(simplifiedPaperAffiliations, null, 2)}`)
-          
+
           // make a folder for author and write out affiliation data for each paper
           const paperDataPath = `${personYearDataPath}/${paper.scopus_id}`
           fs.mkdirSync(paperDataPath, { recursive: true }, (err) => {
@@ -469,7 +458,7 @@ async function main (): Promise<void> {
         author_id: person.authorId,
         author_lastname: person.lastName,
         author_firstname: person.firstName
-      } 
+      }
       // populate the values in each column for this row
       _.each(countries, (country) => {
         if (coauthorCountsByCountryAllPapers[person.authorId][country]) {
@@ -480,7 +469,7 @@ async function main (): Promise<void> {
       })
       coauthorCountsByCountryRows.push(coauthorCountsByCountryRow)
     })
-    
+
     // next populate row for distinct country and author for papers
     // just need to add the author id and push into the array
     let distinctCountryCountsRows  = []
@@ -490,7 +479,7 @@ async function main (): Promise<void> {
         author_id: person.authorId,
         author_lastname: person.lastName,
         author_firstname: person.firstName
-      } 
+      }
       // populate the values in each column for this row
       _.each(countries, (country) => {
         if (distinctCountryCountsAllPapers[person.authorId][country]) {
@@ -501,10 +490,10 @@ async function main (): Promise<void> {
       })
       distinctCountryCountsRows.push(distinctCountryCountsRow)
     })
-   
+
     console.log(`coauthor counts by country rows ${JSON.stringify(coauthorCountsByCountryRows, null, 2)}`)
     console.log(`distinct country counts ${JSON.stringify(distinctCountryCountsRows, null, 2)}`)
-    
+
     // now write the files
     await writeCsv({
       path: `${yearDataPath}/scopus.${year}.coauthor_counts_by_country.csv`,
@@ -517,7 +506,5 @@ async function main (): Promise<void> {
     });
   }, { concurrency: 1 })
 }
-  
+
 main();
-
-
