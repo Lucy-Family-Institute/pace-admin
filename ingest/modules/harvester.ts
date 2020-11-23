@@ -1,4 +1,6 @@
 import pMap from 'p-map'
+import { command as writeCsv } from '../units/writeCsv'
+import moment from 'moment'
 
 class Harvester {
   ds: DataSource
@@ -95,4 +97,18 @@ class Harvester {
       'failedAuthors': failedAuthors
     }
   }
+
+  async harvestToCsv(searchPersons: NormedPerson[], searchStartDate: Date, searchEndDate: Date) {
+    const harvested = await this.harvest(searchPersons, searchStartDate, searchEndDate, 1)
+    const outputPapers = _.map(_.flatten(harvested['foundPublications']), pub => {
+      pub['source_metadata'] = JSON.stringify(pub['source_metadata'])
+      return pub
+    })
+
+    //write data out to csv
+    //console.log(outputScopusPapers)
+    await writeCsv({
+      path: `../../data/${this.ds.getSourceName}.${searchStartDate.getFullYear}.${moment().format('YYYYMMDDHHmmss')}.csv`,
+      data: outputPapers,
+    });
 }
