@@ -11,6 +11,7 @@ import insertPubAward from './gql/insertPubAward'
 import { __EnumValue } from 'graphql'
 import dotenv from 'dotenv'
 import pMap from 'p-map'
+import { randomWait } from './units/randomWait'
 
 dotenv.config({
   path: '../.env'
@@ -55,18 +56,6 @@ function getNameKey (lastName, firstName) {
 async function getPublications () {
   const queryResult = await client.query(readPublicationsAwards())
   return queryResult.data.publications
-}
-
-async function wait(ms){
-  return new Promise((resolve, reject)=> {
-    setTimeout(() => resolve(true), ms );
-  });
-}
-
-async function randomWait(seedTime, index){
-  const waitTime = 1000 * (index % 5)
-  //console.log(`Thread Waiting for ${waitTime} ms`)
-  await wait(waitTime)
 }
 
 function getCrossRefAwards (publication) {

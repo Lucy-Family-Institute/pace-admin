@@ -9,6 +9,8 @@ const translate = require('schm-translate');
 const xmlToJson = require('xml-js');
 const moment = require('moment');
 import pTimes from 'p-times'
+import { randomWait } from './units/randomWait'
+import { removeSpaces, normalizeString } from './units/normalizer'
 
 const getIds = require('./units/joinCsvs').command;
 
@@ -52,7 +54,7 @@ const funderIdentifierSchema = schema({
 }));
 
 const subjectIdenfierSchema = schema({
-  
+
 });
 const shareWorkSchema = schema({
   title: {type: String, default: null},
@@ -67,18 +69,6 @@ const shareWorkSchema = schema({
   resourceIdentifiers: 'PubmedData.ArticleIdList.ArticleId',
   funderIdentifiers: 'MedlineCitation.Article.GrantList.Grant'
 }));
- 
-async function wait(ms){
-  return new Promise((resolve, reject)=> {
-    setTimeout(() => resolve(true), ms );
-  });
-}
-
-async function randomWait(seedTime, index){
-  const waitTime = 1000 * (index % 5)
-  //console.log(`Thread Waiting for ${waitTime} ms`)
-  await wait(waitTime)
-}
 
 async function getShareSources () {
   let sources = []
@@ -188,7 +178,7 @@ function createSearchQuery(source, startDate, endDate) {
   filter.push({
     term: {
       sources: source
-    } 
+    }
   })
   if (startDate && endDate) {
     filter.push({
@@ -229,45 +219,12 @@ async function getShareSearch (query, curOffset, size) {
   return response.data.hits
 }
 
-// replace diacritics with alphabetic character equivalents
-function removeSpaces (value) {
-  if (_.isString(value)) {
-    const newValue = _.clone(value)
-    let norm =  newValue.replace(/\s/g, '')
-    // console.log(`before replace space: ${value} after replace space: ${norm}`)
-    return norm
-  } else {
-    return value
-  }
-}
-
-function normalizeString (value) {
-  if (_.isString(value)) {
-    const newValue = _.clone(value)
-    const norm1 = newValue
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-    // the u0027 also normalizes the curly apostrophe to the straight one
-    const norm2 = norm1.replace(/[\u2019]/g, '\u0027')
-    // remove periods and other remaining special characters
-    const norm3 = norm2.replace(/[&\/\\#,+()$~%.'":*?<>{}!-]/g,'');
-    let norm4 = norm3.replace(' and ', '')
-    // replace any leading 'the' with ''
-    if (_.startsWith(_.toLower(norm4), 'the ')) {
-      norm4 = norm4.substr(4)
-    }
-    return removeSpaces(norm4)
-  } else {
-    return value
-  }
-}
-
 async function writeSearchResult (dataDir, source, startDate, endDate, startIndex, results) {
   let dateString = 'all_dates'
   if (startDate && endDate) {
     dateString = `${startDate}_${endDate}`
   }
-  let sourceString = normalizeString(source)
+  let sourceString = normalizeString(source, { skipLower: true, normalizeTitle: true })
   const filename = path.join(dataDir, `share_metadata_${sourceString}_${dateString}_from_index_${startIndex}.json`);
   if( results && results.length > 0) {
     console.log(`Writing ${filename}`);
@@ -297,7 +254,7 @@ async function writeSearchResults(dataDir, source, startDate, endDate) {
       }
       console.log(`Making ${numberOfRequests} requests for ${totalResults} results`)
       await pTimes (numberOfRequests, async function (index) {
-        randomWait(1000,index)
+        randomWait(index)
         let curOffset = (pageSize * index) + pageSize + startOffset
         if (curOffset > totalResults) {
           curOffset -= pageSize
@@ -352,7 +309,7 @@ async function main() {
     let offset = startOffset
     //const sourceTitle = source.attributes['longTitle']
     const sourceTitle = 'NIH Research Portal Online Reporting Tools'
-    randomWait(1000, loopCounter)
+    randomWait(loopCounter)
     const results = await getShareSourceSearch(sourceTitle, offset, pageSize)
     console.log(`${loopCounter} - Source '${sourceTitle}' found and getting ${results.total} results`)
     if (results.total > maxLimit) {
@@ -399,25 +356,25 @@ async function main() {
                             const singleDateResults = await getShareSourceDateSearch(sourceTitle, singleDate.startDate, singleDate.endDate, offset, pageSize)
                             console.log(`${loopCounter} - Source '${sourceTitle}' found ${singleDate.startDate} to ${singleDate.endDate} ${singleDateResults.total} results`)
                             if (singleDateResults.total > maxLimit) {
-                              console.log(`Error: ${loopCounter} - Source '${sourceTitle}' too many results found ${singleDate.startDate} to ${singleDate.endDate} ${singleDateResults.total} results, getting by day`)  
+                              console.log(`Error: ${loopCounter} - Source '${sourceTitle}' too many results found ${singleDate.startDate} to ${singleDate.endDate} ${singleDateResults.total} results, getting by day`)
                             } else {
-                              writeSearchResults(dataDir, sourceTitle, singleDate.startDate, singleDate.endDate)    
+                              writeSearchResults(dataDir, sourceTitle, singleDate.startDate, singleDate.endDate)
                             }
                           }, { concurrency: 1})
                         } else {
-                          writeSearchResults(dataDir, sourceTitle, month.startDate, month.endDate)    
+                          writeSearchResults(dataDir, sourceTitle, month.startDate, month.endDate)
                         }
                       }, { concurrency: 1})
                     } else {
-                      writeSearchResults(dataDir, sourceTitle, year.startDate, year.endDate)    
+                      writeSearchResults(dataDir, sourceTitle, year.startDate, year.endDate)
                     }
                   }, { concurrency: 1})
                 } else {
-                  writeSearchResults(dataDir, sourceTitle, decade.startDate, decade.endDate)    
+                  writeSearchResults(dataDir, sourceTitle, decade.startDate, decade.endDate)
                 }
               }, { concurrency: 1 })
             } else {
-              writeSearchResults(dataDir, sourceTitle, halfCentury.startDate, halfCentury.endDate)    
+              writeSearchResults(dataDir, sourceTitle, halfCentury.startDate, halfCentury.endDate)
             }
           }, { concurrency: 1 })
         } else {
@@ -430,8 +387,7 @@ async function main() {
     }
     loopCounter += 1
   }, { concurrency: 30})
-  
+
 }
 
 main()
-
