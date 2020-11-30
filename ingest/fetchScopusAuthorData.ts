@@ -9,7 +9,7 @@ import readPersonsByYear from '../client/src/gql/readPersonsByYear'
 import readPublicationsByPersonByConfidence from '../client/src/gql/readPublicationsByPersonByConfidence'
 import { command as loadCsv } from './units/loadCsv'
 import { split } from 'apollo-link'
-import cslParser from './utils/cslParser'
+import { fetchByDoi } from './utils/cslParser'
 import { command as writeCsv } from './units/writeCsv'
 import moment from 'moment'
 import dotenv from 'dotenv'
@@ -31,21 +31,6 @@ process.env.NODE_ENV = 'development';
 
 // config variables
 const config = require('../config/config.js');
-
-import Cite from 'citation-js'
-
-//takes in a DOI and returns a json object formatted according to CSL (citation style language)
-//https://citation.js.org/api/index.html
-async function fetchByDoi(doi) {
-  //initalize the doi query and citation engine
-  Cite.async()
-
-  //get CSL (citation style language) record by doi from dx.dio.org
-  const cslRecords = await Cite.inputAsync(doi)
-  //console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
-
-  return cslRecords[0]
-}
 
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
