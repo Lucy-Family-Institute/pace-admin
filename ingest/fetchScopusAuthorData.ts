@@ -156,18 +156,6 @@ async function getScopusAuthorAffiliation (scopusId) {
       return response.data;
 }
 
-async function getConfirmedDOIsByPerson(){
-  //get publications from DB that have confidence level 0.99 for some person
-  const queryResult = await client.query(readPublicationsByPersonByConfidence(0.9))
-
-  const personPubsByDoi = _.groupBy(queryResult.data.persons_publications, function (pub) {
-    return pub.publication.doi
-  })
-
-  //console.log(`Person Pubs by DOI confirmed count: ${_.keys(personPubsByDoi).length} person pubs are: ${JSON.stringify(personPubsByDoi,null,2)}`)
-  return personPubsByDoi
-}
-
 async function getSimplifiedPersons(year) {
   const queryResult = await client.query(readPersonsByYear(year))
 
