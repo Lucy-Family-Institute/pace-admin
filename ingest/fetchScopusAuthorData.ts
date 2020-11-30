@@ -6,6 +6,10 @@ import fetch from 'node-fetch'
 import pMap from 'p-map'
 import pTimes from 'p-times'
 import readPersonsByYear from '../client/src/gql/readPersonsByYear'
+import readPublicationsByPersonByConfidence from '../client/src/gql/readPublicationsByPersonByConfidence'
+import { command as loadCsv } from './units/loadCsv'
+import { split } from 'apollo-link'
+import { fetchByDoi } from './utils/cslParser'
 import { command as writeCsv } from './units/writeCsv'
 import moment from 'moment'
 import dotenv from 'dotenv'
@@ -23,6 +27,9 @@ process.env.NODE_ENV = 'development';
 
 // uncomment below line to test this code against staging environment
 // process.env.NODE_ENV = 'staging';
+
+// config variables
+const config = require('../config/config.js');
 
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
