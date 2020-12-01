@@ -456,6 +456,11 @@ async function loadPersonPapersFromCSV (personMap, path) : Promise<DoiStatus> {
             sourceMetadata = papersByDoi[doi][0]['pubmed_record']
             if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
             console.log(`Pubmed Source metadata found`)//is: ${JSON.stringify(sourceMetadata,null,2)}`)
+          } else if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['wos_record']){
+            sourceName = 'WebOfScience'
+            sourceMetadata = papersByDoi[doi][0]['wos_record']
+            if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
+            console.log(`WebOfScience Source metadata found`)//is: ${JSON.stringify(sourceMetadata,null,2)}`)
           }
 
           const pubFound = await isPublicationAlreadyInDB(doi, sourceName)
@@ -579,7 +584,7 @@ const getIngestFilePathsByYear = require('./getIngestFilePathsByYear');
 //returns status map of what was done
 async function main() {
 
-  const pathsByYear = await getIngestFilePathsByYear()
+const pathsByYear = await getIngestFilePathsByYear()
 
   //just get all simplified persons as will filter later
   const simplifiedPersons = await getAllSimplifiedPersons()

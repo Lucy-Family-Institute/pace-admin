@@ -3,4 +3,7 @@ interface DataSource {
   getPublicationsByName(lastName: String, firstName: String, startDate?: Date, endDate?: Date) : Promise<[]>
   // returns an array of normalized publication objects given ones retrieved fron this datasource
   getNormedPublications(sourcePublications: []): NormedPublication[]
+
+  //returns a machine readable string version of this source
+  getSourceName() : String
 }
