@@ -6,8 +6,6 @@ import { createHttpLink } from 'apollo-link-http'
 import fetch from 'node-fetch'
 import pEachSeries from 'p-each-series'
 import readUsers from '../client/src/gql/readPersons'
-import readPersonsByYear from '../client/src/gql/readPersonsByYear'
-import readPersons from '../client/src/gql/readPersons'
 import insertPublication from './gql/insertPublication'
 import insertPersonPublication from './gql/insertPersonPublication'
 import insertPubAuthor from './gql/insertPubAuthor'
@@ -22,6 +20,7 @@ import { randomWait } from './units/randomWait'
 import dotenv from 'dotenv'
 import readPublicationsByDoi from './gql/readPublicationsByDoi'
 import readPersonPublicationsByDoi from './gql/readPersonPublicationsByDoi'
+import { getAllSimplifiedPersons } from './modules/queryNormalizedPeople'
 // import insertReview from '../client/src/gql/insertReview'
 
 dotenv.config({
@@ -141,40 +140,6 @@ async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName
     console.log(error)
     throw error
   }
-}
-
-interface SimplifiedPerson {
-  id: number;
-  lastName: string;
-  firstInitial: string;
-  firstName: string;
-  startYear: string;
-  endYear: string;
-}
-
-function mapToSimplifiedPeople(people) : Array<SimplifiedPerson> {
-  const simplifiedPersons = _.map(people, (person) => {
-    let sp: SimplifiedPerson = {
-      id: person.id,
-      lastName: _.lowerCase(person.family_name),
-      firstInitial: _.lowerCase(person.given_name[0]),
-      firstName: _.lowerCase(person.given_name),
-      startYear: person.start_date,
-      endYear: person.end_date
-    }
-    return sp
-  })
-  return simplifiedPersons
-}
-
-async function getAllSimplifiedPersons() : Promise<Array<SimplifiedPerson>> {
-  const queryResult = await client.query(readPersons())
-  return mapToSimplifiedPeople(queryResult.data.persons)
-}
-
-async function getSimplifiedPersonsByYear(year: number) : Promise<Array<SimplifiedPerson>> {
-  const queryResult = await client.query(readPersonsByYear(year))
-  return mapToSimplifiedPeople(queryResult.data.persons)
 }
 
 async function getPapersByDoi (csvPath: string) {
@@ -587,7 +552,7 @@ async function main() {
 const pathsByYear = await getIngestFilePathsByYear()
 
   //just get all simplified persons as will filter later
-  const simplifiedPersons = await getAllSimplifiedPersons()
+  const simplifiedPersons = await getAllSimplifiedPersons(client)
 
   let doiStatus = new Map()
   await pMap(_.keys(pathsByYear), async (year) => {

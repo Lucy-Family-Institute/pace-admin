@@ -12,6 +12,7 @@ import { __EnumValue } from 'graphql'
 import dotenv from 'dotenv'
 import pMap from 'p-map'
 import { randomWait } from './units/randomWait'
+import { getAllSimplifiedPersons } from './modules/queryNormalizedPeople'
 
 dotenv.config({
   path: '../.env'
@@ -32,26 +33,6 @@ const client = new ApolloClient({
   }),
   cache: new InMemoryCache()
 })
-
-async function getAllSimplifiedPersons () {
-  const queryResult = await client.query(readPersons())
-
-  const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
-    return {
-      id: person.id,
-      lastName: person.family_name.toLowerCase(),
-      firstInitial: person.given_name[0].toLowerCase(),
-      firstName: person.given_name.toLowerCase(),
-      startYear: person.start_date,
-      endYear: person.end_date
-    }
-  })
-  return simplifiedPersons
-}
-
-function getNameKey (lastName, firstName) {
-  return `${_.toLower(lastName)}, ${_.toLower(firstName)}`
-}
 
 async function getPublications () {
   const queryResult = await client.query(readPublicationsAwards())

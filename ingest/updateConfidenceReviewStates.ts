@@ -845,7 +845,7 @@ async function main() {
   const pathsByYear = await getIngestFilePathsByYear("../admin/config/ingestConfidenceReviewFilePaths.json")
 
   // get the set of persons to test
-  const testAuthors = await getAllSimplifiedPersons()
+  const testAuthors = await getAllSimplifiedPersons(client)
   //create map of last name to array of related persons with same last name
   const personMap = _.transform(testAuthors, function (result, value) {
     _.each(value.names, (name) => {
