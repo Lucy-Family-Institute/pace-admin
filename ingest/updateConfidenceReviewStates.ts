@@ -21,8 +21,10 @@ import dotenv from 'dotenv'
 import readAllNewPersonPublications from './gql/readAllNewPersonPublications'
 import insertReview from '../client/src/gql/insertReview'
 import readPersonPublicationsByDoi from './gql/readPersonPublicationsByDoi'
-const getIngestFilePathsByYear = require('../getIngestFilePathsByYear');
-import { removeSpaces, normalizeString, normalizeObjectProperties } from '../normalizer'
+const getIngestFilePathsByYear = require('./getIngestFilePathsByYear');
+import { removeSpaces, normalizeString, normalizeObjectProperties } from './units/normalizer'
+import { command as writeCsv } from './units/writeCsv'
+import moment from 'moment'
 
 dotenv.config({
   path: '../.env'
@@ -842,7 +844,7 @@ async function main() {
   // @todo: Extract to ENV?
   const confidenceAlgorithmVersion = '876b7bd06e1ca819f5fe2f77ee48ea8c491f1ab1'
   // get confirmed author lists to papers
-  const pathsByYear = await getIngestFilePathsByYear("../admin/config/ingestConfidenceReviewFilePaths.json")
+  const pathsByYear = await getIngestFilePathsByYear("../config/ingestConfidenceReviewFilePaths.json")
 
   // get the set of persons to test
   const testAuthors = await getAllSimplifiedPersons()
@@ -905,6 +907,47 @@ async function main() {
   let totalConfidenceSets = 0
   let totalSetItems = 0
   let totalSetItemsInserted = 0
+
+  console.log(`Exporting results to csv...`)
+  const outputFailed = _.map(confidenceTests['failed'], test => {
+    test['author'] = JSON.stringify(test['author'])
+    test['confirmedAuthors'] = JSON.stringify(test['confirmedAuthors'])
+    test['confidenceItems'] = JSON.stringify(test['confidenceItems'])
+    return test
+  })
+
+  //write data out to csv
+  await writeCsv({
+    path: `../data/failed_confidence.${moment().format('YYYYMMDDHHmmss')}.csv`,
+    data: outputFailed,
+  });
+
+  const outputWarning = _.map(confidenceTests['warning'], test => {
+    test['author'] = JSON.stringify(test['author'])
+    test['confirmedAuthors'] = JSON.stringify(test['confirmedAuthors'])
+    test['confidenceItems'] = JSON.stringify(test['confidenceItems'])
+    return test
+  })
+
+  await writeCsv({
+    path: `../data/warning_confidence.${moment().format('YYYYMMDDHHmmss')}.csv`,
+    data: outputWarning,
+  });
+
+  const outputPassed = _.map(confidenceTests['passed'], test => {
+    test['author'] = JSON.stringify(test['author'])
+    test['author_id'] = test['author']['id']
+    test['author_names'] = test['author']['names']
+    test['confirmedAuthors'] = JSON.stringify(test['confirmedAuthors'])
+    test['confidenceItems'] = JSON.stringify(test['confidenceItems'])
+    return test
+  })
+
+  await writeCsv({
+    path: `../data/passed_confidence.${moment().format('YYYYMMDDHHmmss')}.csv`,
+    data: outputPassed,
+  });
+
   console.log('Beginning insert of confidence sets...')
   await pMap (_.keys(confidenceTests), async (testStatus) => {
     // console.log(`trying to insert confidence values ${testStatus}`)
@@ -937,6 +980,7 @@ async function main() {
   console.log(`Total Set Items Tried: ${totalSetItems} Passed: ${totalSetItemsInserted}`)
   console.log(`Passed tests: ${confidenceTests['passed'].length} Warning tests: ${confidenceTests['warning'].length} Failed Tests: ${confidenceTests['failed'].length}`)
 
+  
   // add any reviews as needed
   console.log('Synchronizing reviews with pre-existing publications...')
   // console.log(`New Person pubs by doi: ${JSON.stringify(newPersonPublicationsByDoi, null, 2)}`)
