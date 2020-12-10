@@ -20,7 +20,7 @@ import dotenv from 'dotenv'
 import resolve from 'path'
 import fetch from 'node-fetch'
 import readPersonsByYear from '../client/src/gql/readPersonsByYear'
-import { randomWait } from './units/randomWait'
+import { randomWait, wait } from './units/randomWait'
 
 dotenv.config({
   path: '../.env'

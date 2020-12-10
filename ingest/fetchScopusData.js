@@ -9,12 +9,6 @@ process.env.NODE_ENV = 'development';
 // config variables
 const config = require('../config/config.js');
 
-async function wait(ms){
-    return new Promise((resolve, reject)=> {
-      setTimeout(() => resolve(true), ms );
-    });
-  }
-
 async function getNDPublications(){
     const records = await getScopusSearch(params);
     return records;
