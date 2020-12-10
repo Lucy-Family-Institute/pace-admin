@@ -7,6 +7,7 @@ const pMap = require('p-map');
 const schema = require('schm');
 const translate = require('schm-translate');
 const xmlToJson = require('xml-js');
+import { wait } from "./units/randomWait"
 
 const getIds = require('./units/joinCsvs').command;
 
@@ -65,12 +66,6 @@ const shareWorkSchema = schema({
   resourceIdentifiers: 'PubmedData.ArticleIdList.ArticleId',
   funderIdentifiers: 'MedlineCitation.Article.GrantList.Grant'
 }));
- 
-async function wait(ms){
-  return new Promise((resolve, reject)=> {
-    setTimeout(() => resolve(true), ms );
-  });
-}
 
 async function getAwardPublications(awardId){
   const ids = await getESearch(awardId);
