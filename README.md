@@ -5,7 +5,7 @@ A pilot project under development to investigate ways to streamline and improve 
 
 This pilot project will prototype a new process that automates data collection from internal and external sources and reporting, as well as integrate validation steps to increase confidence in data considered.
 
-# Starting from scratch
+## Starting from scratch
 
     cp .env.template .env
     make install
@@ -23,7 +23,7 @@ Note: When running `make migrate`, you may get the following error:
 
     If you get the above error, give a few minutes then try again.
 
-# Open some terminals
+## Open some terminals
 
     make docker
     make client
@@ -32,7 +32,7 @@ Note: When running `make migrate`, you may get the following error:
 
 It's worth running ``make install_js`` every now and then to make sure your packages are up-to-date.
 
-# User Management
+## User Management
 
 Create your Auth Front End Credentials:
 
@@ -48,7 +48,7 @@ Propogate your email into the Hasura users table:
 - Select the "Data" tab and scroll to `users` table.
 - Select "Insert Row" and add the email address from the above Auth Front End Credentials.
 
-# Production
+## Production
 
 You may need to change the following variables in your .env file
 
@@ -79,3 +79,8 @@ Finally once confirmed running correctly configure startup script they restart w
 Run the command it specifies and if successful run the following to save the current process list to be restarted when pm2 restarts
 
     pm2 save
+
+## Modules
+
+* [Client](./client/README.md) - the UI tool for administering PACE Administration data.
+* [Ingest](./ingest/README.md) - responsible for loading data into the adminsitration system.
