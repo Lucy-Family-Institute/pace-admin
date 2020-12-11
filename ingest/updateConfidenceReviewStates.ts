@@ -1002,3 +1002,8 @@ async function main() {
 }
 
 main()
+
+//module.exports = performConfidenceTest, getPublicationAuthorMap
+export {
+  getPublicationAuthorMap
+}
