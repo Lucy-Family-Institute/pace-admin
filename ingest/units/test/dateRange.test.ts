@@ -3,19 +3,54 @@ import { dateRangesOverlapping } from '../dateRange'
 
 test ('dateRangesOverlapping(): test both start and end date of range1 undefined returns true', () => {
   expect.hasAssertions()
+  const startDate1 = undefined
+  const endDate1 = undefined
+  const startDate2 = new Date("2020-11-01T00:00:00.000Z")
+  const endDate2 = new Date("2020-11-02T00:00:00.000Z")
+  expect(dateRangesOverlapping(startDate1, endDate1, startDate2, endDate2)).toEqual(true)
 })
 test ('dateRangesOverlapping(): test both start and end date of range2 undefined returns true', () => {
   expect.hasAssertions()
+  const startDate2 = undefined
+  const endDate2 = undefined
+  const startDate1 = new Date("2020-11-01T00:00:00.000Z")
+  const endDate1 = new Date("2020-11-02T00:00:00.000Z")
+  expect(dateRangesOverlapping(startDate1, endDate1, startDate2, endDate2)).toEqual(true)
 })
 test ('dateRangesOverlapping(): test all dates undefined returns true', () => {
   expect.hasAssertions()
+  const startDate1 = undefined
+  const endDate1 = undefined
+  const startDate2 = undefined
+  const endDate2 = undefined
+  expect(dateRangesOverlapping(startDate1, endDate1, startDate2, endDate2)).toEqual(true)
+})
+
+test ('dateRangesOverlapping(): test range1 start date equal to end date and end date within date2 range returns true', () => {
+  expect.hasAssertions()
+  const startDate1 = new Date("2020-11-01T00:00:00.000Z")
+  const endDate1 = new Date("2020-11-01T00:00:00.000Z")
+  const startDate2 = new Date("2020-10-31T00:00:00.000Z")
+  const endDate2 = new Date("2021-09-30T00:00:00.000Z")
+  expect(dateRangesOverlapping(startDate1, endDate1, startDate2, endDate2)).toEqual(true)
 })
 
 test ('dateRangesOverlapping(): test range1 start date undefined and end date within date2 range returns true', () => {
   expect.hasAssertions()
+  const startDate1 = undefined
+  const endDate1 = new Date("2020-11-01T00:00:00.000Z")
+  const startDate2 = new Date("2020-10-31T00:00:00.000Z")
+  const endDate2 = new Date("2021-09-30T00:00:00.000Z")
+  expect(dateRangesOverlapping(startDate1, endDate1, startDate2, endDate2)).toEqual(true)
 })
+
 test ('dateRangesOverlapping(): test range1 start date undefined and end date after date2 range returns true', () => {
   expect.hasAssertions()
+  // const startDate1 = undefined
+  // const endDate1 = new Date("2022-08-01T00:00:00.000Z")
+  // const startDate2 = new Date("2020-10-31T00:00:00.000Z")
+  // const endDate2 = new Date("2021-09-30T00:00:00.000Z")
+  // expect(dateRangesOverlapping(startDate1, endDate1, startDate2, endDate2)).toEqual(true)
 })
 test ('dateRangesOverlapping(): test range1 start date undefined and end date before date2 range returns false', () => {
   expect.hasAssertions()
@@ -96,3 +131,14 @@ test ('dateRangesOverlapping(): test invalid values range2 start date after end 
   expect.hasAssertions()
 })
 
+test ('dateRangesOverlapping(): test times ignored when end date1 time is less than time for start date1 time but dates are equal', () => {
+  expect.hasAssertions()
+})
+
+test ('dateRangesOverlapping(): test times ignored when end date2 time is less than time for start date2 time but dates are equal', () => {
+  expect.hasAssertions()
+})
+
+test ('dateRangesOverlapping(): test times ignored when end date1 time is less than time for start date2 time but dates are equal', () => {
+  expect.hasAssertions()
+})
