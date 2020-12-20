@@ -23,34 +23,36 @@ export function dateRangesOverlapping (startDate1: Date, endDate1: Date, startDa
   } else if (!startDate1 && !startDate2){
     return true
   } else if (!startDate1 && startDate2){
-    if (!endDate2){
-      return (endDate1 >= startDate2)
-    } else {
-      return (endDate1 >= startDate2 && endDate1 <= endDate2)
-    }
-  } else if 
-    ((endDate2 && (startDate2 > endDate2)) || 
-    (endDate1 && (startDate1 > endDate1))){
+    return (endDate1 >= startDate2)
+  } else if (!startDate2 && startDate1){
+    return (endDate2 >= startDate1)
+  } else if (!endDate2 && !endDate1){
+    // if we get this far then both start dates defined
+    //doesn't matter where start date falls if no end date for each
+    return true
+  } else if (!endDate2){
+    //range just needs to continue after other start date to overlap
+    return (endDate1 >= startDate2)
+  } else if (!endDate1){
+    return (endDate2 >= startDate1)
+  } else if ((startDate2 > endDate2) || (startDate1 > endDate1)){
+    // all values defined and check for invalid values now 
     return false
-  } 
-  
-  if (!endDate1) {
-    if (!endDate2) {
-      //doesn't matter where start date falls if no end date for each
-      return true
-    } else if (startDate1 <= endDate2){
-      //start date must be before test end date
-      return true
-    }
-  } else if (!endDate2) {
-    // if person end date is defined then person end date must be after test start date
-    if (endDate1 >= startDate2) {
-      return true
-    }
-  } else if (endDate1 >= startDate2 && startDate1 <= endDate2){
-    // in this case start and end defined for both and overlapping ranges
+  } else if (startDate1 > endDate2) {
+    // if we are this far than all dates are defined and valid, so simple range test
+    return false
+  } else if (startDate2 > endDate1) {
+    return false
+  } else if (endDate1 < startDate2) {
+    // if we are this far both start dates before the other end dates
+    return false
+  } else if (endDate2 < startDate1) {
+    return false
+  } else {
+    // if we are this far than overlapping ranges
     return true
   }
+    
   // if we get this far the startDate and endDate are not within the test range
   return false
 }
