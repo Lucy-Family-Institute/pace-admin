@@ -1,5 +1,8 @@
+import _ from 'lodash'
 import pMap from 'p-map'
 import { command as writeCsv } from '../units/writeCsv'
+import { dateRangesOverlapping } from '../units/dateRange'
+import { randomWait } from '../units/randomWait'
 import moment from 'moment'
 
 class Harvester {
@@ -7,49 +10,6 @@ class Harvester {
 
   constructor (ds: DataSource) {
     this.ds = ds
-  }
-
-  async wait(ms){
-    return new Promise((resolve, reject)=> {
-      setTimeout(() => resolve(true), ms );
-    });
-  }
-  
-  async randomWait(seedTime, index){
-    const waitTime = seedTime * (index % 5)
-    //console.log(`Thread Waiting for ${waitTime} ms`)
-    await this.wait(waitTime)
-  }
-
-  // TODO: Move to utility function
-  dateRangesOverlapping (startDate1: Date, endDate1: Date, startDate2: Date, endDate2: Date) {
-    // assumes startDate1 and startDate2 must be defined, and other value checking
-    if (!startDate1 || 
-      !startDate2 || 
-      (endDate2 && (startDate2 > endDate2)) || 
-      (endDate1 && (startDate1 > endDate1))){
-      return false
-    } 
-    
-    if (!endDate1) {
-      if (!endDate2) {
-        //doesn't matter where start date falls if no end date for each
-        return true
-      } else if (startDate1 <= endDate2){
-        //start date must be before test end date
-        return true
-      }
-    } else if (!endDate2) {
-      // if person end date is defined then person end date must be after test start date
-      if (endDate1 >= startDate2) {
-        return true
-      }
-    } else if (endDate1 >= startDate2 && startDate1 <= endDate2){
-      // in this case start and end defined for both and overlapping ranges
-      return true
-    }
-    // if we get this far the startDate and endDate are not within the test range
-    return false
   }
 
   // TODO: Multiple harvest methods for different datasource queries?
@@ -69,10 +29,10 @@ class Harvester {
       try {
         personCounter += 1
         console.log(`Getting publications for ${person.lastName}, ${person.firstName}`)
-        await this.wait(waitInterval)
+        await randomWait(0, waitInterval)
         // console.log(`Finished wait Getting papers for ${person.lastName}, ${person.firstName}`)
         // check that person start date and end date has some overlap with search date range
-        if (this.dateRangesOverlapping(person.startDate, person.endDate, searchStartDate, searchEndDate)) {
+        if (dateRangesOverlapping(person.startDate, person.endDate, searchStartDate, searchEndDate)) {
           const sourcePublications = await this.ds.getPublicationsByName(person.lastName, person.firstName, searchStartDate, searchEndDate)
           const normedPublications: NormedPublication[] = this.ds.getNormedPublications(sourcePublications)
           // console.log(`normed papers are: ${JSON.stringify(simplifiedPapers, null, 2)}`)
@@ -104,6 +64,7 @@ class Harvester {
       pub['source_metadata'] = JSON.stringify(pub['source_metadata'])
       return pub
     })
+    
 
     //write data out to csv
     //console.log(outputScopusPapers)
@@ -111,4 +72,5 @@ class Harvester {
       path: `../../data/${this.ds.getSourceName}.${searchStartDate.getFullYear}.${moment().format('YYYYMMDDHHmmss')}.csv`,
       data: outputPapers,
     });
+  }
 }
