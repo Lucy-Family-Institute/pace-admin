@@ -6,4 +6,7 @@ interface DataSource {
 
   //returns a machine readable string version of this source
   getSourceName() : String
+
+  // perform any actions necessary to initialize a connection to the datasource
+  initialize()
 }

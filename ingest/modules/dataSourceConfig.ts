@@ -1,11 +1,8 @@
-class DataSourceConfig {
-  secrets: {}
-
-  constructor (secrets: {}) {
-    this.secrets = secrets
-  }
-  // returns an internal secrets object with items like tokens or other related credentials
-  getSecrets(): {} {
-    return this.secrets
-  }
+interface DataSourceConfig {
+  baseUrl: string
+  queryUrl: string
+  apiKey: string
+  sourceName: string
+  pageSize: Number
+  affiliationId?: string
 }
