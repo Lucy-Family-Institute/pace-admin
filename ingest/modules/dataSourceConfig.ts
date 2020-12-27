@@ -3,6 +3,6 @@ interface DataSourceConfig {
   queryUrl: string
   apiKey: string
   sourceName: string
-  pageSize: Number
+  pageSize: string
   affiliationId?: string
 }
