@@ -26,18 +26,18 @@ export class ScopusDataSource implements DataSource {
     console.log(`Querying scopus with date: ${date}, offset: ${offset}, and query: ${query}`)
 
     const response = await axios.get(this.dsConfig.queryUrl, {
-        headers: {
-          'X-ELS-APIKey' : this.dsConfig.apiKey,
-        },
-        params: {
-          query : query,
-          date: date,
-          count: pageSize,
-          start: offset
-        }
+      headers: {
+        'X-ELS-APIKey' : this.dsConfig.apiKey,
+      },
+      params: {
+        query: query,
+        date: date,
+        count: JSON.stringify(pageSize),
+        start: offset
+      }
     })
-
-      return response.data
+  
+    return response.data
   }
 
   // returns an array of normalized publication objects given ones retrieved fron this datasource
