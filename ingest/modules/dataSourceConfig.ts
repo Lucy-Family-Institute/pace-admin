@@ -4,5 +4,4 @@ interface DataSourceConfig {
   apiKey: string
   sourceName: string
   pageSize: string
-  affiliationId?: string
 }

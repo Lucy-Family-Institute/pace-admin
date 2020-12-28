@@ -33,7 +33,7 @@ class Harvester {
         // console.log(`Finished wait Getting papers for ${person.lastName}, ${person.firstName}`)
         // check that person start date and end date has some overlap with search date range
         if (dateRangesOverlapping(person.startDate, person.endDate, searchStartDate, searchEndDate)) {
-          const sourcePublications = await this.ds.getPublicationsByName(person.lastName, person.firstName, searchStartDate, searchEndDate)
+          const sourcePublications = await this.ds.getPublicationsByAuthorName(person, searchStartDate, searchEndDate)
           const normedPublications: NormedPublication[] = this.ds.getNormedPublications(sourcePublications)
           // console.log(`normed papers are: ${JSON.stringify(simplifiedPapers, null, 2)}`)
           //push in whole array for now and flatten later

@@ -1,4 +1,5 @@
 import axios from 'axios'
+import _ from 'lodash'
 
 export class ScopusDataSource implements DataSource {
 
@@ -8,16 +9,15 @@ export class ScopusDataSource implements DataSource {
     this.dsConfig = dsConfig
   }
      // assumes that if only one of startDate or endDate provided it would always be startDate first and then have endDate undefined
-  async getPublicationsByName(lastName: String, firstName: String, startDate: Date, endDate?: Date): Promise<[]> {
-    const scopusAffiliationId = this.dsConfig.affiliationId
-    let authorQuery = "AUTHFIRST("+ firstName +") and AUTHLASTNAME("+ lastName +")"
-    if (this.dsConfig.affiliationId){
-      authorQuery = authorQuery+" and AF-ID("+this.dsConfig.affiliationId 
+  async getPublicationsByAuthorName(person: NormedPerson, startDate: Date, endDate?: Date): Promise<[]> {
+    let authorQuery = "AUTHFIRST("+ _.toLower(person.firstInitial) +") and AUTHLASTNAME("+ _.toLower(person.lastName) +")"
+    if (person.sourceIds.scopusAffiliationId){
+      authorQuery = authorQuery+" and AF-ID("+person.sourceIds.scopusAffiliationId+")" 
     } 
 
     // need to make sure date string in correct format
-    const results = await this.fetchScopusQuery(authorQuery, startDate.toString(), this.dsConfig.pageSize, 0)
-    return []
+    const results = await this.fetchScopusQuery(authorQuery, startDate.getUTCFullYear().toString(), this.dsConfig.pageSize, 0)
+    return results
   }
 
   async fetchScopusQuery(query, date, pageSize, offset){
