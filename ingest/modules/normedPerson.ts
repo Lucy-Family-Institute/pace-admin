@@ -1,8 +1,11 @@
 interface NormedPerson {
     id: Number,
-    lastName: String,
-    firstInitial: String,
-    firstName: String,
+    lastName: string,
+    firstInitial: string,
+    firstName: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    sourceIds: {
+        scopusAffiliationId?: string
+    }
 }
