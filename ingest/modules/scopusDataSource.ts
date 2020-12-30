@@ -41,7 +41,7 @@ export class ScopusDataSource implements DataSource {
   }
 
   // returns an array of normalized publication objects given ones retrieved fron this datasource
-  getNormedPublications(sourcePublications: []): NormedPublication[]{
+  getNormedPublications(sourcePublications: any[]): NormedPublication[]{
       return []
   }
 
