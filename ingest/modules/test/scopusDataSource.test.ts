@@ -110,21 +110,18 @@ beforeAll(async () => {
   }
 
   defaultExpectedNormedPublication = {
-    search_family_name: 'zhang',
-    search_given_name: 's',
-    abstract: undefined,
+    search_person: defaultNormedPerson,
     title: 'Oxidation-Induced Polymerization of InP Surface and Implications for Optoelectronic Applications',
     journalTitle: 'Journal of Physical Chemistry C',
     journalIssn: '19327447',
-    journalEIsssn: '19327455',
+    journalEIssn: '19327455',
     doi: '10.1021/acs.jpcc.9b07260',
     publicationDate: '2019-12-26',
-    publisher: undefined,
     datasource_name: dsConfig.sourceName,
-    source_id: '5200153123',
+    source_id: '85077122528',
     source_metadata: defaultPubSourceMetadata
   }
-})
+ })
 
 // TOD fix overriding JEST timeout of 5000 ms that creeps up sometimes
 // TODO convert to use input parameters and expected csv
@@ -190,7 +187,14 @@ test('testing get publication from Scopus with affiliation id', async () => {
 test('testing get normedPublications with default pub', async () => {
     expect.hasAssertions()
     const testPubs = [ defaultPubSourceMetadata ]
-    const normedPubResults = await ds.getNormedPublications(testPubs)
-    expect(normedPubResults.length).toEqual(1)
-    expect(normedPubResults).toEqual(expect.arrayContaining([defaultExpectedNormedPublication]))
+    const normedPubResults = await ds.getNormedPublications(testPubs, defaultNormedPerson)
+    // expect(normedPubResults.length).toEqual(1)
+    // as the source metadata can vary only check the other values and that source metadata is not null
+    _.each(_.keys(normedPubResults[0]), (key) => {
+        if (key === 'source_metadata') {
+          expect(normedPubResults[0][key]).toBeDefined
+        } else {
+          expect(normedPubResults[0][key]).toEqual(defaultExpectedNormedPublication[key])
+        }
+    })
 })

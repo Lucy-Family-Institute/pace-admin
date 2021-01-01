@@ -5,7 +5,7 @@ interface DataSource {
   getNormedPublications(sourcePublications: any[]): NormedPublication[]
 
   //returns a machine readable string version of this source
-  getSourceName() : String
+  getSourceName() : string
 
   // perform any actions necessary to initialize a connection to the datasource
   initialize()
