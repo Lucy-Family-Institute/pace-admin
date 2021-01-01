@@ -41,16 +41,30 @@ export class ScopusDataSource implements DataSource {
   }
 
   // returns an array of normalized publication objects given ones retrieved fron this datasource
-  getNormedPublications(sourcePublications: any[]): NormedPublication[]{
-      return []
+  getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): NormedPublication[]{
+    return _.map(sourcePublications, (pub) => {
+        return {
+            search_person: searchPerson,
+            title: pub['dc:title'],
+            journalTitle: pub['prism:publicationName'],
+            journalIssn: pub['prism:issn'] ? pub['prism:issn'] : undefined,
+            journalEIssn: pub['prism:eIssn'] ? pub['prism:eIssn'] : undefined,
+            publicationDate: pub['prism:coverDate'],
+            datasource_name: this.dsConfig.sourceName,
+            doi: pub['prism:doi'] ? pub['prism:doi'] : '',
+            source_id: _.replace(pub['dc:identifier'], 'SCOPUS_ID:', ''),
+            source_metadata : pub
+        }
+    })
   }
 
   //returns a machine readable string version of this source
   getSourceName() {
-      return 'Scopus'
+    return 'Scopus'
   }
 
   initialize() {
 
   }
+  
 }
