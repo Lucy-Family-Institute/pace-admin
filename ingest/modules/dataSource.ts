@@ -1,6 +1,7 @@
 interface DataSource {
   // assumes that if only one of startDate or endDate provided it would always be startDate first and then have endDate undefined
-  getPublicationsByAuthorName(person: NormedPerson, startDate?: Date, endDate?: Date) : Promise<[]>
+  getPublicationsByAuthorName(person: NormedPerson, offset: Number, startDate?: Date, endDate?: Date) : Promise<NormedHarvestSet>
+  
   // returns an array of normalized publication objects given ones retrieved fron this datasource
   getNormedPublications(sourcePublications: any[]): NormedPublication[]
 
