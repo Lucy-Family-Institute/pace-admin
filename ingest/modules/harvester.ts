@@ -5,7 +5,7 @@ import { dateRangesOverlapping } from '../units/dateRange'
 import { randomWait } from '../units/randomWait'
 import moment from 'moment'
 
-class Harvester {
+export class Harvester {
   ds: DataSource
 
   constructor (ds: DataSource) {
@@ -19,7 +19,7 @@ class Harvester {
   //
   // threadCount default = 1 concurrent thread
   // waitInterval desc: wait time between harvests of each person search default = 1000 milliseconds in miliseconds
-  async harvest (searchPersons: NormedPerson[], searchStartDate: Date, searchEndDate: Date, threadCount: number = 1, waitInterval: number = 1000) {
+  async harvest (searchPersons: NormedPerson[], searchStartDate: Date, searchEndDate: Date = undefined, threadCount: number = 1, waitInterval: number = 1000) {
     let personCounter = 0
     let succeededPapers = []
     let failedPapers = []
@@ -33,10 +33,13 @@ class Harvester {
         // console.log(`Finished wait Getting papers for ${person.lastName}, ${person.firstName}`)
         // check that person start date and end date has some overlap with search date range
         if (dateRangesOverlapping(person.startDate, person.endDate, searchStartDate, searchEndDate)) {
-          const sourcePublications = await this.ds.getPublicationsByAuthorName(person, searchStartDate, searchEndDate)
-          const normedPublications: NormedPublication[] = this.ds.getNormedPublications(sourcePublications)
+          const harvestSet = await this.ds.getPublicationsByAuthorName(person, 0, searchStartDate, searchEndDate)
+          console.log(`${this.ds.getSourceName()} Total Pubs found for author: ${person.lastName}, ${person.firstName}, ${harvestSet.totalResults}`)
+          console.log(`${this.ds.getSourceName()} Pubs found length for author: ${person.lastName}, ${person.firstName}, ${harvestSet.publications.length}`)
+          const normedPublications: NormedPublication[] = this.ds.getNormedPublications(harvestSet.publications)
           // console.log(`normed papers are: ${JSON.stringify(simplifiedPapers, null, 2)}`)
           //push in whole array for now and flatten later
+          console.log(`${this.ds.getSourceName()} NormedPubs found length for author: ${person.lastName}, ${person.firstName}, ${normedPublications.length}`)
           succeededPapers.push(normedPublications)
           succeededAuthors.push(person)
         } else {
@@ -51,7 +54,7 @@ class Harvester {
     }, {concurrency: threadCount})
 
     return {
-      'foundPublications': succeededPapers,
+      'foundPublications': _.flattenDepth(succeededPapers, 1),
       'succeededAuthors': succeededAuthors,
       'errors': failedPapers,
       'failedAuthors': failedAuthors
