@@ -75,7 +75,7 @@ beforeAll(async () => {
 
   defaultTotalExpectedResultsMin = {
       withAffiliation: 198,
-      woutAffilation: 77000
+      woutAffiliation: 77000
   }
 
   defaultPubSourceMetadata = {
@@ -137,7 +137,6 @@ test('testing fetch scopus query with REST call', async () => {
     expect(totalResults).toBeGreaterThanOrEqual(defaultTotalExpectedResultsMin.withAffiliation)
     if (totalResults > 0 && results['search-results']['entry']){
       expect(results['search-results']['entry'].length).toEqual(Number.parseInt(dsConfig.pageSize))
-      console.log(`Fetch Query Result 1 is: ${JSON.stringify(_.keys(results['search-results']['entry'][0]), null, 2)}`)
       const resultKeys = _.keys(results['search-results']['entry'][0])
       // just check if a subset of keys are in the expected list
       expect(resultKeys).toEqual(expect.arrayContaining(defaultExpectedResultKeys))
@@ -151,36 +150,34 @@ test('testing get publication from Scopus with no affiliation id', async () => {
 
     const person: NormedPerson = _.cloneDeep(defaultNormedPerson)
     person.sourceIds = {}
-    const results = await ds.getPublicationsByAuthorName(person, new Date(`${defaultYear}-01-01`))
-    if (results && results['search-results']['opensearch:totalResults']){
-        const totalResults = Number.parseInt(results['search-results']['opensearch:totalResults'])
-        console.log(`Author Search Result Total Results: ${totalResults}`)
-        expect(totalResults).toBeGreaterThanOrEqual(defaultTotalExpectedResultsMin.woutAffilation)
-        if (totalResults > 0 && results['search-results']['entry']){
-           expect(results['search-results']['entry'].length).toEqual(Number.parseInt(dsConfig.pageSize))
-           console.log(`Fetch Query Result 1 is: ${JSON.stringify(_.keys(results['search-results']['entry'][0]), null, 2)}`)
-           const resultKeys = _.keys(results['search-results']['entry'][0])
-           // just check if a subset of keys are in the expected list
-           expect(resultKeys).toEqual(expect.arrayContaining(defaultExpectedResultKeys))       
-        }
+    const results: NormedHarvestSet = await ds.getPublicationsByAuthorName(person, 0, new Date(`${defaultYear}-01-01`))
+    const expectedSet = {
+        sourceName: ds.getSourceName(),
+        offset: 0,
+        pageSize: Number.parseInt(dsConfig.pageSize),
+        totalResultsMin: defaultTotalExpectedResultsMin.woutAffiliation
     }
+    expect(results.sourceName).toEqual(expectedSet.sourceName)
+    expect(results.offset).toEqual(expectedSet.offset)
+    expect(results.pageSize).toEqual(expectedSet.pageSize)
+    expect(results.totalResults).toBeGreaterThanOrEqual(expectedSet.totalResultsMin)
+    expect(results.publications.length).toEqual(expectedSet.pageSize)
 })
 
 test('testing get publication from Scopus with affiliation id', async () => {
     expect.hasAssertions()
-    const results = await ds.getPublicationsByAuthorName(defaultNormedPerson, new Date(`${defaultYear}-01-01`))
-    if (results && results['search-results']['opensearch:totalResults']){
-        const totalResults = Number.parseInt(results['search-results']['opensearch:totalResults'])
-        console.log(`Author Search Result Total Results: ${totalResults}`)
-        expect(totalResults).toBeGreaterThanOrEqual(defaultTotalExpectedResultsMin.withAffiliation)
-        if (totalResults > 0 && results['search-results']['entry']){
-           expect(results['search-results']['entry'].length).toEqual(Number.parseInt(dsConfig.pageSize))
-           console.log(`Fetch Query Result 1 is: ${JSON.stringify(_.keys(results['search-results']['entry'][0]), null, 2)}`)
-           const resultKeys = _.keys(results['search-results']['entry'][0])
-           // just check if a subset of keys are in the expected list
-           expect(resultKeys).toEqual(expect.arrayContaining(defaultExpectedResultKeys))
-        }
+    const results: NormedHarvestSet = await ds.getPublicationsByAuthorName(defaultNormedPerson, 0, new Date(`${defaultYear}-01-01`))
+    const expectedSet = {
+        sourceName: ds.getSourceName(),
+        offset: 0,
+        pageSize: Number.parseInt(dsConfig.pageSize),
+        totalResultsMin: defaultTotalExpectedResultsMin.withAffiliation
     }
+    expect(results.sourceName).toEqual(expectedSet.sourceName)
+    expect(results.offset).toEqual(expectedSet.offset)
+    expect(results.pageSize).toEqual(expectedSet.pageSize)
+    expect(results.totalResults).toBeGreaterThanOrEqual(expectedSet.totalResultsMin)
+    expect(results.publications.length).toEqual(expectedSet.pageSize)
 })
 
 // TODO: convert to large set

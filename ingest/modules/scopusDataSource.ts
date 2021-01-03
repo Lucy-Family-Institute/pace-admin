@@ -9,15 +9,33 @@ export class ScopusDataSource implements DataSource {
     this.dsConfig = dsConfig
   }
      // assumes that if only one of startDate or endDate provided it would always be startDate first and then have endDate undefined
-  async getPublicationsByAuthorName(person: NormedPerson, startDate: Date, endDate?: Date): Promise<[]> {
+  async getPublicationsByAuthorName(person: NormedPerson, offset: Number, startDate: Date, endDate?: Date): Promise<NormedHarvestSet> {
     let authorQuery = "AUTHFIRST("+ _.toLower(person.firstInitial) +") and AUTHLASTNAME("+ _.toLower(person.lastName) +")"
     if (person.sourceIds.scopusAffiliationId){
       authorQuery = authorQuery+" and AF-ID("+person.sourceIds.scopusAffiliationId+")" 
     } 
 
+    let totalResults: Number
+    let publications = []
+
     // need to make sure date string in correct format
-    const results = await this.fetchScopusQuery(authorQuery, startDate.getUTCFullYear().toString(), this.dsConfig.pageSize, 0)
-    return results
+    const results = await this.fetchScopusQuery(authorQuery, startDate.getUTCFullYear().toString(), this.dsConfig.pageSize, offset)
+    if (results && results['search-results']['opensearch:totalResults']){
+        totalResults = Number.parseInt(results['search-results']['opensearch:totalResults'])
+        if (totalResults > 0 && results['search-results']['entry']){
+            publications = results['search-results']['entry']
+        }
+    } else {
+        totalResults = 0
+    }
+    const normedResult: NormedHarvestSet = {
+        sourceName: this.getSourceName(),
+        publications: publications,
+        offset: offset,
+        pageSize: Number.parseInt(this.dsConfig.pageSize),
+        totalResults: totalResults
+    }
+    return normedResult
   }
 
   async fetchScopusQuery(query, date, pageSize, offset){
