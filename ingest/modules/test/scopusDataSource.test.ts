@@ -150,7 +150,7 @@ test('testing get publication from Scopus with no affiliation id', async () => {
 
     const person: NormedPerson = _.cloneDeep(defaultNormedPerson)
     person.sourceIds = {}
-    const results: NormedHarvestSet = await ds.getPublicationsByAuthorName(person, 0, new Date(`${defaultYear}-01-01`))
+    const results: HarvestSet = await ds.getPublicationsByAuthorName(person, 0, new Date(`${defaultYear}-01-01`))
     const expectedSet = {
         sourceName: ds.getSourceName(),
         offset: 0,
@@ -166,7 +166,7 @@ test('testing get publication from Scopus with no affiliation id', async () => {
 
 test('testing get publication from Scopus with affiliation id', async () => {
     expect.hasAssertions()
-    const results: NormedHarvestSet = await ds.getPublicationsByAuthorName(defaultNormedPerson, 0, new Date(`${defaultYear}-01-01`))
+    const results: HarvestSet = await ds.getPublicationsByAuthorName(defaultNormedPerson, 0, new Date(`${defaultYear}-01-01`))
     const expectedSet = {
         sourceName: ds.getSourceName(),
         offset: 0,

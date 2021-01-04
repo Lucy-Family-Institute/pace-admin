@@ -1,4 +1,4 @@
-interface NormedHarvestSet {
+interface HarvestSet {
     sourceName: string,
     publications: any[],
     offset: Number,
