@@ -61,9 +61,9 @@ beforeAll(async () => {
 
   defaultNormedPerson = {
     id: 1,
-    lastName: 'Zhang',
-    firstInitial: 'S',
-    firstName: 'Suyaun',
+    familyName: 'Zhang',
+    givenNameInitial: 'S',
+    givenName: 'Suyaun',
     startDate: new Date('2017-01-01'),
     endDate: undefined,
     sourceIds: {
@@ -128,7 +128,7 @@ beforeAll(async () => {
 test('testing fetch scopus query with REST call', async () => {
   expect.hasAssertions()
   const year = '2019'
-  const authorQuery = "AUTHFIRST("+ _.toLower(defaultNormedPerson.firstInitial) +") and AUTHLASTNAME("+ _.toLower(defaultNormedPerson.lastName)+ ") and AF-ID(" + defaultNormedPerson.sourceIds.scopusAffiliationId + ")"
+  const authorQuery = "AUTHFIRST("+ _.toLower(defaultNormedPerson.givenNameInitial) +") and AUTHLASTNAME("+ _.toLower(defaultNormedPerson.familyName)+ ") and AF-ID(" + defaultNormedPerson.sourceIds.scopusAffiliationId + ")"
   const results = await ds.fetchScopusQuery(authorQuery, year, dsConfig.pageSize, 0)
   
   if (results && results['search-results']['opensearch:totalResults']){

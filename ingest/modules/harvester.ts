@@ -28,25 +28,25 @@ export class Harvester {
     await pMap(searchPersons, async (person) => {
       try {
         personCounter += 1
-        console.log(`Getting publications for ${person.lastName}, ${person.firstName}`)
+        console.log(`Getting publications for ${person.familyName}, ${person.givenName}`)
         await randomWait(0, waitInterval)
-        // console.log(`Finished wait Getting papers for ${person.lastName}, ${person.firstName}`)
+        
         // check that person start date and end date has some overlap with search date range
         if (dateRangesOverlapping(person.startDate, person.endDate, searchStartDate, searchEndDate)) {
           const harvestSet = await this.ds.getPublicationsByAuthorName(person, 0, searchStartDate, searchEndDate)
-          console.log(`${this.ds.getSourceName()} Total Pubs found for author: ${person.lastName}, ${person.firstName}, ${harvestSet.totalResults}`)
-          console.log(`${this.ds.getSourceName()} Pubs found length for author: ${person.lastName}, ${person.firstName}, ${harvestSet.publications.length}`)
+          console.log(`${this.ds.getSourceName()} Total Pubs found for author: ${person.familyName}, ${person.givenName}, ${harvestSet.totalResults}`)
+          console.log(`${this.ds.getSourceName()} Pubs found length for author: ${person.familyName}, ${person.givenName}, ${harvestSet.publications.length}`)
           const normedPublications: NormedPublication[] = this.ds.getNormedPublications(harvestSet.publications)
           // console.log(`normed papers are: ${JSON.stringify(simplifiedPapers, null, 2)}`)
           //push in whole array for now and flatten later
-          console.log(`${this.ds.getSourceName()} NormedPubs found length for author: ${person.lastName}, ${person.firstName}, ${normedPublications.length}`)
+          console.log(`${this.ds.getSourceName()} NormedPubs found length for author: ${person.familyName}, ${person.givenName}, ${normedPublications.length}`)
           succeededPapers.push(normedPublications)
           succeededAuthors.push(person)
         } else {
-          console.log(`Warning: Skipping harvest of '${person.lastName}, ${person.firstName}' because person start date: ${person.startDate} and end date ${person.endDate} not within search start date ${searchStartDate} and end date ${searchEndDate}.)`)
+          console.log(`Warning: Skipping harvest of '${person.familyName}, ${person.givenName}' because person start date: ${person.startDate} and end date ${person.endDate} not within search start date ${searchStartDate} and end date ${searchEndDate}.)`)
         }
       } catch (error) {
-        const errorMessage = `Error on get papers for author: ${person.lastName}, ${person.firstName}: ${error}`
+        const errorMessage = `Error on get papers for author: ${person.familyName}, ${person.givenName}: ${error}`
         failedPapers.push(errorMessage)
         failedAuthors.push(person)
         console.log(errorMessage)
