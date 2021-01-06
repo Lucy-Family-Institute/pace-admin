@@ -1,8 +1,8 @@
 interface NormedPerson {
     id: Number,
-    lastName: string,
-    firstInitial: string,
-    firstName: string,
+    familyName: string,
+    givenNameInitial: string,
+    givenName: string,
     startDate: Date,
     endDate: Date,
     sourceIds: {

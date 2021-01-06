@@ -10,7 +10,7 @@ export class ScopusDataSource implements DataSource {
   }
      // assumes that if only one of startDate or endDate provided it would always be startDate first and then have endDate undefined
   async getPublicationsByAuthorName(person: NormedPerson, offset: Number, startDate: Date, endDate?: Date): Promise<HarvestSet> {
-    let authorQuery = "AUTHFIRST("+ _.toLower(person.firstInitial) +") and AUTHLASTNAME("+ _.toLower(person.lastName) +")"
+    let authorQuery = "AUTHFIRST("+ _.toLower(person.givenNameInitial) +") and AUTHLASTNAME("+ _.toLower(person.familyName) +")"
     if (person.sourceIds.scopusAffiliationId){
       authorQuery = authorQuery+" and AF-ID("+person.sourceIds.scopusAffiliationId+")" 
     } 

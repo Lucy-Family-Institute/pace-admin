@@ -6,17 +6,11 @@ export async function loadPublications (csvPath: string) {
   // ingest list of DOI's from CSV and relevant center author name
   try {
     const authorPapers: any = await loadCsv({
-     path: csvPath
+     path: csvPath,
+     lowerCaseColumns: true
     })
 
-    //normalize column names to all lowercase
-    const authorLowerPapers = _.mapValues(authorPapers, function (paper) {
-      return _.mapKeys(paper, function (value, key) {
-        return key.toLowerCase()
-      })
-    })
-
-    const papersByDoi = _.groupBy(authorLowerPapers, function(paper) {
+    const papersByDoi = _.groupBy(authorPapers, function(paper) {
       // strip off 'doi:' if present
       return _.replace(paper['doi'], 'doi:', '')
     })
