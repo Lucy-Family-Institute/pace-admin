@@ -1,28 +1,28 @@
 import { loadPersons } from '../loadPersons'
 import _ from 'lodash'
 
-const testCSVPath = './test/fixtures/persons_2020.csv'
+const testCSVPath = './test/fixtures/persons_1.csv'
 
 const propMapNoLowercase = {
-  ID: 'ID',
-  givenName: 'Given_name',
-  familyName: 'Family_Name',
-  startDate: 'Start_Date',
-  endDate: 'End_Date'
+  'ID': 'ID',
+  'Given_name': 'givenName',
+  'Family_Name': 'familyName',
+  'Start_Date': 'startDate',
+  'End_Date': 'endDate' 
 }
 const propMapLowercaseKeysOnly = {
   id: 'ID',
-  givenname: 'Given_name',
-  familyname: 'Family_Name',
-  startdate: 'Start_Date',
-  enddate: 'End_Date'
+  'given_name': 'givenName',
+  'family_name': 'familyName',
+  'start_date': 'startDate',
+  'end_date': 'endDate' 
 }
 const propMapAllLowercase = {
-  id: 'id',
-  givenname: 'given_name',
-  familyname: 'family_name',
-  startdate: 'start_date',
-  enddate: 'end_date'
+  'id': 'id',
+  'given_name': 'givenname',
+  'family_name': 'familyname',
+  'start_date': 'startdate',
+  'end_date': 'enddate'
 }
 
 const expectedUnchangedColumns = [

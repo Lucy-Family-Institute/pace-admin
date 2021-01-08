@@ -16,24 +16,25 @@ export async function loadPersons (csvPath: string, propertyMap: {}={}): Promise
   try {
     const rows: any = await loadCsv({
      path: csvPath,
+     columnNameMap: propertyMap,
      lowerCaseColumns: true
     })
 
     //normalize column names to all lowercase
     return _.map(rows, (row) => {
-      const id = getMappedPropertyValue(row, 'id', propertyMap)
-      const givenName = getMappedPropertyValue(row, 'givenName', propertyMap)
-      const givenNameInitial = getMappedPropertyValue(row, 'givenNameInitial', propertyMap)
-      const scopusAffiliationId = getMappedPropertyValue(row, 'scopusAffiliationId', propertyMap)
+      const id = row['id']
+      const givenName = row['givenname']
+      const givenNameInitial = row['givennameinitial']
+      const scopusAffiliationId = row['scopusaffiliationid']
       const person: NormedPerson = {
         id: id ? Number.parseInt(id) : undefined,
-        familyName: getMappedPropertyValue(row, 'familyName', propertyMap),
+        familyName: row['familyname'],
         givenNameInitial: givenNameInitial ? givenNameInitial : (givenName) ? givenName.charAt(0) : undefined,
         givenName: givenName,
-        startDate: new Date(getMappedPropertyValue(row, 'startDate', propertyMap)),
-        endDate: new Date(getMappedPropertyValue(row, 'endDate', propertyMap)),
+        startDate: new Date(row['startdate']),
+        endDate: new Date(row['enddate']),
         sourceIds: {
-          scopusAffiliationId: getMappedPropertyValue(row, 'scopusAffiliationId', propertyMap)
+          scopusAffiliationId: row['scopusaffiliationId']
         }    
       }
       return person
@@ -42,29 +43,4 @@ export async function loadPersons (csvPath: string, propertyMap: {}={}): Promise
     console.log(`Error on person load for path ${csvPath}, error: ${error}`)
     return undefined
   }
-}
-
-function getMappedPropertyValue(row, propertyName, propertyMap={}) {
-  // these steps assume that column names in row have already been converted to lowercase
-  const lowerPropName = propertyName.toLowerCase()
-  if (row[lowerPropName]) {
-    return row[lowerPropName]
-  } 
-  
-  if (propertyMap[lowerPropName]) {
-    const lowerMappedProp = propertyMap[lowerPropName].toLowerCase()
-    if (row[lowerMappedProp]) {
-      return row[lowerMappedProp]
-    }
-  }
-
-  // finally check non-lowercase version in property map in case that sneaks through
-  if (propertyMap[propertyName]) {
-    const lowerMappedProp = propertyMap[propertyName].toLowerCase()
-    if (row[lowerMappedProp]) {
-      return row[lowerMappedProp]
-    }
-  }
-
-  return undefined
 }

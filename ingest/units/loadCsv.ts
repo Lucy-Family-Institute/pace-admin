@@ -33,9 +33,15 @@ async function loadCsv(filePath, lowerCaseColumns=false, columnNameMap={}) {
   if (!fs.existsSync(filePath)) {
     throw `Invalid path on load csv from: ${filePath}`
   }
+
+  //normalize columnNameMap keys to lowercase for the matching
+  const lowerColumnNameMap = _.mapKeys(columnNameMap, function (value, key){
+    return key.toLowerCase()
+  })
+
   const data = await parseCsv(fs.createReadStream(filePath));
-  if (lowerCaseColumns || _.keys(columnNameMap).length>0) {
-    return normalizeColumns(data, lowerCaseColumns, columnNameMap);
+  if (lowerCaseColumns || _.keys(lowerColumnNameMap).length>0) {
+    return normalizeColumns(data, lowerCaseColumns, lowerColumnNameMap);
   } else {
     return data;
   }
