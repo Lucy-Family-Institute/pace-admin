@@ -110,16 +110,16 @@ beforeAll(async () => {
   }
 
   defaultExpectedNormedPublication = {
-    search_person: defaultNormedPerson,
+    searchPerson: defaultNormedPerson,
     title: 'Oxidation-Induced Polymerization of InP Surface and Implications for Optoelectronic Applications',
     journalTitle: 'Journal of Physical Chemistry C',
     journalIssn: '19327447',
     journalEIssn: '19327455',
     doi: '10.1021/acs.jpcc.9b07260',
     publicationDate: '2019-12-26',
-    datasource_name: dsConfig.sourceName,
-    source_id: '85077122528',
-    source_metadata: defaultPubSourceMetadata
+    datasourceName: dsConfig.sourceName,
+    sourceId: '85077122528',
+    sourceMetadata: defaultPubSourceMetadata
   }
  })
 
