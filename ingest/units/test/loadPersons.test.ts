@@ -1,7 +1,7 @@
 import { loadPersons } from '../loadPersons'
 import _ from 'lodash'
 
-const testCSVPath = './test/fixtures/persons_1.csv'
+const testCSVPath = './test/fixtures/persons_2020.csv'
 
 const propMapNoLowercase = {
   'ID': 'ID',

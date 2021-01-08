@@ -30,6 +30,8 @@ export class ScopusDataSource implements DataSource {
     }
     const result: HarvestSet = {
         sourceName: this.getSourceName(),
+        searchPerson: person,
+        query: authorQuery,
         publications: publications,
         offset: offset,
         pageSize: Number.parseInt(this.dsConfig.pageSize),
@@ -62,23 +64,23 @@ export class ScopusDataSource implements DataSource {
   getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): NormedPublication[]{
     return _.map(sourcePublications, (pub) => {
         return {
-            search_person: searchPerson,
+            searchPerson: searchPerson,
             title: pub['dc:title'],
             journalTitle: pub['prism:publicationName'],
             journalIssn: pub['prism:issn'] ? pub['prism:issn'] : undefined,
             journalEIssn: pub['prism:eIssn'] ? pub['prism:eIssn'] : undefined,
             publicationDate: pub['prism:coverDate'],
-            datasource_name: this.dsConfig.sourceName,
+            datasourceName: this.dsConfig.sourceName,
             doi: pub['prism:doi'] ? pub['prism:doi'] : '',
-            source_id: _.replace(pub['dc:identifier'], 'SCOPUS_ID:', ''),
-            source_metadata : pub
+            sourceId: _.replace(pub['dc:identifier'], 'SCOPUS_ID:', ''),
+            sourceMetadata: pub
         }
     })
   }
 
   //returns a machine readable string version of this source
   getSourceName() {
-    return 'Scopus'
+    return (this.dsConfig && this.dsConfig.sourceName) ? this.dsConfig.sourceName : 'Scopus'
   }
 
   initialize() {
