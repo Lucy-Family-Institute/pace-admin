@@ -250,9 +250,13 @@ async function getSimplifliedScopusPapers(scopusPapers, simplifiedPerson){
       search_given_name : simplifiedPerson.firstInitial,
       title: paper['dc:title'],
       journal: paper['prism:publicationName'],
+      journal_issn: paper['prism:issn'],
+      journal_eissn: paper['prism:eIssn'],
+      publication_date: paper['prism:coverDate'],
       doi: paper['prism:doi'] ? paper['prism:doi'] : '',
-      scopus_id: _.replace(paper['dc:identifier'], 'SCOPUS_ID:', ''),
-      scopus_record : paper
+      source_id: _.replace(paper['dc:identifier'], 'SCOPUS_ID:', ''),
+      source_metadata: paper,
+      source_name: 'Scopus'
     }
   })
 }
@@ -308,7 +312,7 @@ async function main (): Promise<void> {
 
     //flatten out succeedScopusPaperArray for data for csv and change scopus json object to string
     const outputScopusPapers = _.map(_.flatten(succeededScopusPapers), paper => {
-      paper['scopus_record'] = JSON.stringify(paper['scopus_record'])
+      paper['source_metadata'] = JSON.stringify(paper['source_metadata'])
       return paper
     })
 
