@@ -528,7 +528,7 @@ function testAuthorAffiliation (author, publicationAuthorMap) {
 }
 
 // returns true/false from a test called for the specific name passed in
-async function performConfidenceTest (confidenceType, publicationCsl, author, publicationAuthorMap, confirmedAuthors){
+async function performConfidenceTest (confidenceType, publicationCsl, author, publicationAuthorMap, confirmedAuthors=[]){
   if (confidenceType.name === 'lastname') {
     return testAuthorLastName(author, publicationAuthorMap)
   } else if (confidenceType.name === 'confirmed_by_author') {
@@ -1005,5 +1005,6 @@ main()
 
 //module.exports = performConfidenceTest, getPublicationAuthorMap
 export {
-  getPublicationAuthorMap
+  getPublicationAuthorMap,
+  performConfidenceTest
 }

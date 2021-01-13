@@ -32,7 +32,7 @@ export class ScopusDataSource implements DataSource {
         sourceName: this.getSourceName(),
         searchPerson: person,
         query: authorQuery,
-        publications: publications,
+        sourcePublications: publications,
         offset: offset,
         pageSize: Number.parseInt(this.dsConfig.pageSize),
         totalResults: totalResults

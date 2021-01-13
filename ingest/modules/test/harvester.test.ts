@@ -50,27 +50,28 @@ beforeAll(async () => {
 
     const personPropMap = {
         id: 'id',
-        givenname: 'given_name',
-        familyname: 'family_name',
-        startdate: 'start_date',
-        enddate: 'end_date'
+        'given_name': 'givenName',
+        'family_name': 'familyName',
+        'start_date': 'startDate',
+        'end_date': 'endDate'
     }
 
-    const testPersonsFilePath = '../../test/fixtures/persons_2020.csv'
-    const expectedPubCSVPath = '../../test/fixtures/scopus.2019.20210104110625.csv'
+    const testPersonsFilePath = './test/fixtures/persons_2020.csv'
+    const expectedPubCSVPath = '../../test/fixtures/scopus.2019.csv'
     expectedPublications = _.values(await loadPublications(expectedPubCSVPath))
 
-    testPersons = await loadPersons(testPersonsFilePath, personPropMap)
+    // testPersons = await loadPersons(testPersonsFilePath, personPropMap)
+    testPersons = [defaultNormedPerson]
 })
 
 //TODO load in list of people to test against expected results for 2019
 test('test Scopus harvester.harvest', async () => {
     expect.hasAssertions()
-    const results = await scopusHarvester.harvest(testPersons, new Date('2019-01-01'))
+    const results: HarvestSet[] = await scopusHarvester.harvest(testPersons, new Date('2019-01-01'))
     // as new publications may be added to available, just test that current set includes expected pubs
     // and that total harvested is in the same power of 10 and less than double the expected amount
-    console.log(`Found publications: ${results.foundPublications.length}`)
-    expect(results['foundPublications']).toEqual(expect.arrayContaining(expectedPublications))
+    console.log(`Found publications: ${results[0].normedPublications.length}`)
+    expect(results[0].normedPublications).toEqual(expect.arrayContaining(expectedPublications))
 })
 
 //TODO write loadPublications test

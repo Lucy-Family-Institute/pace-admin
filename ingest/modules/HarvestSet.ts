@@ -1,7 +1,9 @@
 interface HarvestSet {
     sourceName: string,
     searchPerson?: NormedPerson,
-    publications: any[],
+    sourcePublications: any[],
+    normedPublications?: NormedPublication[]
+    errors?: any[],
     query?: string,
     offset?: Number,
     pageSize?: Number,
