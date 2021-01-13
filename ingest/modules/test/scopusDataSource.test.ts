@@ -161,7 +161,7 @@ test('testing get publication from Scopus with no affiliation id', async () => {
     expect(results.offset).toEqual(expectedSet.offset)
     expect(results.pageSize).toEqual(expectedSet.pageSize)
     expect(results.totalResults).toBeGreaterThanOrEqual(expectedSet.totalResultsMin)
-    expect(results.publications.length).toEqual(expectedSet.pageSize)
+    expect(results.sourcePublications.length).toEqual(expectedSet.pageSize)
 })
 
 test('testing get publication from Scopus with affiliation id', async () => {
@@ -177,7 +177,7 @@ test('testing get publication from Scopus with affiliation id', async () => {
     expect(results.offset).toEqual(expectedSet.offset)
     expect(results.pageSize).toEqual(expectedSet.pageSize)
     expect(results.totalResults).toBeGreaterThanOrEqual(expectedSet.totalResultsMin)
-    expect(results.publications.length).toEqual(expectedSet.pageSize)
+    expect(results.sourcePublications.length).toEqual(expectedSet.pageSize)
 })
 
 // TODO: convert to large set
