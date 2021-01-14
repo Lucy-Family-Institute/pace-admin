@@ -121,7 +121,11 @@ beforeAll(async () => {
     sourceId: '85077122528',
     sourceMetadata: defaultPubSourceMetadata
   }
+
+  jest.setTimeout(10000)
  })
+
+
 
 // TOD fix overriding JEST timeout of 5000 ms that creeps up sometimes
 // TODO convert to use input parameters and expected csv
