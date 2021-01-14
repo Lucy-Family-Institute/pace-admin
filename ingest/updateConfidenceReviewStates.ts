@@ -954,7 +954,7 @@ async function main() {
     let loopCounter = 1
     await pMap (confidenceTests[testStatus], async (confidenceTest) => {
       // console.log('trying to insert confidence values')
-      randomWait(loopCounter)
+      await randomWait(loopCounter)
       loopCounter += 1
       try {
         // console.log(`Tabulating total for ${JSON.stringify(confidenceTest, null, 2)}`)
@@ -1001,7 +1001,7 @@ async function main() {
   }, {concurrency: 10})
 }
 
-main()
+await main()
 
 //module.exports = performConfidenceTest, getPublicationAuthorMap
 export {
