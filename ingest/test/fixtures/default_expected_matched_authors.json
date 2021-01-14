@@ -1,0 +1,28 @@
+{
+    "10.1039/c8sc05273e":
+    {
+      "liu": [{
+          "given": "Xudong",
+          "family": "Liu",
+          "position": 12,
+          "sequence": "additional",
+          "affiliation": [
+              {
+                  "name": "Central Research Laboratory"
+              },
+              {
+                  "name": "Peking Union Medical College Hospital"
+              },
+              {
+                  "name": "Chinese Academy of Medical Sciences and Peking Union Medical College"
+              },
+              {
+                  "name": "Beijing"
+              },
+              {
+                  "name": "China"
+              }
+          ]
+      }]
+    }
+}

@@ -4,7 +4,7 @@ import fs from 'fs'
 // as strings.  The value for each year is an array of strings; Each
 // element in the array is a string representing the path to the files
 // to use for ingest.
-async function getJSONFromFile(filePath) {
+function loadJSONFromFile(filePath) {
   if (!fs.existsSync(filePath)) {
     throw `Invalid path on load json from: ${filePath}`
   }
@@ -14,5 +14,5 @@ async function getJSONFromFile(filePath) {
 }
 
 export { 
-  getJSONFromFile
+  loadJSONFromFile
 }
