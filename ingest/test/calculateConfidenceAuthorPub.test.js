@@ -2,65 +2,56 @@ import {
   getPublicationAuthorMap,
   performConfidenceTest
 } from '../updateConfidenceReviewStates'
-import {getJSONFromFile} from '../getJSONFromFile'
+import {loadJSONFromFile} from '../units/loadJSONFromFile'
 import _ from 'lodash'
 
 const fs = require('fs');
 
-const cslFilePath = './test/fixtures/csl.json'
-const pubAuthMapFilePath = './test/fixtures/expectedAuthorMap.json'
+const cslFilePath = './test/fixtures/default_csl.json'
+const pubAuthMapFilePath = './test/fixtures/default_expected_author_map.json'
+const expectedMatchedPubAuthMapFilePath = './test/fixtures/default_expected_matched_authors.json'
+const pubConfirmedAuthMapFilePath = './test/fixtures/default_confirmed_authors.json'
 let pubAuthorMaps
 let pubCSLs
-let testAuthor
-let publication
+let expectedMatchedPubAuthMap
+let pubConfirmedAuthMap
+
+const defaultTestAuthor = {
+  names:[{
+    'lastName':'liu',
+    'firstInitial':'f',
+    'firstName':'fang'
+  }],
+}
 
 beforeAll(async () => {
-  pubAuthorMaps = await getJSONFromFile(pubAuthMapFilePath)
-  pubCSLs = await getJSONFromFile(cslFilePath)
-  testAuthor = {
-    names:[{
-      'lastName':'liu',
-      'firstInitial':'f',
-      'firstName':'fang'
-    }],
-  }
-
-  publication = {
-    doi: '10.1039/c8sc05273e',
-    confirmedAuthors: [{
-      'lastName':'Lu',
-      'firstName':'Xin',
-      'fullName':'Xin Lu'
-    }]
-  }
+  pubAuthorMaps = loadJSONFromFile(pubAuthMapFilePath)
+  pubCSLs = loadJSONFromFile(cslFilePath)
+  expectedMatchedPubAuthMap = loadJSONFromFile(expectedMatchedPubAuthMapFilePath)
+  pubConfirmedAuthMap = loadJSONFromFile(pubConfirmedAuthMapFilePath)
 })
 
 test('testing get publication author map from csl', async () => {
   expect.hasAssertions();
 
-//   _.each(_.keys(pubCSLs), async (doi) => {
-//     const foundPubAuthorMap = await getPublicationAuthorMap(pubCSLs[doi])
-//     expect(pubAuthorMaps[doi]).toEqual(foundPubAuthorMap)
-//   })
+  _.each(_.keys(pubCSLs), async (doi) => {
+    const foundPubAuthorMap = getPublicationAuthorMap(pubCSLs[doi])
+    expect(pubAuthorMaps[doi]).toEqual(foundPubAuthorMap)
+  })
 })
 
 test('testing perform confidence test', async () => {
   expect.hasAssertions();
 
-//   // const pubAuthorMaps = await getJSONFromFile(pubAuthMapFilePath)
-//   // const pubCSLs = await getJSONFromFile(cslFilePath)
-
-//   const confidenceType = {name: 'lastname'}
-//   _.each(_.keys(pubCSLs), async (doi) => {
-//     const matchedAuthors = await performConfidenceTest(confidenceType, publication['confirmedAuthors'], testAuthor, pubAuthorMaps[publication['doi']])
-//     expect(matchedAuthors).toBe(['jedi'])
-//   })
+  const confidenceType = {name: 'lastname'}
+  _.each(_.keys(pubCSLs), (doi) => {
+    const matchedAuthors = performConfidenceTest(confidenceType, pubConfirmedAuthMap[doi], defaultTestAuthor, pubAuthorMaps[doi])
+    expect(matchedAuthors).toEqual(expectedMatchedPubAuthMap[doi])
+  })
   
 })
 
 // performauthorconfidencetests
-// publicationauthormap
-// performconfidencetest
 
 //add test for performconfidencetest
 //add full suite of author objects

@@ -272,7 +272,7 @@ async function getConfidenceTypesByRank() {
   return confidenceTypesByRank
 }
 
-async function getCSLAuthors(paperCsl){
+function getCSLAuthors(paperCsl){
 
   const authMap = {
     firstAuthors : [],
@@ -316,9 +316,9 @@ async function getCSLAuthors(paperCsl){
   return authors
 }
 
-async function getPublicationAuthorMap (publicationCsl) {
+function getPublicationAuthorMap (publicationCsl) {
   //retrieve the authors from the record and put in a map, returned above in array, but really just one element
-  const authors = await getCSLAuthors(publicationCsl)
+  const authors = getCSLAuthors(publicationCsl)
   // group authors by last name
   //create map of last name to array of related persons with same last name
   const authorMap = _.transform(authors, function (result, value) {
@@ -528,7 +528,7 @@ function testAuthorAffiliation (author, publicationAuthorMap) {
 }
 
 // returns true/false from a test called for the specific name passed in
-async function performConfidenceTest (confidenceType, publicationCsl, author, publicationAuthorMap, confirmedAuthors=[]){
+function performConfidenceTest (confidenceType, publicationCsl, author, publicationAuthorMap, confirmedAuthors=[]){
   if (confidenceType.name === 'lastname') {
     return testAuthorLastName(author, publicationAuthorMap)
   } else if (confidenceType.name === 'confirmed_by_author') {
@@ -562,7 +562,7 @@ async function performAuthorConfidenceTests (author, publicationCsl, confirmedAu
   // now just push arrays in order into another array
 
   //update to current matched authors before proceeding with next tests
-  let publicationAuthorMap = await getPublicationAuthorMap(publicationCsl)
+  let publicationAuthorMap = getPublicationAuthorMap(publicationCsl)
   // initialize map to store passed tests by rank
   let passedConfidenceTests = {}
   let stopTesting = false
@@ -574,7 +574,7 @@ async function performAuthorConfidenceTests (author, publicationCsl, confirmedAu
     if (!stopTesting){
       await pMap(confidenceTypesByRank[rank], async (confidenceType) => {
         // need to update to make publicationAuthorMap be only ones that matched last name for subsequent tests
-        let currentMatchedAuthors = await performConfidenceTest(confidenceType, publicationCsl, author, publicationAuthorMap, confirmedAuthors)
+        let currentMatchedAuthors = performConfidenceTest(confidenceType, publicationCsl, author, publicationAuthorMap, confirmedAuthors)
         // console.log(`${confidenceType['name']} Matched Authors Found: ${JSON.stringify(matchedAuthors, null, 2)}`)
         if (currentMatchedAuthors && _.keys(currentMatchedAuthors).length > 0){
           (passedConfidenceTests[rank] || (passedConfidenceTests[rank] = {}))[confidenceType['name']] = {
@@ -705,7 +705,7 @@ async function calculateConfidence (mostRecentPersonPubId, testAuthors, confirme
       // have to do some weird conversion stuff to keep the decimals correct
       confidenceTotal = Number.parseFloat(confidenceTotal.toFixed(3))
       //update to current matched authors before proceeding with next tests
-      let publicationAuthorMap = await getPublicationAuthorMap(publicationCsl)
+      let publicationAuthorMap = getPublicationAuthorMap(publicationCsl)
       const newTest = {
         author: testAuthor,
         confirmedAuthors: confirmedAuthors[personPublication['publication']['doi']],
@@ -1001,7 +1001,7 @@ async function main() {
   }, {concurrency: 10})
 }
 
-await main()
+main()
 
 //module.exports = performConfidenceTest, getPublicationAuthorMap
 export {
