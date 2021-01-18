@@ -29,13 +29,6 @@ dotenv.config({
 // environment variables
 process.env.NODE_ENV = 'development';
 
-//const getText = constraints => prevSchema => prevSchema.merge({
-//  validate(values) {
-//    const parsed = prevSchema.parse(values);
-//    return parsed._text;
-//  }
-//});
-
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
 
@@ -80,9 +73,6 @@ const funderIdentifierSchema = schema({
   funderIdentifier: 'GrantID._text',
 }));
 
-// const subjectIdenfierSchema = schema({
-
-// });
 const shareWorkSchema = schema({
   title: {type: String, default: null},
   description: {type: String, default: null},
@@ -164,14 +154,10 @@ async function getPersonESearch(person){
 
 function extractMetadata(rawJson){
   if (_.isArray(rawJson.PubmedArticleSet.PubmedArticle)) {
-    // console.log(`Found PubMed JSONL: ${JSON.stringify(rawJson, null, 2)}`)
     return _.map(rawJson.PubmedArticleSet.PubmedArticle, (value,key)=> {
       return shareWorkSchema.parse(value)
-      //return value;
     });
   } else {
-    // console.log(`Found PubMed JSONL: ${JSON.stringify(rawJson, null, 2)}`)
-    // return rawJson;
     return shareWorkSchema.parse(rawJson.PubmedArticleSet.PubmedArticle)
   }
 }
@@ -183,37 +169,6 @@ async function getFileData(filePath){
     console.log(data);
   })
 }
-
-//async function loadAwardIdPublications(awardDataDir){
-//
-//  if (awardDataDir){
-//    console.log(`Reading files from directory: ${awardDataDir}`);
-//    fs.readdir(awardDataDir, (err, files) => {
-//      if (err) throw err;
-//      const mapper = async (fileName) => {
-//        const filePath = path.join(awardDataDir,`${filename}`);
-//        console.log(`Reading data from file: ${filePath}`);
-//        awardPubs = [];
- //       const data = await getFileData(filePath);
- //       if (data){
- //         if (filename.includes('.')){
- //           awardId = filename.split('.').slice(0,-1).join('.');
- //         } else {
- //           awardId = filename;
- //         }
- //         console.log(`Creating object for award id: ${awardId}`);
- //         awardPub = createJsonObject(awardId, data);
- //         awardPubs.push(awardPub);
- //       }
- //     };
- //   }
- // } else {
- //   console.log('Reading data from Directory failed: File directory undefined');
- // }
-
-
-//}
-
 
 async function getSimplifiedPersons(year) {
   const queryResult = await client.query(readPersonsByYear(year))
