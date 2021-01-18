@@ -60,39 +60,13 @@ function createFuzzyIndex (testKeys, funderMap) {
 
 
 function funderMatchFuzzy (funderName, fuzzyIndex){
-  // // first normalize the diacritics
-  // const testFunderMap = _.map(funderMap, (funder) => {
-  //    return normalizeObjectProperties(funder, [nameKey])
-  // })
   // normalize last name checking against as well
   const testName = normalizeString(funderName, { skipLower: true })
-
-  // let matchedFunders = []
-  // _.each(funderMap, (funder) => {
-  //   // console.log(`testing funder name: ${testName} against value: ${funder[nameKey]}`)
-  //   if (_.toLower(testName)===_.toLower(funder[nameKey])){
-  //     matchedFunders.push(funder)
-  //   }
-  // })
-  // return matchedFunders
-  // console.log(`After diacritic switch ${JSON.stringify(nameMap, null, 2)} converted to: ${JSON.stringify(testNameMap, null, 2)}`)
-  // const funderFuzzy = new Fuse(testFunderMap, {
-  //   caseSensitive: false,
-  //   shouldSort: true,
-  //   includeScore: false,
-  //   keys: [nameKey],
-  //   findAllMatches: false,
-  //   tokenize: false,
-  //   distance: 0,
-  //   ignoreLocation: false,
-  //   threshold: 0.0
-  // });
 
   const funderResults = fuzzyIndex.search(testName)
   const reducedResults = _.map(funderResults, (result) => {
     return result['item'] ? result['item'] : result
   })
-  // console.log(`For testing: ${testLast} Last name results: ${JSON.stringify(lastNameResults, null, 2)}`)
   return reducedResults
 }
 
@@ -176,29 +150,13 @@ async function main (): Promise<void> {
       // TODO: Should this actually skip lower?  Below we have lots of lower case conversions
       const testFunder = normalizeString(award['funder_name'], { skipLower: true })
       const matchedFunders = funderMatchFuzzy(testFunder, funderFuzzyIndex)
-      // const matchedNameFunders = funderMatchFuzzy(testFunder, 'name', funderMap)
-      // const matchedSubfunders = funderMatchFuzzy(testFunder, 'name', subfunderMap)
-      // const matchedFunderVariances = funderMatchFuzzy(testFunder, 'name', funderVariancesMap)
-      // const matchedSubfunderVariances = funderMatchFuzzy(testFunder, 'name', subfunderVariancesMap)
       console.log(`Matched funders: ${JSON.stringify(matchedFunders, null, 2)}`)
-      // console.log(`Matched short name funders: ${JSON.stringify(matchedShortNameFunders, null, 2)}`)
-      // console.log(`Matched subfunders: ${JSON.stringify(matchedSubfunders, null, 2)}`)
-      // console.log(`Matched funder variances: ${JSON.stringify(matchedFunderVariances, null, 2)}`)
-      // console.log(`Matched subfunder variances: ${JSON.stringify(matchedSubfunderVariances, null, 2)}`)
       let matchedInfo = {
         'award_id': award['id'],
         'funder_name': award['funder_name']
-        // 'Matches': matchedFunders
       }
-      // let matchedSubInfo = {
-      //   'award_id': award['id'],
-      //   'funder_name': award['funder_name'],
-      //   'Matches': matchedSubfunders
-      // }
       if (matchedFunders.length > 1) {
-        // console.log('here')
         _.each(matchedFunders, (matched) => {
-          // console.log(`Testing ${matched['title']} against ${testTitle}`)
           if (_.toLower(matched['name']) === _.toLower(testFunder) ||
           _.toLower(matched['short_name']) === _.toLower(testFunder)) {
             matchedInfo['Matches'] = [matched]
@@ -212,7 +170,6 @@ async function main (): Promise<void> {
         }
       } else if (matchedFunders.length <= 0) {
         zeroMatches.push(matchedInfo)
-        // console.log(`No Matched funders for award - ${award['id']}, funder - ${testFunder}: ${JSON.stringify(matchedFunders, null, 2)}`)
       } else {
         if (_.toLower(matchedFunders[0]['name']) === _.toLower(testFunder) ||
         _.toLower(matchedFunders[0]['short_name']) === _.toLower(testFunder)) {
@@ -221,28 +178,7 @@ async function main (): Promise<void> {
         } else {
           zeroMatches.push(matchedInfo)
         }
-        // singleMatches.push(`Matched journal for publication title - ${publication['title']}, journal - ${testTitle}: ${JSON.stringify(matchedFunders, null, 2)}`)
       }
-      // if (matchedSubfunders.length > 1) {
-      //   // console.log('here')
-      //   _.each(matchedSubfunders, (matched) => {
-      //     // console.log(`Testing ${matched['title']} against ${testTitle}`)
-      //     if (_.lowerCase(matched['name']) === _.lowerCase(testFunder)) {
-      //       matchedSubInfo['Matches'] = [matched]
-      //     }
-      //   })
-      //   if (matchedSubInfo['Matches'] && matchedSubInfo['Matches'].length === 1) {
-      //     singleSubMatches.push(matchedSubInfo)
-      //   } else {
-      //     multipleSubMatches.push(matchedSubInfo)
-      //   }
-      // } else if (matchedSubfunders.length <= 0) {
-      //   zeroSubMatches.push(matchedSubInfo)
-      //   // zeroMatches.push(`No Matched journals for publication title - ${publication['title']}, journal - ${testTitle}: ${JSON.stringify(matchedFunders, null, 2)}`)
-      // } else {
-      //   singleSubMatches.push(matchedSubInfo)
-      //   // singleMatches.push(`Matched journal for publication title - ${publication['title']}, journal - ${testTitle}: ${JSON.stringify(matchedFunders, null, 2)}`)
-      // }
     }
   }, {concurrency: 60})
 
@@ -256,15 +192,6 @@ async function main (): Promise<void> {
   console.log(`No Sub Matches Count: ${zeroSubMatches.length}`)
   console.log(`Single Sub Matches Count: ${singleSubMatches.length}`)
 
-  // //insert single matches
-  // let loopCounter = 0
-  // await pMap(singleMatches, async (matched) => {
-  //   loopCounter += 1
-  //   await randomWait(loopCounter)
-  //   console.log(`Updating funder of award ${loopCounter} ${matched['funder']}`)
-  //   const resultUpdatePubJournal = await client.mutate(updatePubJournal(matched['doi'], matched['Matches'][0]['id']))
-  //   // console.log(`Returned result journal: ${JSON.stringify(resultUpdatePubJournal.data.update_publications.returning, null, 2)}`)
-  // }, {concurrency: 10})
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
