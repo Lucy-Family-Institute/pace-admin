@@ -36,19 +36,6 @@ const config = require('../config/config.js');
 
 import Cite from 'citation-js'
 
-//takes in a DOI and returns a json object formatted according to CSL (citation style language)
-//https://citation.js.org/api/index.html
-async function fetchByDoi(doi) {
-  //initalize the doi query and citation engine
-  Cite.async()
-
-  //get CSL (citation style language) record by doi from dx.dio.org
-  const cslRecords = await Cite.inputAsync(doi)
-  //console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
-
-  return cslRecords[0]
-}
-
 async function getScopusAuthorData(authorGivenName, authorFamilyName, authorScopusId, year, pageSize, offset){
     const baseUrl = 'https://api.elsevier.com/content/search/scopus'
 
@@ -96,37 +83,6 @@ async function getScopusPaperData(doi){
 
 }
 
-async function getScopusPaperAbstractData (scopusId) {
-  const baseUrl = `https://api.elsevier.com/content/abstract/scopus_id/${scopusId}`
-
-  const response = await axios.get(baseUrl, {
-    headers: {
-      'httpAccept' : 'text/xml',
-      'X-ELS-APIKey' : elsApiKey,
-    }
-  });
-
-  //console.log(response.data)
-  return response.data;
-}
-
-async function getScopusPaperFullText (doi) {
-  const baseUrl = 'https://api.elsevier.com/content/article/eid/1-s2.0-S152500161830594X'
-
-  const fullUrl = baseUrl + doi
-
-
-    const response = await axios.get(baseUrl, {
-        headers: {
-          'httpAccept' : 'text/xml',
-          'X-ELS-APIKey' : elsApiKey,
-        }
-      });
-
-      //console.log(response.data)
-      return response.data;
-}
-
 async function getScopusPaperAffiliation (scopusId) {
   const baseUrl = `https://api.elsevier.com/content/abstract/scopus_id/${scopusId}`
 
@@ -140,7 +96,6 @@ async function getScopusPaperAffiliation (scopusId) {
     }
   });
 
-  //console.log(response.data)
   if (!_.isArray(response.data['abstracts-retrieval-response']['affiliation'])) {
     let affiliations = []
     affiliations.push(response.data['abstracts-retrieval-response']['affiliation'])
@@ -149,19 +104,6 @@ async function getScopusPaperAffiliation (scopusId) {
     return response.data['abstracts-retrieval-response']['affiliation'];
   }
 }
-
-// async function getConfirmedDOIsByPerson(){
-//   //get publications from DB that have confidence level 0.99 for some person
-//   const queryResult = await client.query(readPublicationsByPersonByConfidence(0.9))
-
-//   const personPubsByDoi = _.groupBy(queryResult.data.persons_publications, function (pub) {
-//     return pub.publication.doi
-//   })
-
-//   //console.log(`Person Pubs by DOI confirmed count: ${_.keys(personPubsByDoi).length} person pubs are: ${JSON.stringify(personPubsByDoi,null,2)}`)
-//   return personPubsByDoi
-// }
-
 async function getSimplifiedPersons() {
 
   // const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
