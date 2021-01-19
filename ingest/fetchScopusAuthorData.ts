@@ -73,11 +73,6 @@ async function getScopusPaperData(doi){
 
   const affiliationId = "60021508"
 
-  //const authorQuery = (query) {
-  //  return {
-  //    "AF-ID("+ affiliationId + ")"
-  //  }
-  //}
   const doiQuery = "DOI(" + doi + ")"
 
   const response = await axios.get(baseUrl, {
@@ -103,7 +98,6 @@ async function getScopusPaperAbstractData (scopusId) {
     }
   });
 
-  //console.log(response.data)
   return response.data;
 }
 
@@ -141,18 +135,6 @@ async function getScopusAuthorAffiliation (scopusId) {
       return response.data;
 }
 
-async function getConfirmedDOIsByPerson(){
-  //get publications from DB that have confidence level 0.99 for some person
-  const queryResult = await client.query(readPublicationsByPersonByConfidence(0.9))
-
-  const personPubsByDoi = _.groupBy(queryResult.data.persons_publications, function (pub) {
-    return pub.publication.doi
-  })
-
-  //console.log(`Person Pubs by DOI confirmed count: ${_.keys(personPubsByDoi).length} person pubs are: ${JSON.stringify(personPubsByDoi,null,2)}`)
-  return personPubsByDoi
-}
-
 async function getSimplifiedPersons(year) {
   const queryResult = await client.query(readPersonsByYear(year))
 
@@ -181,12 +163,10 @@ async function getScopusAuthorPapers(person, year, scopusAffiliationId) {
 
     //get first page of results, do with first initial for now
     const authorSearchResult = await getScopusAuthorData(person.firstInitial, person.lastName, year, scopusAffiliationId, pageSize, offset)
-    //console.log(`Author Search Result first page: ${JSON.stringify(authorSearchResult,null,2)}`)
     if (authorSearchResult && authorSearchResult['search-results']['opensearch:totalResults']){
       const totalResults = parseInt(authorSearchResult['search-results']['opensearch:totalResults'])
       console.log(`Author Search Result Total Results: ${totalResults}`)
       if (totalResults > 0 && authorSearchResult['search-results']['entry']){
-        //console.log(`Author ${person.lastName}, ${person.firstName} adding ${authorSearchResult['search-results']['entry'].length} results`)
         searchPageResults.push(authorSearchResult['search-results']['entry'])
         if (totalResults > pageSize){
           let numberOfRequests = parseInt(`${totalResults / pageSize}`) //convert to an integer to drop any decimal
@@ -206,7 +186,6 @@ async function getScopusAuthorPapers(person, year, scopusAffiliationId) {
             const authorSearchResultNext = await getScopusAuthorData(person.firstInitial, person.lastName, year, scopusAffiliationId, pageSize, offset)
 
             if (authorSearchResultNext['search-results']['entry']) {
-              //console.log(`Getting Author Search Result page ${index+2}: ${authorSearchResultNext['search-results']['entry'].length} objects`)
               searchPageResults.push(authorSearchResultNext['search-results']['entry'])
             }
           }, { concurrency: 3})
@@ -254,11 +233,6 @@ async function main (): Promise<void> {
     const simplifiedPersons = await getSimplifiedPersons(year)
     console.log(`Simplified persons for ${year} are: ${JSON.stringify(simplifiedPersons,null,2)}`)
 
-    //create map of last name to array of related persons with same last name
-    // const personMap = _.transform(simplifiedPersons, function (result, value) {
-    //   (result[value.lastName] || (result[value.lastName] = [])).push(value)
-    // }, {})
-
     console.log(`Loading ${year} Publication Data`)
     //load data from scopus
     let personCounter = 0
@@ -277,12 +251,10 @@ async function main (): Promise<void> {
         randomWait(personCounter)
 
         const authorPapers = await getScopusAuthorPapers(person, year, scopusAffiliationId)
-        //console.log(`Author Papers Found for ${person.lastName}, ${person.firstName}: ${JSON.stringify(authorPapers,null,2)}`)
         console.log(`Author papers total for ${person.lastName}, ${person.firstName}: ${JSON.stringify(_.keys(authorPapers).length,null,2)}`)
 
         //get simplified scopus papers
         const simplifiedAuthorPapers = await getSimplifliedScopusPapers(authorPapers, person)
-        //console.log(`Simplified Scopus Author ${person.lastName}, ${person.firstName} Papers: ${JSON.stringify(simplifiedAuthorPapers,null,2)}`)
 
         //push in whole array for now and flatten later
         succeededScopusPapers.push(simplifiedAuthorPapers)
@@ -302,7 +274,6 @@ async function main (): Promise<void> {
     })
 
     //write data out to csv
-    //console.log(outputScopusPapers)
     await writeCsv({
       path: `../data/scopus.${year}.${moment().format('YYYYMMDDHHmmss')}.csv`,
       data: outputScopusPapers,
@@ -312,92 +283,6 @@ async function main (): Promise<void> {
 
   }, { concurrency: 1 })
 
-  // let loopCounter = 0
-  // // iterate through list of DOI's and...
-  // await pMap(_.keys(confirmedDOIsByPerson), async (doi) => {
-  //     console.log(`DOI is: ${ doi }`)
-  //   // fetch paper by DOI
-  //   try {
-
-  //     loopCounter += 1
-  //     randomWait(loopCounter)
-
-  //     const responseDoi = await getScopusPaperData(doi);
-  //     if( responseDoi ) {
-  //       //console.log(`Result found for DOI: ${ doi }`)
-  //       //console.log(JSON.stringify(responseDoi['search-results'],null,2));
-  //       //get paper scopus id
-  //       if ( responseDoi['search-results']['entry'] ){
-  //         if (responseDoi['search-results']['entry'][0]['dc:identifier']){
-  //           const paperScopusId = responseDoi['search-results']['entry'][0]['dc:identifier'].split(':')[1]
-  //           console.log(`DOI: ${doi} Paper Scopus ID Found: ${paperScopusId}`)
-
-  //           //get author data
-  //           const responseAbstract = await getScopusPaperAbstractData(paperScopusId);
-  //           if( responseAbstract ) {
-  //             console.log(`Response Author Data: ${JSON.stringify(responseAbstract,null,2)}`)
-  //           }
-  //         }
-  //       }
-  //     }
-  //   } catch (error){
-  //     console.log(`Error for DOI: ${ doi }`)
-  //     console.error(error)
-  //   }
-  // }, { concurrency: 3 })
-  //             //get author affiliation
-  //             const responseAuthorAffiliation = await getScopusAuthorAffiliation(paperScopusId);
-  //             if( responseAuthorAffiliation ) {
-  //               console.log('Here1 ')
-  //               const authors = _.map(responseAuthorAffiliation['abstracts-retrieval-response']['authors']['author'], function (value) {
-  //                 console.log(`Value is: ${ JSON.stringify(value,null,2)}`)
-  //                 console.log(`Surname: ${ JSON.stringify(value['ce:surname'])}`)
-  //                 const author = {
-  //                   'family' : value['ce:surname'],
-  //                   'given' : value['ce:given-name'],
-  //                   'givenInitials' : value['ce:initials'],
-  //                   'scopusId' : value['@auid'],
-  //                   'affiliationId' : value['affiliation']['@id']
-  //                 }
-  //                 return author
-  //               })
-  //               //console.log(JSON.stringify(responseFullText['full-text-retrieval-response'],null,2));
-  //               console.log(`Here: ${ JSON.stringify(responseAuthorAffiliation,null,2) }`);
-  //               console.log(`Here2: ${ JSON.stringify(authors,null,2) }`);
-
-  //               //   //push to datastore
-  //               //   //start with pushing to csv one row for each relevant author + doi + each author name variant and/or + orcid id + scopus id
-  //               //   //doi, paper title, author list (name+id)
-
-  //               // // match to target author for HCRI
-
-  //               // // get full text
-
-  //               // // mine for name of author variation
-
-  //               // // capture name variant and ids
-  //             }
-  //           }
-  //         }
-  //       }
-  //   } catch (error){
-  //     console.log(`Error for DOI: ${ key }`)
-  //     // console.error(error)
-  //   }
-  // })
-
-      //   //get full text
-      //   const responseFullText = await getScopusPaperFullText("10.1016/j.ymthe.2018.12.010");
-      //   if( responseFullText ) {
-      //     //console.log(JSON.stringify(responseFullText['full-text-retrieval-response'],null,2));
-      //     //console.log(responseFullText);
-      //   }
-
-      // //const responseFullText = await getFullText(10);
-      // //if( responseFullText ) {
-      // //  console.log(responseFullText);
-      // //}
-      // console.log(`Config is: ${JSON.stringify(config)}`)
-  }
+}
 
   main();
