@@ -62,11 +62,6 @@ async function main (): Promise<void> {
 
   console.log(`Person Map is: ${JSON.stringify(personMap, null, 2)}`)
 
-  // // assume exact form name as in database for now, and create similar map
-  // const varianceNameMap = _.transform(authors, function (result, value) {
-  //   (result[getNameKey(value['family_name'], value['given_name'])] || (result[getNameKey(value['family_name'], value['given_name'])] = [])).push(value)
-  // }, {})
-
   // now add author variances
   const insertAuthorVariances = _.transform(authorsWithVariances, (result, author) => {
     console.log(`Trying to create name variance objects for: ${JSON.stringify(author, null, 2)}`)
@@ -79,7 +74,7 @@ async function main (): Promise<void> {
       _.each(nameVariances, (nameVariance) => {
         let obj = {}
         obj['person_id'] = personId
-        
+
         const nameParts = nameVariance.split(',')
         const lastName = nameParts[0].trim()
         obj['family_name'] = lastName
@@ -94,7 +89,7 @@ async function main (): Promise<void> {
       })
     }
   }, [])
-   
+
   console.log(JSON.stringify(insertAuthorVariances, null, 2))
 
   const resultInsertNameVariances = await client.mutate({

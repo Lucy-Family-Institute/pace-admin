@@ -36,41 +36,8 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 })
 
-async function getAllSimplifiedPersons () {
-  const queryResult = await client.query(readPersons())
-
-  const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
-    return {
-      id: person.id,
-      lastName: person.family_name.toLowerCase(),
-      firstInitial: person.given_name[0].toLowerCase(),
-      firstName: person.given_name.toLowerCase(),
-      startYear: person.start_date,
-      endYear: person.end_date
-    }
-  })
-  return simplifiedPersons
-}
-
 function getNameKey (lastName, firstName) {
   return `${_.toLower(lastName)}, ${_.toLower(firstName)}`
-}
-
-async function getScopusPaperAbstractData (pii) {
-  const baseUrl = `https://api.elsevier.com/content/article/pii/${pii}`
-  console.log(`Base url is: ${baseUrl}`)
-
-  const response = await axios.get(baseUrl, {
-    headers: {
-      'httpAccept' : 'text/xml',
-      'X-ELS-APIKey' : elsApiKey,
-      'Cookie': elsCookie
-    },
-    withCredentials: true
-  });
-
-  //console.log(response.data)
-  return response.data;
 }
 
 async function getPublications () {
@@ -128,10 +95,8 @@ async function main (): Promise<void> {
     if (!pubMedAbstracts[doi]){
       console.log(`Found Doi with null abstract: ${doi}`)
     } else {
-      // console.log('Found doi with existing abstract')
       console.log(`Writing abstract for doi: ${doi}`)
       const resultUpdatePubAbstracts = client.mutate(updatePubAbstract(doi, pubMedAbstracts[doi]))
-      // console.log(`Returned result pubmed: ${resultUpdatePubAbstracts}`)
     }
   }, { concurrency: 5})
 
@@ -143,10 +108,8 @@ async function main (): Promise<void> {
     if (!scopusAbstracts[doi]){
       console.log(`Found Doi with null abstract: ${doi}`)
     } else {
-      // console.log('Found doi with existing abstract')
       console.log(`Writing abstract for doi: ${doi}`)
       const resultUpdatePubAbstracts = await client.mutate(updatePubAbstract(doi, scopusAbstracts[doi]))
-      // console.log(`Returned result scopus: ${resultUpdatePubAbstracts}`)
     }
   }, { concurrency: 5})
 }
