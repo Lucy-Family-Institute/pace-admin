@@ -38,7 +38,6 @@ const client = new ApolloClient({
 function createSubfunderNameVarianceObjects (newSubfundersFromCSV, existingSubfundersByShortName) {
   let newFunderNamevariances = []
   _.each(newSubfundersFromCSV, (subfunder) => {
-    // console.log(`Creating name variances for ${JSON.stringify(subfunder, null, 2)}`)
     // only add if the funder already exists in DB
     if (subfunder['parent_short_name'] &&
     subfunder['short_name'] &&
@@ -111,7 +110,6 @@ function createFunderObjects(fundersFromCSV) {
 
 function createSubfunderObjects(subfundersFromCSV, existingFundersByShortName) {
   let newSubfunders = []
-  // console.log(`Creating subfunder objects`)
   _.each(subfundersFromCSV, (subfunder) => {
     if (existingFundersByShortName[subfunder['parent_short_name']]){
       let obj = {
@@ -171,7 +169,6 @@ async function main (): Promise<void> {
     return !existingFundersByShortName[funder['short_name']]
   })
 
-  // console.log(`New Funders loaded are: ${JSON.stringify(newFunders, null, 2)}`)
 
   const newSubfunders = _.filter(funderByType['subfunder'], (subfunder) => {
     // include subfunders that do not already exist in DB
@@ -183,11 +180,8 @@ async function main (): Promise<void> {
     return true
   })
 
-  // console.log(`New Subfunders loaded are: ${JSON.stringify(newSubfunders, null, 2)}`)
-
   // prep funder, subfunders, and their name variances for insert into the DB
   const newFundersToInsert = createFunderObjects(newFunders)
-  // console.log(`New Funders prepped for insert are: ${JSON.stringify(newFundersToInsert, null, 2)}`)
 
   const resultInsertFunders = await client.mutate(insertFunder(newFundersToInsert))
   // add new funders to the existing funders map
@@ -195,7 +189,6 @@ async function main (): Promise<void> {
   console.log(`Inserted ${resultInsertFunders.data.insert_funders.returning.length} total funders, now ${_.keys(existingFundersByShortName).length} total funders`)
 
   const newSubfundersToInsert = createSubfunderObjects(newSubfunders, existingFundersByShortName)
-  // console.log(`Prepped new subfunders for insert: ${JSON.stringify(newSubfundersToInsert, null, 2)}`)
   const resultInsertSubfunders = await client.mutate(insertSubfunder(newSubfundersToInsert))
   // merge in the newly inserted subfunders
   const insertedSubfunders = resultInsertSubfunders.data.insert_subfunders.returning
@@ -206,16 +199,13 @@ async function main (): Promise<void> {
     }
     existingSubfundersByShortName[parentShortName][inserted.short_name] = inserted
   })
-  // console.log(`After insert existing subfunders are: ${JSON.stringify(existingSubfundersByShortName, null, 2)}`)
   console.log(`Inserted ${resultInsertSubfunders.data.insert_subfunders.returning.length} total subfunders`)
 
   const newFunderNameVariancesToInsert = createFunderNameVarianceObjects(newFunders, existingFundersByShortName)
-  // console.log(`Prepped new funder name variances for insert: ${JSON.stringify(newFunderNameVariancesToInsert, null, 2)}`)
   const resultInsertFunderVariances = await client.mutate(insertFunderNameVariances(newFunderNameVariancesToInsert))
   console.log(`Inserted ${resultInsertFunderVariances.data.insert_funders_namevariances.returning.length} funder name variances`)
 
   const newSubfunderNameVariancesToInsert = createSubfunderNameVarianceObjects(newSubfunders, existingSubfundersByShortName)
-  // console.log(`Prepped new subfunder name variances for insert: ${JSON.stringify(newSubfunderNameVariancesToInsert, null, 2)}`)
   const resultInsertSubfunderVariances = await client.mutate(insertSubfunderNameVariances(newSubfunderNameVariancesToInsert))
   console.log(`Inserted ${resultInsertSubfunderVariances.data.insert_subfunders_namevariances.returning.length} subfunder name variances`)
 }
