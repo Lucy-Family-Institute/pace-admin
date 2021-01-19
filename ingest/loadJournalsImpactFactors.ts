@@ -67,7 +67,6 @@ function journalMatchFuzzy (journalTitle, fuzzyIndex){
   const reducedResults = _.map(journalResults, (result) => {
     return result['item'] ? result['item'] : result
   })
-  // console.log(`For testing: ${testLast} Last name results: ${JSON.stringify(lastNameResults, null, 2)}`)
   return reducedResults
 }
 
@@ -88,20 +87,11 @@ async function getSimplifiedJournalFactors (journalFactors, year): Promise<Array
   })
 }
 
-async function getJournalsByTitle (journals) {
-  let journalsByTitle = {}
-  _.each(journals, (journal) => {
-    journalsByTitle[journal['title']] = journal
-  })
-  return journalsByTitle
-}
-
 async function insertJournalImpactFactorsToDB (journalImpactFactors) {
   try {
     const mutateFactorResult = await client.mutate(
       insertJournalsImpactFactors (journalImpactFactors)
     )
-    // console.log(`mutate result keys are: ${_.keys(mutateFactorResult.data)}`)
     return mutateFactorResult.data.insert_journals_impactfactors.returning
   } catch (error) {
     throw error
@@ -174,7 +164,6 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
     const journalFactorsByTitle = _.groupBy(simplifiedJournalFactors, (journalFactor) => {
       return _.toLower(journalFactor['title'])
     })
-    // console.log(`Loaded Simplified Journal Factors Journals: ${JSON.stringify(journalFactorsByTitle, null, 2)}`)
 
     // now group sub items by year and remove duplicates that may exist for each year (i.e., protect against bad data)
     let journalFactorsByYearByTitle = {}
@@ -187,16 +176,13 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
         journalFactorsByYearByTitle[title][year] = _.chunk(journalFactorsByYearByTitle[title][year], 1)[0][0]
       })
     })
-    // console.log(`Loaded Simplified Journal Factors Journals: ${JSON.stringify(journalFactorsByYearByTitle[_.keys(journalFactorsByYearByTitle)[0]], null, 2)}`)
     console.log(`Loaded factors for ${_.keys(journalFactorsByYearByTitle).length} total journals`)
     const journalFuzzyIndex = createFuzzyIndex('title', journalMap)
     const multipleMatches = []
     const zeroMatches = []
     const singleMatches = []
 
-    // const subset = _.dropRight(simplifiedJournalFactors, 10700)
     const testJournalFactorTitles = _.keys(journalFactorsByYearByTitle)
-    // const subset = _.dropRight(testJournalFactorTitles, 12340)
 
     let factorCounter = 0
     await pMap(testJournalFactorTitles, async (journalFactorTitle) => {
@@ -204,10 +190,7 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
       console.log(`${factorCounter} - Checking match for journal factor: ${journalFactorTitle}`)
       let matchedJournal = undefined
       const testTitle = normalizeString(journalFactorTitle, { normalizeTitle: true, skipLower: true })
-      // console.log(`checking test title: ${testTitle}`)
-      // console.log(`Journal Map is: ${JSON.stringify(journalMap, null, 2)}`)
       const matchedJournals = journalMatchFuzzy(testTitle, journalFuzzyIndex)
-      // console.log(`matched journals are: ${JSON.stringify(matchedJournals, null, 2)}`)
 
       let otherMatchedJournals = []
       let otherMatchString = ''
@@ -218,7 +201,6 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
         // check to see if has prefix to strip
         otherMatchString = journalFactorTitle.substr(journalFactorTitle.indexOf('-')+1)
         otherMatchString = normalizeString(otherMatchString, { normalizeTitle: true, skipLower: true })
-        // console.log(`Checking new match string ${otherMatchString}`)
         otherMatchedJournals = journalMatchFuzzy(otherMatchString, journalFuzzyIndex)
       }
       let matchedInfo = {
@@ -227,19 +209,15 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
         // 'factor': journalFactor['impact_factor']
       }
       if (matchedJournals.length > 1 || otherMatchedJournals.length > 1) {
-        // console.log('here')
         let extraMatch = []
         _.each(matchedJournals, (matched) => {
-          // console.log(`Checking multiple matched journal test title ${testTitle}: ${JSON.stringify(matched, null, 2)}`)
           // try to grab exact match if it exists
           if (_.toLower(matched['title']) === _.toLower(testTitle)) {
-            // console.log(`Found exact match for multiple matched journal: ${JSON.stringify(matched, null, 2)}`)
             matchedInfo['Matches'] = [matched]
           }
         })
         _.each(otherMatchedJournals, (otherMatched) => {
           if (_.toLower(otherMatched['title']) === _.toLower(otherMatchString)) {
-            // console.log(`Found exact match for multiple matched journal: ${JSON.stringify(matched, null, 2)}`)
             extraMatch.push(otherMatched)
           }
         })
@@ -258,7 +236,6 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
         }
       } else if (matchedJournals.length <= 0 && otherMatchedJournals.length <= 0) {
         zeroMatches.push(matchedInfo)
-        // zeroMatches.push(`No Matched journals for publication title - ${publication['title']}, journal - ${testTitle}: ${JSON.stringify(matchedJournals, null, 2)}`)
       } else if (matchedJournals.length === 1 || otherMatchedJournals.length === 1){
         if (matchedJournals.length === 1 && _.toLower(matchedJournals[0]['title']) === _.toLower(testTitle)) {
           matchedInfo['Matches'] = matchedJournals
@@ -270,15 +247,9 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
         else {
           zeroMatches.push(matchedInfo)
         }
-        // console.log(`Matched journal - ${testTitle}: ${JSON.stringify(matchedJournals, null, 2)}`)
       }
     }, {concurrency: 60})
 
-    // console.log(`Multiple Matches: ${JSON.stringify(multipleMatches, null, 2)}`)
-    // _.each(zeroMatches, (zeroMatch) => {
-    //    console.log(`No Match Title: ${zeroMatch['title']}`)
-    // })
-    // console.log(`Single Matches: ${JSON.stringify(singleMatches, null, 2)}`)
     console.log(`No Matches Count: ${zeroMatches.length}`)
     console.log(`Multiple Matches Count: ${multipleMatches.length}`)
     console.log(`Single Matches Count: ${singleMatches.length}`)
@@ -309,7 +280,6 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
 
     // get current ones in DB and only insert if not already there
     // load the journal map into a map of id to year to existing impact factors
-    // console.log(`Doing test prev impact factors by id: ${JSON.stringify(currentJournalImpactFactorsByJournalId, null , 2)}`)
     let currentImpactFactorsByYearByJournalId = {}
     _.each(_.keys(currentJournalImpactFactorsByJournalId), (journal_id) => {
       currentImpactFactorsByYearByJournalId[journal_id] = {}
@@ -318,17 +288,12 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
       })
     })
 
-    // console.log(`Current Journal Impact Factors are: ${JSON.stringify(currentImpactFactorsByYearByJournalId, null, 2)}`)
-
     // prep the single matches insert array
     let journalImpactFactorsForInsert = []
     let skipInsertCount = 0
     _.each(singleMatches, (impactFactorMatch) => {
       const impactFactorTitle = impactFactorMatch['title']
-      // console.log(`Impact factor title is: ${impactFactorTitle}`)
       const matchedJournals = impactFactorMatch['Matches']
-      // console.log(`Matches found are: ${JSON.stringify(matchedJournals, null, 2)}`)
-      // console.log(`Journal Factors By Year are: ${JSON.stringify(journalFactorsByYearByTitle[impactFactorTitle], null, 2)}`)
       if (journalFactorsByYearByTitle[impactFactorTitle]) {
         _.each(matchedJournals, (journal) => {
           _.each(_.keys(journalFactorsByYearByTitle[impactFactorTitle]), (year) => {
@@ -343,8 +308,6 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
         })
       }
     })
-    // console.log(`Journal Impact Factors prepped for insert are: ${JSON.stringify(journalImpactFactorsForInsert, null, 2)}`)
-
     if (skipInsertCount > 0) {
       console.log(`Skipping insert of ${skipInsertCount} existing impact factor objects`)
     }
@@ -387,7 +350,6 @@ async function main() {
 
   console.log(`Starting query existing journal impact factors ${moment().format('HH:mm:ss')}...`)
   const currentJournalImpactFactors = await loadJournalsImpactFactors()
-  // console.log(`Loaded current impact factor objects: ${JSON.stringify(currentJournalImpactFactors, null, 2)}`)
   const currentJournalImpactFactorsByJournalId = _.groupBy(await loadJournalsImpactFactors(), (factor) => {
     return factor.journal_id
   })
@@ -398,10 +360,6 @@ async function main() {
     return normalizeObjectProperties(journal, ['title'], { normalizeTitle: true, skipLower: true })
   })
   console.log(`Finished normalize journal properties ${moment().format('HH:mm:ss')}`)
-  // journalMap = _.filter(journalMap, (journal) => {
-  //   return journal.id === 207053
-  // })
-  // console.log(`Journal map is: ${JSON.stringify(journalMap, null, 2)}`)
   const journalStatus = await loadJournalsImpactFactorsFromCSV(pathsByYear, journalMap, currentJournalImpactFactorsByJournalId)
 }
 
