@@ -9,7 +9,7 @@ import readPersonsByYear from '../client/src/gql/readPersonsByYear'
 import readPublicationsByPersonByConfidence from '../client/src/gql/readPublicationsByPersonByConfidence'
 import { command as loadCsv } from './units/loadCsv'
 import { split } from 'apollo-link'
-import cslParser from './utils/cslParser'
+import { fetchByDoi } from './utils/cslParser'
 import { command as writeCsv } from './units/writeCsv'
 import moment from 'moment'
 import dotenv from 'dotenv'
@@ -33,8 +33,6 @@ process.env.NODE_ENV = 'development';
 
 // config variables
 const config = require('../config/config.js');
-
-import Cite from 'citation-js'
 
 async function getScopusAuthorData(authorGivenName, authorFamilyName, authorScopusId, year, pageSize, offset){
     const baseUrl = 'https://api.elsevier.com/content/search/scopus'
