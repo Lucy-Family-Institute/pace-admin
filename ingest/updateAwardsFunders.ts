@@ -1,10 +1,8 @@
 import { ApolloClient } from 'apollo-client'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { createHttpLink } from 'apollo-link-http'
-import gql from 'graphql-tag'
 import fetch from 'node-fetch'
 import _ from 'lodash'
-import { command as loadCsv } from './units/loadCsv'
 import readFunders from './gql/readFunders'
 import readFundersNameVariances from './gql/readFundersNameVariances'
 import readSubfundersNameVariances from './gql/readSubfundersNameVariances'
@@ -14,8 +12,7 @@ import { __EnumValue } from 'graphql'
 import dotenv from 'dotenv'
 import pMap from 'p-map'
 const Fuse = require('fuse.js')
-import { randomWait } from './units/randomWait'
-import { removeSpaces, normalizeString, normalizeObjectProperties } from './units/normalizer'
+import { normalizeString, normalizeObjectProperties } from './units/normalizer'
 
 dotenv.config({
   path: '../.env'
