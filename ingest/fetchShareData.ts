@@ -6,11 +6,9 @@ const pify = require('pify');
 const pMap = require('p-map');
 const schema = require('schm');
 const translate = require('schm-translate');
-const xmlToJson = require('xml-js');
 const moment = require('moment');
 import pTimes from 'p-times'
 import { randomWait } from './units/randomWait'
-import { removeSpaces, normalizeString } from './units/normalizer'
 
 const getIds = require('./units/joinCsvs').command;
 
