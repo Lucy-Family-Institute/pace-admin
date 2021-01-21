@@ -1,13 +1,9 @@
 import { ApolloClient } from 'apollo-client'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { createHttpLink } from 'apollo-link-http'
-import gql from 'graphql-tag'
 import fetch from 'node-fetch'
 import _ from 'lodash'
-import { command as loadCsv } from './units/loadCsv'
-import readPersons from '../client/src/gql/readPersons'
 import readPublications from './gql/readPublications'
-import updatePubAbstract from './gql/updatePubAbstract'
 import { __EnumValue } from 'graphql'
 import dotenv from 'dotenv'
 import { command as writeCsv } from './units/writeCsv'
@@ -18,9 +14,6 @@ dotenv.config({
   path: '../.env'
 })
 
-import path from 'path'
-import pify from 'pify'
-import fs from 'fs'
 import { randomWait } from './units/randomWait'
 const axios = require('axios');
 
