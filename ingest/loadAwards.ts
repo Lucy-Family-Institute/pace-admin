@@ -1,23 +1,16 @@
 import { ApolloClient } from 'apollo-client'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { createHttpLink } from 'apollo-link-http'
-import gql from 'graphql-tag'
 import fetch from 'node-fetch'
 import _ from 'lodash'
-import { command as loadCsv } from './units/loadCsv'
-import readPersons from '../client/src/gql/readPersons'
 import readPublicationsAwards from './gql/readPublicationsAwards'
 import insertPubAward from './gql/insertPubAward'
 import { __EnumValue } from 'graphql'
 import dotenv from 'dotenv'
-import pMap from 'p-map'
-import { randomWait } from './units/randomWait'
 
 dotenv.config({
   path: '../.env'
 })
-
-const axios = require('axios');
 
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
