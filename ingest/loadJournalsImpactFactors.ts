@@ -1,28 +1,21 @@
-import axios from 'axios'
 import _ from 'lodash'
 import { ApolloClient, MutationOptions } from 'apollo-client'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { createHttpLink } from 'apollo-link-http'
 import fetch from 'node-fetch'
-import pEachSeries from 'p-each-series'
 import insertJournalsImpactFactors from './gql/insertJournalsImpactFactors'
 import readJournals from './gql/readJournals'
 import readJournalsImpactFactors from './gql/readJournalsImpactFactors'
 import { command as loadCsv } from './units/loadCsv'
-import { responsePathAsArray } from 'graphql'
-import Cite from 'citation-js'
 import pMap from 'p-map'
-import { command as nameParser } from './units/nameParser'
-import humanparser from 'humanparser'
 import dotenv from 'dotenv'
-import { split } from 'apollo-link'
 const Fuse = require('fuse.js')
 const moment = require('moment')
 const pify = require('pify')
 const fs = require('fs')
 const writeCsv = require('./units/writeCsv').command;
 import { randomWait } from './units/randomWait'
-import { removeSpaces, normalizeString, normalizeObjectProperties } from './units/normalizer'
+import { normalizeString, normalizeObjectProperties } from './units/normalizer'
 
 dotenv.config({
   path: '../.env'
