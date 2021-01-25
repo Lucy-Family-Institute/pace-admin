@@ -9,6 +9,8 @@ const translate = require('schm-translate');
 const moment = require('moment');
 import pTimes from 'p-times'
 import { randomWait } from './units/randomWait'
+import { normalizeString } from './units/normalizer'
+
 
 const getIds = require('./units/joinCsvs').command;
 
