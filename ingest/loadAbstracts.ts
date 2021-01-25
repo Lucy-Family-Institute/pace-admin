@@ -1,11 +1,9 @@
 import { ApolloClient } from 'apollo-client'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { createHttpLink } from 'apollo-link-http'
-import gql from 'graphql-tag'
 import fetch from 'node-fetch'
 import _ from 'lodash'
 import { command as loadCsv } from './units/loadCsv'
-import readPersons from '../client/src/gql/readPersons'
 import readPublicationsWoutAbstract from './gql/readPublicationsWoutAbstract'
 import updatePubAbstract from './gql/updatePubAbstract'
 import { __EnumValue } from 'graphql'
@@ -16,11 +14,6 @@ import { randomWait } from './units/randomWait'
 dotenv.config({
   path: '../.env'
 })
-
-const axios = require('axios');
-
-const elsApiKey = process.env.SCOPUS_API_KEY
-const elsCookie = process.env.SCOPUS_API_COOKIE
 
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
@@ -35,10 +28,6 @@ const client = new ApolloClient({
   }),
   cache: new InMemoryCache()
 })
-
-function getNameKey (lastName, firstName) {
-  return `${_.toLower(lastName)}, ${_.toLower(firstName)}`
-}
 
 async function getPublications () {
   const queryResult = await client.query(readPublicationsWoutAbstract())

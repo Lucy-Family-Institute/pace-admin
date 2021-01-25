@@ -1,11 +1,8 @@
-import axios from 'axios'
 import _ from 'lodash'
 import { ApolloClient, MutationOptions } from 'apollo-client'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { createHttpLink } from 'apollo-link-http'
 import fetch from 'node-fetch'
-import pEachSeries from 'p-each-series'
-import readUsers from '../client/src/gql/readPersons'
 import insertSubmission from './gql/insertSubmission'
 
 import dotenv from 'dotenv'
