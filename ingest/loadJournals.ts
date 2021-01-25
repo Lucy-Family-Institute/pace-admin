@@ -1,19 +1,13 @@
-import axios from 'axios'
 import _ from 'lodash'
 import { ApolloClient, MutationOptions } from 'apollo-client'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { createHttpLink } from 'apollo-link-http'
 import fetch from 'node-fetch'
-import pEachSeries from 'p-each-series'
 import insertJournal from './gql/insertJournal'
 import insertJournalClassification from './gql/insertJournalClassification'
 import readClassifications from './gql/readClassifications'
 import { command as loadCsv } from './units/loadCsv'
-import { responsePathAsArray } from 'graphql'
-import Cite from 'citation-js'
 import pMap from 'p-map'
-import { command as nameParser } from './units/nameParser'
-import humanparser from 'humanparser'
 import dotenv from 'dotenv'
 import { randomWait } from './units/randomWait'
 
@@ -62,9 +56,6 @@ async function insertJournalsToDB (journals) {
     )
     console.log(`mutate result keys are: ${_.keys(mutateJournalResult.data)}`)
     return mutateJournalResult.data.insert_journals.returning
-    //console.log(`Insert mutate journal (`${mutateJournalResult.data.insert_journals.returning[0].id }`);
-    // const journalId = 0+parseInt(`${mutateJournalResult.data.insert_journals.returning.id }`);
-    // console.log(`Added journal with id: ${journalId}`)
   } catch (error) {
     throw error
   }
@@ -118,10 +109,8 @@ async function loadJournalsFromCSV (csvPath, classifications) {
     const codesByTitle = await getAsjcCodesByTitle(lowerJournals)
 
     console.log(`After lowercase ${_.keys(lowerJournals[0])}`)
-    // console.log(`Loaded Journals: ${JSON.stringify(lowerJournals, null, 2)}`)
 
     console.log(`Preparing journal for insert: ${JSON.stringify(lowerJournals[0], null, 2)}`)
-    // const journal = lowerJournals[0]
     let loopCounter = 0
     // insert in batches
     const batchSize = 1000
@@ -159,7 +148,6 @@ async function loadJournalsFromCSV (csvPath, classifications) {
           })
         })
       })
-      // console.log(`Trying to insert journal classifications ${JSON.stringify(insertClassifications, null, 2)}`)
       const insertedClassifications = await insertJournalClassificationsToDB(insertClassifications)
       console.log(`Added journal classifications for current batch ${JSON.stringify(insertedClassifications.length, null, 2)}`)
     }, {concurrency: 1})
