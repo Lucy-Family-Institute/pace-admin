@@ -1,11 +1,10 @@
-import {
-  getPublicationAuthorMap,
-  performConfidenceTest
-} from '../updateConfidenceReviewStates'
+import { CalculateConfidence } from '../modules/calculateConfidence'
 import {loadJSONFromFile} from '../units/loadJSONFromFile'
 import _ from 'lodash'
 
 const fs = require('fs');
+
+const calculateConfidence = new CalculateConfidence()
 
 const cslFilePath = './test/fixtures/default_csl.json'
 const pubAuthMapFilePath = './test/fixtures/default_expected_author_map.json'
@@ -35,7 +34,7 @@ test('testing get publication author map from csl', async () => {
   expect.hasAssertions();
 
   _.each(_.keys(pubCSLs), async (doi) => {
-    const foundPubAuthorMap = getPublicationAuthorMap(pubCSLs[doi])
+    const foundPubAuthorMap = calculateConfidence.getPublicationAuthorMap(pubCSLs[doi])
     expect(pubAuthorMaps[doi]).toEqual(foundPubAuthorMap)
   })
 })
@@ -45,7 +44,7 @@ test('testing perform confidence test', async () => {
 
   const confidenceType = {name: 'lastname'}
   _.each(_.keys(pubCSLs), (doi) => {
-    const matchedAuthors = performConfidenceTest(confidenceType, pubConfirmedAuthMap[doi], defaultTestAuthor, pubAuthorMaps[doi])
+    const matchedAuthors = calculateConfidence.performConfidenceTest(confidenceType, pubConfirmedAuthMap[doi], defaultTestAuthor, pubAuthorMaps[doi])
     expect(matchedAuthors).toEqual(expectedMatchedPubAuthMap[doi])
   })
   
