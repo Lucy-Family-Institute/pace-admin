@@ -62,7 +62,7 @@ export function getAuthors(publicationCsl: Cite){
   return authors
 }
 
-function getAuthorsByLastName (publicationCsl: Cite) {
+export function getAuthorsByLastName (publicationCsl: Cite) {
   //retrieve the authors from the record and put in a map, returned above in array, but really just one element
   const authors = getAuthors(publicationCsl)
   // group authors by last name
