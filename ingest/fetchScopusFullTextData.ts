@@ -1,13 +1,9 @@
 import { ApolloClient } from 'apollo-client'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { createHttpLink } from 'apollo-link-http'
-import gql from 'graphql-tag'
 import fetch from 'node-fetch'
 import _ from 'lodash'
-import { command as loadCsv } from './units/loadCsv'
-import readPersons from '../client/src/gql/readPersons'
 import readPublications from './gql/readPublications'
-import updatePubAbstract from './gql/updatePubAbstract'
 import { __EnumValue } from 'graphql'
 import dotenv from 'dotenv'
 import { command as writeCsv } from './units/writeCsv'
@@ -18,9 +14,6 @@ dotenv.config({
   path: '../.env'
 })
 
-import path from 'path'
-import pify from 'pify'
-import fs from 'fs'
 import { randomWait } from './units/randomWait'
 const axios = require('axios');
 
@@ -51,23 +44,11 @@ async function getScopusPaperAbstractData (baseUrl) {
     },
     withCredentials: true
   });
-
-  //console.log(`Scopus response: ${JSON.stringify(response.data['full-text-retrieval-response'], null, 2)}`)
   return response.data;
 }
 
 async function getScopusPaperAbstractDataByPii (pii) {
   const baseUrl = `https://api-elsevier-com.proxy.library.nd.edu/content/article/pii/${encodeURIComponent(pii).replace('(', '%28').replace(')', '%29')}`
-  return getScopusPaperAbstractData(baseUrl)
-}
-
-async function getScopusPaperAbstractDataByEid (eid) {
-  const baseUrl = `https://api-elsevier-com.proxy.library.nd.edu/content/article/eid/${encodeURIComponent(eid).replace('(', '%28').replace(')', '%29')}`
-  return getScopusPaperAbstractData(baseUrl)
-}
-
-async function getScopusPaperAbstractDataByScopusId (scopusId) {
-  const baseUrl = `https://api-elsevier-com.proxy.library.nd.edu/content/article/scopus_id/${encodeURIComponent(scopusId).replace('(', '%28').replace(')', '%29')}`
   return getScopusPaperAbstractData(baseUrl)
 }
 
@@ -113,17 +94,6 @@ function getSimplifiedScopusPaper(scopusPaper){
     // scopus_full_record : scopusPaper['coredata'] ? JSON.stringify(scopusPaper['coredata']) : ''
   }
 }
-
-// async function writeJsonFile (obj, eid) {
-//   const mapper = async (awardId) => {
-//     console.log(`Working on ${awardId}`);
-//     const filename = path.join(process.cwd(), '../data', 'scopus_full', `${eid}.json`);
-//     if( response ) {
-//       console.log(`Writing ${filename}`);
-//       await pify(fs.writeFile)(filename, JSON.stringify(response));
-//     }
-//   };
-// }
 
 async function main (): Promise<void> {
 
@@ -176,29 +146,6 @@ async function main (): Promise<void> {
     path: `../data/scopus_full_metadata.${moment().format('YYYYMMDDHHmmss')}.csv`,
     data: succeededScopusPapers,
   });
-  //  }
-  // })
-  // _.each(_.keys(abstracts), (doi) => {
-  //   if (!abstracts[doi]){
-  //     console.log(`Found Doi with null abstract: ${doi}`)
-  //   } else {
-  //     console.log('Found doi with existing abstract')
-  //     console.log(`Writing abstract for doi: ${doi} abstract: ${abstracts[doi]}`)
-  //     const resultUpdatePubAbstracts = client.mutate(updatePubAbstract(doi, abstracts[doi]))
-  //     console.log(`Returned result: ${resultUpdatePubAbstracts}`)
-  //   }
-  // })
-
-  // insert abstracts from PubMed
-  // const dois = _.keys(abstracts)
-  // const doi = '10.1002/ijc.24347'
-
-  // console.log(`Writing abstract for doi: ${doi} abstract: ${abstracts[doi]}`)
-  // const resultUpdatePubAbstracts = await client.mutate(updatePubAbstract(doi, abstracts[doi]))
-  // console.log(`Returned result: ${resultUpdatePubAbstracts.data}`)
-  // // next grab abstracts from Scopus using the scopus id and call to content/abstract
-  // then update DB by DOI and publication id
-  // in UI display the abstract that exists from any source
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises

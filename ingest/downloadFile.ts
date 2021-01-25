@@ -34,43 +34,6 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 })
 
-// import crypto from 'crypto'
-// export function hashStream ( dataStream ) {
-//   return new Promise((resolve, reject) => {
-//     const hashSha256 = crypto.createHash('sha256')
-//     const hashMd5 = crypto.createHash('md5')
-//     const hashSha1 = crypto.createHash('sha1')
-//     let size = 0
-
-//     dataStream.on('data', function (chunk) {
-//       size += chunk.length
-//       hashMd5.update(chunk)
-//       hashSha1.update(chunk)
-//       hashSha256.update(chunk)
-//     })
-//     dataStream.on('end', function () {
-//       const md5 = hashMd5.digest().toString('hex')
-//       const sha1 = hashSha1.digest().toString('hex')
-//       const sha256 = hashSha256.digest().toString('hex')
-//       resolve({
-//         size,
-//         md5,
-//         sha1,
-//         sha256
-//       })
-//     })
-//     dataStream.on('error', function (err) {
-//       reject(err)
-//     })
-//   })
-// }
-
-// async function hashFile (path) {
-//   const fileStream = new fs.ReadStream(path)
-//   const fileInfo = await hashStream(fileStream)
-//   return fileInfo
-// }
-
 async function getDois (client: any) {
   const results = await client.query({
     query: gql`
@@ -115,18 +78,6 @@ async function thumbnail ( input: string, directory: string, filename: string ) 
     console.error(`Thumbnail error for ${input}`)
     return null
   }
-
-  // return new Promise ((resolve, reject) => {
-  //   const stream = fs.createWriteStream(output)
-  //   stream.on('finish', () => {
-  //     resolve(output)
-  //   })
-  //   pdf(
-  //     fs.readFileSync(input)
-  //   ).then(data => {
-  //     data.pipe(stream)
-  //   }).catch(err => reject(err))
-  // })
 }
 
 async function downloadFromUnpaywall (doi, directory, filename) {
@@ -138,7 +89,7 @@ async function downloadFromUnpaywall (doi, directory, filename) {
       if (downloadUrl !== null) {
         console.log(`Download ${downloadUrl}`)
         // const MD5 = new jshashes.MD5
-        // const hash = MD5.hex(doi)        
+        // const hash = MD5.hex(doi)
         await downloadFile(downloadUrl, directory, {
           fileName: filename
         })
@@ -178,4 +129,3 @@ async function main() {
 }
 
 main()
-
