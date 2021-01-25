@@ -12,6 +12,7 @@ import { __EnumValue } from 'graphql'
 import dotenv from 'dotenv'
 import pMap from 'p-map'
 const Fuse = require('fuse.js')
+import { randomWait } from './units/randomWait'
 import { normalizeString, normalizeObjectProperties } from './units/normalizer'
 
 dotenv.config({
@@ -188,7 +189,16 @@ async function main (): Promise<void> {
   console.log(`Multiple Sub Matches Count: ${multipleSubMatches.length}`)
   console.log(`No Sub Matches Count: ${zeroSubMatches.length}`)
   console.log(`Single Sub Matches Count: ${singleSubMatches.length}`)
-
+  
+  //insert single matches
+  let loopCounter = 0
+  await pMap(singleMatches, async (matched) => {
+    loopCounter += 1
+    await randomWait(loopCounter)
+    console.log(`Updating funder of award ${loopCounter} ${matched['funder']}`)
+    const resultUpdatePubJournal = await client.mutate(updatePubJournal(matched['doi'], matched['Matches'][0]['id']))
+    // console.log(`Returned result journal: ${JSON.stringify(resultUpdatePubJournal.data.update_publications.returning, null, 2)}`)
+  }, {concurrency: 10})
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
