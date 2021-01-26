@@ -35,6 +35,18 @@ export async function loadPublications (csvPath: string, columnNameMap={}): Prom
       }
       if (paper['searchperson']) {
         _.set(pub, 'searchPerson', paper['searchperson'])
+      } else if (paper['searchpersonfamilyname']) {
+        const person: NormedPerson = {
+          id: Number.parseInt(paper['searchpersonid']),
+          familyName: paper['searchpersonfamilyname'],
+          givenName: paper['searchpersongivenname'],
+          givenNameInitial: paper['searchpersongivennameinitial'],
+          startDate: (paper['searchpersonstartdate'] ? new Date(paper['searchpersonstartdate']) : undefined),
+          endDate: (paper['searchpersonenddate'] ? new Date(paper['searchpersonenddate']) : undefined),
+          sourceIds: (paper['searchpersonsourceidsscopusaffiliationid'] ? 
+            { scopusAffiliationId: paper['searchpersonsourceidsscopusaffiliationid'] } : {})
+        }
+        _.set(pub, 'searchPerson', person)
       }
       if (paper['abstract']) {
         _.set(pub, 'abstract', paper['abstract'])

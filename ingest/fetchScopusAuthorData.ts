@@ -136,11 +136,14 @@ async function getSimplifiedPersons(year) {
   const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
     return {
       id: person.id,
-      lastName: _.lowerCase(person.family_name),
-      firstInitial: _.lowerCase(person.given_name[0]),
-      firstName: _.lowerCase(person.given_name),
-      startYear: person.start_date,
-      endYear: person.end_date
+      lastName: person.family_name,
+      firstInitial: person.given_name[0],
+      firstName: person.given_name, 
+      lowerLastName: _.lowerCase(person.family_name),
+      lowerFirstInitial: _.lowerCase(person.given_name[0]),
+      lowerFirstName: _.lowerCase(person.given_name),
+      startDate: person.start_date,
+      endDate: person.end_date
     }
   })
   return simplifiedPersons
@@ -157,7 +160,7 @@ async function getScopusAuthorPapers(person, year, scopusAffiliationId) {
     let offset = 0
 
     //get first page of results, do with first initial for now
-    const authorSearchResult = await getScopusAuthorData(person.firstInitial, person.lastName, year, scopusAffiliationId, pageSize, offset)
+    const authorSearchResult = await getScopusAuthorData(person.lowerFirstInitial, person.lowerLastName, year, scopusAffiliationId, pageSize, offset)
     if (authorSearchResult && authorSearchResult['search-results']['opensearch:totalResults']){
       const totalResults = parseInt(authorSearchResult['search-results']['opensearch:totalResults'])
       console.log(`Author Search Result Total Results: ${totalResults}`)
@@ -178,7 +181,7 @@ async function getScopusAuthorPapers(person, year, scopusAffiliationId) {
             } else {
               offset += totalResults - offset
             }
-            const authorSearchResultNext = await getScopusAuthorData(person.firstInitial, person.lastName, year, scopusAffiliationId, pageSize, offset)
+            const authorSearchResultNext = await getScopusAuthorData(person.lowerFirstInitial, person.lowerLastName, year, scopusAffiliationId, pageSize, offset)
 
             if (authorSearchResultNext['search-results']['entry']) {
               searchPageResults.push(authorSearchResultNext['search-results']['entry'])
@@ -202,11 +205,17 @@ async function getScopusAuthorPapers(person, year, scopusAffiliationId) {
 // 'year', 'title', 'journal', 'doi', 'scopus_id', 'scopus_record'
 //
 // scopus_record is the original json object
-async function getSimplifliedScopusPapers(scopusPapers, simplifiedPerson){
+async function getSimplifliedScopusPapers(scopusPapers, simplifiedPerson, scopusAffiliationId, query){
   return _.map(scopusPapers, (paper) => {
     return {
-      search_family_name : simplifiedPerson.lastName,
-      search_given_name : simplifiedPerson.firstInitial,
+      search_person_id : simplifiedPerson.id,
+      search_person_family_name : simplifiedPerson.lastName,
+      search_person_given_name : simplifiedPerson.firstName,
+      search_person_given_name_initial: simplifiedPerson.firstInitial,
+      search_person_start_date: `${simplifiedPerson.startDate}`,
+      search_person_end_date: `${(simplifiedPerson.endDate ? simplifiedPerson.endDate : '')}`,
+      search_person_source_ids_scopus_affiliation_id: scopusAffiliationId,
+      search_query: query, 
       title: paper['dc:title'],
       journal: paper['prism:publicationName'],
       journal_issn: paper['prism:issn'],
@@ -249,7 +258,8 @@ async function main (): Promise<void> {
         console.log(`Author papers total for ${person.lastName}, ${person.firstName}: ${JSON.stringify(_.keys(authorPapers).length,null,2)}`)
 
         //get simplified scopus papers
-        const simplifiedAuthorPapers = await getSimplifliedScopusPapers(authorPapers, person)
+        const authorQuery = "AUTHFIRST("+ person.lowerFirstInitial +") and AUTHLASTNAME("+ person.lowerLastName+") and AF-ID(" + scopusAffiliationId + ")"
+        const simplifiedAuthorPapers = await getSimplifliedScopusPapers(authorPapers, person, scopusAffiliationId, authorQuery)
 
         //push in whole array for now and flatten later
         succeededScopusPapers.push(simplifiedAuthorPapers)
