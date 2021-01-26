@@ -8,12 +8,19 @@ export class ScopusDataSource implements DataSource {
   constructor (dsConfig: DataSourceConfig) {
     this.dsConfig = dsConfig
   }
-     // assumes that if only one of startDate or endDate provided it would always be startDate first and then have endDate undefined
-  async getPublicationsByAuthorName(person: NormedPerson, offset: Number, startDate: Date, endDate?: Date): Promise<HarvestSet> {
+
+  // return the query passed to scopus for searching for given author
+  getAuthorQuery(person: NormedPerson){
     let authorQuery = "AUTHFIRST("+ _.toLower(person.givenNameInitial) +") and AUTHLASTNAME("+ _.toLower(person.familyName) +")"
     if (person.sourceIds.scopusAffiliationId){
       authorQuery = authorQuery+" and AF-ID("+person.sourceIds.scopusAffiliationId+")" 
     } 
+    return authorQuery
+  }
+
+  // assumes that if only one of startDate or endDate provided it would always be startDate first and then have endDate undefined
+  async getPublicationsByAuthorName(person: NormedPerson, offset: Number, startDate: Date, endDate?: Date): Promise<HarvestSet> {
+    const authorQuery = this.getAuthorQuery(person)
 
     let totalResults: Number
     let publications = []
@@ -26,7 +33,7 @@ export class ScopusDataSource implements DataSource {
             publications = results['search-results']['entry']
         }
     } else {
-        totalResults = 0
+      totalResults = 0
     }
     const result: HarvestSet = {
         sourceName: this.getSourceName(),
@@ -37,10 +44,11 @@ export class ScopusDataSource implements DataSource {
         pageSize: Number.parseInt(this.dsConfig.pageSize),
         totalResults: totalResults
     }
+
     return result
   }
 
-  async fetchScopusQuery(query, date, pageSize, offset){
+  async fetchScopusQuery(query, date, pageSize, offset) : Promise<any>{
     console.log(`dsConfig is :${JSON.stringify(this.dsConfig, null, 2)}`)
 
     console.log(`Querying scopus with date: ${date}, offset: ${offset}, and query: ${query}`)
@@ -56,7 +64,7 @@ export class ScopusDataSource implements DataSource {
         start: offset
       }
     })
-  
+
     return response.data
   }
 

@@ -4,10 +4,10 @@ import _ from 'lodash'
 const testCSVPath = './test/fixtures/scopus.2019.csv'
 
 const defaultNormedPerson: NormedPerson = {
-  id: 1,
+  id: 94,
   familyName: 'Zhang',
   givenNameInitial: 'S',
-  givenName: 'Suyaun',
+  givenName: 'Siyuan',
   startDate: new Date('2017-01-01'),
   endDate: undefined,
   sourceIds: {
@@ -49,7 +49,7 @@ const defaultPubSourceMetadata = {
 }
 
 const defaultExpectedNormedPublication: NormedPublication = {
-  //searchPerson: defaultNormedPerson,
+  searchPerson: defaultNormedPerson,
   title: 'Oxidation-Induced Polymerization of InP Surface and Implications for Optoelectronic Applications',
   journalTitle: 'Journal of Physical Chemistry C',
   doi: '10.1021/acs.jpcc.9b07260',
@@ -62,7 +62,13 @@ const defaultExpectedNormedPublication: NormedPublication = {
 }
 
 const publicationColumnMap = {
-  // 'search_person': 'searchPerson': NormedPerson,
+  'search_person_id': 'searchPersonId',
+  'search_person_family_name': 'searchPersonFamilyName',
+  'search_person_given_name_initial': 'searchPersonGivenNameInitial',
+  'search_person_given_name': 'searchPersonGivenName',
+  'search_person_start_date': 'searchPersonStartDate',
+  'search_person_end_date': 'searchPersonEndDate',
+  'search_person_source_ids_scopus_affiliation_id': 'searchPersonSourceIdsScopusAffiliationId',
   title: 'title',
   'journal': 'journalTitle',
   doi: 'doi',
