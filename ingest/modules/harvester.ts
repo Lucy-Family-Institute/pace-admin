@@ -21,10 +21,6 @@ export class Harvester {
   // waitInterval desc: wait time between harvests of each person search default = 1000 milliseconds in miliseconds
   async harvest (searchPersons: NormedPerson[], searchStartDate: Date, searchEndDate: Date = undefined, threadCount: number = 1, waitInterval: number = 1000): Promise<HarvestSet[]> {
     let personCounter = 0
-    let succeededPapers = []
-    let failedPapers = []
-    let succeededAuthors = []
-    let failedAuthors = []
     let harvestSets: HarvestSet[] = []
     await pMap(searchPersons, async (person) => {
       let harvestSet: HarvestSet
@@ -35,28 +31,33 @@ export class Harvester {
         
         // check that person start date and end date has some overlap with search date range
         if (dateRangesOverlapping(person.startDate, person.endDate, searchStartDate, searchEndDate)) {
-          harvestSet: harvestSet = await this.ds.getPublicationsByAuthorName(person, 0, searchStartDate)//, searchEndDate)
+          harvestSet = await this.ds.getPublicationsByAuthorName(person, 0, searchStartDate)//, searchEndDate)
           console.log(`${this.ds.getSourceName()} Total Pubs found for author: ${person.familyName}, ${person.givenName}, ${harvestSet.totalResults}`)
           console.log(`${this.ds.getSourceName()} Pubs found length for author: ${person.familyName}, ${person.givenName}, ${harvestSet.sourcePublications.length}`)
-          const normedPublications: NormedPublication[] = this.ds.getNormedPublications(harvestSet.sourcePublications)
+          const normedPublications: NormedPublication[] = this.ds.getNormedPublications(harvestSet.sourcePublications, person)
           // console.log(`normed papers are: ${JSON.stringify(simplifiedPapers, null, 2)}`)
           //push in whole array for now and flatten later
           console.log(`${this.ds.getSourceName()} NormedPubs found length for author: ${person.familyName}, ${person.givenName}, ${normedPublications.length}`)
           //let normedHarvest: NormedHarvestSet = _.cloneDeep(harvestSet)
           _.set(harvestSet, 'normedPublications',normedPublications)
-          harvestSets.push(harvestSet)
+          //harvestSets.push(harvestSet)
         } else {
           console.log(`Warning: Skipping harvest of '${person.familyName}, ${person.givenName}' because person start date: ${person.startDate} and end date ${person.endDate} not within search start date ${searchStartDate} and end date ${searchEndDate}.)`)
         }
       } catch (error) {
+        console.log(error)
         const errorMessage = `Error on get papers for author: ${person.familyName}, ${person.givenName}: ${error}`
-        if (harvestSet) {
-          if (!harvestSet.errors) {
-            harvestSet.errors = []
+        if (!harvestSet) {
+          harvestSet = {
+            sourceName: this.ds.getSourceName(),
+            sourcePublications: [],
+            totalResults: 0
           }
-          harvestSet.errors.push(errorMessage)
         }
-        
+        if (!harvestSet.errors) {
+          harvestSet.errors = []
+        }
+        harvestSet.errors.push(errorMessage)
       }
       if (harvestSet) {
         harvestSets.push(harvestSet)
@@ -64,12 +65,6 @@ export class Harvester {
     }, {concurrency: threadCount})
 
     return harvestSets
-    // return {
-    //   'foundPublications': _.flattenDepth(succeededPapers, 1),
-    //   'succeededAuthors': succeededAuthors,
-    //   'errors': failedPapers,
-    //   'failedAuthors': failedAuthors
-    // }
   }
 
   // createNormedHarvestSet(set: HarvestSet, normedPublications: NormedPublication[]): NormedHarvestSet {
