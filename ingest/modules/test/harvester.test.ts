@@ -91,7 +91,7 @@ beforeAll(async () => {
     // testPersons = await loadPersons(testPersonsFilePath, personPropMap)
     testPersons = [defaultNormedPerson]
 
-    jest.setTimeout(10000)
+    jest.setTimeout(20000)
 })
 
 //TODO load in list of people to test against expected results for 2019
