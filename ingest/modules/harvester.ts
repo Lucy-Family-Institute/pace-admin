@@ -1,9 +1,15 @@
 import _ from 'lodash'
 import pMap from 'p-map'
+import pTimes from 'p-times'
 import { command as writeCsv } from '../units/writeCsv'
 import { dateRangesOverlapping } from '../units/dateRange'
 import { randomWait } from '../units/randomWait'
 import moment from 'moment'
+
+export enum HarvestOperation {
+  QUERY_BY_AUTHOR_NAME,
+  QUERY_BY_AUTHOR_ID
+}
 
 export class Harvester {
   ds: DataSource
@@ -13,13 +19,14 @@ export class Harvester {
   }
 
   // TODO: Multiple harvest methods for different datasource queries?
+  // TODO #2: Separate each person harvest into separate process/worker?
   //
   // threadCount and waitInterval are optional parameters
   // It assumes that threadCount will be defined if you are also defining waitInterval
   //
   // threadCount default = 1 concurrent thread
   // waitInterval desc: wait time between harvests of each person search default = 1000 milliseconds in miliseconds
-  async harvest (searchPersons: NormedPerson[], searchStartDate: Date, searchEndDate: Date = undefined, threadCount: number = 1, waitInterval: number = 1000): Promise<HarvestSet[]> {
+  async harvest (searchPersons: NormedPerson[], harvestBy: HarvestOperation, searchStartDate: Date, searchEndDate: Date = undefined, threadCount: number = 1, waitInterval: number = 1000): Promise<HarvestSet[]> {
     let personCounter = 0
     let harvestSets: HarvestSet[] = []
     await pMap(searchPersons, async (person) => {
@@ -31,16 +38,36 @@ export class Harvester {
         
         // check that person start date and end date has some overlap with search date range
         if (dateRangesOverlapping(person.startDate, person.endDate, searchStartDate, searchEndDate)) {
-          harvestSet = await this.ds.getPublicationsByAuthorName(person, 0, searchStartDate)//, searchEndDate)
-          console.log(`${this.ds.getSourceName()} Total Pubs found for author: ${person.familyName}, ${person.givenName}, ${harvestSet.totalResults}`)
-          console.log(`${this.ds.getSourceName()} Pubs found length for author: ${person.familyName}, ${person.givenName}, ${harvestSet.sourcePublications.length}`)
-          const normedPublications: NormedPublication[] = this.ds.getNormedPublications(harvestSet.sourcePublications, person)
-          // console.log(`normed papers are: ${JSON.stringify(simplifiedPapers, null, 2)}`)
-          //push in whole array for now and flatten later
-          console.log(`${this.ds.getSourceName()} NormedPubs found length for author: ${person.familyName}, ${person.givenName}, ${normedPublications.length}`)
-          //let normedHarvest: NormedHarvestSet = _.cloneDeep(harvestSet)
-          _.set(harvestSet, 'normedPublications',normedPublications)
-          //harvestSets.push(harvestSet)
+          let offset = 0
+          // have to alias this because nested this call below makes this undefined
+          let thisHarvester = this
+          harvestSet = await this.fetchPublications(person, harvestBy, offset, searchStartDate)
+          if (harvestSet) {
+            harvestSets.push(harvestSet)
+          }
+          const pageSize = this.ds.getRequestPageSize().valueOf()
+          const totalResults = harvestSet.totalResults.valueOf()
+          if (totalResults > pageSize){
+            let numberOfRequests = parseInt(`${totalResults / pageSize}`) //convert to an integer to drop any decimal
+            //if no remainder subtract one since already did one call
+            if ((totalResults % pageSize) <= 0) {
+              numberOfRequests -= 1
+            }
+            //loop to get the result of the results
+            console.log(`Making ${numberOfRequests} requests for ${person.familyName}, ${person.givenNameInitial}`)
+            await pTimes (numberOfRequests, async function (index) {
+              randomWait(index)
+              if (offset + pageSize < totalResults){
+                offset += pageSize
+              } else {
+                offset += totalResults - offset
+              }
+              harvestSet = await thisHarvester.fetchPublications(person, harvestBy, offset, searchStartDate)
+              if (harvestSet) {
+                harvestSets.push(harvestSet)
+              }
+            }, { concurrency: 1})
+           }
         } else {
           console.log(`Warning: Skipping harvest of '${person.familyName}, ${person.givenName}' because person start date: ${person.startDate} and end date ${person.endDate} not within search start date ${searchStartDate} and end date ${searchEndDate}.)`)
         }
@@ -58,8 +85,6 @@ export class Harvester {
           harvestSet.errors = []
         }
         harvestSet.errors.push(errorMessage)
-      }
-      if (harvestSet) {
         harvestSets.push(harvestSet)
       }
     }, {concurrency: threadCount})
@@ -67,19 +92,58 @@ export class Harvester {
     return harvestSets
   }
 
-  // createNormedHarvestSet(set: HarvestSet, normedPublications: NormedPublication[]): NormedHarvestSet {
-  //   return set.normedPublications = normedPublications
-  // }
+  private createErrorHarvestSet(harvestOperationName: string): HarvestSet {
+    const error = `'${harvestOperationName}' not supported by datasource harvester ${this.ds.getSourceName()}`
+    return {
+      sourceName: this.ds.getSourceName(),
+      sourcePublications: [],
+      totalResults: 0,
+      errors: [error]
+    }
+  }
 
-  async harvestToCsv(searchPersons: NormedPerson[], searchStartDate: Date, searchEndDate: Date) {
-    const harvested = await this.harvest(searchPersons, searchStartDate, searchEndDate, 1)
+  /**
+   *  @param person a NormedPerson object to harvest for using name values
+   * 
+   *  @param offset the offset of the request assuming there may be more than one to retrieve all results
+   * 
+   *  @param searchStartDate the Date object defining the lower bound date for our search
+   * 
+   *  @returns HarvestSet object for current request with both normalized and source publications included
+   */
+  async fetchPublications(person: NormedPerson, harvestBy: HarvestOperation, offset: number, searchStartDate: Date): Promise<HarvestSet> {
+    let harvestSet: HarvestSet
+    switch(harvestBy) {
+      case HarvestOperation.QUERY_BY_AUTHOR_NAME: {
+        if (typeof this.ds['getPublicationsByAuthorName'] === 'function'){
+          harvestSet = await this.ds.getPublicationsByAuthorName(person, offset, searchStartDate)
+        } else {
+          harvestSet = this.createErrorHarvestSet('QUERY_BY_AUTHOR_NAME')
+        }
+        break
+      } case HarvestOperation.QUERY_BY_AUTHOR_ID: {
+        if (typeof this.ds['getPublicationsByAuthorId'] === 'function'){
+          harvestSet = await this.ds.getPublicationsByAuthorId(person, offset, searchStartDate)
+        } else {
+          harvestSet = this.createErrorHarvestSet('QUERY_BY_AUTHOR_ID')
+        }
+        break
+      }
+    }
+    console.log(`Querying scopus with date: ${searchStartDate}, offset: ${offset}, found pubs: ${harvestSet.sourcePublications.length}`)
+    const normedPublications: NormedPublication[] = this.ds.getNormedPublications(harvestSet.sourcePublications, person)
+    _.set(harvestSet, 'normedPublications',normedPublications)
+    return harvestSet
+  }
+
+  async harvestToCsv(searchPersons: NormedPerson[], harvestBy: HarvestOperation, searchStartDate: Date, searchEndDate: Date) {
+    const harvested = await this.harvest(searchPersons, harvestBy, searchStartDate, searchEndDate, 1)
     const outputPapers = _.map(_.flatten(harvested['foundPublications']), pub => {
       pub['source_metadata'] = JSON.stringify(pub['source_metadata'])
       return pub
     })
     
     //write data out to csv
-    //console.log(outputScopusPapers)
     await writeCsv({
       path: `../../data/${this.ds.getSourceName}.${searchStartDate.getFullYear}.${moment().format('YYYYMMDDHHmmss')}.csv`,
       data: outputPapers,
