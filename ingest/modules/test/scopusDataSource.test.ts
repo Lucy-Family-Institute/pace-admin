@@ -199,3 +199,9 @@ test('testing get normedPublications with default pub', async () => {
         }
     })
 })
+
+test('test get page size', () => {
+  expect.hasAssertions()
+  const expectedPageSize = Number.parseInt(dsConfig.pageSize)
+  expect(ds.getRequestPageSize()).toEqual(expectedPageSize)
+})
