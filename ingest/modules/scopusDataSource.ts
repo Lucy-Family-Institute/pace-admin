@@ -49,8 +49,6 @@ export class ScopusDataSource implements DataSource {
   }
 
   async fetchScopusQuery(query, date, pageSize, offset) : Promise<any>{
-    console.log(`dsConfig is :${JSON.stringify(this.dsConfig, null, 2)}`)
-
     console.log(`Querying scopus with date: ${date}, offset: ${offset}, and query: ${query}`)
 
     const response = await axios.get(this.dsConfig.queryUrl, {
@@ -89,6 +87,10 @@ export class ScopusDataSource implements DataSource {
   //returns a machine readable string version of this source
   getSourceName() {
     return (this.dsConfig && this.dsConfig.sourceName) ? this.dsConfig.sourceName : 'Scopus'
+  }
+
+  getRequestPageSize(): Number {
+    return Number.parseInt(this.dsConfig.pageSize)
   }
 
   initialize() {

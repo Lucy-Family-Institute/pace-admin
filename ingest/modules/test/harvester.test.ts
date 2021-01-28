@@ -1,4 +1,4 @@
-import { Harvester } from '../harvester'
+import { Harvester, HarvestOperation } from '../harvester'
 import { ScopusDataSource } from '../scopusDataSource'
 import { loadPublications} from '../../units/loadPublications'
 import { loadPersons} from '../../units/loadPersons'
@@ -91,11 +91,36 @@ beforeAll(async () => {
     // testPersons = await loadPersons(testPersonsFilePath, personPropMap)
     testPersons = [defaultNormedPerson]
 
-    jest.setTimeout(20000)
+    jest.setTimeout(100000)
 })
 
 //TODO load in list of people to test against expected results for 2019
-test('test Scopus harvester.harvest', async () => {
+test('test Scopus harvester.fetchPublications by Author Name', async () => {
+    expect.hasAssertions()
+    const expectedHarvestSet: HarvestSet = {
+        sourceName: scopusConfig.sourceName,
+        searchPerson: defaultNormedPerson,
+        query: scopusDS.getAuthorQuery(defaultNormedPerson),
+        sourcePublications: [],
+        normedPublications: expectedNormedPubsByAuthor[`${defaultNormedPerson.familyName}, ${defaultNormedPerson.givenNameInitial}`],
+        offset: 0,
+        pageSize: Number.parseInt(scopusConfig.pageSize),
+        totalResults: 198
+    }
+    const results = await scopusHarvester.fetchPublications(defaultNormedPerson, HarvestOperation.QUERY_BY_AUTHOR_NAME, 0, new Date('2019-01-01'))
+    // as new publications may be added to available, just test that current set includes expected pubs
+    expect(results.sourceName).toEqual(expectedHarvestSet.sourceName)
+    expect(results.searchPerson).toEqual(expectedHarvestSet.searchPerson)
+    expect(results.query).toEqual(expectedHarvestSet.query)
+    expect(results.sourcePublications.length).toEqual(scopusDS.getRequestPageSize())
+    expect(results.normedPublications).toEqual(expect.arrayContaining([expectedHarvestSet.normedPublications[0]]))
+    expect(results.offset).toEqual(expectedHarvestSet.offset)
+    expect(results.pageSize).toEqual(expectedHarvestSet.pageSize)
+    expect(results.totalResults).toEqual(expectedHarvestSet.totalResults)
+})
+
+//TODO load in list of people to test against expected results for 2019
+test('test Scopus harvester.harvest by author name', async () => {
     // expect.hasAssertions()
     const expectedHarvestSet: HarvestSet = {
         sourceName: scopusConfig.sourceName,
@@ -107,12 +132,32 @@ test('test Scopus harvester.harvest', async () => {
         pageSize: Number.parseInt(scopusConfig.pageSize),
         totalResults: 198
     }
-    const results = await scopusHarvester.harvest(testPersons, new Date('2019-01-01'))
+    const results = await scopusHarvester.harvest(testPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, new Date('2019-01-01'))
     // as new publications may be added to available, just test that current set includes expected pubs
     // and that total harvested is in the same power of 10 and less than double the expected amount
     //expect(results[0].normedPublications).toEqual(expect.arrayContaining(expectedHarvestSet.normedPublications))
-    expect(expectedHarvestSet.normedPublications).toEqual(expect.arrayContaining(results[0].normedPublications))
-    //expect(results[0].normedPublications[0]).toEqual(expectedHarvestSet.normedPublications[0])
+    //expect(expectedHarvestSet.normedPublications).toEqual(expect.arrayContaining(results[0].normedPublications))
+    //expect(results[0].sourcePublications[0]).toEqual('test')
+    expect(results[0].normedPublications[0]).toEqual(expectedHarvestSet.normedPublications[0])
+})
+
+//TODO load in list of people to test against expected results for 2019
+test('test Scopus harvester.harvest by author id throws error', async () => {
+    // expect.hasAssertions()
+    const expectedHarvestSet: HarvestSet = {
+        sourceName: scopusConfig.sourceName,
+        searchPerson: defaultNormedPerson,
+        query: scopusDS.getAuthorQuery(defaultNormedPerson),
+        sourcePublications: [],
+        normedPublications: expectedNormedPubsByAuthor[`${defaultNormedPerson.familyName}, ${defaultNormedPerson.givenNameInitial}`],
+        offset: 0,
+        pageSize: Number.parseInt(scopusConfig.pageSize),
+        totalResults: 198
+    }
+    const results = await scopusHarvester.harvest(testPersons, HarvestOperation.QUERY_BY_AUTHOR_ID, new Date('2019-01-01'))
+    // as new publications may be added to available, just test that current set includes expected pubs
+    // and that total harvested is in the same power of 10 and less than double the expected amount
+    expect(results[0].errors).toEqual(['\'QUERY_BY_AUTHOR_ID\' not supported by datasource harvester Scopus'])
 })
 
 //TODO write loadPublications test
