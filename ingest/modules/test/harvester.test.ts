@@ -61,28 +61,9 @@ beforeAll(async () => {
         'end_date': 'endDate'
     }
 
-    const publicationColumnMap = {
-        'search_person_id': 'searchPersonId',
-        'search_person_family_name': 'searchPersonFamilyName',
-        'search_person_given_name_initial': 'searchPersonGivenNameInitial',
-        'search_person_given_name': 'searchPersonGivenName',
-        'search_person_start_date': 'searchPersonStartDate',
-        'search_person_end_date': 'searchPersonEndDate',
-        'search_person_source_ids_scopus_affiliation_id': 'searchPersonSourceIdsScopusAffiliationId',
-        title: 'title',
-        'journal': 'journalTitle',
-        doi: 'doi',
-        'publication_date': 'publicationDate',
-        'source_name': 'datasourceName',
-        'source_id': 'sourceId',
-        'source_metadata': 'sourceMetadata',
-        'journal_issn': 'journalIssn',
-        'journal_eissn': 'journalEIssn'
-    }
-
     const testPersonsFilePath = './test/fixtures/persons_2020.csv'
     const expectedPubCSVPath = './test/fixtures/scopus.2019.csv'
-    expectedNormedPublications = await loadPublications(expectedPubCSVPath, publicationColumnMap)
+    expectedNormedPublications = await loadPublications(expectedPubCSVPath)
     // get map of 'lastname, first initial' to normed publications
     expectedNormedPubsByAuthor = _.groupBy(expectedNormedPublications, (normedPub: NormedPublication) => {
         return `${normedPub.searchPerson.familyName}, ${normedPub.searchPerson.givenNameInitial}`
@@ -168,6 +149,10 @@ test('test Scopus harvester.harvest by author name', async () => {
         // finally just check that source metadata is defined
         expect(resultNormedPubsByDoi[doi]['sourceMetadata']).toBeDefined()
     })
+})
+
+test('test scopus harvester.harvestToCsv', async () => {
+    await scopusHarvester.harvestToCsv(testPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, new Date('2019-01-01'))
 })
 
 //TODO load in list of people to test against expected results for 2019
