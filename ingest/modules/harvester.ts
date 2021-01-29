@@ -4,6 +4,7 @@ import pTimes from 'p-times'
 import { command as writeCsv } from '../units/writeCsv'
 import { dateRangesOverlapping } from '../units/dateRange'
 import { randomWait } from '../units/randomWait'
+import { getCSVRowFromNormedPublicationObject } from '../units/loadPublications'
 import moment from 'moment'
 
 export enum HarvestOperation {
@@ -136,16 +137,30 @@ export class Harvester {
     return harvestSet
   }
 
-  async harvestToCsv(searchPersons: NormedPerson[], harvestBy: HarvestOperation, searchStartDate: Date, searchEndDate: Date) {
-    const harvested = await this.harvest(searchPersons, harvestBy, searchStartDate, searchEndDate, 1)
-    const outputPapers = _.map(_.flatten(harvested['foundPublications']), pub => {
-      pub['source_metadata'] = JSON.stringify(pub['source_metadata'])
-      return pub
+
+  /**
+   * Runs a harvest against the search persons provided and writes results to a source file of path: 
+   *    sourcename.startdateyear.currenttimestamp.csv
+   * @param searchPersons an Array of NormedPerson objects to harvest against
+   * @param harvestBy The harvest operation used defined by the HarvestOperation constant passed in
+   * @param searchStartDate The start date range for the harvest
+   * @param searchEndDate The end date range of the harvest (if provided)
+   */
+  async harvestToCsv(searchPersons: NormedPerson[], harvestBy: HarvestOperation, searchStartDate: Date, searchEndDate?: Date) {
+    const harvestSets: HarvestSet[] = await this.harvest(searchPersons, harvestBy, searchStartDate, searchEndDate, 1)
+
+    let outputPapers = []
+    _.each(harvestSets, (harvestSet) => {
+      outputPapers = _.concat(outputPapers, 
+        _.map(harvestSet.normedPublications, (pub) => {
+          return getCSVRowFromNormedPublicationObject(pub)
+        })
+      )
     })
-    
+   
     //write data out to csv
     await writeCsv({
-      path: `../../data/${this.ds.getSourceName}.${searchStartDate.getFullYear}.${moment().format('YYYYMMDDHHmmss')}.csv`,
+      path: `./test/${this.ds.getSourceName()}.${searchStartDate.getFullYear()}.${moment().format('YYYYMMDDHHmmss')}.csv`,
       data: outputPapers,
     });
   }
