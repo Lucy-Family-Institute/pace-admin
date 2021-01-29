@@ -1,0 +1,22 @@
+{
+  "searchPerson": {
+    "id": "search_person_id",
+    "familyName": "search_person_family_name",
+    "givenNameInitial": "search_person_given_name_initial",
+    "givenName": "search_person_given_name",
+    "startDate": "search_person_start_date",
+    "endDate": "search_person_end_date",
+    "sourceIds": {
+      "scopusAffiliationId": "search_person_source_ids_scopus_affiliation_id"
+    }
+  },
+  "title": "title",
+  "journalTitle": "journal", 
+  "doi": "doi",
+  "publicationDate": "publication_date",
+  "datasourceName": "source_name",
+  "sourceId": "source_id",
+  "sourceMetadata": "source_metadata",
+  "journalIssn": "journal_issn",
+  "journalEIssn": "journal_eissn"
+}
