@@ -82,6 +82,7 @@ const publicationColumnMap = {
 
 test('test load publications works with property map with no lowerCase keys or values', async () => {
   expect.hasAssertions()
-  const publications: NormedPublication[] = await loadPublications(testCSVPath, publicationColumnMap)
+  const publications: NormedPublication[] = await loadPublications(testCSVPath)
+  //expect(publications[0]).toEqual(defaultExpectedNormedPublication)
   expect(publications).toEqual(expect.arrayContaining([defaultExpectedNormedPublication]))
 })
