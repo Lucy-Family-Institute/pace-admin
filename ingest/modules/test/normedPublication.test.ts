@@ -1,6 +1,6 @@
-import { loadPublications } from '../loadPublications'
 import _ from 'lodash'
-import { getDateObject } from '../dateRange'
+import { getDateObject } from '../../units/dateRange'
+import NormedPublication from '../normedPublication'
 
 const testCSVPath = './test/fixtures/scopus.2019.csv'
 
@@ -81,8 +81,30 @@ const publicationColumnMap = {
   'journal_eissn': 'journalEIssn'
 }
 
-test('test load publications works with property map with no lowerCase keys or values', async () => {
+test('test NormedPublication.loadFromCSV works with property map with no lowerCase keys or values', async () => {
   expect.hasAssertions()
-  const publications: NormedPublication[] = await loadPublications(testCSVPath)
+  const publications: NormedPublication[] = await NormedPublication.loadFromCSV(testCSVPath)
   expect(publications).toEqual(expect.arrayContaining([defaultExpectedNormedPublication]))
+})
+
+test('test NormedPublication.getCSVRow', () => {
+  expect.hasAssertions()
+  const objectToCSVMap = NormedPublication.loadNormedPublicationObjectToCSVMap()
+  const row = NormedPublication.getCSVRow(defaultExpectedNormedPublication, objectToCSVMap)
+  expect(row[objectToCSVMap['searchPerson']['id']]).toEqual(defaultExpectedNormedPublication.searchPerson.id)
+  expect(row[objectToCSVMap['searchPerson']['familyName']]).toEqual(defaultExpectedNormedPublication.searchPerson.familyName)
+  expect(row[objectToCSVMap['searchPerson']['givenNameInitial']]).toEqual(defaultExpectedNormedPublication.searchPerson.givenNameInitial)
+  expect(row[objectToCSVMap['searchPerson']['givenName']]).toEqual(defaultExpectedNormedPublication.searchPerson.givenName)
+  expect(new Date(row[objectToCSVMap['searchPerson']['startDate']])).toEqual(defaultExpectedNormedPublication.searchPerson.startDate)
+  expect(row[objectToCSVMap['searchPerson']['endDate']]).toEqual(undefined)
+  expect(row[objectToCSVMap['searchPerson']['sourceIds']['scopusAffiliationId']]).toEqual(defaultExpectedNormedPublication.searchPerson.sourceIds.scopusAffiliationId)
+  expect(row[objectToCSVMap['title']]).toEqual(defaultExpectedNormedPublication.title)
+  expect(row[objectToCSVMap['journalTitle']]).toEqual(defaultExpectedNormedPublication.journalTitle)
+  expect(row[objectToCSVMap['doi']]).toEqual(defaultExpectedNormedPublication.doi)
+  expect(row[objectToCSVMap['publicationDate']]).toEqual(defaultExpectedNormedPublication.publicationDate)
+  expect(row[objectToCSVMap['datasourceName']]).toEqual(defaultExpectedNormedPublication.datasourceName)
+  expect(row[objectToCSVMap['journalIssn']]).toEqual(defaultExpectedNormedPublication.journalIssn)
+  expect(row[objectToCSVMap['journalEIssn']]).toEqual(defaultExpectedNormedPublication.journalEIssn)
+  expect(row[objectToCSVMap['sourceId']]).toEqual(defaultExpectedNormedPublication.sourceId)
+  expect(JSON.parse(row[objectToCSVMap['sourceMetadata']])).toEqual(defaultExpectedNormedPublication.sourceMetadata)
 })
