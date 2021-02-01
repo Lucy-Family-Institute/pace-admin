@@ -1,5 +1,6 @@
 import { loadPublications } from '../loadPublications'
 import _ from 'lodash'
+import { getDateObject } from '../dateRange'
 
 const testCSVPath = './test/fixtures/scopus.2019.csv'
 
@@ -8,7 +9,7 @@ const defaultNormedPerson: NormedPerson = {
   familyName: 'Zhang',
   givenNameInitial: 'S',
   givenName: 'Siyuan',
-  startDate: new Date('2017-01-01'),
+  startDate: getDateObject('2017-01-01'),
   endDate: undefined,
   sourceIds: {
     scopusAffiliationId: '60021508'
