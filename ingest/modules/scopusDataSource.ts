@@ -1,5 +1,6 @@
 import axios from 'axios'
 import _ from 'lodash'
+import NormedPublication from './normedPublication'
 
 export class ScopusDataSource implements DataSource {
 

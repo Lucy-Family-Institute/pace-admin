@@ -4,8 +4,8 @@ import pTimes from 'p-times'
 import { command as writeCsv } from '../units/writeCsv'
 import { dateRangesOverlapping } from '../units/dateRange'
 import { randomWait } from '../units/randomWait'
-import { getCSVRowFromNormedPublicationObject } from '../units/loadPublications'
 import moment from 'moment'
+import NormedPublication from './normedPublication'
 
 export enum HarvestOperation {
   QUERY_BY_AUTHOR_NAME,
@@ -149,19 +149,11 @@ export class Harvester {
   async harvestToCsv(searchPersons: NormedPerson[], harvestBy: HarvestOperation, searchStartDate: Date, searchEndDate?: Date) {
     const harvestSets: HarvestSet[] = await this.harvest(searchPersons, harvestBy, searchStartDate, searchEndDate, 1)
 
-    let outputPapers = []
+    const filePath = `./test/${this.ds.getSourceName()}.${searchStartDate.getFullYear()}.${moment().format('YYYYMMDDHHmmss')}.csv`
+    let normedPubs = []
     _.each(harvestSets, (harvestSet) => {
-      outputPapers = _.concat(outputPapers, 
-        _.map(harvestSet.normedPublications, (pub) => {
-          return getCSVRowFromNormedPublicationObject(pub)
-        })
-      )
+      normedPubs = _.concat(normedPubs, harvestSet.normedPublications)
     })
-   
-    //write data out to csv
-    await writeCsv({
-      path: `./test/${this.ds.getSourceName()}.${searchStartDate.getFullYear()}.${moment().format('YYYYMMDDHHmmss')}.csv`,
-      data: outputPapers,
-    });
+    await NormedPublication.writeToCSV(normedPubs, filePath)
   }
 }
