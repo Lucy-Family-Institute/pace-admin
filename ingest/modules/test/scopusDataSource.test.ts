@@ -3,6 +3,7 @@ import { getDateObject } from '../../units/dateRange'
 import dotenv from 'dotenv'
 const fs = require('fs');
 import _ from 'lodash'
+import NormedPublication from '../normedPublication'
 
 let ds: ScopusDataSource
 let dsConfig: DataSourceConfig

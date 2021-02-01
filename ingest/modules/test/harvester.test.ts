@@ -1,6 +1,6 @@
 import { Harvester, HarvestOperation } from '../harvester'
 import { ScopusDataSource } from '../scopusDataSource'
-import { loadPublications} from '../../units/loadPublications'
+import NormedPublication from '../normedPublication'
 import { loadPersons} from '../../units/loadPersons'
 import { randomWait } from '../../units/randomWait'
 import { getDateObject } from '../../units/dateRange'
@@ -64,7 +64,7 @@ beforeAll(async () => {
 
     const testPersonsFilePath = './test/fixtures/persons_2020.csv'
     const expectedPubCSVPath = './test/fixtures/scopus.2019.csv'
-    expectedNormedPublications = await loadPublications(expectedPubCSVPath)
+    expectedNormedPublications = await NormedPublication.loadFromCSV(expectedPubCSVPath)
     // get map of 'lastname, first initial' to normed publications
     expectedNormedPubsByAuthor = _.groupBy(expectedNormedPublications, (normedPub: NormedPublication) => {
         return `${normedPub.searchPerson.familyName}, ${normedPub.searchPerson.givenNameInitial}`
