@@ -1,4 +1,5 @@
 import { ScopusDataSource } from '../scopusDataSource'
+import { getDateObject } from '../../units/dateRange'
 import dotenv from 'dotenv'
 const fs = require('fs');
 import _ from 'lodash'
@@ -64,7 +65,7 @@ beforeAll(async () => {
     familyName: 'Zhang',
     givenNameInitial: 'S',
     givenName: 'Suyaun',
-    startDate: new Date('2017-01-01'),
+    startDate: getDateObject('2017-01-01'),
     endDate: undefined,
     sourceIds: {
       scopusAffiliationId: '60021508'
@@ -154,7 +155,7 @@ test('testing get publication from Scopus with no affiliation id', async () => {
 
     const person: NormedPerson = _.cloneDeep(defaultNormedPerson)
     person.sourceIds = {}
-    const results: HarvestSet = await ds.getPublicationsByAuthorName(person, 0, new Date(`${defaultYear}-01-01`))
+    const results: HarvestSet = await ds.getPublicationsByAuthorName(person, 0, getDateObject(`${defaultYear}-01-01`))
     const expectedSet = {
         sourceName: ds.getSourceName(),
         offset: 0,
@@ -170,7 +171,8 @@ test('testing get publication from Scopus with no affiliation id', async () => {
 
 test('testing get publication from Scopus with affiliation id', async () => {
     expect.hasAssertions()
-    const results: HarvestSet = await ds.getPublicationsByAuthorName(defaultNormedPerson, 0, new Date(`${defaultYear}-01-01`))
+    //
+    const results: HarvestSet = await ds.getPublicationsByAuthorName(defaultNormedPerson, 0, getDateObject(`${defaultYear}-01-01`))
     const expectedSet = {
         sourceName: ds.getSourceName(),
         offset: 0,
@@ -182,6 +184,23 @@ test('testing get publication from Scopus with affiliation id', async () => {
     expect(results.pageSize).toEqual(expectedSet.pageSize)
     expect(results.totalResults).toBeGreaterThanOrEqual(expectedSet.totalResultsMin)
     expect(results.sourcePublications.length).toEqual(expectedSet.pageSize)
+})
+
+
+test('testing get publication from Scopus with affiliation id and end date set', async () => {
+  expect.hasAssertions()
+  const results: HarvestSet = await ds.getPublicationsByAuthorName(defaultNormedPerson, 0, getDateObject(`${defaultYear}-01-01`), getDateObject(`${parseInt(defaultYear)+1}-01-01`))
+  const expectedSet = {
+      sourceName: ds.getSourceName(),
+      offset: 0,
+      pageSize: Number.parseInt(dsConfig.pageSize),
+      totalResultsMin: defaultTotalExpectedResultsMin.withAffiliation
+  }
+  expect(results.sourceName).toEqual(expectedSet.sourceName)
+  expect(results.offset).toEqual(expectedSet.offset)
+  expect(results.pageSize).toEqual(expectedSet.pageSize)
+  expect(results.totalResults).toBeGreaterThanOrEqual(expectedSet.totalResultsMin)
+  expect(results.sourcePublications.length).toEqual(expectedSet.pageSize)
 })
 
 // TODO: convert to large set

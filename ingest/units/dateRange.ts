@@ -57,3 +57,14 @@ export function dateRangesOverlapping (startDate1: Date, endDate1: Date, startDa
   return false
 }
 
+/**
+ * Returns a new Date object correctly initialized given a string of form 'YYYY-MM-DD'
+ * 
+ * @param dateString 
+ */
+export function getDateObject(dateString: string): Date {
+  let date = dateString
+  // have to add timezone to make sure not adjusted date to previous date based on local time zone
+  return new Date(`${date}T00:00:00`)
+}
+

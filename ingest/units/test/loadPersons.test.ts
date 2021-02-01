@@ -1,5 +1,6 @@
 import { loadPersons } from '../loadPersons'
 import _ from 'lodash'
+import { getDateObject } from '../dateRange'
 
 const testCSVPath = './test/fixtures/persons_2020.csv'
 
@@ -52,8 +53,8 @@ const defaultExpectedPersons = [
     familyName: 'Alber',
     givenNameInitial: 'M',
     givenName: 'Mark',
-    startDate: new Date('1/1/2017'),
-    endDate: new Date('12/31/2017'),
+    startDate: getDateObject('2017-01-01'),
+    endDate: getDateObject('2017-12-31'),
     sourceIds: {
       scopusAffiliationId: undefined
     }

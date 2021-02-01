@@ -25,8 +25,15 @@ export class ScopusDataSource implements DataSource {
     let totalResults: Number
     let publications = []
 
+    // scopus accepts only year for date search
+    let dateFilter = `${startDate.getFullYear()}`
+    if (endDate) {
+      //add end date to range if provided
+      dateFilter = `${dateFilter}-${endDate.getFullYear()}`
+    }
+
     // need to make sure date string in correct format
-    const results = await this.fetchScopusQuery(authorQuery, startDate.getUTCFullYear().toString(), this.dsConfig.pageSize, offset)
+    const results = await this.fetchScopusQuery(authorQuery, dateFilter, this.dsConfig.pageSize, offset)
     if (results && results['search-results']['opensearch:totalResults']){
         totalResults = Number.parseInt(results['search-results']['opensearch:totalResults'])
         if (totalResults > 0 && results['search-results']['entry']){
