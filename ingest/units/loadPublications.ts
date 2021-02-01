@@ -1,4 +1,5 @@
 import _ from 'lodash'
+import { getDateObject } from './dateRange'
 import { command as loadCsv } from './loadCsv'
 import { loadNormedPublicationObjectToCSVMap } from './loadNormedPublicationObjectToCSVMap'
 
@@ -97,8 +98,8 @@ export function getNormedPublicationObjectFromCSVRow(row, objectToCSVMap): Norme
       familyName: row[_.toLower(searchPersonFamilyNameColumn)],
       givenName: row[_.toLower(objectToCSVMap['searchPerson']['givenName'])] ? row[_.toLower(objectToCSVMap['searchPerson']['givenName'])] : undefined,
       givenNameInitial: row[_.toLower(objectToCSVMap['searchPerson']['givenNameInitial'])] ? row[_.toLower(objectToCSVMap['searchPerson']['givenNameInitial'])] : undefined,
-      startDate: row[_.toLower(objectToCSVMap['searchPerson']['startDate'])] ? new Date(row[_.toLower(objectToCSVMap['searchPerson']['startDate'])]) : undefined,
-      endDate: row[_.toLower(objectToCSVMap['searchPerson']['endDate'])] ? new Date(row[_.toLower(objectToCSVMap['searchPerson']['endDate'])]) : undefined,
+      startDate: row[_.toLower(objectToCSVMap['searchPerson']['startDate'])] ? getDateObject(row[_.toLower(objectToCSVMap['searchPerson']['startDate'])]) : undefined,
+      endDate: row[_.toLower(objectToCSVMap['searchPerson']['endDate'])] ? getDateObject(row[_.toLower(objectToCSVMap['searchPerson']['endDate'])]) : undefined,
       sourceIds: row[_.toLower(objectToCSVMap['searchPerson']['sourceIds']['scopusAffiliationId'])] ? 
         { scopusAffiliationId: row[_.toLower(objectToCSVMap['searchPerson']['sourceIds']['scopusAffiliationId'])] } : {}
     }

@@ -1,4 +1,5 @@
 import _ from 'lodash'
+import { getDateObject } from './dateRange'
 import { command as loadCsv } from './loadCsv'
 
 /**
@@ -31,8 +32,8 @@ export async function loadPersons (csvPath: string, propertyMap: {}={}): Promise
         familyName: row['familyname'],
         givenNameInitial: givenNameInitial ? givenNameInitial : (givenName) ? givenName.charAt(0) : undefined,
         givenName: givenName,
-        startDate: new Date(row['startdate']),
-        endDate: new Date(row['enddate']),
+        startDate: getDateObject(row['startdate']),
+        endDate: getDateObject(row['enddate']),
         sourceIds: {
           scopusAffiliationId: row['scopusaffiliationId']
         }    

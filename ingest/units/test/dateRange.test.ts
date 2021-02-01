@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { dateRangesOverlapping } from '../dateRange'
+import { dateRangesOverlapping, getDateObject } from '../dateRange'
 
 test ('dateRangesOverlapping(): test both start and end date of range1 undefined returns true', () => {
   expect.hasAssertions()
@@ -303,4 +303,13 @@ test ('dateRangesOverlapping(): when start and end dates for range 2 are equal i
   const startDate2 = new Date("2019-10-01T00:00:00.000Z")
   const endDate2 = new Date("2019-10-01T00:00:00.000Z")
   expect(dateRangesOverlapping(startDate1, endDate1, startDate2, endDate2)).toEqual(true)
+})
+
+test ('getDateObject returns Date with correct day and time', () => {
+  expect.hasAssertions()
+  const returnedDate: Date = getDateObject('2018-02-25')
+  expect(returnedDate.getFullYear()).toEqual(2018)
+  // month is returned in form of 0-11 so need to adjust accordingly
+  expect(returnedDate.getMonth()).toEqual(1)
+  expect(returnedDate.getDate()).toEqual(25)
 })
