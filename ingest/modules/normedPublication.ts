@@ -53,7 +53,7 @@ export default class NormedPublication {
       })
     } catch (error){
       console.log(`Error on paper load for path ${csvPath}, error: ${error}`)
-      return undefined
+      throw error
     }
   }
 
