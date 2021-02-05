@@ -9,13 +9,13 @@ import readPersonsByYear from '../client/src/gql/readPersonsByYear'
 import readPublicationsByPersonByConfidence from '../client/src/gql/readPublicationsByPersonByConfidence'
 import { command as loadCsv } from './units/loadCsv'
 import { split } from 'apollo-link'
-import cslParser from './utils/cslParser'
+// import cslParser from './utils/cslParser'
 import { command as writeCsv } from './units/writeCsv'
 import moment from 'moment'
 import dotenv from 'dotenv'
 import resolve from 'path'
 const xmlToJson = require('xml-js');
-import { randomWait } from './units/randomWait'
+import { randomWait, wait } from './units/randomWait'
 
 dotenv.config({
   path: '../.env'
@@ -385,7 +385,7 @@ async function main (): Promise<void> {
   // _.each(results['soap:Envelope']['soap:Body']['ns2:retrieveResponse'].return.records, (record) => {
   //   console.log(record['title']['value']['_text'])
   // })
-  const years = [ 2019, 2018, 2017, 2016 ]
+  const years = [ 2020, 2019, 2018, 2017, 2016 ]
   // const scopusAffiliationId = "60021508"
   let succeededPapers = []
   let failedPapers = []

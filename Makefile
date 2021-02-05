@@ -102,6 +102,9 @@ load_name_variances:
 load_new_confidence_sets:
 	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
 
+update_wos_data:
+	cd ingest && ts-node fetchWoSAuthorData.ts && cd ..
+
 update_pubmed_data:
 	cd ingest && ts-node fetchPubmedData.js && cd ..
 	cd ingest && ts-node joinAuthorAwards.js && cd ..
