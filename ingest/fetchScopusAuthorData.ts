@@ -6,8 +6,8 @@ import fetch from 'node-fetch'
 import pMap from 'p-map'
 import pTimes from 'p-times'
 import readPersonsByYear from '../client/src/gql/readPersonsByYear'
-import readPublicationsByPersonByConfidence from '../client/src/gql/readPublicationsByPersonByConfidence'
-import { command as loadCsv } from './units/loadCsv'
+// import readPublicationsByPersonByConfidence from '../client/src/gql/readPublicationsByPersonByConfidence'
+// import { command as loadCsv } from './units/loadCsv'
 import { split } from 'apollo-link'
 import { fetchByDoi } from './utils/cslParser'
 import { command as writeCsv } from './units/writeCsv'
@@ -158,7 +158,7 @@ async function getSimplifliedScopusPapers(scopusPapers, simplifiedPerson){
 
 async function main (): Promise<void> {
 
-  const years = [ 2019, 2018, 2017, 2016 ]
+  const years = [ 2020, 2019, 2018, 2017, 2016 ]
   const scopusAffiliationId = "60021508"
   await pMap(years, async (year) => {
     const simplifiedPersons = await getSimplifiedPersons(year)
