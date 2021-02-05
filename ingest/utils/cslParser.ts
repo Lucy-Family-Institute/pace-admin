@@ -2,7 +2,7 @@ import Cite from 'citation-js'
 
 //takes in a DOI and returns a json object formatted according to CSL (citation style language)
 //https://citation.js.org/api/index.html
-export default async function fetchByDoi(doi) {
+export async function fetchByDoi(doi) {
   //initalize the doi query and citation engine
   Cite.async()
 

@@ -110,6 +110,8 @@ update_pubmed_data:
 
 update_scopus_data:
 	cd ingest && ts-node fetchScopusAuthorData.ts && cd ..
+
+update_scopus_full_text_data:
 	cd ingest && ts-node fetchScopusFullTextData.ts && cd ..
 
 load_abstracts:
