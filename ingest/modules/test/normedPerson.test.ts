@@ -1,6 +1,6 @@
-import { loadPersons } from '../loadPersons'
 import _ from 'lodash'
-import { getDateObject } from '../dateRange'
+import NormedPerson from '../normedPerson'
+import { getDateObject } from '../../units/dateRange'
 
 const testCSVPath = './test/fixtures/persons_2020.csv'
 
@@ -9,14 +9,14 @@ const propMapNoLowercase = {
   'Given_name': 'givenName',
   'Family_Name': 'familyName',
   'Start_Date': 'startDate',
-  'End_Date': 'endDate' 
+  'End_Date': 'endDate'
 }
 const propMapLowercaseKeysOnly = {
   id: 'ID',
   'given_name': 'givenName',
   'family_name': 'familyName',
   'start_date': 'startDate',
-  'end_date': 'endDate' 
+  'end_date': 'endDate'
 }
 const propMapAllLowercase = {
   'id': 'id',
@@ -61,19 +61,8 @@ const defaultExpectedPersons = [
   }
 ]
 
-test('test load persons works with property map with no lowerCase keys or values', async () => {
+test('test loadFromCSV', async () => {
   expect.hasAssertions()
-  const persons: NormedPerson[] = await loadPersons(testCSVPath, propMapNoLowercase)
-  expect(persons).toEqual(expect.arrayContaining(defaultExpectedPersons))
-})
-
-test('test load persons works with property map with lowerCase propertyNames and non lowerCase mapped column names', async () => {
-  expect.hasAssertions()
-  const persons: NormedPerson[] = await loadPersons(testCSVPath, propMapLowercaseKeysOnly)
-  expect(persons).toEqual(expect.arrayContaining(defaultExpectedPersons))
-})
-test('test load persons works with property map with lowerCase propertyNames and lowerCase mapped column names', async () => {
-  expect.hasAssertions()
-  const persons: NormedPerson[] = await loadPersons(testCSVPath, propMapAllLowercase)
-  expect(persons).toEqual(expect.arrayContaining(defaultExpectedPersons))
+  const persons: NormedPerson[] = await NormedPerson.loadFromCSV(testCSVPath)
+  expect(persons[0]).toEqual(defaultExpectedPersons[0])
 })
