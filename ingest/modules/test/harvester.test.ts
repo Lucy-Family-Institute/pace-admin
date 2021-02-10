@@ -1,7 +1,7 @@
 import { Harvester, HarvestOperation } from '../harvester'
 import { ScopusDataSource } from '../scopusDataSource'
 import NormedPublication from '../normedPublication'
-import { loadPersons} from '../../units/loadPersons'
+import NormedPerson from '../normedPerson'
 import { randomWait } from '../../units/randomWait'
 import { getDateObject } from '../../units/dateRange'
 
@@ -22,9 +22,9 @@ if (!fs.existsSync(filePath)) {
 
 dotenv.config({
     path: filePath
-})    
+})
 
-  
+
 // environment variables
 process.env.NODE_ENV = 'development';
 
@@ -128,7 +128,7 @@ test('test Scopus harvester.harvest by author name', async () => {
     const combinedNormedPubs = _.mapValues(results, (result:HarvestSet) => {
         return result.normedPublications
     })
-    
+
     let resultNormedPubs = []
     _.each(combinedNormedPubs, (pubs, index) => {
         resultNormedPubs = _.concat(resultNormedPubs, pubs)
@@ -146,7 +146,7 @@ test('test Scopus harvester.harvest by author name', async () => {
          // ignore sourcemetadata since things like citedby-count often change over time
         const expectedPub = _.omit(expectedNormedPubsByDoi[doi], 'sourceMetadata')
         const receivedPub = _.omit(resultNormedPubsByDoi[doi], 'sourceMetadata')
-       
+
         expect(expectedPub).toEqual(receivedPub)
         // finally just check that source metadata is defined
         expect(resultNormedPubsByDoi[doi]['sourceMetadata']).toBeDefined()
