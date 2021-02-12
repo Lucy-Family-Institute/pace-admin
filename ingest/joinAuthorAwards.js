@@ -42,7 +42,7 @@ async function mapGrantFiles (filename) {
     }, { concurrency: 1 });
 
     const harper = await loadCsv({
-      path: '../data/hcri_researchers_2017-2019.csv',
+      path: '../data/hcri_researchers_2017-2020.csv',
     });
 
     const parsedName = await nameParser({
@@ -59,7 +59,7 @@ async function mapGrantFiles (filename) {
     });
 
     const awards = await loadCsv({
-      path: '../data/Awards_2009Jan01-2020Apr03.csv',
+      path: '../data/Awards_for_2009Jan01-thru-2021Feb02.csv',
     });
 
     const investigatorCorpus = await pMap(awards, async (award) => {
@@ -133,7 +133,7 @@ async function go() {
 
   console.log('Processing NIH load')
   const awards = await loadCsv({
-    path: '../data/Awards_2009Jan01-2020Apr03.csv',
+    path: '../data/Awards_for_2009Jan01-thru-2021Feb02.csv',
   });
   
   const nih = _.compact(_.map(awards, (award) => {
