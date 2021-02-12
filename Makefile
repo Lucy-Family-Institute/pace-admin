@@ -108,7 +108,7 @@ update_wos_data:
 update_pubmed_data:
 	cd ingest && ts-node fetchPubmedData.js && cd ..
 	cd ingest && ts-node joinAuthorAwards.js && cd ..
-	cd ingest && ts-node fetchPubmedDataByAuthor.js && cd ..
+	cd ingest && ts-node fetchPubmedDataByAuthor.ts && cd ..
 	cd ingest && ts-node joinAuthorPubmedPubs.js && cd ..
 
 update_scopus_data:
