@@ -229,10 +229,15 @@ async function getWoSAuthorPapers(sessionId, authorFamilyName, authorGivenName) 
     const results = await retrieveWoSAuthorResults(sessionId, queryId, offset)
     // console.log(`First record is: ${JSON.stringify(results['soap:Envelope']['soap:Body']['ns2:retrieveResponse'].return.records[0], null, 2)}`)
     offset += pageSize
-    _.each(results['soap:Envelope']['soap:Body']['ns2:retrieveResponse'].return.records, (record) => {
-      // console.log(record['title']['value']['_text'])
-      papers.push(record)
-    })
+    if (!Array.isArray(results['soap:Envelope']['soap:Body']['ns2:retrieveResponse'].return.records)){
+      // not returned as array if only one
+      papers.push(results['soap:Envelope']['soap:Body']['ns2:retrieveResponse'].return.records)
+    } else {
+      _.each(results['soap:Envelope']['soap:Body']['ns2:retrieveResponse'].return.records, (record) => {
+        // console.log(record['title']['value']['_text'])
+        papers.push(record)
+      })
+    }
   }, { concurrency: 1})
   return papers
 }
@@ -371,7 +376,7 @@ function getSimplifliedWoSPapers(papers, simplifiedPerson){
       title: paper['title'] && paper['title']['value'] && paper['title']['value']['_text'] ? paper['title']['value']['_text'] : '',
       journal: sourceProps && sourceProps['SourceTitle'] && sourceProps['SourceTitle']['_text'] ? sourceProps['SourceTitle']['_text'] : '',
       doi: otherProps && otherProps['Identifier.Doi'] && otherProps['Identifier.Doi']['_text'] ? otherProps['Identifier.Doi']['_text'] : '',
-      wos_id: _.replace(paper['uid']['_text'], 'WOS:', ''),
+      wos_id: paper['uid'] && paper['uid']['_text'] ? _.replace(paper['uid']['_text'], 'WOS:', '') : '',
       wos_record : paper
     }
   })
@@ -393,11 +398,19 @@ async function main (): Promise<void> {
   let failedAuthors = []
   await pMap(years, async (year) => {
     const simplifiedPersons = await getSimplifiedPersons(year)
+    // get short list of ones with errors w/ 2020 only
+    // let personWithHarvestErrors = _.filter(simplifiedPersons, (person) => {
+    //   const erroredPersonIds = [95, 54, 31, 92, 63, 97]
+    //   return _.includes(erroredPersonIds, person.id)
+    // })
+
+    // console.log(`Person with harvest errors for ${year} are: ${JSON.stringify(personWithHarvestErrors,null,2)}`)
     console.log(`Simplified persons for ${year} are: ${JSON.stringify(simplifiedPersons,null,2)}`)
 
     let personCounter = 0
 
     const subset = _.chunk(simplifiedPersons, 1)
+    // await pMap(personWithHarvestErrors, async (person) => {
     await pMap(simplifiedPersons, async (person) => {
       try {
         personCounter += 1
