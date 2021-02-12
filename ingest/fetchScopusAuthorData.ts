@@ -92,12 +92,13 @@ async function getScopusAuthorPapers(person, year, scopusAffiliationId) {
     //set request set size
     const pageSize = 25
     let offset = 0
+    let totalResults = 0
 
     //get first page of results, do with first initial for now
     const authorSearchResult = await getScopusAuthorData(person.firstInitial, person.lastName, year, scopusAffiliationId, pageSize, offset)
     //console.log(`Author Search Result first page: ${JSON.stringify(authorSearchResult,null,2)}`)
     if (authorSearchResult && authorSearchResult['search-results']['opensearch:totalResults']){
-      const totalResults = parseInt(authorSearchResult['search-results']['opensearch:totalResults'])
+      totalResults = parseInt(authorSearchResult['search-results']['opensearch:totalResults'])
       console.log(`Author Search Result Total Results: ${totalResults}`)
       if (totalResults > 0 && authorSearchResult['search-results']['entry']){
         //console.log(`Author ${person.lastName}, ${person.firstName} adding ${authorSearchResult['search-results']['entry'].length} results`)
@@ -131,6 +132,12 @@ async function getScopusAuthorPapers(person, year, scopusAffiliationId) {
     }
 
     //flatten the search results page as currently results one per page, and then keyBy scopus id
+    const flattenedResults = _.flattenDepth(searchPageResults, 1)
+    if (flattenedResults.length != totalResults) {
+      throw `All expected results not returned for ${person.lastName}, ${person.firstName}, expected: ${totalResults} actual: ${flattenedResults.length}`
+    } else {
+      console.log(`${year} Retrieved (${flattenedResults.length} of ${totalResults}) expected results for ${person.lastName}, ${person.firstName}`)
+    }
     return _.flattenDepth(searchPageResults, 1)
   } catch (error) {
     console.log(`Error on get info for person: ${error}`)
