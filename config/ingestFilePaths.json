@@ -1,10 +1,10 @@
 {
   "2020": [
-    "../data/scopus.2020.20210212141750",
-    "../data/wos.2020.20210212123416",
-    "../data/pubmedPubsByAuthor.20210217093356_3",
-    "../data/pubmedPubsByAuthor.20210217093355_2",
-    "../data/pubmedPubsByAuthor.20210217093355_1",
+    "../data/scopus.2020.20210212141750.csv",
+    "../data/wos.2020.20210212123416.csv",
+    "../data/pubmedPubsByAuthor.20210217093356_3.csv",
+    "../data/pubmedPubsByAuthor.20210217093355_2.csv",
+    "../data/pubmedPubsByAuthor.20210217093355_1.csv",
     "../data/pubmedPubsByAuthor.20210217093354_0.csv"
   ],
   "2019": [
