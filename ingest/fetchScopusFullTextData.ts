@@ -29,6 +29,9 @@ const elsCookie = process.env.SCOPUS_API_COOKIE
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
 
+// environment variables
+process.env.NODE_ENV = 'development';
+
 const client = new ApolloClient({
   link: createHttpLink({
     uri: graphQlEndPoint,

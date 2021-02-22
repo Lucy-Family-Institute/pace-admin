@@ -29,9 +29,12 @@ async function mapAuthorFiles (filename) {
 
   const mappedOverObject = await pMap(jsonObj, async (pub) => {
     const title = pub.title;
+    // console.log(`Pubmed pub is: ${JSON.stringify(jsonObj, null, 2)}`)
+    // console.log(`Before ubmed pub is: ${JSON.stringify(beforeJsonObj, null, 2)}`)
+
     const identifiers = getResourceIdentifiers(pub.resourceIdentifiers)
-    console.log(`Processing Pub: ${JSON.stringify(pub, null, 2)}`)
-    console.log(`Found Resource Identifiers for Title: ${title} ids: ${JSON.stringify(identifiers, null, 2)}`)
+    // console.log(`Processing Pub: ${JSON.stringify(pub, null, 2)}`)
+    // console.log(`Found Resource Identifiers for Title: ${title} ids: ${JSON.stringify(identifiers, null, 2)}`)
     let creators = ''
     const mappedData = await pMap(pub.creators, async (creator, index) => {
 
@@ -89,14 +92,18 @@ async function go() {
   const authors = _.compact(_.flatten(authorsByPub));
 
   const data = authors
+  // chunk it up into sizes of 6000
+  const batches = _.chunk(data, 6000)
   // console.log('Joining Pub Data')
   // const data = leftOuterJoin(authors, 'grantId', nih, 'grantId');
 
   console.log('Writing Author data to disk')
-  await writeCsv({
-    path: `../data/pubmedPubsByAuthor.${moment().format('YYYYMMDDHHmmss')}.csv`,
-    data,
-  });
+  await pMap(batches, async (batch, index) => {
+    await writeCsv({
+      path: `../data/pubmedPubsByAuthor.${moment().format('YYYYMMDDHHmmss')}_${index}.csv`,
+      data: batch
+    });
+  }, {concurrency: 1})
 }
 
 go();
