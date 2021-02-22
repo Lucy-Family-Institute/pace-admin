@@ -21,8 +21,8 @@ import dotenv from 'dotenv'
 import readAllNewPersonPublications from './gql/readAllNewPersonPublications'
 import insertReview from '../client/src/gql/insertReview'
 import readPersonPublicationsByDoi from './gql/readPersonPublicationsByDoi'
-const getIngestFilePathsByYear = require('../getIngestFilePathsByYear');
-import { removeSpaces, normalizeString, normalizeObjectProperties } from '../normalizer'
+const getIngestFilePathsByYear = require('./getIngestFilePathsByYear');
+import { removeSpaces, normalizeString, normalizeObjectProperties } from './units/normalizer'
 
 dotenv.config({
   path: '../.env'
@@ -552,7 +552,7 @@ async function performConfidenceTest (confidenceType, publicationCsl, author, pu
   }
 }
 
-async function performAuthorConfidenceTests (author, publicationCsl, confirmedAuthors, confidenceTypesByRank) {
+async function performAuthorConfidenceTests (author, publicationCsl, confirmedAuthors, confidenceTypesByRank, sourceMetadata?) {
   // array of arrays for each rank sorted 1 to highest number
   // iterate through each group by rank if no matches in one rank, do no execute the next rank
   // console.log(`Beginning Author Confidence Test for Author ${author['names'][0]['lastName']}, ${author['names'][0]['firstName']}`)
@@ -561,6 +561,7 @@ async function performAuthorConfidenceTests (author, publicationCsl, confirmedAu
 
   //update to current matched authors before proceeding with next tests
   let publicationAuthorMap = await getPublicationAuthorMap(publicationCsl)
+  // let publicationSourceAuthorMap = await getPublicationSourceAuthorMap(sourceMetadata)
   // initialize map to store passed tests by rank
   let passedConfidenceTests = {}
   let stopTesting = false
@@ -686,7 +687,8 @@ async function calculateConfidence (mostRecentPersonPubId, testAuthors, confirme
     console.log(`Entering loop 2 Test Author: ${testAuthor['names'][0]['lastName']}`)
     await pMap(personPublications, async (personPublication) => {
       const publicationCsl = JSON.parse(personPublication['publication']['csl_string'])
-      const passedConfidenceTests = await performAuthorConfidenceTests (testAuthor, publicationCsl, confirmedAuthors[personPublication['publication']['doi']], confidenceTypesByRank)
+      const sourceMetadata = JSON.parse(personPublication['publication']['source_metadata'])
+      const passedConfidenceTests = await performAuthorConfidenceTests (testAuthor, publicationCsl, confirmedAuthors[personPublication['publication']['doi']], confidenceTypesByRank, sourceMetadata)
       // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
       // returns a new map of rank -> confidenceTestName -> calculatedValue
       const passedConfidenceTestsWithConf = await calculateAuthorConfidence(passedConfidenceTests)
@@ -825,6 +827,8 @@ async function synchronizeReviews(doi, personId, newPersonPubId, index) {
 
   if (_.keys(reviews).length > 0) {
     console.log(`Item #${index} New Person Pub Id: ${JSON.stringify(newPersonPubId, null, 2)} inserting reviews: ${_.keys(reviews).length}`)
+     //have each wait a pseudo-random amount of time between 1-5 seconds
+    // await randomWait(index)
     await pMap(_.keys(reviews), async (reviewOrgValue) => {
       // insert with same org value and most recent status to get in sync with other pubs in DB
       const review = reviews[reviewOrgValue]
@@ -842,10 +846,10 @@ async function main() {
   // @todo: Extract to ENV?
   const confidenceAlgorithmVersion = '876b7bd06e1ca819f5fe2f77ee48ea8c491f1ab1'
   // get confirmed author lists to papers
-  const pathsByYear = await getIngestFilePathsByYear("../admin/config/ingestConfidenceReviewFilePaths.json")
+  const pathsByYear = await getIngestFilePathsByYear("../config/ingestConfidenceReviewFilePaths.json")
 
   // get the set of persons to test
-  const testAuthors = await getAllSimplifiedPersons(client)
+  const testAuthors = await getAllSimplifiedPersons()
   //create map of last name to array of related persons with same last name
   const personMap = _.transform(testAuthors, function (result, value) {
     _.each(value.names, (name) => {
@@ -942,19 +946,20 @@ async function main() {
   // console.log(`New Person pubs by doi: ${JSON.stringify(newPersonPublicationsByDoi, null, 2)}`)
   let loopCounter3 = 0
 
-  // const mostRecentPersonPubId2 = 16943
+  // const mostRecentPersonPubId2 = 11145
+  const batchSize = 4000
   console.log(`Most recent person pub id: ${mostRecentPersonPubId}`)
   const newPubsQueryResult = await client.query(
     readAllNewPersonPublications(mostRecentPersonPubId)
   )
   const newPersonPubs = newPubsQueryResult.data.persons_publications
   console.log(`Found ${newPersonPubs.length} New Person Pubs`)
+  // const batchIndex = 3
+  // const batches = _.chunk(newPersonPubs, batchSize)
   await pMap(newPersonPubs, async (newPersonPub) => {
     loopCounter3 += 1
-    //have each wait a pseudo-random amount of time between 1-5 seconds
-    await randomWait(loopCounter3)
     await synchronizeReviews(newPersonPub['publication']['doi'], newPersonPub['person_id'], newPersonPub['id'], loopCounter3)
-  }, {concurrency: 10})
+  }, {concurrency: 1})
 }
 
 main()
