@@ -90,7 +90,7 @@ async function main (): Promise<void> {
   })
   console.log(`Abstracts found for PubMed ${JSON.stringify(_.keys(pubMedAbstracts).length, null, 2)}`)
 
-  const scopusDataFile = '../data/scopus_full_metadata.20200602154048.csv'
+  const scopusDataFile = '../data/scopus_full_metadata.20210221082710.csv'
   const scopusDataByDoi = await getScopusDataFromCsv(scopusDataFile)
   const scopusAbstracts = {}
   console.log(`Abstracts found for Scopus: ${JSON.stringify(_.keys(scopusDataByDoi).length, null, 2)}`)
@@ -105,9 +105,7 @@ async function main (): Promise<void> {
   await pMap(_.keys(pubMedAbstracts), async (doi) => {
     counter += 1
     randomWait(counter)
-    if (!pubMedAbstracts[doi]){
-      console.log(`Found Doi with null abstract: ${doi}`)
-    } else {
+    if (pubMedAbstracts[doi]){
       // console.log('Found doi with existing abstract')
       console.log(`Writing abstract for doi: ${doi}`)
       const resultUpdatePubAbstracts = client.mutate(updatePubAbstract(doi, pubMedAbstracts[doi]))
@@ -120,9 +118,7 @@ async function main (): Promise<void> {
   await pMap(_.keys(scopusAbstracts), async (doi) => {
     counter += 1
     randomWait(counter)
-    if (!scopusAbstracts[doi]){
-      console.log(`Found Doi with null abstract: ${doi}`)
-    } else {
+    if (scopusAbstracts[doi]){
       // console.log('Found doi with existing abstract')
       console.log(`Writing abstract for doi: ${doi}`)
       const resultUpdatePubAbstracts = await client.mutate(updatePubAbstract(doi, scopusAbstracts[doi]))
