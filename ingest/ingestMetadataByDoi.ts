@@ -92,10 +92,14 @@ function getPublicationYear (csl) : Number {
 
 }
 
-async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName, sourceMetadata) {
+async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName, sourceMetadata, minPublicationYear?) {
   //console.log(`trying to insert pub: ${JSON.stringify(title,null,2)}, ${JSON.stringify(doi,null,2)}`)
   try  {
     const publicationYear = getPublicationYear (csl)
+    if (minPublicationYear != undefined && publicationYear < minPublicationYear) {
+      console.log(`Skipping adding publication from year: ${publicationYear}`)
+      return
+    }
 
     const publication = {
       title: title,
@@ -343,7 +347,7 @@ interface DoiStatus {
 }
 
 //returns a map of three arrays: 'addedDOIs','failedDOIs', 'errorMessages'
-async function loadPersonPapersFromCSV (personMap, path) : Promise<DoiStatus> {
+async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : Promise<DoiStatus> {
   let count = 0
   let doiStatus: DoiStatus = {
     addedDOIs: [],
@@ -415,21 +419,25 @@ async function loadPersonPapersFromCSV (personMap, path) : Promise<DoiStatus> {
             sourceName = 'Scopus'
             sourceMetadata = papersByDoi[doi][0]['scopus_record']
             if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
-            console.log(`Scopus Source metadata is: ${JSON.stringify(sourceMetadata,null,2)}`)
+            // console.log(`Scopus Source metadata is: ${JSON.stringify(sourceMetadata,null,2)}`)
           } else if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['pubmed_record']){
             sourceName = 'PubMed'
             sourceMetadata = papersByDoi[doi][0]['pubmed_record']
             if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
-            console.log(`Pubmed Source metadata found`)//is: ${JSON.stringify(sourceMetadata,null,2)}`)
+            // console.log(`Pubmed Source metadata found`)//is: ${JSON.stringify(sourceMetadata,null,2)}`)
           } else if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['wos_record']){
             sourceName = 'WebOfScience'
             sourceMetadata = papersByDoi[doi][0]['wos_record']
             if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
-            console.log(`WebOfScience Source metadata found`)//is: ${JSON.stringify(sourceMetadata,null,2)}`)
+            // console.log(`WebOfScience Source metadata found`)//is: ${JSON.stringify(sourceMetadata,null,2)}`)
           }
 
           const pubFound = await isPublicationAlreadyInDB(doi, sourceName)
-          if (!pubFound) {
+          const publicationYear = getPublicationYear (csl)
+          if (minPublicationYear != undefined && publicationYear < minPublicationYear) {
+            console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${sourceName} from year: ${publicationYear}`)
+            doiStatus.skippedDOIs.push(doi)
+          } else if (!pubFound) {
             console.log(`Inserting Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${sourceName}`)
             const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authors, sourceName, sourceMetadata)
             console.log('Finished Running Insert and starting next thread')
@@ -486,16 +494,16 @@ async function loadPersonPapersFromCSV (personMap, path) : Promise<DoiStatus> {
             doiStatus.errorMessages.push(errorMessage)
           }
           doiStatus.failedDOIs.push(doi)
-          console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
-          console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
+          // console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
+          // console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
         }
       } catch (error) {
         doiStatus.failedDOIs.push(doi)
         const errorMessage = `Error on add DOI: ${doi} error: ${error}`
         doiStatus.errorMessages.push(errorMessage)
         console.log(errorMessage)
-        console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
-        console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
+        // console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
+        // console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
       }
     }, { concurrency: 5 })
 
@@ -567,12 +575,18 @@ const pathsByYear = await getIngestFilePathsByYear()
     console.log(`Loading ${year} Publication Data`)
     //load data
     await pMap(pathsByYear[year], async (path) => {
-      const doiStatusByYear = await loadPersonPapersFromCSV(personMap, path)
+      const doiStatusByYear = await loadPersonPapersFromCSV(personMap, path, year)
       doiStatus[year] = doiStatusByYear
     }, { concurrency: 1})
   }, { concurrency: 1 })
 
-  console.log(`DOI Status: ${JSON.stringify(doiStatus,null,2)}`)
+  // console.log(`DOI Status: ${JSON.stringify(doiStatus,null,2)}`)
+  _.each(_.keys(pathsByYear), (year) => {
+    console.log(`DOIs errors for year ${year}: ${JSON.stringify(doiStatus[year].errorMessages, null, 2)}`)
+    console.log(`DOIs failed: ${doiStatus[year].failedDOIs.length} for year: ${year}`)
+    console.log(`DOIs added: ${doiStatus[year].addedDOIs.length} for year: ${year}`)
+    console.log(`DOIs skipped: ${doiStatus[year].skippedDOIs.length} for year: ${year}`)
+  })
 }
 
 main()
