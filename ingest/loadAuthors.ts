@@ -7,6 +7,7 @@ import _ from 'lodash'
 import { command as loadCsv } from './units/loadCsv'
 import { getAllSimplifiedPersons, getNameKey } from './modules/queryNormalizedPeople'
 import readInstitutions from './gql/readInstitutions'
+import updatePersonDates from './gql/updatePersonDates'
 
 
 import dotenv from 'dotenv'
@@ -46,13 +47,25 @@ async function main (): Promise<void> {
   console.log(`Authors by name: ${_.keys(authorsByName)}`)
 
   const insertAuthors = []
+  // update any changes in start or end dates, make it a map of existing db id to new object
+  let updateAuthors = {}
   _.each(authors, (author) => {
     const key = getNameKey(author['family_name'], author['given_name'])
+    const newStartDate = `${author.start_date}-01-01`
+    const newEndDate = author.end_date ? `${author.end_date}-12-31` : null
     console.log(`Checking author: ${key}`)
     if (!authorsByName[key]){
       console.log(`Author ${key} not found yet, will add to list to insert`)
       insertAuthors.push(author)
-    } else {
+    } else if (newStartDate !== authorsByName[key]['startYear']) {
+      console.log(`Author ${key} start date changed, will add to list to update, dates were: ${new Date(`${authorsByName[key]['startYear']}`)}-${authorsByName[key]['endYear']} new dates:${newStartDate}-${newEndDate}`)
+      console.log(`Existing author keys are ${_.keys(authorsByName[key])}`)
+      updateAuthors[authorsByName[key]['id']] = author
+    } else if (newEndDate !== authorsByName[key]['endYear']) {
+      console.log(`Author ${key} end date changed, will add to list to update, dates were: ${authorsByName[key]['startYear']}-${authorsByName[key]['endYear']} new dates:${newStartDate}-${newEndDate}`)
+      console.log(`Existing author keys are ${_.keys(authorsByName[key])}`)
+      updateAuthors[authorsByName[key]['id']] = author
+    } else{
       console.log(`Author ${key} found, will skip insert`)
     }
   })
@@ -152,6 +165,15 @@ async function main (): Promise<void> {
     variables: {
       persons: authorsWithIds
     }
+  })
+
+  // update existing authors as needed
+  console.log(`Update Authors: ${_.keys(updateAuthors).length}`)
+  // need to add update gql
+  _.each(_.keys(updateAuthors), async (id) => {
+    const newStartDate = `${updateAuthors[id].start_date}-01-01`
+    const newEndDate = updateAuthors[id].end_date ? `${updateAuthors[id].end_date}-12-31` : undefined
+    const resultUpdatePersonDates = await client.mutate(updatePersonDates(id, new Date(newStartDate), new Date(newEndDate)))
   })
 }
 
