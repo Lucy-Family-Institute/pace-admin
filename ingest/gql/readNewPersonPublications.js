@@ -16,6 +16,8 @@ export default function readNewPersonPublications (id, greaterThanPersonPubId) {
             title
             doi
             csl_string
+            source_name
+            source_metadata
           }
           confidence,
           id

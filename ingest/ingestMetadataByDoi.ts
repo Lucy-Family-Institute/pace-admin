@@ -116,7 +116,7 @@ async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName
     )
     //console.log(`Insert mutate pub result ${JSON.stringify(mutatePubResult.data,null,2)}`)
     const publicationId = 0+parseInt(`${ mutatePubResult.data.insert_publications.returning[0].id }`);
-    console.log(`Added publication with id: ${ publicationId }`)
+    // console.log(`Added publication with id: ${ publicationId }`)
 
     //console.log(`Pub Id: ${publicationId} Adding ${authorMap.firstAuthors.length + authorMap.otherAuthors.length} total authors`)
     const insertAuthors = _.map(authors, (author) => {
@@ -308,7 +308,7 @@ async function matchPeopleToPaperAuthors(personMap, authors, confirmedAuthors) :
 
         //add person to map with confidence value > 0
         if (confidenceVal > 0) {
-          console.log(`Match found for Author: ${author.family}, ${author.given}`)
+          // console.log(`Match found for Author: ${author.family}, ${author.given}`)
           let matchedPerson: MatchedPerson = { 'person': testPerson, 'confidence': confidenceVal }
           matchedPersonMap[testPerson.id] = matchedPerson
           //console.log(`After add matched persons map is: ${JSON.stringify(matchedPersonMap,null,2)}`)
@@ -386,6 +386,14 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
       try {
         processedCount += 1
         loopCounter += 1
+
+        if (processedCount % 100 === 0){
+          console.log(`Processed ${processedCount} papers...`)
+          console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
+          console.log(`Current DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs.length,null,2)}`)
+          console.log(`Current Skipped DOIs: ${JSON.stringify(doiStatus.skippedDOIs.length,null,2)}`)
+          console.log(`Current Added DOIs: ${JSON.stringify(doiStatus.addedDOIs.length,null,2)}`)
+        }
         //have each wait a pseudo-random amount of time between 1-5 seconds
 
         await randomWait(loopCounter)
@@ -435,12 +443,12 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
           const pubFound = await isPublicationAlreadyInDB(doi, sourceName)
           const publicationYear = getPublicationYear (csl)
           if (minPublicationYear != undefined && publicationYear < minPublicationYear) {
-            console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${sourceName} from year: ${publicationYear}`)
+            // console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${sourceName} from year: ${publicationYear}`)
             doiStatus.skippedDOIs.push(doi)
           } else if (!pubFound) {
-            console.log(`Inserting Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${sourceName}`)
+            // console.log(`Inserting Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${sourceName}`)
             const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authors, sourceName, sourceMetadata)
-            console.log('Finished Running Insert and starting next thread')
+            // console.log('Finished Running Insert and starting next thread')
             //console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
 
             //console.log(`Publication Id: ${publicationId} Matched Persons count: ${_.keys(matchedPersons).length}`)
@@ -476,12 +484,12 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
             }, { concurrency: 1 })
             //if we make it this far succeeded
             doiStatus.addedDOIs.push(doi)
-            console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
-            console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
-            console.log(`Skipped DOIs: ${JSON.stringify(doiStatus.skippedDOIs,null,2)}`)
+            // console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
+            // console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs.length,null,2)}`)
+            // console.log(`Skipped DOIs: ${JSON.stringify(doiStatus.skippedDOIs.length,null,2)}`)
           } else {
             doiStatus.skippedDOIs.push(doi)
-            console.log(`Skipping doi already in DB #${processedCount} of total ${count}: ${doi} for source: ${sourceName}`)
+            // console.log(`Skipping doi already in DB #${processedCount} of total ${count}: ${doi} for source: ${sourceName}`)
           }
         } else {
           if (_.keys(matchedPersons).length <= 0){
