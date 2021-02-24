@@ -504,8 +504,25 @@ function testAuthorGivenName (author, publicationAuthorMap) {
   return testAuthorGivenNamePart(author, publicationAuthorMap, false)
 }
 
+function getAuthorsFromSourceMetadata(sourceName, sourceMetadata) {
+  if (_.toLower(sourceName)==='pubmed'){
+    return _.mapValues(sourceMetadata['creators'], (creator) => {
+      return {
+        initials: creator['initials'],
+        lastName: creator['familyName'],
+        firstName: creator['givenName'],
+        affiliation: [{
+          name: creator['affiliation']
+        }]
+      }
+    })
+  } else {
+    return undefined
+  }
+}
+
 // assumes passing in authors that matched previously
-function testAuthorAffiliation (author, publicationAuthorMap) {
+function testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata) {
   const nameVariations = _.groupBy(author['names'], 'lastName')
   let matchedAuthors = new Map()
   _.each(_.keys(nameVariations), (nameLastName) => {
@@ -521,12 +538,30 @@ function testAuthorAffiliation (author, publicationAuthorMap) {
         })
       }
     })
+    // check source metadata as well
+    _.each(getAuthorsFromSourceMetadata(sourceName, sourceMetadata), (author) => {
+      const pubLastName = author.lastName
+      // console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}`)
+      // check for a fuzzy match of name variant last names to lastname in pub author list
+      if (lastNameMatchFuzzy(pubLastName, 'lastName', nameVariations[nameLastName])){
+        // console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}, found author match: ${pubLastName}`)
+        if(!_.isEmpty(author['affiliation'])) {
+          // console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}, found affiliation value for author: ${pubLastName} affiliation: ${author['affiliation']}`)
+          // if(/notre dame/gi.test(author['affiliation'][0].name)) {
+          //   console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}, found affiliation match for author: ${pubLastName}`)
+          // }
+          if(/notre dame/gi.test(author['affiliation'][0].name)) {
+            (matchedAuthors[nameLastName] || (matchedAuthors[nameLastName] = [])).push(author)
+          }
+        }
+      }
+    })
   })
   return matchedAuthors
 }
 
 // returns true/false from a test called for the specific name passed in
-async function performConfidenceTest (confidenceType, publicationCsl, author, publicationAuthorMap, confirmedAuthors){
+async function performConfidenceTest (confidenceType, publicationCsl, author, publicationAuthorMap, confirmedAuthors, sourceName, sourceMetadata?){
   if (confidenceType.name === 'lastname') {
     return testAuthorLastName(author, publicationAuthorMap)
   } else if (confidenceType.name === 'confirmed_by_author') {
@@ -539,7 +574,7 @@ async function performConfidenceTest (confidenceType, publicationCsl, author, pu
   } else if (confidenceType.name === 'given_name') {
     return testAuthorGivenName(author, publicationAuthorMap)
   } else if (confidenceType.name === 'university_affiliation') {
-    return testAuthorAffiliation(author, publicationAuthorMap)
+    return testAuthorAffiliation(author, publicationAuthorMap, sourceName, sourceMetadata)
   } else if (confidenceType.name === 'common_coauthor') {
     // need the publication for this test
     // do nothing for now, and return an empty set
@@ -552,7 +587,7 @@ async function performConfidenceTest (confidenceType, publicationCsl, author, pu
   }
 }
 
-async function performAuthorConfidenceTests (author, publicationCsl, confirmedAuthors, confidenceTypesByRank, sourceMetadata?) {
+async function performAuthorConfidenceTests (author, publicationCsl, confirmedAuthors, confidenceTypesByRank, sourceName, sourceMetadata?) {
   // array of arrays for each rank sorted 1 to highest number
   // iterate through each group by rank if no matches in one rank, do no execute the next rank
   // console.log(`Beginning Author Confidence Test for Author ${author['names'][0]['lastName']}, ${author['names'][0]['firstName']}`)
@@ -573,12 +608,13 @@ async function performAuthorConfidenceTests (author, publicationCsl, confirmedAu
     if (!stopTesting){
       await pMap(confidenceTypesByRank[rank], async (confidenceType) => {
         // need to update to make publicationAuthorMap be only ones that matched last name for subsequent tests
-        let currentMatchedAuthors = await performConfidenceTest(confidenceType, publicationCsl, author, publicationAuthorMap, confirmedAuthors)
+        let currentMatchedAuthors = await performConfidenceTest(confidenceType, publicationCsl, author, publicationAuthorMap, confirmedAuthors, sourceName, sourceMetadata)
         // console.log(`${confidenceType['name']} Matched Authors Found: ${JSON.stringify(matchedAuthors, null, 2)}`)
         if (currentMatchedAuthors && _.keys(currentMatchedAuthors).length > 0){
           (passedConfidenceTests[rank] || (passedConfidenceTests[rank] = {}))[confidenceType['name']] = {
             confidenceTypeId: confidenceType['id'],
             confidenceTypeName : confidenceType['name'],
+            confidenceTypeBaseValue: confidenceType['base_value'],
             testAuthor : author,
             matchedAuthors : currentMatchedAuthors
           }
@@ -622,24 +658,30 @@ const confidenceMetrics = {
     base: 0.25,
     additiveCoefficient: 2.0
   },
+  given_name_initial: {
+    base: 0.20,
+    additiveCoefficient: 1.0
+  },
   confirmed_by_author: {
     base: 0.99,
     additiveCoefficient: 1.0
   }
 }
 
-function getConfidenceValue (rank, confidenceTypeName, index) {
+function getConfidenceValue (rank, confidenceTypeName, index, confidenceTypeBaseValue?) {
   // start by setting metric to default rank metric
   let confidenceMetric = confidenceMetrics[rank]
   if (confidenceMetrics[confidenceTypeName]) {
     // specific metric found for test type and use that instead of default rank value
     confidenceMetric = confidenceMetrics[confidenceTypeName]
   }
+  // const baseValue = (confidenceTypeBaseValue ? confidenceTypeBaseValue : confidenceMetric.base)
+  const baseValue = confidenceMetric.base
   if (index > 0) {
     // if not first one multiply by the additive coefficient
-    return confidenceMetric.base * confidenceMetric.additiveCoefficient
+    return baseValue * confidenceMetric.additiveCoefficient
   } else {
-    return confidenceMetric.base
+    return baseValue
   }
 }
 
@@ -653,7 +695,7 @@ async function calculateAuthorConfidence (passedConfidenceTests) {
     let newConfidenceTests = {}
     _.each(passedConfidenceTests[rank], (confidenceTest) => {
       newConfidenceTests[confidenceTest.confidenceTypeName] = _.clone(confidenceTest)
-      _.set(newConfidenceTests[confidenceTest.confidenceTypeName], 'confidenceValue', getConfidenceValue(rank, confidenceTest.confidenceTypeName, index))
+      _.set(newConfidenceTests[confidenceTest.confidenceTypeName], 'confidenceValue', getConfidenceValue(rank, confidenceTest.confidenceTypeName, index, confidenceTest.confidenceTypeBaseValue))
       _.set(newConfidenceTests[confidenceTest.confidenceTypeName], 'confidenceComment', `Value calculated for rank: ${rank} index: ${index}`)
       index += 1
     })
@@ -687,8 +729,10 @@ async function calculateConfidence (mostRecentPersonPubId, testAuthors, confirme
     console.log(`Entering loop 2 Test Author: ${testAuthor['names'][0]['lastName']}`)
     await pMap(personPublications, async (personPublication) => {
       const publicationCsl = JSON.parse(personPublication['publication']['csl_string'])
-      const sourceMetadata = JSON.parse(personPublication['publication']['source_metadata'])
-      const passedConfidenceTests = await performAuthorConfidenceTests (testAuthor, publicationCsl, confirmedAuthors[personPublication['publication']['doi']], confidenceTypesByRank, sourceMetadata)
+      const sourceMetadata = personPublication['publication']['source_metadata']
+      const sourceName = personPublication['publication']['source_name']
+      // console.log(`Source metadata is: ${JSON.stringify(sourceMetadata, null, 2)}`)
+      const passedConfidenceTests = await performAuthorConfidenceTests (testAuthor, publicationCsl, confirmedAuthors[personPublication['publication']['doi']], confidenceTypesByRank, sourceName, sourceMetadata)
       // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
       // returns a new map of rank -> confidenceTestName -> calculatedValue
       const passedConfidenceTestsWithConf = await calculateAuthorConfidence(passedConfidenceTests)
@@ -895,9 +939,9 @@ async function main() {
   const lastConfidenceSet = await getLastPersonPubConfidenceSet()
   let mostRecentPersonPubId = undefined
   if (lastConfidenceSet) {
-    mostRecentPersonPubId = lastConfidenceSet.persons_publications_id
+    mostRecentPersonPubId = 11145
+    // mostRecentPersonPubId = lastConfidenceSet.persons_publications_id
     console.log(`Last Person Pub Confidence set is: ${mostRecentPersonPubId}`)
-    // mostRecentPersonPubId = 5747
   } else {
     console.log(`Last Person Pub Confidence set is undefined`)
   }
@@ -946,7 +990,6 @@ async function main() {
   // console.log(`New Person pubs by doi: ${JSON.stringify(newPersonPublicationsByDoi, null, 2)}`)
   let loopCounter3 = 0
 
-  // const mostRecentPersonPubId2 = 11145
   const batchSize = 4000
   console.log(`Most recent person pub id: ${mostRecentPersonPubId}`)
   const newPubsQueryResult = await client.query(
