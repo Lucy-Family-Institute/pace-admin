@@ -96,6 +96,9 @@ reharvest:
 	cd ingest && ts-node loadAbstracts.ts && cd ..
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
 
+ingest_metadata:
+	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
+
 load_authors:
 	cd ingest && ts-node loadAuthors.ts && cd ..
 
