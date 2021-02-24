@@ -183,7 +183,7 @@
                       <q-item-section avatar side>
                         <q-badge
                           :label="getPublicationConfidence(item)*100+'%'"
-                          :color="getPublicationConfidence(item)*100 <= 50 ? 'amber-10' : 'green'"
+                          :color="getPublicationConfidence(item)*100 < 50 ? 'amber-10' : 'green'"
                         />
                       </q-item-section>
                     </template>
