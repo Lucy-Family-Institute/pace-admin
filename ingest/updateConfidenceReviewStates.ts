@@ -888,7 +888,7 @@ async function main() {
 
   // use related github commit hash for the version when algorithm last completed
   // @todo: Extract to ENV?
-  const confidenceAlgorithmVersion = '876b7bd06e1ca819f5fe2f77ee48ea8c491f1ab1'
+  const confidenceAlgorithmVersion = '82aa835eff3da48e497c6eb6b56dafc087c86958'
   // get confirmed author lists to papers
   const pathsByYear = await getIngestFilePathsByYear("../config/ingestConfidenceReviewFilePaths.json")
 
@@ -939,8 +939,8 @@ async function main() {
   const lastConfidenceSet = await getLastPersonPubConfidenceSet()
   let mostRecentPersonPubId = undefined
   if (lastConfidenceSet) {
-    mostRecentPersonPubId = 11145
-    // mostRecentPersonPubId = lastConfidenceSet.persons_publications_id
+    // mostRecentPersonPubId = 11145
+    mostRecentPersonPubId = lastConfidenceSet.persons_publications_id
     console.log(`Last Person Pub Confidence set is: ${mostRecentPersonPubId}`)
   } else {
     console.log(`Last Person Pub Confidence set is undefined`)
