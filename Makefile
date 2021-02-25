@@ -91,7 +91,6 @@ reharvest:
 	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
 	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
-	cd ingest && ts-node fetchScopusFullTextData.ts && cd ..
 	cd ingest && ts-node loadAwards.ts && cd ..
 	cd ingest && ts-node loadAbstracts.ts && cd ..
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
