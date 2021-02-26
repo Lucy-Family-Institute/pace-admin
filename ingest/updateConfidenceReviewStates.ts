@@ -8,6 +8,7 @@ import humanparser from 'humanparser'
 import readConfidenceTypes from './gql/readConfidenceTypes'
 import readPersons from '../client/src/gql/readPersons'
 import readLastPersonPubConfidenceSet from './gql/readLastPersonPubConfidenceSet'
+import readPersonPublicationsByYear from './gql/readPersonPublicationsByYear'
 import readPersonPublications from './gql/readPersonPublications'
 import readNewPersonPublications from './gql/readNewPersonPublications'
 import insertConfidenceSets from './gql/insertConfidenceSets'
@@ -65,8 +66,11 @@ async function getLastPersonPubConfidenceSet () {
   }
 }
 
-async function getPersonPublications (personId, mostRecentPersonPubId) {
-  if (mostRecentPersonPubId===undefined) {
+async function getPersonPublications (personId, mostRecentPersonPubId, publicationYear?) {
+  if (publicationYear) {
+    const queryResult = await client.query(readPersonPublicationsByYear(personId, publicationYear))
+    return queryResult.data.persons_publications 
+  } else if (mostRecentPersonPubId===undefined) {
     const queryResult = await client.query(readPersonPublications(personId))
     return queryResult.data.persons_publications
   } else {
@@ -466,19 +470,24 @@ function testAuthorGivenNamePart (author, publicationAuthorMap, initialOnly) {
           const givenParts = _.split(pubAuthor['given'], ' ')
           let firstKey = 'firstName'
           _.each(givenParts, (part) => {
-            if (initialOnly){
-              part = part[0]
-              firstKey = 'firstInitial'
-            }
-            if (part===undefined){
-              console.log(`splitting given parts pubAuthor is: ${JSON.stringify(pubAuthor, null, 2)}`)
-            }
-            // if (pubAuthor['given']==='Hsueh-Chia') {
-            //   console.log(`Testing author ${pubAuthor['given']} given part: ${JSON.stringify(part, null, 2)} to lowercase is: ${part.toLowerCase()} name variations: ${JSON.stringify(nameVariations[nameLastName], null, 2)}`)
-            // }
-            if (part && nameMatchFuzzy(pubLastName, 'lastName', part.toLowerCase(), firstKey, nameVariations[nameLastName])) {
-              (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
-              matched = true
+            // normalize part to check if reduces to single character and if so change match to initial only
+            part = normalizeString(part, { removeSpaces:true })
+            // if not initial only then skip test as would have already checked initial and do not want to match given name by one character
+            if (initialOnly || part.length > 1) {
+              if (initialOnly){
+                part = part[0]
+                firstKey = 'firstInitial'
+              }
+              // if (part===undefined){
+              //   console.log(`splitting given parts pubAuthor is: ${JSON.stringify(pubAuthor, null, 2)}`)
+              // }
+              // if (pubAuthor['given']==='Hsueh-Chia') {
+              //   console.log(`Testing author ${pubAuthor['given']} given part: ${JSON.stringify(part, null, 2)} to lowercase is: ${part.toLowerCase()} name variations: ${JSON.stringify(nameVariations[nameLastName], null, 2)}`)
+              // }
+              if (part && nameMatchFuzzy(pubLastName, 'lastName', part.toLowerCase(), firstKey, nameVariations[nameLastName])) {
+                (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
+                matched = true
+              }
             }
           })
           // if not matched try matching without breaking it into parts
@@ -543,7 +552,7 @@ function testAuthorAffiliation (author, publicationAuthorMap, sourceName, source
       const pubLastName = author.lastName
       // console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}`)
       // check for a fuzzy match of name variant last names to lastname in pub author list
-      if (lastNameMatchFuzzy(pubLastName, 'lastName', nameVariations[nameLastName])){
+      if (pubLastName && lastNameMatchFuzzy(pubLastName, 'lastName', nameVariations[nameLastName])){
         // console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}, found author match: ${pubLastName}`)
         if(!_.isEmpty(author['affiliation'])) {
           // console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}, found affiliation value for author: ${pubLastName} affiliation: ${author['affiliation']}`)
@@ -710,7 +719,7 @@ async function calculateAuthorConfidence (passedConfidenceTests) {
 // testAuthors: are authors for a given center/institute for the given year to test if there is a match
 // confirmedAuthors: is an optional parameter map of doi to a confirmed author if present and if so will make confidence highest
 //
-async function calculateConfidence (mostRecentPersonPubId, testAuthors, confirmedAuthors) {
+async function calculateConfidence (mostRecentPersonPubId, testAuthors, confirmedAuthors, publicationYear?) {
   // get the set of tests to run
   const confidenceTypesByRank = await getConfidenceTypesByRank()
   // console.log(`Confidence Types By Rank: ${JSON.stringify(confidenceTypesByRank, null, 2)}`)
@@ -724,7 +733,7 @@ async function calculateConfidence (mostRecentPersonPubId, testAuthors, confirme
   await pMap(testAuthors, async (testAuthor) => {
     console.log(`Confidence Test Author is: ${testAuthor['names'][0]['lastName']}, ${testAuthor['names'][0]['firstName']}`)
     // if most recent person pub id is defined, it will not recalculate past confidence sets
-    const personPublications = await getPersonPublications(testAuthor['id'], mostRecentPersonPubId)
+    const personPublications = await getPersonPublications(testAuthor['id'], mostRecentPersonPubId, publicationYear)
     console.log(`Found '${personPublications.length}' new possible pub matches for Test Author: ${testAuthor['names'][0]['lastName']}, ${testAuthor['names'][0]['firstName']}`)
     console.log(`Entering loop 2 Test Author: ${testAuthor['names'][0]['lastName']}`)
     await pMap(personPublications, async (personPublication) => {
@@ -932,7 +941,7 @@ async function main() {
   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===78}))
   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===48}))
   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===61}))
-  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===77}))
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===60}))
   // console.log(`Test authors: ${JSON.stringify(testAuthors2, null, 2)}`)
 
   // get where last confidence test left off
@@ -945,7 +954,9 @@ async function main() {
   } else {
     console.log(`Last Person Pub Confidence set is undefined`)
   }
-  const confidenceTests = await calculateConfidence (mostRecentPersonPubId, testAuthors, (confirmedAuthorsByDoi || {}))
+  // const publicationYear = 2020
+  const publicationYear = undefined
+  const confidenceTests = await calculateConfidence (mostRecentPersonPubId, testAuthors, (confirmedAuthorsByDoi || {}), publicationYear)
 
   // next need to write checks found to DB and then calculate confidence accordingly
   let errorsInsert = []
