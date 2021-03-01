@@ -532,6 +532,9 @@ export default {
     selectedPersonTotal: function () {
       this.loadPersonsWithFilter()
     },
+    selectedPersonConfidence: function () {
+      this.loadPersonsWithFilter()
+    },
     publicationsGroupedByView: function () {
       this.loadPublications(this.person)
     },
@@ -927,7 +930,16 @@ export default {
         this.personPublicationsCombinedMatchesByReview,
         (personPublications) => {
           return _.filter(personPublications, (item) => {
-            const includePublication = item.publication.title.toLowerCase().includes(this.pubSearch.toLowerCase().trim())
+            let includePublication = item.publication.title.toLowerCase().includes(this.pubSearch.toLowerCase().trim())
+            if (includePublication) {
+              // also check if confidence is to be filtered out
+              // console.log('checking if we should include publication')
+              // console.log(`confidence val is: ${this.getPublicationConfidence(item)}`)
+              if (this.selectedPersonConfidence === '50%' && this.getPublicationConfidence(item) < 0.50) {
+                // console.log('trying to filter out publication')
+                includePublication = false
+              }
+            }
             if (!includePublication && this.personPublication && item.id === this.personPublication.id) {
               // clear out the publication from view if it is filtered out of the results
               filterOutCurrentPublication = true
@@ -1273,6 +1285,7 @@ export default {
       this.selectedCenterPubSort = this.selectedCenterPubSort
       this.selectedPersonSort = this.preferredPersonSort
       this.selectedPersonTotal = this.preferredPersonTotal
+      this.selectedPersonConfidence = this.preferredPersonConfidence
       this.selectedPubYears = {
         min: this.yearPubStaticMin,
         max: this.yearPubStaticMax
@@ -1291,12 +1304,14 @@ export default {
     preferredPersonPubSort: get('filter/preferredPersonPubSort'),
     preferredCenterPubSort: get('filter/preferredCenterPubSort'),
     preferredPersonTotal: get('filter/preferredPersonTotal'),
+    preferredPersonConfidence: get('filter/preferredPersonConfidence'),
     selectedInstitutions: sync('filter/selectedInstitutions'),
     institutionOptions: get('filter/institutionOptions'),
     selectedPersonSort: sync('filter/selectedPersonSort'),
     selectedPersonPubSort: sync('filter/selectedPersonPubSort'),
     selectedCenterPubSort: sync('filter/selectedCenterPubSort'),
     selectedPersonTotal: sync('filter/selectedPersonTotal'),
+    selectedPersonConfidence: sync('filter/selectedPersonConfidence'),
     filterReviewStates: get('filter/filterReviewStates'),
     selectedPubYears: sync('filter/selectedPubYears'),
     yearPubStaticMin: get('filter/yearPubStaticMin'),
