@@ -579,6 +579,9 @@ export default {
     selectedPersonTotal: function () {
       this.loadPersonsWithFilter()
     },
+    selectedPersonConfidence: function () {
+      this.loadPersonsWithFilter()
+    },
     publicationsGroupedByView: function () {
       this.loadPublications()
     },
@@ -1784,6 +1787,7 @@ export default {
       this.selectedCenterAuthor = this.preferredSelectedCenterAuthor
       this.selectedPersonSort = this.preferredPersonSort
       this.selectedPersonTotal = this.preferredPersonTotal
+      this.selectedPersonConfidence = this.preferredPersonConfidence
       this.selectedInstitutionReviewState = this.preferredInstitutionReviewState
       this.selectedPubYears = {
         min: this.yearPubStaticMin,
@@ -1804,6 +1808,7 @@ export default {
     preferredCenterPubSort: get('filter/preferredCenterPubSort'),
     preferredSelectedCenterAuthor: get('filter/preferredSelectedCenterAuthor'),
     preferredPersonTotal: get('filter/preferredPersonTotal'),
+    preferredPersonConfidence: get('filter/preferredPersonConfidence'),
     preferredInstitutionReviewState: get('filter/preferredInstitutionReviewState'),
     selectedInstitutions: sync('filter/selectedInstitutions'),
     institutionOptions: get('filter/institutionOptions'),
@@ -1814,6 +1819,7 @@ export default {
     selectedCenterPubSort: sync('filter/selectedCenterPubSort'),
     selectedCenterAuthor: sync('filter/selectedCenterAuthor'),
     selectedPersonTotal: sync('filter/selectedPersonTotal'),
+    selectedPersonConfidence: sync('filter/selectedPersonConfidence'),
     filterReviewStates: get('filter/filterReviewStates'),
     selectedPubYears: sync('filter/selectedPubYears'),
     yearPubStaticMin: get('filter/yearPubStaticMin'),
