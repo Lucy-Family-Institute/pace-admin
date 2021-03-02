@@ -23,7 +23,7 @@
         class="fullSelect"
       />
     </q-item>
-    <q-item>
+    <!--<q-item>
       <q-select
         name="person_total"
         v-model="selectedPersonTotal"
@@ -34,6 +34,7 @@
         class="fullSelect"
       />
     </q-item>
+    -->
     <q-item>
       <q-select
         name="person_confidence"
