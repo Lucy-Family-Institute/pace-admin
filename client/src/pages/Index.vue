@@ -83,7 +83,7 @@
                     </q-item-section>
 
                     <q-item-section>
-                      <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.persons_publications_metadata_aggregate.aggregate.count }})</q-item-label>
+                      <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.confidencesets_persons_publications.length }})</q-item-label>
                       <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
                     </q-item-section>
 
@@ -407,7 +407,7 @@ import _ from 'lodash'
 import Cite from 'citation-js'
 
 import readPersonsByInstitutionByYear from '../gql/readPersonsByInstitutionByYear'
-import readPersonsByInstitutionByYearPendingPubs from '../gql/readPersonsByInstitutionByYearPendingPubs'
+// import readPersonsByInstitutionByYearPendingPubs from '../gql/readPersonsByInstitutionByYearPendingPubs'
 import readReviewTypes from '../../../gql/readReviewTypes.gql'
 import readPublications from '../gql/readPublications'
 // import readPendingPublications from '../../../gql/readPendingPublications.gql'
@@ -763,16 +763,18 @@ export default {
       console.log('filtering', this.selectedInstitutions)
       this.people = []
       console.log(`Applying year filter to person search year min: ${this.selectedPubYears.min} max: ${this.selectedPubYears.max}`)
-      if (this.selectedPersonTotal === 'All') {
-        const personResult = await this.$apollo.query(readPersonsByInstitutionByYear(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max))
-        this.people = personResult.data.persons
-      } else {
-        const personResult = await this.$apollo.query({
-          query: readPersonsByInstitutionByYearPendingPubs(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max), // this.userId),  // commenting out for now querying by current user
-          fetchPolicy: 'network-only'
-        })
-        this.people = personResult.data.persons
-      }
+      let minConfidence = 0
+      if (this.selectedPersonConfidence === '50%') minConfidence = 0.5
+      // if (this.selectedPersonTotal === 'All') {
+      const personResult = await this.$apollo.query(readPersonsByInstitutionByYear(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, minConfidence))
+      this.people = personResult.data.persons
+      // } else {
+      //   const personResult = await this.$apollo.query({
+      //     query: readPersonsByInstitutionByYearPendingPubs(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max), // this.userId),  // commenting out for now querying by current user
+      //     fetchPolicy: 'network-only'
+      //   })
+      //   this.people = personResult.data.persons
+      // }
 
       // apply any sorting applied
       console.log('filtering', this.selectedPersonSort)
@@ -782,7 +784,8 @@ export default {
         // need to sort by total and then name, not guaranteed to be in order from what is returned from DB
         // first group items by count
         const peopleByCounts = await _.groupBy(this.people, (person) => {
-          return person.persons_publications_metadata_aggregate.aggregate.count
+          return person.confidencesets_persons_publications.length
+          // return person.persons_publications_metadata_aggregate.aggregate.count
         })
 
         // sort each person array by name for each count
