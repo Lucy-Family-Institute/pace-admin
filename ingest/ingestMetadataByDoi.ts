@@ -16,11 +16,14 @@ import pMap from 'p-map'
 import { command as nameParser } from './units/nameParser'
 import humanparser from 'humanparser'
 import { randomWait } from './units/randomWait'
+import { command as writeCsv } from './units/writeCsv'
+import moment from 'moment'
 
 import dotenv from 'dotenv'
 import readPublicationsByDoi from './gql/readPublicationsByDoi'
 import readPersonPublicationsByDoi from './gql/readPersonPublicationsByDoi'
 import { getAllSimplifiedPersons } from './modules/queryNormalizedPeople'
+import { CalculateConfidence } from './modules/calculateConfidence'
 // import insertReview from '../client/src/gql/insertReview'
 
 dotenv.config({
@@ -244,82 +247,45 @@ interface MatchedPerson {
 // author map assumed to be doi mapped to two arrays: first authors and other authors
 // returns a map of person ids to the person object and confidence value for any persons that matched coauthor attributes
 // example: {1: {person: simplepersonObject, confidence: 0.5}, 51: {person: simplepersonObject, confidence: 0.8}}
-async function matchPeopleToPaperAuthors(personMap, authors, confirmedAuthors) : Promise<Map<number,MatchedPerson>> {
+async function matchPeopleToPaperAuthors(publicationCSL, simplifiedPersons, personMap, authors, confirmedAuthors, sourceName) : Promise<Map<number,MatchedPerson>> {
 
+  const calculateConfidence: CalculateConfidence = new CalculateConfidence()
   //match to last name
   //match to first initial (increase confidence)
   let matchedPersonMap = new Map()
 
-  // console.log(`Testing PersonMap: ${JSON.stringify(personMap,null,2)} to AuthorMap: ${JSON.stringify(authorMap,null,2)}`)
-  _.each(authors, async (author) => {
-    //console.log(`Testing Author for match: ${author.family}, ${author.given}`)
+  const confidenceTypesByRank = await calculateConfidence.getConfidenceTypesByRank()
+   await pMap(simplifiedPersons, async (person) => {
+    
+     //console.log(`Testing Author for match: ${author.family}, ${author.given}`)
 
-    //check if persons last name in author list, if so mark a match
-    if(_.has(personMap, _.lowerCase(author.family))){
-      //console.log(`Matching last name found: ${author.family}`)
-
-      let firstInitialFound = false
-      let affiliationFound = false
-      let firstNameFound = false
-      //check for any matches of first initial or affiliation
-      _.each(personMap[_.lowerCase(author.family)], async (testPerson) => {
-        let confidenceVal = 0.0
-
-        //match on last name found increment confidence by 0.3
-        confidenceVal += 0.3
-
-        if (_.lowerCase(author.given)[0] === testPerson.firstInitial){
-          firstInitialFound = true
-
-          if (author.given.toLowerCase()=== testPerson.firstName){
-            firstNameFound = true
-          }
-          // split the given name based on spaces
-          const givenParts = _.split(author.given, ' ')
-          _.each(givenParts, (part) => {
-            if (_.lowerCase(part) === testPerson.firstName){
-              firstNameFound = true
-            }
-          })
-        }
-        if(!_.isEmpty(author.affiliation)) {
-          if(/notre dame/gi.test(author.affiliation[0].name)) {
-            affiliationFound = true
-          }
-        }
-
-        if (affiliationFound) confidenceVal += 0.15
-        if (firstInitialFound) {
-          confidenceVal += 0.15
-          if (firstNameFound) {
-            confidenceVal += 0.25
-          }
-          //check if author in confirmed list and change confidence to 0.99 if found
-          if (confirmedAuthors){
-            _.each(confirmedAuthors, function (confirmedAuthor){
-              if (_.lowerCase(confirmedAuthor.lastName) === testPerson.lastName &&
-              _.lowerCase(confirmedAuthor.firstName) === testPerson.firstName){
-                console.log(`Confirmed author found: ${JSON.stringify(testPerson,null,2)}, making confidence 0.99`)
-                confidenceVal = 0.99
-              }
-            })
-          }
-        }
-
-        //add person to map with confidence value > 0
-        if (confidenceVal > 0) {
+      const passedConfidenceTests = await calculateConfidence.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank)
+      // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
+      // returns a new map of rank -> confidenceTestName -> calculatedValue
+      const passedConfidenceTestsWithConf = await calculateConfidence.calculateAuthorConfidence(passedConfidenceTests)
+      // calculate overall total and write the confidence set and comments to the DB
+      let confidenceTotal = 0.0
+      _.mapValues(passedConfidenceTestsWithConf, (confidenceTests, rank) => {
+        _.mapValues(confidenceTests, (confidenceTest) => {
+          confidenceTotal += confidenceTest['confidenceValue']
+        })
+      })
+      // set ceiling to 99%
+      if (confidenceTotal >= 1.0) confidenceTotal = 0.99
+      // have to do some weird conversion stuff to keep the decimals correct
+      confidenceTotal = Number.parseFloat(confidenceTotal.toFixed(3))
+      // console.log(`passed confidence tests are: ${JSON.stringify(passedConfidenceTestsWithConf, null, 2)}`)
+      //check if persons last name in author list, if so mark a match
+          //add person to map with confidence value > 0
+        if (confidenceTotal > 0) {
           // console.log(`Match found for Author: ${author.family}, ${author.given}`)
-          let matchedPerson: MatchedPerson = { 'person': testPerson, 'confidence': confidenceVal }
-          matchedPersonMap[testPerson.id] = matchedPerson
+          let matchedPerson: MatchedPerson = { 'person': person, 'confidence': confidenceTotal }
+          matchedPersonMap[person['id']] = matchedPerson
           //console.log(`After add matched persons map is: ${JSON.stringify(matchedPersonMap,null,2)}`)
         }
-      })
-    } else {
-      //console.log(`No match found for Author: ${author.family}, ${author.given}`)
-    }
-  })
+   }, { concurrency: 1 })
 
-  //console.log(`After tests matchedPersonMap is: ${JSON.stringify(matchedPersonMap,null,2)}`)
+   //console.log(`After tests matchedPersonMap is: ${JSON.stringify(matchedPersonMap,null,2)}`)
   return matchedPersonMap
 }
 
@@ -356,6 +322,16 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
     errorMessages: []
   }
   try {
+    const calculateConfidence: CalculateConfidence = new CalculateConfidence()
+    // get the set of persons to test
+    const testAuthors = await calculateConfidence.getAllSimplifiedPersons()
+    // const testAuthors = []
+    //create map of last name to array of related persons with same last name
+    const testPersonMap = _.transform(testAuthors, function (result, value) {
+      _.each(value.names, (name) => {
+        (result[name['lastName']] || (result[name['lastName']] = [])).push(value)
+      })
+    }, {})
     const papersByDoi = await getPapersByDoi(path)
     const dois = _.keys(papersByDoi)
     count = dois.length
@@ -382,6 +358,9 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
     // let newPersonPublicationsByDoi = {}
 
     let processedCount = 0
+    
+    let failedRecords = {}
+
     await pMap(_.keys(papersByDoi), async (doi) => {
       try {
         processedCount += 1
@@ -407,19 +386,16 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
         const authors = await getCSLAuthors(csl)
         //console.log(`Author Map found: ${JSON.stringify(authorMap,null,2)}`)
 
-        //match paper authors to people
-        //console.log(`Testing for Author Matches for DOI: ${doi}`)
-        const matchedPersons = await matchPeopleToPaperAuthors(personMap, authors, confirmedAuthorsByDoi[doi])
-        //console.log(`Person to Paper Matches: ${JSON.stringify(matchedPersons,null,2)}`)
+        //for now default source is crossref
+        let sourceName = 'CrossRef'
+        let sourceMetadata= csl
+        let errorMessage = ''
 
         // if at least one author, add the paper, and related personpub objects
-        if((csl['type'] === 'article-journal' || csl['type'] === 'paper-conference' || csl['type'] === 'chapter') && csl.title && _.keys(matchedPersons).length > 0) {
+        if((csl['type'] === 'article-journal' || csl['type'] === 'paper-conference' || csl['type'] === 'chapter') && csl.title) {
           //push in csl record to jsonb blob
           //console.log(`Trying to insert for for DOI:${doi}, Title: ${csl.title}`)
 
-          //for now default source is crossref
-          let sourceName = 'CrossRef'
-          let sourceMetadata= csl
           //check for SCOPUS
           //console.log(`Checking paper if from scopus: ${JSON.stringify(papersByDoi[doi],null,2)}`)
           //there may be more than one author match with same paper, and just grab first one
@@ -439,75 +415,110 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
             if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
             // console.log(`WebOfScience Source metadata found`)//is: ${JSON.stringify(sourceMetadata,null,2)}`)
           }
+          //match paper authors to people
+          //console.log(`Testing for Author Matches for DOI: ${doi}`)
+          const matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthorsByDoi[doi], sourceName)
+          //console.log(`Person to Paper Matches: ${JSON.stringify(matchedPersons,null,2)}`)
 
-          const pubFound = await isPublicationAlreadyInDB(doi, sourceName)
-          const publicationYear = getPublicationYear (csl)
-          if (minPublicationYear != undefined && publicationYear < minPublicationYear) {
-            // console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${sourceName} from year: ${publicationYear}`)
-            doiStatus.skippedDOIs.push(doi)
-          } else if (!pubFound) {
-            // console.log(`Inserting Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${sourceName}`)
-            const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authors, sourceName, sourceMetadata)
-            // console.log('Finished Running Insert and starting next thread')
-            //console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
+          if (_.keys(matchedPersons).length > 0){
+            const pubFound = await isPublicationAlreadyInDB(doi, sourceName)
+            const publicationYear = getPublicationYear (csl)
+            if (minPublicationYear != undefined && publicationYear < minPublicationYear) {
+              console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${sourceName} from year: ${publicationYear}`)
+              doiStatus.skippedDOIs.push(doi)
+            } else if (!pubFound) {
+              // console.log(`Inserting Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${sourceName}`)
+              const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authors, sourceName, sourceMetadata)
+              // console.log('Finished Running Insert and starting next thread')
+              //console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
 
-            //console.log(`Publication Id: ${publicationId} Matched Persons count: ${_.keys(matchedPersons).length}`)
-            // now insert a person publication record for each matched Person
-            let loopCounter2 = 0
-            await pMap(_.keys(matchedPersons), async function (personId){
-              try {
-                const person = matchedPersons[personId]
-                loopCounter2 += 1
-              //have each wait a pseudo-random amount of time between 1-5 seconds
-                await randomWait(loopCounter2)
-                const mutateResult = await client.mutate(
-                  insertPersonPublication(personId, publicationId, person['confidence'])
-                )
+              //console.log(`Publication Id: ${publicationId} Matched Persons count: ${_.keys(matchedPersons).length}`)
+              // now insert a person publication record for each matched Person
+              let loopCounter2 = 0
+              await pMap(_.keys(matchedPersons), async function (personId){
+                try {
+                  const person = matchedPersons[personId]
+                  loopCounter2 += 1
+                  //have each wait a pseudo-random amount of time between 1-5 seconds
+                  await randomWait(loopCounter2)
+                  const mutateResult = await client.mutate(
+                    insertPersonPublication(personId, publicationId, person['confidence'])
+                  )
 
-                const newPersonPubId = await mutateResult.data.insert_persons_publications.returning[0]['id']
-                // if (!newPersonPublicationsByDoi[doi]) {
-                //   newPersonPublicationsByDoi[doi] = []
-                // }
-                // const obj = {
-                //   id: newPersonPubId,
-                //   person_id: personId
-                // }
-                // // console.log(`Capturing added person pub: ${JSON.stringify(obj, null, 2)}`)
-                // newPersonPublicationsByDoi[doi].push(obj)
+                  const newPersonPubId = await mutateResult.data.insert_persons_publications.returning[0]['id']
+                  // if (!newPersonPublicationsByDoi[doi]) {
+                  //   newPersonPublicationsByDoi[doi] = []
+                  // }
+                  // const obj = {
+                  //   id: newPersonPubId,
+                  //   person_id: personId
+                  // }
+                  // // console.log(`Capturing added person pub: ${JSON.stringify(obj, null, 2)}`)
+                  // newPersonPublicationsByDoi[doi].push(obj)
 
-              //console.log(`added person publication id: ${ mutateResult.data.insert_persons_publications.returning[0].id }`)
-              } catch (error) {
-                const errorMessage = `Error on add person id ${JSON.stringify(personId,null,2)} to publication id: ${publicationId}`
-                console.log(errorMessage)
-                doiStatus.errorMessages.push(errorMessage)
-              }
-            }, { concurrency: 1 })
-            //if we make it this far succeeded
-            doiStatus.addedDOIs.push(doi)
-            // console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
-            // console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs.length,null,2)}`)
-            // console.log(`Skipped DOIs: ${JSON.stringify(doiStatus.skippedDOIs.length,null,2)}`)
+                //console.log(`added person publication id: ${ mutateResult.data.insert_persons_publications.returning[0].id }`)
+                } catch (error) {
+                  const errorMessage = `Error on add person id ${JSON.stringify(personId,null,2)} to publication id: ${publicationId}`
+                  console.log(errorMessage)
+                  doiStatus.errorMessages.push(errorMessage)
+                  if (!failedRecords[sourceName]) failedRecords[sourceName] = []
+                  _.each(papersByDoi[doi], (paper) => {
+                    paper = _.set(paper, 'error', errorMessage)
+                    failedRecords[sourceName].push(paper)
+                  }) 
+                }
+              }, { concurrency: 1 })
+              //if we make it this far succeeded
+              doiStatus.addedDOIs.push(doi)
+              // console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
+              // console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs.length,null,2)}`)
+              // console.log(`Skipped DOIs: ${JSON.stringify(doiStatus.skippedDOIs.length,null,2)}`)
+            } else {
+              doiStatus.skippedDOIs.push(doi)
+              console.log(`Skipping doi already in DB #${processedCount} of total ${count}: ${doi} for source: ${sourceName}`)
+            }
           } else {
-            doiStatus.skippedDOIs.push(doi)
-            // console.log(`Skipping doi already in DB #${processedCount} of total ${count}: ${doi} for source: ${sourceName}`)
+            if (_.keys(matchedPersons).length <= 0){
+              errorMessage = `No author match found for ${doi} and not added to DB`
+              console.log(errorMessage)
+              doiStatus.errorMessages.push(errorMessage)
+              if (!failedRecords[sourceName]) failedRecords[sourceName] = []
+              _.each(papersByDoi[doi], (paper) => {
+                paper = _.set(paper, 'error', errorMessage)
+                failedRecords[sourceName].push(paper)
+              }) 
+            }
           }
         } else {
-          if (_.keys(matchedPersons).length <= 0){
-            const errorMessage = `No author match found for ${doi} and not added to DB`
-            console.log(errorMessage)
-            doiStatus.errorMessages.push(errorMessage)
-          } else {
-            const errorMessage = `${doi} and not added to DB because not an article or no title defined in DOI csl record`
-            console.log(errorMessage)
-            doiStatus.errorMessages.push(errorMessage)
-          }
-          doiStatus.failedDOIs.push(doi)
-          // console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
-          // console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
+          errorMessage = `${doi} and not added to DB because not an article or no title defined in DOI csl record`
+          console.log(errorMessage)
+          doiStatus.errorMessages.push(errorMessage)
+          if (!failedRecords[sourceName]) failedRecords[sourceName] = []
+          _.each(papersByDoi[doi], (paper) => {
+            paper = _.set(paper, 'error', errorMessage)
+            failedRecords[sourceName].push(paper)
+          }) 
         }
+        // console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
+        // console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
       } catch (error) {
         doiStatus.failedDOIs.push(doi)
+        let sourceName = 'CrossRef'
+        if (papersByDoi[doi].length >= 1){
+          if (papersByDoi[doi][0]['scopus_record']){
+            sourceName = 'Scopus'
+          } else if (papersByDoi[doi][0]['pubmed_record']){
+            sourceName = 'PubMed'
+          } else if (papersByDoi[doi][0]['wos_record']){
+            sourceName = 'WebOfScience'
+          }
+        }
+        if (!failedRecords[sourceName]) failedRecords[sourceName] = []
         const errorMessage = `Error on add DOI: ${doi} error: ${error}`
+        _.each(papersByDoi[doi], (paper) => {
+          paper = _.set(paper, 'error', errorMessage)
+          failedRecords[sourceName].push(paper)
+        }) 
         doiStatus.errorMessages.push(errorMessage)
         console.log(errorMessage)
         // console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
@@ -528,6 +539,21 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
     //   }, {concurrency: 1})
     // }, {concurrency: 5})
 
+
+    if (doiStatus.failedDOIs && doiStatus.failedDOIs.length > 0){
+
+      pMap(_.keys(failedRecords), async (sourceName) => {
+        const failedCSVFile = `../data/${sourceName}_failed.${moment().format('YYYYMMDDHHmmss')}.csv`
+
+        console.log(`Write failed doi's to csv file: ${failedCSVFile}`)
+        // console.log(`Failed records are: ${JSON.stringify(failedRecords[sourceName], null, 2)}`)
+        //write data out to csv
+        await writeCsv({
+          path: failedCSVFile,
+          data: failedRecords[sourceName],
+        })
+      }, { concurrency: 1 })
+    }
     return doiStatus
   } catch (error){
     console.log(`Error on get path ${path}: ${error}`)
