@@ -170,6 +170,9 @@ dashboard-client:
 docker:
 	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose up
 
+update_pdfs:
+	cd ingest && ts-node downloadFile.ts && cd ..
+
 clear_pdfs:
 	rm data/pdfs/*
 	rm data/thumbnails/*
