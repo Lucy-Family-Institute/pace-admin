@@ -7,6 +7,7 @@ import _ from 'lodash'
 import { command as loadCsv } from './units/loadCsv'
 import readPersons from '../client/src/gql/readPersons'
 import readPublicationsWoutAbstract from './gql/readPublicationsWoutAbstract'
+import readPublicationsWoutAbstractByYear from './gql/readPublicationsWoutAbstractByYear'
 import updatePubAbstract from './gql/updatePubAbstract'
 import { __EnumValue } from 'graphql'
 import dotenv from 'dotenv'
@@ -53,9 +54,14 @@ async function getScopusPaperAbstractData (pii) {
   return response.data;
 }
 
-async function getPublications () {
-  const queryResult = await client.query(readPublicationsWoutAbstract())
-  return queryResult.data.publications
+async function getPublications (startYear?) {
+  if (startYear) {
+    const queryResult = await client.query(readPublicationsWoutAbstractByYear(startYear))
+    return queryResult.data.publications
+  } else {
+    const queryResult = await client.query(readPublicationsWoutAbstract())
+    return queryResult.data.publications
+  }
 }
 
 async function getScopusDataFromCsv (csvPath) {
@@ -78,7 +84,9 @@ async function getScopusDataFromCsv (csvPath) {
 
 async function main (): Promise<void> {
 
-  const publications = await getPublications()
+  let startYear
+  // startYear = 2020
+  const publications = await getPublications(startYear)
   const publicationsBySource = await _.groupBy(publications, (publication) => {
     return publication['source_name']
   })
