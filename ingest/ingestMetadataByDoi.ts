@@ -392,7 +392,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
         let errorMessage = ''
 
         // if at least one author, add the paper, and related personpub objects
-        if((csl['type'] === 'article-journal' || csl['type'] === 'paper-conference' || csl['type'] === 'chapter') && csl.title) {
+        if((csl['type'] === 'article-journal' || csl['type'] === 'paper-conference' || csl['type'] === 'chapter' || csl['type'] === 'book') && csl.title) {
           //push in csl record to jsonb blob
           //console.log(`Trying to insert for for DOI:${doi}, Title: ${csl.title}`)
 
@@ -490,7 +490,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
             }
           }
         } else {
-          errorMessage = `${doi} and not added to DB because not an article or no title defined in DOI csl record`
+          errorMessage = `${doi} and not added to DB because not an article or no title defined in DOI csl record, csl is: ${JSON.stringify(csl, null, 2)}`
           console.log(errorMessage)
           doiStatus.errorMessages.push(errorMessage)
           if (!failedRecords[sourceName]) failedRecords[sourceName] = []
