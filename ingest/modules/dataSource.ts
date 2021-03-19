@@ -19,5 +19,5 @@ interface DataSource {
   getRequestPageSize(): Number
 
   // perform any actions necessary to initialize a connection to the datasource
-  initialize()
+  initialize(): Promise<void>
 }
