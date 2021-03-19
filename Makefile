@@ -93,6 +93,9 @@ reharvest:
 	cd ingest && ts-node loadAbstracts.ts && cd ..
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
 
+load_authors:
+	cd ingest && ts-node loadAuthors.ts && cd ..
+
 load_name_variances:
 	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
 
