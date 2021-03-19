@@ -104,7 +104,7 @@ export class ScopusDataSource implements DataSource {
     return Number.parseInt(this.dsConfig.pageSize)
   }
 
-  initialize() {
+  async initialize() {
 
   }
   
