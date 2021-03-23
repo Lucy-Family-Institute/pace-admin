@@ -68,3 +68,21 @@ export function getDateObject(dateString: string): Date {
   return new Date(`${date}T00:00:00`)
 }
 
+/**
+ * Returns a new Date string gi correctly initialized given a string of form 'YYYY-MM-DD'
+ * 
+ * @param dateString 
+ */
+export function getDateString(date: Date): string {
+    let month = '' + (date.getMonth() + 1)
+    let day = '' + date.getDate()
+    let year = date.getFullYear()
+
+    if (month.length < 2) 
+        month = '0' + month;
+    if (day.length < 2) 
+        day = '0' + day;
+
+    return [year, month, day].join('-')
+}
+

@@ -2,6 +2,9 @@ import axios, { AxiosResponse } from 'axios'
 import _ from 'lodash'
 const xmlToJson = require('xml-js');
 import NormedPublication from './normedPublication'
+import HarvestSet from './harvestSet'
+import DataSource from './dataSource'
+import { getDateString, getDateObject } from '../units/dateRange'
 
 export class WosDataSource implements DataSource {
 
@@ -14,11 +17,19 @@ export class WosDataSource implements DataSource {
 
   // return the query passed to scopus for searching for given author
   getAuthorQuery(person: NormedPerson){
-    let authorQuery = `AU = (${person.familyName}, ${person.givenName}) AND OG = (University of Notre Dame) `
+    let authorQuery = `AU = (${person.familyName}, ${person.givenName}) AND OG = (University of Notre Dame)`
     return authorQuery
   }
 
-  getWoSQuerySOAPString(query, startDate, endDate) {
+  getWoSQuerySOAPString(query, startDate: Date, endDate: Date) {
+    let startDateString = getDateString(startDate)
+    let endDateString = undefined
+    // if no end date defined default to the end of the year of the start date
+    if (!endDate) {
+      endDateString = `${startDate.getFullYear()}-12-31`
+    } else {
+      endDateString = getDateString(endDate)
+    }
     let soapquery = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"\
                       xmlns:woksearchlite="http://woksearchlite.v3.wokmws.thomsonreuters.com">\
                       <soapenv:Header/>\
@@ -32,8 +43,8 @@ export class WosDataSource implements DataSource {
                                 <edition>SCI</edition>\
                               </editions>\
                               <timeSpan>\
-                                <begin>2015-01-01</begin>\
-                                <end>2020-12-31</end>\
+                                <begin>${startDateString}</begin>\
+                                <end>${endDateString}</end>\
                               </timeSpan>\
                               <queryLanguage>en</queryLanguage>\
                           </queryParameters>\
@@ -62,25 +73,10 @@ export class WosDataSource implements DataSource {
     // console.log(`soap string is: ${soapRetrieve}`)
     return soapRetrieve
   }
-
-  async getWoSData(sessionId, query, startDate, endDate) {
-
-    const soapQueryString = this.getWoSQuerySOAPString(query, startDate, endDate)
-    const baseUrl = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearchLite'
-    const response = await axios.post(baseUrl, soapQueryString,
-      {
-        headers: {
-          'Cookie': sessionId,
-          'content-type' : 'application/json'// 'text/xml;charset=UTF-8'
-        }
-      }
-    ).catch(err=>{console.log(err)})
-    const jsonData =  xmlToJson.xml2js(response['data'], {compact:true});
-    return jsonData
-  }
   
   async retrieveWoSAuthorResults(sessionId, queryId, offset) {
-    const soapRetrieveString = this.getWoSRetrieveRecordString(queryId, offset, 100)
+    console.log(`Retrieving results for queryId: ${queryId} from ${this.getSourceName()}`)
+    const soapRetrieveString = this.getWoSRetrieveRecordString(queryId, offset, this.getRequestPageSize())
     const baseUrl = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearchLite'
     const response = await axios.post(baseUrl, soapRetrieveString,
       {
@@ -95,33 +91,36 @@ export class WosDataSource implements DataSource {
   }
 
   // assumes that if only one of startDate or endDate provided it would always be startDate first and then have endDate undefined
-  async getPublicationsByAuthorName(person: NormedPerson, offset: Number, startDate: Date, endDate?: Date): Promise<HarvestSet> {
+  async getPublicationsByAuthorName(person: NormedPerson, sessionState: {}, offset: Number, startDate: Date, endDate?: Date): Promise<HarvestSet> {
     const authorQuery = this.getAuthorQuery(person)
-    const soapQueryString = this.getWoSQuerySOAPString(authorQuery, startDate, endDate)
-
+   
     let totalResults: Number
     let publications = []
 
-    // scopus accepts only year for date search
-    let dateFilter = `${startDate.getFullYear()}`
-    // if (endDate) {
-    //   //add end date to range if provided
-    //   dateFilter = `${dateFilter}-${endDate.getFullYear()}`
-    // }
+    if (!this.getSessionId()){
+      await this.initialize()
+    }
 
-    // // need to make sure date string in correct format
-    // const results = await this.fetchQuery(soapQueryString, dateFilter, this.dsConfig.pageSize, offset)
-    // if (results && results['search-results']['opensearch:totalResults']){
-    //     totalResults = Number.parseInt(results['search-results']['opensearch:totalResults'])
-    //     if (totalResults > 0 && results['search-results']['entry']){
-    //         publications = results['search-results']['entry']
-    //     }
-    // } else {
-    //   totalResults = 0
-    // }
+    let queryId = (sessionState && sessionState['queryId']) ? sessionState['queryId'] : undefined
+    totalResults = (sessionState && sessionState['totalResults']) ? sessionState['totalResults'] : undefined
+    // on first call do query and get query id and total results
+    if (!queryId || !totalResults){
+      const soapQueryString = this.getWoSQuerySOAPString(authorQuery, startDate, endDate)
+      const results = await this.fetchQuery(this.getSessionId(), soapQueryString)
+      queryId = results['soap:Envelope']['soap:Body']['ns2:searchResponse'].return.queryId._text
+      totalResults = Number.parseInt(results['soap:Envelope']['soap:Body']['ns2:searchResponse'].return.recordsFound._text)
+      sessionState['queryId'] = queryId
+      sessionState['totalResults'] = totalResults
+    }
+
+    // once query id and total results known retrieve corresponding results given offset
+    const results = await this.retrieveWoSAuthorResults(this.getSessionId(), queryId, offset)
+    _.concat(publications, results['soap:Envelope']['soap:Body']['ns2:retrieveResponse'].return.records)
+    
     const result: HarvestSet = {
         sourceName: this.getSourceName(),
         searchPerson: person,
+        sessionState: sessionState,
         query: authorQuery,
         sourcePublications: publications,
         offset: offset,
@@ -132,8 +131,8 @@ export class WosDataSource implements DataSource {
     return result
   }
 
-  async fetchQuery(sessionId, query, date, pageSize, offset) : Promise<any>{
-    console.log(`Querying Web of Science with date: ${date}, offset: ${offset}, and query: ${query}`)
+  async fetchQuery(sessionId, query) : Promise<any>{
+    console.log(`Querying ${this.getSourceName()} with query: ${query}`)
 
     //const baseUrl = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearchLite'
     const response = await axios.post(this.dsConfig.queryUrl, query,

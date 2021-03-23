@@ -79,6 +79,14 @@ Finally once confirmed running correctly configure startup script they restart w
 Run the command it specifies and if successful run the following to save the current process list to be restarted when pm2 restarts
 
     pm2 save
+## Production - Harvest Data from Scopus
+
+## Production - Generate Thumbnails and harvest PDFs for publications
+
+## Production - Dashboard Data
+When you get to a point where publications have been reviewed and approved for a center/institute you can load data into the dashboard by running
+
+    make dashboard-ingest
 
 ## Modules
 

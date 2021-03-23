@@ -1,6 +1,8 @@
 import axios from 'axios'
 import _ from 'lodash'
 import NormedPublication from './normedPublication'
+import DataSource from './dataSource'
+import HarvestSet from './HarvestSet'
 
 export class ScopusDataSource implements DataSource {
 
@@ -20,7 +22,7 @@ export class ScopusDataSource implements DataSource {
   }
 
   // assumes that if only one of startDate or endDate provided it would always be startDate first and then have endDate undefined
-  async getPublicationsByAuthorName(person: NormedPerson, offset: Number, startDate: Date, endDate?: Date): Promise<HarvestSet> {
+  async getPublicationsByAuthorName(person: NormedPerson, sessionState: {}, offset: Number, startDate: Date, endDate?: Date): Promise<HarvestSet> {
     const authorQuery = this.getAuthorQuery(person)
 
     let totalResults: Number

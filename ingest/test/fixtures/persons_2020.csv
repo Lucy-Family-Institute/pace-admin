@@ -1,100 +1,100 @@
-id,given_name,family_name,email,position_title,institution_id,start_date,end_date
-1,Mark,Alber,malber@nd.edu,Professor of Mathematics,1,2017-01-01,2017-12-31
-2,Ani,Aprahamian,aapraham@nd.edu,The Frank M. Freimann Professor of Physics at the University of Notre Dame,1,2017-01-01,
-3,Brandon,Ashfeld,bashfeld@nd.edu,Associate Professor and Director of Graduate Studies in Chemistry and Biochemistry at the University of Notre Dame,1,2017-01-01,
-4,Niranjan,Awasthi,nawasthi@iupui.edu,Senior Research Professor at Indiana University School of Medicine - South Bend,2,2017-01-01,
-5,Brian,Baker,brian-baker@nd.edu,Department Chair of Chemistry and Biochemistry and Rev. John A. Zahm Professor of Structural Biology at the University of Notre Dame,1,2017-01-01,
-6,Basar,Bilgicer,Bbilgicer@nd.edu,Associate Professor in the Department of Chemical and Biomolecular Engineering at the University of Notre Dame,1,2017-01-01,
-7,Brian,Blagg,bblagg@nd.edu,Director of Warren Family Research Center for Drug Discovery and Development,1,2017-01-01,
-8,Paul,Bohn,pbohn@nd.edu,Arthur J. Schmitt Professor of Chemical and Biomolecular Engineering at the University of Notre Dame,1,2017-01-01,
+id,given_name,family_name,email,position_title,institution_id,start_date,end_date,person_source_ids_scopus_affiliation_id
+1,Mark,Alber,malber@nd.edu,Professor of Mathematics,1,2017-01-01,2017-12-31,60021508
+2,Ani,Aprahamian,aapraham@nd.edu,The Frank M. Freimann Professor of Physics at the University of Notre Dame,1,2017-01-01,,60021508
+3,Brandon,Ashfeld,bashfeld@nd.edu,Associate Professor and Director of Graduate Studies in Chemistry and Biochemistry at the University of Notre Dame,1,2017-01-01,,60021508
+4,Niranjan,Awasthi,nawasthi@iupui.edu,Senior Research Professor at Indiana University School of Medicine - South Bend,2,2017-01-01,,60021508
+5,Brian,Baker,brian-baker@nd.edu,Department Chair of Chemistry and Biochemistry and Rev. John A. Zahm Professor of Structural Biology at the University of Notre Dame,1,2017-01-01,,60021508
+6,Basar,Bilgicer,Bbilgicer@nd.edu,Associate Professor in the Department of Chemical and Biomolecular Engineering at the University of Notre Dame,1,2017-01-01,,60021508
+7,Brian,Blagg,bblagg@nd.edu,Director of Warren Family Research Center for Drug Discovery and Development,1,2017-01-01,,60021508
+8,Paul,Bohn,pbohn@nd.edu,Arthur J. Schmitt Professor of Chemical and Biomolecular Engineering at the University of Notre Dame,1,2017-01-01,,60021508
 9,David,Boone,david.boone.16@nd.edu,"Adjunct Associate Professor
-Biology of Human Intestinal Diseases",1,2018-01-01,2018-12-31
-10,Jessica,Brown,jbrown33@nd.edu,Clare Boothe Luce Assistant Professor of Chemistry & Biochemistry at the University of Notre Dame,1,2019-01-01,
-11,Merlin,Bruening,mbruenin@nd.edu,Donald and Susan Rice Professor of Engineering,1,2017-01-01,
-12,Steven,Buechler,buechler.1@nd.edu,Professor of Applied Computational Mathematics & Statistics at the University of Notre Dame,1,2018-01-01,
-13,S. Andrew,Bullock,sabullock@nd.edu,Associate Director of the Harper Cancer Research Institute at the University of Notre Dame,3,2019-01-01,
-14,Francis,Castellino,fcastell@nd.edu,Kleiderer-Pezold Professor of Biochemistry,1,2017-01-01,
-15,Angela,Cavalieri,cavalieri.2@nd.edu,External Relations and Special Events Program Coordinator,3,2019-01-01,
-16,Hsueh-Chia,Chang,Hsueh-Chia.Chang.2@nd.edu,Bayer Professor of Engineering and Director of the Center for Microfluidics and Medical Diagnostics at the University of Notre Dame,1,2017-01-01,
-17,Mayland,Chang,mchang@nd.edu,Research Professor of Chemistry and Biochemistry at the University of Notre Dame,1,2017-01-01,
-18,Danny,Chen,dchen@nd.edu,Professor of Computer Science and Engineering,1,2017-01-01,
-19,Karen,Cowden Dahl,kcowdend@iupui.edu,Associate Professor of Biochemistry & Molecular Biology at Indiana University School of Medicine - South Bend,2,2017-01-01,
-20,Crislyn,D'Souza-Schorey,crislyn.D'Souza-Schorey.1@nd.edu,Morris Pollard Collegiate Professor of Biological Sciences and Department Chair at the University of Notre Dame,1,2018-01-01,
-21,Richard,Dahl,richdahl@iupui.edu,Assistant Professor of Microbiology & Immunology at Indiana University School of Medicine - South Bend,2,2018-01-01,
-22,Juan,Del Valle,jdelvalle@nd.edu,William K. Warren Family Associate Professor of Chemistry & Biochemistry at the University of Notre Dame,1,2019-01-01,
-23,Norman,Dovichi,Norman.J.Dovichi.1@nd.edu,Grace-Rupley Professor of Chemistry and Biochemistry at the University of Notre Dame,1,2017-01-01,
+Biology of Human Intestinal Diseases",1,2018-01-01,2018-12-31,60021508
+10,Jessica,Brown,jbrown33@nd.edu,Clare Boothe Luce Assistant Professor of Chemistry & Biochemistry at the University of Notre Dame,1,2019-01-01,,60021508
+11,Merlin,Bruening,mbruenin@nd.edu,Donald and Susan Rice Professor of Engineering,1,2017-01-01,,60021508
+12,Steven,Buechler,buechler.1@nd.edu,Professor of Applied Computational Mathematics & Statistics at the University of Notre Dame,1,2018-01-01,,60021508
+13,S. Andrew,Bullock,sabullock@nd.edu,Associate Director of the Harper Cancer Research Institute at the University of Notre Dame,3,2019-01-01,,60021508
+14,Francis,Castellino,fcastell@nd.edu,Kleiderer-Pezold Professor of Biochemistry,1,2017-01-01,,60021508
+15,Angela,Cavalieri,cavalieri.2@nd.edu,External Relations and Special Events Program Coordinator,3,2019-01-01,,60021508
+16,Hsueh-Chia,Chang,Hsueh-Chia.Chang.2@nd.edu,Bayer Professor of Engineering and Director of the Center for Microfluidics and Medical Diagnostics at the University of Notre Dame,1,2017-01-01,,60021508
+17,Mayland,Chang,mchang@nd.edu,Research Professor of Chemistry and Biochemistry at the University of Notre Dame,1,2017-01-01,,60021508
+18,Danny,Chen,dchen@nd.edu,Professor of Computer Science and Engineering,1,2017-01-01,,60021508
+19,Karen,Cowden Dahl,kcowdend@iupui.edu,Associate Professor of Biochemistry & Molecular Biology at Indiana University School of Medicine - South Bend,2,2017-01-01,,60021508
+20,Crislyn,D'Souza-Schorey,crislyn.D'Souza-Schorey.1@nd.edu,Morris Pollard Collegiate Professor of Biological Sciences and Department Chair at the University of Notre Dame,1,2018-01-01,,60021508
+21,Richard,Dahl,richdahl@iupui.edu,Assistant Professor of Microbiology & Immunology at Indiana University School of Medicine - South Bend,2,2018-01-01,,60021508
+22,Juan,Del Valle,jdelvalle@nd.edu,William K. Warren Family Associate Professor of Chemistry & Biochemistry at the University of Notre Dame,1,2019-01-01,,60021508
+23,Norman,Dovichi,Norman.J.Dovichi.1@nd.edu,Grace-Rupley Professor of Chemistry and Biochemistry at the University of Notre Dame,1,2017-01-01,,60021508
 24,Molly,Duman Scheel,mscheel@nd.edu,"Adjunct Associate Professor
-Vector Mosquito Developmental Genetics",1,2018-01-01,2018-12-31
-25,Kathleen,Eggleson,eggleson.1@nd.edu,Assistant Professor of Clinical Medicine,2,2018-01-01,2018-12-31
-26,Mark,Fox,markfox@iu.edu,Associate Dean and Director of Indiana University School of Medicine - South Bend,2,2017-01-01,
-27,Haifeng,Gao,hgao@nd.edu,Associate Professor of Chemistry and Biochemistry at the University of Notre Dame,1,2017-01-01,
-28,David B.,Go,yangao@iupui.edu,Professor of Aerospace and Mechanical Engineering,1,2017-01-01,
-29,Holly,Goodson,holly.v.goodson.1@nd.edu,Professor of Chemistry and Biochemistry at the University of Notre Dame,1,2017-01-01,
-30,Donny,Hanjaya-Putra,dputra1@nd.edu,Assistant Professor of Aerospace and Mechanical Engineering,1,2018-01-01,
-31,Sazzad,Hassan,hassansa@iu.edu,Assistant Research Professor of Surgery at IU School of Medicine-South Bend,2,2018-01-01,
-32,Paul,Helquist,phelquis@nd.edu,Associate Chair for Research,1,2018-01-01,
-33,Lance,Hellman,,,1,2018-01-01,2018-12-31
-34,Reginald,Hill,rhill3@nd.edu,Archibald Assistant Professor of Cancer Biology,1,2017-01-01,2018-12-31
-35,Tyvette,Hilliard,thilliar@nd.edu,Research Assistant Professor,1,2018-01-01,
-36,David,Hoelzle,,,1,2017-01-01,2017-12-31
-37,Scott,Howard,scott.s.howard.48@nd.edu,Associate Professor of Electrical Engineering at the University of Notre Dame,1,2017-01-01,
-38,Bei,Hu,B1hu@nd.edu,Chair and Professor of Applied Computational Mathematics & Statistics at the University of Notre Dame,1,2017-01-01,
-39,Paul,Huber,paul.w.huber.1@nd.edu,Professor of Chemistry and Biochemistry at the University of Notre Dame,1,2017-01-01,
-40,Amanda,Hummon,hummon.1@osu.edu,Adjunct Associate Professor,1,2017-01-01,2018-12-31
-41,Khoa,Huynh,khuynh@nd.edu,Research Program Manager,3,2018-01-01,
-42,Meng,Jiang,mjiang2@nd.edu,Assistant Professor of Computer Science and Engineering at the University of Notre Dame,1,2017-01-01,
-43,William,Kaliney,williamkaliney@gmail.com,Pathologist in Residence at the Harper Cancer Research Institute,3,2018-01-01,
-44,Oleg,Kim,,Research Assistant Professor,1,2017-01-01,2017-12-31
-45,Tanyel,Kiziltepe,Tkiziltepe@nd.edu,Assistant Professional Specialist in the Department of Chemical and Biomolecular Engineering at the University of Notre Dame,1,2017-01-01,
-46,John,Koren III,jkoren@nd.edu,Assistant Research Professor,1,2018-01-01,
-47,Yulia,Klymenko,yklymenk@nd.edu,,1,2018-01-01,2018-12-31
-48,W. Matthew,Leevy,matthew.leevy@gmail.com,Director of ND Innovation Lab,3,2017-01-01,
-49,Jun,Li,jun.li@nd.edu,Associate Professor of Applied Computational Mathematics & Statistics at the University of Notre Dame,1,2017-01-01,
-50,Marya,Lieberman,mlieberm@nd.edu,Professor of Chemistry and Biochemistry at the University of Notre Dame,1,2017-01-01,
-51,Laurie,Littlepage,laurie.littlepage@nd.edu,Campbell Family Assistant Professor of Cancer Research,1,2017-01-01,
-52,Fang,Liu,fang.liu.131@nd.edu,Associate Professor,1,2017-01-01,
-53,XIN,LIU,,Biochemist,1,2018-01-01,2018-12-31
-54,Xin,Lu,xlu@nd.edu,John M. and Mary Jo Boler Assistant Professor Department of Biological Sciences at the University of Notre Dame,1,2017-01-01,
+Vector Mosquito Developmental Genetics",1,2018-01-01,2018-12-31,60021508
+25,Kathleen,Eggleson,eggleson.1@nd.edu,Assistant Professor of Clinical Medicine,2,2018-01-01,2018-12-31,60021508
+26,Mark,Fox,markfox@iu.edu,Associate Dean and Director of Indiana University School of Medicine - South Bend,2,2017-01-01,,60021508
+27,Haifeng,Gao,hgao@nd.edu,Associate Professor of Chemistry and Biochemistry at the University of Notre Dame,1,2017-01-01,,60021508
+28,David B.,Go,yangao@iupui.edu,Professor of Aerospace and Mechanical Engineering,1,2017-01-01,,60021508
+29,Holly,Goodson,holly.v.goodson.1@nd.edu,Professor of Chemistry and Biochemistry at the University of Notre Dame,1,2017-01-01,,60021508
+30,Donny,Hanjaya-Putra,dputra1@nd.edu,Assistant Professor of Aerospace and Mechanical Engineering,1,2018-01-01,,60021508
+31,Sazzad,Hassan,hassansa@iu.edu,Assistant Research Professor of Surgery at IU School of Medicine-South Bend,2,2018-01-01,,60021508
+32,Paul,Helquist,phelquis@nd.edu,Associate Chair for Research,1,2018-01-01,,60021508
+33,Lance,Hellman,,,1,2018-01-01,2018-12-31,60021508
+34,Reginald,Hill,rhill3@nd.edu,Archibald Assistant Professor of Cancer Biology,1,2017-01-01,2018-12-31,60021508
+35,Tyvette,Hilliard,thilliar@nd.edu,Research Assistant Professor,1,2018-01-01,,60021508
+36,David,Hoelzle,,,1,2017-01-01,2017-12-31,60021508
+37,Scott,Howard,scott.s.howard.48@nd.edu,Associate Professor of Electrical Engineering at the University of Notre Dame,1,2017-01-01,,60021508
+38,Bei,Hu,B1hu@nd.edu,Chair and Professor of Applied Computational Mathematics & Statistics at the University of Notre Dame,1,2017-01-01,,60021508
+39,Paul,Huber,paul.w.huber.1@nd.edu,Professor of Chemistry and Biochemistry at the University of Notre Dame,1,2017-01-01,,60021508
+40,Amanda,Hummon,hummon.1@osu.edu,Adjunct Associate Professor,1,2017-01-01,2018-12-31,60021508
+41,Khoa,Huynh,khuynh@nd.edu,Research Program Manager,3,2018-01-01,,60021508
+42,Meng,Jiang,mjiang2@nd.edu,Assistant Professor of Computer Science and Engineering at the University of Notre Dame,1,2017-01-01,,60021508
+43,William,Kaliney,williamkaliney@gmail.com,Pathologist in Residence at the Harper Cancer Research Institute,3,2018-01-01,,60021508
+44,Oleg,Kim,,Research Assistant Professor,1,2017-01-01,2017-12-31,60021508
+45,Tanyel,Kiziltepe,Tkiziltepe@nd.edu,Assistant Professional Specialist in the Department of Chemical and Biomolecular Engineering at the University of Notre Dame,1,2017-01-01,,60021508
+46,John,Koren III,jkoren@nd.edu,Assistant Research Professor,1,2018-01-01,,60021508
+47,Yulia,Klymenko,yklymenk@nd.edu,,1,2018-01-01,2018-12-31,60021508
+48,W. Matthew,Leevy,matthew.leevy@gmail.com,Director of ND Innovation Lab,3,2017-01-01,,60021508
+49,Jun,Li,jun.li@nd.edu,Associate Professor of Applied Computational Mathematics & Statistics at the University of Notre Dame,1,2017-01-01,,60021508
+50,Marya,Lieberman,mlieberm@nd.edu,Professor of Chemistry and Biochemistry at the University of Notre Dame,1,2017-01-01,,60021508
+51,Laurie,Littlepage,laurie.littlepage@nd.edu,Campbell Family Assistant Professor of Cancer Research,1,2017-01-01,,60021508
+52,Fang,Liu,fang.liu.131@nd.edu,Associate Professor,1,2017-01-01,,60021508
+53,XIN,LIU,,Biochemist,1,2018-01-01,2018-12-31,60021508
+54,Xin,Lu,xlu@nd.edu,John M. and Mary Jo Boler Assistant Professor Department of Biological Sciences at the University of Notre Dame,1,2017-01-01,,60021508
 55,Tengfei,Luo,tluo@nd.edu,"Associate Professor
-Department of Aerospace and Mechanical Engineering",1,2018-01-01,2018-12-31
-56,Thomas,Merluzzi,Thomas.V.Merluzzi.1@nd.edu,Professor,1,2017-01-01,
-57,Tijana,Milenkovic,tijana.milenkovic.1@nd.edu,Associate Professor,1,2017-01-01,
-58,Prakash,Nallathamby,prakash.d.nallathamby.1@nd.edu,Research Assistant Professor,1,2018-01-01,
-59,Glen,Niebur,Gniebur@nd.edu,Professor of Aerospace and Mechanical Engineering at the University of Notre Dame,1,2017-01-01,
-60,Ken,Olson,kolson@nd.edu,Adjunct Professor of Cardiovascular Physiology,1,2018-01-01,2018-12-31
-61,Thomas,O'Sullivan,tosullivan@nd.edu,Assistant Professor of Electrical Engineering at the University of Notre Dame,1,2017-01-01,
-62,Timothy,Ovaert,tovaert@nd.edu,Professor of Aerospace and Mechanical Engineering,1,2017-01-01,2017-12-31
-63,Toni,Page-Mayberry,tpagemay@nd.edu,Tissue Bank Coordinator,3,2018-01-01,
-64,Athanasia,Panopoulos,apanopou@nd.edu,Elizabeth and Michael Gallagher Family Assistant Professor of Adult Stem Cell Research at the University of Notre Dame,1,2017-01-01,
-65,Victoria,Ploplis,Victoria.A.Ploplis.3@nd.edu,Research Professor at the W.M. Keck Center For Transgene Research at the University of Notre Dame,1,2017-01-01,
-66,Jenifer,Prosperi,jrprospe@iupui.edu,Assistant Professor of Biochemistry & Molecular Biology at Indiana University School of Medicine - South Bend,2,2017-01-01,
-67,Sylwia,Ptasinska,sylwia.ptasinska.1@nd.edu,Associate Professor of Physics at the University of Notre Dame,1,2017-01-01,
-68,Matthew,Ravosa,mravosa@nd.edu,Professor of Biological Sciences,1,2017-01-01,
-69,Ryan,Roeder,rroeder@nd.edu,Professor of Aerospace and Mechanical Engineering,1,2017-01-01,
-70,Lynn,Roy,,,2,2018-01-01,2018-12-31
-71,Steven,Ruggiero,sruggier@nd.edu,Professor of Physics at the University of Notre Dame,1,2017-01-01,
-72,Zachary,Schafer,zschafe1@nd.edu,Assistant Department Chair of Biological Sciences,1,2017-01-01,
-73,Zachary,Schultz,schultz.133@osu.edu,,1,2017-01-01,2018-12-31
-74,Robert,Schulz,schultz.133@osu.edu,,1,2017-01-01,2018-12-31
-75,Margaret,Schwarz,schwarma@iupui.edu,Professor of Pediatrics Indiana University School of Medicine- South Bend,2,2017-01-01,
-76,Zonggao,Shi,,,1,2017-01-01,2018-12-31
-77,Bradley,Smith,Bradley.D.Smith.115@nd.edu,Emil T. Hofman Chair of Chemistry and Biochemistry and Director of the Integrated Imaging Facility at the University of Notre Dame,1,2017-01-01,
-78,M. Sharon,Stack,sstack@nd.edu,Ann F. Dunne and Elizabeth Riley Director of Harper Cancer Research Institute,1,2017-01-01,
-79,Robert,Stahelin,,,2,2017-01-01,2018-12-31
-80,Tiffany,Stewart,,,1,2017-01-01,2018-12-31
-81,Carol,Tanner,ctanner@nd.edu,Professor of Physics at the University of Notre Dame,1,2017-01-01,
-82,Richard,Taylor,Richard.E.Taylor.61@nd.edu,Interim Director Notre Dame California,1,2017-01-01,
-83,Charles,Tessier,crtessie@iu.edu,Assistant Research Professor at Indiana University School of Medicine-South Bend,2,2018-01-01,
-84,Gregory,Timp,gregory.L.Timp.1@nd.edu,Keough-Hesburgh Chair in Electrical Engineering and Biological Sciences at the University of Notre Dame,1,2017-01-01,
-85,Tracy,Vargo-Gogola,tvargogo@nd.edu,Associate Professor of Clinical Anatomy,2,2017-01-01,
-86,Kevin,Vaughan,Kevin.T.Vaughan.4@nd.edu,Associate Professor of Cell Biology at the University of Notre Dame,1,2018-01-01,
-87,Urs,von Holzen,uvonholzen@goshenhealth.com,Associate Professor of Surgery at Indiana University School of Medicine-South Bend,2,2017-01-01,
-88,Matt,Webber,mwebber@nd.edu,Assistant Professor,1,2017-01-01,
-89,Rebecca,Whelan,rwhelan1@nd.edu,Associate Professor,1,2018-01-01,
-90,Katharine,White,kwhite6@nd.edu,Clare Boothe Luce Assistant Professor in the Department of Chemistry and Biochemistry,1,2018-01-01,
-91,Olaf,Wiest,Olaf.G.Wiest.1@nd.edu,Professor of Chemistry and Biochemistry at the University of Notre Dame,1,2017-01-01,
-92,Sangpil,Yoon,syoon4@nd.edu,Assistant Professor,1,2019-01-01,
-93,Jeremiah,Zartman,zartman.3@nd.edu,Associate Professor of Chemical and Biomolecular Engineering at the University of Notre Dame,1,2017-01-01,
-94,Siyuan,Zhang,szhang8@nd.edu,Nancy Dee Associate Professor of Cancer Research,1,2017-01-01,
-95,Min,Zhao,mzhao3@nd.edu,Tissue Bank Technician,3,2019-01-01,
-96,Pinar,Zorlutuna,pinar.zorlutuna.1@nd.edu,Associate Professor of Aerospace and Mechanical Engineering at the University of Notre Dame,1,2017-01-01,
+Department of Aerospace and Mechanical Engineering",1,2018-01-01,2018-12-31,60021508
+56,Thomas,Merluzzi,Thomas.V.Merluzzi.1@nd.edu,Professor,1,2017-01-01,,60021508
+57,Tijana,Milenkovic,tijana.milenkovic.1@nd.edu,Associate Professor,1,2017-01-01,,60021508
+58,Prakash,Nallathamby,prakash.d.nallathamby.1@nd.edu,Research Assistant Professor,1,2018-01-01,,60021508
+59,Glen,Niebur,Gniebur@nd.edu,Professor of Aerospace and Mechanical Engineering at the University of Notre Dame,1,2017-01-01,,60021508
+60,Ken,Olson,kolson@nd.edu,Adjunct Professor of Cardiovascular Physiology,1,2018-01-01,2018-12-31,60021508
+61,Thomas,O'Sullivan,tosullivan@nd.edu,Assistant Professor of Electrical Engineering at the University of Notre Dame,1,2017-01-01,,60021508
+62,Timothy,Ovaert,tovaert@nd.edu,Professor of Aerospace and Mechanical Engineering,1,2017-01-01,2017-12-31,60021508
+63,Toni,Page-Mayberry,tpagemay@nd.edu,Tissue Bank Coordinator,3,2018-01-01,,60021508
+64,Athanasia,Panopoulos,apanopou@nd.edu,Elizabeth and Michael Gallagher Family Assistant Professor of Adult Stem Cell Research at the University of Notre Dame,1,2017-01-01,,60021508
+65,Victoria,Ploplis,Victoria.A.Ploplis.3@nd.edu,Research Professor at the W.M. Keck Center For Transgene Research at the University of Notre Dame,1,2017-01-01,,60021508
+66,Jenifer,Prosperi,jrprospe@iupui.edu,Assistant Professor of Biochemistry & Molecular Biology at Indiana University School of Medicine - South Bend,2,2017-01-01,,60021508
+67,Sylwia,Ptasinska,sylwia.ptasinska.1@nd.edu,Associate Professor of Physics at the University of Notre Dame,1,2017-01-01,,60021508
+68,Matthew,Ravosa,mravosa@nd.edu,Professor of Biological Sciences,1,2017-01-01,,60021508
+69,Ryan,Roeder,rroeder@nd.edu,Professor of Aerospace and Mechanical Engineering,1,2017-01-01,,60021508
+70,Lynn,Roy,,,2,2018-01-01,2018-12-31,60021508
+71,Steven,Ruggiero,sruggier@nd.edu,Professor of Physics at the University of Notre Dame,1,2017-01-01,,60021508
+72,Zachary,Schafer,zschafe1@nd.edu,Assistant Department Chair of Biological Sciences,1,2017-01-01,,60021508
+73,Zachary,Schultz,schultz.133@osu.edu,,1,2017-01-01,2018-12-31,60021508
+74,Robert,Schulz,schultz.133@osu.edu,,1,2017-01-01,2018-12-31,60021508
+75,Margaret,Schwarz,schwarma@iupui.edu,Professor of Pediatrics Indiana University School of Medicine- South Bend,2,2017-01-01,,60021508
+76,Zonggao,Shi,,,1,2017-01-01,2018-12-31,60021508
+77,Bradley,Smith,Bradley.D.Smith.115@nd.edu,Emil T. Hofman Chair of Chemistry and Biochemistry and Director of the Integrated Imaging Facility at the University of Notre Dame,1,2017-01-01,,60021508
+78,M. Sharon,Stack,sstack@nd.edu,Ann F. Dunne and Elizabeth Riley Director of Harper Cancer Research Institute,1,2017-01-01,,60021508
+79,Robert,Stahelin,,,2,2017-01-01,2018-12-31,60021508
+80,Tiffany,Stewart,,,1,2017-01-01,2018-12-31,60021508
+81,Carol,Tanner,ctanner@nd.edu,Professor of Physics at the University of Notre Dame,1,2017-01-01,,60021508
+82,Richard,Taylor,Richard.E.Taylor.61@nd.edu,Interim Director Notre Dame California,1,2017-01-01,,60021508
+83,Charles,Tessier,crtessie@iu.edu,Assistant Research Professor at Indiana University School of Medicine-South Bend,2,2018-01-01,,60021508
+84,Gregory,Timp,gregory.L.Timp.1@nd.edu,Keough-Hesburgh Chair in Electrical Engineering and Biological Sciences at the University of Notre Dame,1,2017-01-01,,60021508
+85,Tracy,Vargo-Gogola,tvargogo@nd.edu,Associate Professor of Clinical Anatomy,2,2017-01-01,,60021508
+86,Kevin,Vaughan,Kevin.T.Vaughan.4@nd.edu,Associate Professor of Cell Biology at the University of Notre Dame,1,2018-01-01,,60021508
+87,Urs,von Holzen,uvonholzen@goshenhealth.com,Associate Professor of Surgery at Indiana University School of Medicine-South Bend,2,2017-01-01,,60021508
+88,Matt,Webber,mwebber@nd.edu,Assistant Professor,1,2017-01-01,,60021508
+89,Rebecca,Whelan,rwhelan1@nd.edu,Associate Professor,1,2018-01-01,,60021508
+90,Katharine,White,kwhite6@nd.edu,Clare Boothe Luce Assistant Professor in the Department of Chemistry and Biochemistry,1,2018-01-01,,60021508
+91,Olaf,Wiest,Olaf.G.Wiest.1@nd.edu,Professor of Chemistry and Biochemistry at the University of Notre Dame,1,2017-01-01,,60021508
+92,Sangpil,Yoon,syoon4@nd.edu,Assistant Professor,1,2019-01-01,,60021508
+93,Jeremiah,Zartman,zartman.3@nd.edu,Associate Professor of Chemical and Biomolecular Engineering at the University of Notre Dame,1,2017-01-01,,60021508
+94,Siyuan,Zhang,szhang8@nd.edu,Nancy Dee Associate Professor of Cancer Research,1,2017-01-01,,60021508
+95,Min,Zhao,mzhao3@nd.edu,Tissue Bank Technician,3,2019-01-01,,60021508
+96,Pinar,Zorlutuna,pinar.zorlutuna.1@nd.edu,Associate Professor of Aerospace and Mechanical Engineering at the University of Notre Dame,1,2017-01-01,,60021508
