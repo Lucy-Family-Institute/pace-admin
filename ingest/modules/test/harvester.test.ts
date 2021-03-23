@@ -4,6 +4,8 @@ import NormedPublication from '../normedPublication'
 import { loadPersons} from '../../units/loadPersons'
 import { randomWait } from '../../units/randomWait'
 import { getDateObject } from '../../units/dateRange'
+import HarvestSet from '../harvestSet'
+import DataSource from '../dataSource'
 
 import dotenv from 'dotenv'
 const fs = require('fs');
@@ -12,6 +14,7 @@ import _ from 'lodash'
 let scopusHarvester: Harvester
 let defaultNormedPerson: NormedPerson
 let testPersons: NormedPerson[]
+let testAllPersons: NormedPerson[]
 let expectedNormedPublications: NormedPublication[]
 let expectedNormedPubsByAuthor
 
@@ -62,7 +65,7 @@ beforeAll(async () => {
         'end_date': 'endDate'
     }
 
-    const testPersonsFilePath = './test/fixtures/persons_2020.csv'
+    const testPersonsFilePath = './test/fixtures/persons_sample_2019.csv'
     const expectedPubCSVPath = './test/fixtures/scopus.2019.csv'
     expectedNormedPublications = await NormedPublication.loadFromCSV(expectedPubCSVPath)
     // get map of 'lastname, first initial' to normed publications
@@ -73,7 +76,9 @@ beforeAll(async () => {
     // testPersons = await loadPersons(testPersonsFilePath, personPropMap)
     testPersons = [defaultNormedPerson]
 
-    jest.setTimeout(100000)
+    testAllPersons = _.chunk(await loadPersons(testPersonsFilePath, personPropMap), 4)[0]
+
+    jest.setTimeout(1000000)
 })
 
 //TODO load in list of people to test against expected results for 2019
@@ -90,7 +95,7 @@ test('test Scopus harvester.fetchPublications by Author Name', async () => {
         totalResults: 198
     }
     // for date need to call getDateObject to make sure time zone is set correctly and not accidentally setting to previous date because of hour difference in local timezone
-    const results = await scopusHarvester.fetchPublications(defaultNormedPerson, HarvestOperation.QUERY_BY_AUTHOR_NAME, 0, getDateObject('2019-01-01'))
+    const results = await scopusHarvester.fetchPublications(defaultNormedPerson, HarvestOperation.QUERY_BY_AUTHOR_NAME, {}, 0, getDateObject('2019-01-01'), undefined)
     // as new publications may be added to available, just test that current set includes expected pubs
     expect(results.sourceName).toEqual(expectedHarvestSet.sourceName)
     expect(results.searchPerson).toEqual(expectedHarvestSet.searchPerson)
@@ -156,6 +161,34 @@ test('test Scopus harvester.harvest by author name', async () => {
 test('test scopus harvester.harvestToCsv', async () => {
     await scopusHarvester.harvestToCsv(testPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2019-01-01'))
 })
+
+// test('test scopus harvester.harvestToCsv with full author list', async () => {
+//     // console.log(`Test persons is: ${JSON.stringify(testPersons, null, 2)}`)
+//     // console.log(`Test persons is: ${JSON.stringify(testAllPersons, null, 2)}`)
+//     expect.hasAssertions()
+//     const csvFilePath = await scopusHarvester.harvestToCsv(testAllPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2019-01-01'))
+//     const harvestedPubs = await NormedPublication.loadFromCSV(csvFilePath)
+//     const harvestedByAuthor = _.groupBy(harvestedPubs, (normedPub: NormedPublication) => {
+//         return `${normedPub.searchPerson.familyName}, ${normedPub.searchPerson.givenNameInitial}`
+//     })
+//     // check harvested same as expected
+//     _.each(_.keys(harvestedByAuthor), (author) => {
+//         const harvested = harvestedByAuthor[author]
+//         const expected = expectedNormedPubsByAuthor[author]
+//         const resultNormedPubsByDoi = _.mapKeys(harvested, (normedPub) => {
+//             return normedPub['doi']
+//         })
+//         const expectedNormedPubsByDoi = _.mapKeys(expected, (expectedPub) => {
+//             return expectedPub['doi']
+//         })
+//         _.each(_.keys(resultNormedPubsByDoi), (doi) => {
+//             // ignore sourcemetadata since things like citedby-count often change over time
+//             const expectedPub = _.omit(expectedNormedPubsByDoi[doi], 'sourceMetadata')
+//             const receivedPub = _.omit(resultNormedPubsByDoi[doi], 'sourceMetadata')
+//             expect(receivedPub).toEqual(expectedPub)
+//         })
+//     })
+// })
 
 //TODO load in list of people to test against expected results for 2019
 test('test Scopus harvester.harvest by author id throws error', async () => {
