@@ -33,7 +33,7 @@ export async function loadPersons (csvPath: string, propertyMap: {}={}): Promise
         givenNameInitial: givenNameInitial ? givenNameInitial : (givenName) ? givenName.charAt(0) : undefined,
         givenName: givenName,
         startDate: getDateObject(row['startdate']),
-        endDate: getDateObject(row['enddate']),
+        endDate: (row['enddate'] && row['enddate'].length > 0) ? getDateObject(row['enddate']) : undefined,
         sourceIds: {
           scopusAffiliationId: row['scopusaffiliationId']
         }    

@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 const fs = require('fs');
 import _ from 'lodash'
 import NormedPublication from '../normedPublication'
+import HarvestSet from '../harvestSet'
 
 let ds: ScopusDataSource
 let dsConfig: DataSourceConfig
@@ -156,7 +157,8 @@ test('testing get publication from Scopus with no affiliation id', async () => {
 
     const person: NormedPerson = _.cloneDeep(defaultNormedPerson)
     person.sourceIds = {}
-    const results: HarvestSet = await ds.getPublicationsByAuthorName(person, 0, getDateObject(`${defaultYear}-01-01`))
+    const sessionState = undefined
+    const results: HarvestSet = await ds.getPublicationsByAuthorName(person, sessionState, 0, getDateObject(`${defaultYear}-01-01`))
     const expectedSet = {
         sourceName: ds.getSourceName(),
         offset: 0,
@@ -173,7 +175,8 @@ test('testing get publication from Scopus with no affiliation id', async () => {
 test('testing get publication from Scopus with affiliation id', async () => {
     expect.hasAssertions()
     //
-    const results: HarvestSet = await ds.getPublicationsByAuthorName(defaultNormedPerson, 0, getDateObject(`${defaultYear}-01-01`))
+    const sessionState = undefined
+    const results: HarvestSet = await ds.getPublicationsByAuthorName(defaultNormedPerson, sessionState, 0, getDateObject(`${defaultYear}-01-01`))
     const expectedSet = {
         sourceName: ds.getSourceName(),
         offset: 0,
@@ -190,7 +193,8 @@ test('testing get publication from Scopus with affiliation id', async () => {
 
 test('testing get publication from Scopus with affiliation id and end date set', async () => {
   expect.hasAssertions()
-  const results: HarvestSet = await ds.getPublicationsByAuthorName(defaultNormedPerson, 0, getDateObject(`${defaultYear}-01-01`), getDateObject(`${parseInt(defaultYear)+1}-01-01`))
+  const sessionState = undefined
+  const results: HarvestSet = await ds.getPublicationsByAuthorName(defaultNormedPerson, sessionState, 0, getDateObject(`${defaultYear}-01-01`), getDateObject(`${parseInt(defaultYear)+1}-01-01`))
   const expectedSet = {
       sourceName: ds.getSourceName(),
       offset: 0,

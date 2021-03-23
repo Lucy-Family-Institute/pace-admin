@@ -6,6 +6,8 @@ import { dateRangesOverlapping } from '../units/dateRange'
 import { randomWait } from '../units/randomWait'
 import moment from 'moment'
 import NormedPublication from './normedPublication'
+import DataSource from './dataSource'
+import HarvestSet from './harvestSet'
 
 export enum HarvestOperation {
   QUERY_BY_AUTHOR_NAME,
@@ -42,12 +44,14 @@ export class Harvester {
           let offset = 0
           // have to alias this because nested this call below makes this undefined
           let thisHarvester = this
-          harvestSet = await this.fetchPublications(person, harvestBy, offset, searchStartDate)
+          let sessionState = {}
+          harvestSet = await this.fetchPublications(person, harvestBy, sessionState, offset, searchStartDate, searchEndDate)
           if (harvestSet) {
             harvestSets.push(harvestSet)
           }
           const pageSize = this.ds.getRequestPageSize().valueOf()
           const totalResults = harvestSet.totalResults.valueOf()
+          sessionState = harvestSet.sessionState
           if (totalResults > pageSize){
             let numberOfRequests = parseInt(`${totalResults / pageSize}`) //convert to an integer to drop any decimal
             //if no remainder subtract one since already did one call
@@ -63,12 +67,22 @@ export class Harvester {
               } else {
                 offset += totalResults - offset
               }
-              harvestSet = await thisHarvester.fetchPublications(person, harvestBy, offset, searchStartDate)
+              harvestSet = await thisHarvester.fetchPublications(person, harvestBy, sessionState, offset, searchStartDate, searchEndDate)
               if (harvestSet) {
                 harvestSets.push(harvestSet)
               }
             }, { concurrency: 1})
-           }
+          }
+	  // check total retrieved result matches what was returned
+	  let totalRetrieved = 0
+	  _.each (harvestSets, (harvestSet) => {
+	    totalRetrieved += harvestSet.sourcePublications.length
+	  })
+	  if (totalRetrieved != totalResults) {
+      	     throw `All expected results not returned for ${person.familyName}, ${person.givenName}, expected: ${totalResults} actual: ${totalRetrieved} start date: ${person.startDate} and end date ${person.endDate}`
+    	  } else {
+      	     console.log(`Retrieved (${totalRetrieved} of ${totalResults}) expected results for ${person.familyName}, ${person.givenName} start date: ${person.startDate} and end date ${person.endDate}`)
+    	  }
         } else {
           console.log(`Warning: Skipping harvest of '${person.familyName}, ${person.givenName}' because person start date: ${person.startDate} and end date ${person.endDate} not within search start date ${searchStartDate} and end date ${searchEndDate}.)`)
         }
@@ -106,25 +120,30 @@ export class Harvester {
   /**
    *  @param person a NormedPerson object to harvest for using name values
    * 
+   *  @param harvestBy a HarvestOperation defining the method to retrieve results
+   * 
+   *  @param sessionState a hash of session state values as needed by the datasource to maintain state across multiple requests
+   * 
    *  @param offset the offset of the request assuming there may be more than one to retrieve all results
    * 
    *  @param searchStartDate the Date object defining the lower bound date for our search
    * 
    *  @returns HarvestSet object for current request with both normalized and source publications included
    */
-  async fetchPublications(person: NormedPerson, harvestBy: HarvestOperation, offset: number, searchStartDate: Date): Promise<HarvestSet> {
+  async fetchPublications(person: NormedPerson, harvestBy: HarvestOperation, sessionState:{}, offset: number, searchStartDate: Date, searchEndDate: Date): Promise<HarvestSet> {
     let harvestSet: HarvestSet
+    // add check to make sure all papers listed in results are actually returned
     switch(harvestBy) {
       case HarvestOperation.QUERY_BY_AUTHOR_NAME: {
         if (typeof this.ds['getPublicationsByAuthorName'] === 'function'){
-          harvestSet = await this.ds.getPublicationsByAuthorName(person, offset, searchStartDate)
+          harvestSet = await this.ds.getPublicationsByAuthorName(person, sessionState, offset, searchStartDate, searchEndDate)
         } else {
           harvestSet = this.createErrorHarvestSet('QUERY_BY_AUTHOR_NAME')
         }
         break
       } case HarvestOperation.QUERY_BY_AUTHOR_ID: {
         if (typeof this.ds['getPublicationsByAuthorId'] === 'function'){
-          harvestSet = await this.ds.getPublicationsByAuthorId(person, offset, searchStartDate)
+          harvestSet = await this.ds.getPublicationsByAuthorId(person, sessionState, offset, searchStartDate, searchEndDate)
         } else {
           harvestSet = this.createErrorHarvestSet('QUERY_BY_AUTHOR_ID')
         }
@@ -145,8 +164,10 @@ export class Harvester {
    * @param harvestBy The harvest operation used defined by the HarvestOperation constant passed in
    * @param searchStartDate The start date range for the harvest
    * @param searchEndDate The end date range of the harvest (if provided)
+   * 
+   * @returns the filepath of the output csv file
    */
-  async harvestToCsv(searchPersons: NormedPerson[], harvestBy: HarvestOperation, searchStartDate: Date, searchEndDate?: Date) {
+  async harvestToCsv(searchPersons: NormedPerson[], harvestBy: HarvestOperation, searchStartDate: Date, searchEndDate?: Date): Promise<string> {
     const harvestSets: HarvestSet[] = await this.harvest(searchPersons, harvestBy, searchStartDate, searchEndDate, 1)
 
     const filePath = `./test/${this.ds.getSourceName()}.${searchStartDate.getFullYear()}.${moment().format('YYYYMMDDHHmmss')}.csv`
@@ -155,5 +176,6 @@ export class Harvester {
       normedPubs = _.concat(normedPubs, harvestSet.normedPublications)
     })
     await NormedPublication.writeToCSV(normedPubs, filePath)
+    return filePath
   }
 }

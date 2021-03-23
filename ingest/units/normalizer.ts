@@ -89,3 +89,7 @@ export function normalizeObjectProperties (object: any, properties: Array<string
   })
   return newObject
 }
+
+export function escapeForRegEx(unescaped: string) {
+  return unescaped.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+}
