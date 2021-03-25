@@ -1533,6 +1533,65 @@ tables:
   delete_permissions: []
   event_triggers: []
   computed_fields: []
+- table: reviews_persons_publications
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      manual_configuration:
+        remote_table: persons_publications
+        column_mapping:
+          persons_publications_id: id
+    name: persons_publications
+    comment: null
+  - using:
+      manual_configuration:
+        remote_table: type_review
+        column_mapping:
+          review_type: value
+    name: type_review
+    comment: null
+  - using:
+      manual_configuration:
+        remote_table: users
+        column_mapping:
+          user_id: id
+    name: user
+    comment: null
+  array_relationships: []
+  insert_permissions: []
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - datetime
+      - doi
+      - id
+      - person_id
+      - persons_publications_id
+      - publication_id
+      - review_organization_value
+      - review_type
+      - source_name
+      - title
+      - user_id
+      - year
+      filter: {}
+  update_permissions: []
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
 - table: subfunders
   is_enum: false
   configuration:
