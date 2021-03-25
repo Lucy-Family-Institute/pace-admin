@@ -1,0 +1,29 @@
+- args:
+    role: user
+    table:
+      name: reviews_persons_publications
+      schema: public
+  type: drop_select_permission
+- args:
+    permission:
+      allow_aggregations: true
+      columns:
+      - datetime
+      - doi
+      - id
+      - person_id
+      - persons_publications_id
+      - publication_id
+      - review_organization_value
+      - review_type
+      - source_name
+      - title
+      - user_id
+      - year
+      computed_fields: []
+      filter: {}
+    role: user
+    table:
+      name: reviews_persons_publications
+      schema: public
+  type: create_select_permission

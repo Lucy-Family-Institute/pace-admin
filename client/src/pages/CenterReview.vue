@@ -142,12 +142,12 @@
                           />
                         </q-list>
                       </q-item-section>
-                      <q-item-section avatar side>
+                      <!--<q-item-section avatar side>
                         <q-badge
                           :label="getPublicationConfidence(item)*100+'%'"
                           :color="getPublicationConfidence(item)*100 < 50 ? 'amber-10' : 'green'"
                         />
-                      </q-item-section>
+                      </q-item-section>-->
                     </template>
                     <q-card v-if="item.publication !== undefined">
                       <q-card-section dense align="center" class="text-center">
@@ -165,7 +165,7 @@
                          row-key="id"
                          dense
                         >
-                         <q-tr v-if="acceptedAuthors.length <= 0" slot="bottom-row">
+                         <q-tr v-if="(selectedInstitutionReviewState.toLowerCase()==='accepted' && acceptedAuthors.length <= 0 || selectedInstitutionReviewState.toLowerCase()==='rejected' && rejectedAuthors.length <= 0 || selectedInstitutionReviewState.toLowerCase()==='unsure' && unsureAuthors.length <= 0)" slot="bottom-row">
                           <q-td align="left" colspan="100%">
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>None</i>
                           </q-td>
@@ -296,7 +296,7 @@
                       </q-item>
                     </q-list>
                   </q-card>
-                  <q-card class="col-xs-11">
+                  <q-card class="col-xs-7">
                     <q-card-section>
                       <q-table
                         title="Accepted Authors"
@@ -415,7 +415,7 @@ import readPersons from '../gql/readPersons'
 // import readPublicationsByPerson from '../gql/readPublicationsByPerson'
 // import readPublicationsByPersonByReview from '../gql/readPublicationsByPersonByReview'
 import readAuthorsByPublication from '../gql/readAuthorsByPublication'
-import readConfidenceSetItems from '../gql/readConfidenceSetItems'
+// import readConfidenceSetItems from '../gql/readConfidenceSetItems'
 import insertReview from '../gql/insertReview'
 // import readUser from '../gql/readUser'
 // import readInstitutions from '../gql/readInstitutions'
@@ -429,7 +429,8 @@ import readPublications from '../gql/readPublications'
 // import readPendingPublications from '../../../gql/readPendingPublications.gql'
 import readPersonPublicationsAll from '../gql/readPersonPublicationsAll'
 // import readPersonPublicationsConfidenceSets from '../gql/readPersonPublicationsConfidenceSets'
-import readPersonPublicationsReviewsConfidenceSets from '../gql/readPersonPublicationsReviewsConfSets'
+// import readPersonPublicationsReviewsConfidenceSets from '../gql/readPersonPublicationsReviewsConfSets'
+import readPersonPublicationsReviews from '../gql/readPersonPublicationsReviews'
 // import readPersonPublicationsHCRIReviews from '../gql/readPersonPublicationsHCRIReviews'
 import readAuthorsByPublications from '../gql/readAuthorsByPublications'
 // import readPublicationsByReviewState from '../../../gql/readPublicationsByReviewState.gql'
@@ -516,7 +517,6 @@ export default {
     publicationsLoadedError: false,
     showProgressBar: false,
     reviewedAuthorColumns: [
-      { name: 'confidenceset_value', align: 'left', label: 'Confidence', field: 'confidenceset_value', sortable: true },
       { name: 'family_name', align: 'left', label: 'Family Name', field: 'family_name', sortable: true },
       { name: 'given_name', align: 'left', label: 'Given Name', field: 'given_name', sortable: true }
     ],
@@ -1045,25 +1045,25 @@ export default {
       this.matchedPublicationAuthors = this.getMatchedPublicationAuthors(personPublication, reviewedAuthors)
       // console.log(`Matched authors are: ${JSON.stringify(this.matchedPublicationAuthors, null, 2)}`)
     },
-    async loadConfidenceSet (personPublication) {
-      this.confidenceSetItems = []
-      this.confidenceSet = undefined
-      // console.log(`Trying to load confidence sets for pub: ${JSON.stringify(personPublication, null, 2)}`)
-      if (personPublication.confidencesets_aggregate &&
-        personPublication.confidencesets_aggregate.nodes.length > 0) {
-        this.confidenceSet = personPublication.confidencesets_aggregate.nodes[0]
-        // console.log('getting confidence set items...')
-        const result = await this.$apollo.query(readConfidenceSetItems(this.confidenceSet.id))
-        this.confidenceSetItems = result.data.confidencesets_items
-        this.confidenceSetItems = _.transform(this.confidenceSetItems, (result, setItem) => {
-          // console.log(`Trying to set properties for confidence set item: ${JSON.stringify(setItem, null, 2)}`)
-          _.set(setItem, 'confidence_type_name', setItem.confidence_type.name)
-          _.set(setItem, 'confidence_type_rank', setItem.confidence_type.rank)
-          _.set(setItem, 'confidence_type_desc', setItem.confidence_type.description)
-          result.push(setItem)
-        }, [])
-      }
-    },
+    // async loadConfidenceSet (personPublication) {
+    //   this.confidenceSetItems = []
+    //   this.confidenceSet = undefined
+    //   // console.log(`Trying to load confidence sets for pub: ${JSON.stringify(personPublication, null, 2)}`)
+    //   if (personPublication.confidencesets_aggregate &&
+    //     personPublication.confidencesets_aggregate.nodes.length > 0) {
+    //     this.confidenceSet = personPublication.confidencesets_aggregate.nodes[0]
+    //     // console.log('getting confidence set items...')
+    //     const result = await this.$apollo.query(readConfidenceSetItems(this.confidenceSet.id))
+    //     this.confidenceSetItems = result.data.confidencesets_items
+    //     this.confidenceSetItems = _.transform(this.confidenceSetItems, (result, setItem) => {
+    //       // console.log(`Trying to set properties for confidence set item: ${JSON.stringify(setItem, null, 2)}`)
+    //       _.set(setItem, 'confidence_type_name', setItem.confidence_type.name)
+    //       _.set(setItem, 'confidence_type_rank', setItem.confidence_type.rank)
+    //       _.set(setItem, 'confidence_type_desc', setItem.confidence_type.description)
+    //       result.push(setItem)
+    //     }, [])
+    //   }
+    // },
     async fetchData () {
       await this.loadReviewStates()
       await this.loadPublications()
@@ -1130,8 +1130,11 @@ export default {
       this.publicationsGroupedByInstitutionReview = _.groupBy(this.publications, function (personPub) {
         let reviewType = 'pending'
         const doi = personPub.publication.doi
-        if (personPub.reviews_aggregate.nodes && personPub.reviews_aggregate.nodes.length > 0) {
-          reviewType = personPub.reviews_aggregate.nodes[0].review_type
+        // if (doi === '10.1101/gad.307116.117') {
+        //   console.log(`Person pub for doi 10.1101/gad.307116.117 is: ${JSON.stringify(personPub, null, 2)}`)
+        // }
+        if (personPub.reviews && personPub.reviews.length > 0) {
+          reviewType = personPub.reviews[0].review_type
         }
         if (!pubsByDoi[reviewType]) {
           pubsByDoi[reviewType] = {}
@@ -1142,11 +1145,14 @@ export default {
         pubsByDoi[reviewType][doi].push(personPub)
         return reviewType
       })
+
+      // console.log(`Pubs by doi are: ${JSON.stringify(pubsByDoi, null, 2)}`)
       // put in pubs grouped by doi for each review status
       this.publicationsGroupedByDoiByInstitutionReview = pubsByDoi
       console.log(`Finish group by publications ${moment().format('HH:mm:ss:SSS')}`)
       // initialize the pub author matches
       this.matchedPublicationAuthorsByDoi = _.mapValues(this.authorsByDoi, (cslAuthors, doi) => {
+        // console.log(`DOIs that are matched: ${JSON.stringify(_.keys(this.publicationsGroupedByDoiByInstitutionReview), null, 2)}`)
         return this.getMatchedCslAuthors(cslAuthors, this.publicationsGroupedByDoiByInstitutionReview['accepted'][doi], true)
       })
       this.sortAuthorsByDoi = {}
@@ -1280,8 +1286,8 @@ export default {
         this.selectedInstitutionReviewState = 'Accepted'
       }
       this.personPublicationsCombinedMatchesByOrgReview = _.groupBy(this.personPublicationsCombinedMatchesByReview[this.selectedInstitutionReviewState.toLowerCase()], function (pub) {
-        if (pub.org_reviews_aggregate.nodes && pub.org_reviews_aggregate.nodes.length > 0) {
-          return pub.org_reviews_aggregate.nodes[0].review_type
+        if (pub.org_reviews && pub.org_reviews.length > 0) {
+          return pub.org_reviews[0].review_type
         } else {
           return 'pending'
         }
@@ -1384,13 +1390,14 @@ export default {
       }
     },
     getPublicationConfidence (personPublication) {
-      if (personPublication.confidencesets_aggregate &&
-        personPublication.confidencesets_aggregate.nodes &&
-        personPublication.confidencesets_aggregate.nodes.length > 0) {
-        return personPublication.confidencesets_aggregate.nodes[0].value
-      } else {
-        return personPublication.confidence
-      }
+      // if (personPublication.confidencesets_aggregate &&
+      //   personPublication.confidencesets_aggregate.nodes &&
+      //   personPublication.confidencesets_aggregate.nodes.length > 0) {
+      //   return personPublication.confidencesets_aggregate.nodes[0].value
+      // } else {
+      //   return personPublication.confidence
+      // }
+      return 0
     },
     async sortPublications () {
       // sort by confidence of pub title
@@ -1468,19 +1475,31 @@ export default {
         })
         // console.log('***', pubsWithReviewResult)
         console.log(`Finished query publications ${moment().format('HH:mm:ss:SSS')}`)
-        console.log(`Starting query publications reviews confidence sets ${moment().format('HH:mm:ss:SSS')}`)
+        console.log(`Starting query publications ND reviews ${moment().format('HH:mm:ss:SSS')}`)
         const personPubByIds = _.mapKeys(pubsWithReviewResult.data.persons_publications, (personPub) => {
           return personPub.id
         })
-        // for now assume only one review, needs to be fixed later
-        const pubsWithReviewsConfResult = await this.$apollo.query({
-          query: readPersonPublicationsReviewsConfidenceSets(_.keys(personPubByIds)),
+        // // for now assume only one review, needs to be fixed later
+        const pubsWithNDReviewsResult = await this.$apollo.query({
+          query: readPersonPublicationsReviews(_.keys(personPubByIds), 'ND'),
           fetchPolicy: 'network-only'
         })
         // console.log('***', pubsWithReviewResult)
-        console.log(`Finished query publications reviews confidence sets ${moment().format('HH:mm:ss:SSS')}`)
-        const personPubConfidenceSetsReviews = _.mapKeys(pubsWithReviewsConfResult.data.persons_publications, (personPub) => {
-          return personPub.id
+        console.log(`Finished query publications ND reviews ${moment().format('HH:mm:ss:SSS')}`)
+        const personPubNDReviews = _.groupBy(pubsWithNDReviewsResult.data.reviews_persons_publications, (reviewPersonPub) => {
+          return reviewPersonPub.persons_publications_id
+        })
+
+        console.log(`Starting query publications HCRI reviews ${moment().format('HH:mm:ss:SSS')}`)
+
+        const pubsWithHCRIReviewsResult = await this.$apollo.query({
+          query: readPersonPublicationsReviews(_.keys(personPubByIds), 'HCRI'),
+          fetchPolicy: 'network-only'
+        })
+        // console.log('***', pubsWithReviewResult)
+        console.log(`Finished query publications HCRI reviews ${moment().format('HH:mm:ss:SSS')}`)
+        const personPubHCRIReviews = _.groupBy(pubsWithHCRIReviewsResult.data.reviews_persons_publications, (reviewPersonPub) => {
+          return reviewPersonPub.persons_publications_id
         })
         // console.log(`Starting query publications ND Reviews ${moment().format('HH:mm:ss:SSS')}`)
         // // for now assume only one review, needs to be fixed later
@@ -1509,9 +1528,9 @@ export default {
         this.publications = _.map(pubsWithReviewResult.data.persons_publications, (personPub) => {
           // change doi to lowercase
           _.set(personPub.publication, 'doi', _.toLower(personPub.publication.doi))
-          _.set(personPub, 'confidencesets_aggregate', _.cloneDeep(personPubConfidenceSetsReviews[personPub.id].confidencesets_aggregate))
-          _.set(personPub, 'reviews_aggregate', _.cloneDeep(personPubConfidenceSetsReviews[personPub.id]['reviews_aggregate']))
-          _.set(personPub, 'org_reviews_aggregate', _.cloneDeep(personPubConfidenceSetsReviews[personPub.id]['org_reviews_aggregate']))
+          // _.set(personPub, 'confidencesets_aggregate', _.cloneDeep(personPubConfidenceSetsReviews[personPub.id].confidencesets_aggregate))
+          _.set(personPub, 'reviews', _.cloneDeep(personPubNDReviews[personPub.id]))
+          _.set(personPub, 'org_reviews', _.cloneDeep(personPubHCRIReviews[personPub.id]))
           return personPub
         })
         const publicationIds = _.map(this.publications, (pub) => {
@@ -1545,10 +1564,11 @@ export default {
     },
     getReviewedAuthor (personPublication) {
       const obj = _.clone(personPublication.person)
-      const confidenceset = personPublication.confidencesets_aggregate.nodes[0]
-      if (confidenceset) {
-        _.set(obj, 'confidenceset_value', confidenceset['value'])
-      }
+      // const confidenceset = personPublication.confidencesets_aggregate.nodes[0]
+      // if (confidenceset) {
+      //   _.set(obj, 'confidenceset_value', confidenceset['value'])
+      // }
+      // _.set(obj, 'confidenceset_value', 0)
       return obj
     },
     async loadPublication (personPublication) {
