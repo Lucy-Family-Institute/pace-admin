@@ -428,8 +428,7 @@ import readReviewTypes from '../../../gql/readReviewTypes.gql'
 import readPublications from '../gql/readPublications'
 // import readPendingPublications from '../../../gql/readPendingPublications.gql'
 import readPersonPublicationsAll from '../gql/readPersonPublicationsAll'
-// import readPersonPublicationsConfidenceSets from '../gql/readPersonPublicationsConfidenceSets'
-// import readPersonPublicationsReviewsConfidenceSets from '../gql/readPersonPublicationsReviewsConfSets'
+import readPersonPublicationsConfSets from '../gql/readPersonPublicationsConfSets'
 import readPersonPublicationsReviews from '../gql/readPersonPublicationsReviews'
 // import readPersonPublicationsHCRIReviews from '../gql/readPersonPublicationsHCRIReviews'
 import readAuthorsByPublications from '../gql/readAuthorsByPublications'
@@ -517,6 +516,7 @@ export default {
     publicationsLoadedError: false,
     showProgressBar: false,
     reviewedAuthorColumns: [
+      { name: 'confidence', align: 'left', label: 'Confidence', field: 'confidenceset_value', sortable: true },
       { name: 'family_name', align: 'left', label: 'Family Name', field: 'family_name', sortable: true },
       { name: 'given_name', align: 'left', label: 'Given Name', field: 'given_name', sortable: true }
     ],
@@ -1390,14 +1390,13 @@ export default {
       }
     },
     getPublicationConfidence (personPublication) {
-      // if (personPublication.confidencesets_aggregate &&
-      //   personPublication.confidencesets_aggregate.nodes &&
-      //   personPublication.confidencesets_aggregate.nodes.length > 0) {
-      //   return personPublication.confidencesets_aggregate.nodes[0].value
-      // } else {
-      //   return personPublication.confidence
-      // }
-      return 0
+      if (personPublication.confidencesets &&
+        personPublication.confidencesets &&
+        personPublication.confidencesets.length > 0) {
+        return personPublication.confidencesets[0].value
+      } else {
+        return personPublication.confidence
+      }
     },
     async sortPublications () {
       // sort by confidence of pub title
@@ -1501,6 +1500,18 @@ export default {
         const personPubHCRIReviews = _.groupBy(pubsWithHCRIReviewsResult.data.reviews_persons_publications, (reviewPersonPub) => {
           return reviewPersonPub.persons_publications_id
         })
+
+        console.log(`Start query publications Person conf sets ${moment().format('HH:mm:ss:SSS')}`)
+        // // for now assume only one review, needs to be fixed later
+        const pubsWithConfResult = await this.$apollo.query({
+          query: readPersonPublicationsConfSets(_.keys(personPubByIds)),
+          fetchPolicy: 'network-only'
+        })
+        // console.log('***', pubsWithReviewResult)
+        console.log(`Finished query publications Person conf sets ${moment().format('HH:mm:ss:SSS')}`)
+        const personPubConfidenceSets = _.groupBy(pubsWithConfResult.data.confidencesets_persons_publications, (confPersonPub) => {
+          return confPersonPub.persons_publications_id
+        })
         // console.log(`Starting query publications ND Reviews ${moment().format('HH:mm:ss:SSS')}`)
         // // for now assume only one review, needs to be fixed later
         // const pubsWithReviewResultNDReviews = await this.$apollo.query({
@@ -1528,7 +1539,7 @@ export default {
         this.publications = _.map(pubsWithReviewResult.data.persons_publications, (personPub) => {
           // change doi to lowercase
           _.set(personPub.publication, 'doi', _.toLower(personPub.publication.doi))
-          // _.set(personPub, 'confidencesets_aggregate', _.cloneDeep(personPubConfidenceSetsReviews[personPub.id].confidencesets_aggregate))
+          _.set(personPub, 'confidencesets', _.cloneDeep(personPubConfidenceSets[personPub.id]))
           _.set(personPub, 'reviews', _.cloneDeep(personPubNDReviews[personPub.id]))
           _.set(personPub, 'org_reviews', _.cloneDeep(personPubHCRIReviews[personPub.id]))
           return personPub
@@ -1564,11 +1575,10 @@ export default {
     },
     getReviewedAuthor (personPublication) {
       const obj = _.clone(personPublication.person)
-      // const confidenceset = personPublication.confidencesets_aggregate.nodes[0]
-      // if (confidenceset) {
-      //   _.set(obj, 'confidenceset_value', confidenceset['value'])
-      // }
-      // _.set(obj, 'confidenceset_value', 0)
+      const confidenceset = personPublication.confidencesets[0]
+      if (confidenceset) {
+        _.set(obj, 'confidenceset_value', confidenceset['value'])
+      }
       return obj
     },
     async loadPublication (personPublication) {
