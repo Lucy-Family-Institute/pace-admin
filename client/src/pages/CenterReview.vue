@@ -856,7 +856,7 @@ export default {
       this.people = []
       console.log(`Applying year filter to person search year min: ${this.selectedPubYears.min} max: ${this.selectedPubYears.max}`)
       if (this.selectedPersonTotal === 'All') {
-        const personResult = await this.$apollo.query(readPersonsByInstitutionByYear(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max))
+        const personResult = await this.$apollo.query(readPersonsByInstitutionByYear(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, 0.0))
         this.people = personResult.data.persons
       } else {
         const personResult = await this.$apollo.query({
