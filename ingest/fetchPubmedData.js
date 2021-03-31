@@ -55,12 +55,14 @@ const funderIdentifierSchema = schema({
 // });
 const shareWorkSchema = schema({
   title: {type: String, default: null},
+  publicationYear: {type: String, default: null},
   description: {type: String, default: null},
   creators: [creatorSchema],
   resourceIdentifiers: [resourceIdentifierSchema],
   funderIdentifiers: [funderIdentifierSchema],
 }, translate({
   title: 'MedlineCitation.Article.ArticleTitle._text',
+  publicationYear: 'MedlineCitation.Article.Journal.JournalIssue.PubDate.Year._text',
   description: 'MedlineCitation.Article.Abstract.AbstractText._text',
   creators: 'MedlineCitation.Article.AuthorList.Author',
   resourceIdentifiers: 'PubmedData.ArticleIdList.ArticleId',
