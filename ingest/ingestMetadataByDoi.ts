@@ -312,6 +312,27 @@ interface DoiStatus {
   errorMessages: Array<string>;
 }
 
+function lessThanMinPublicationYear(paper, doi, minPublicationYear) {
+  // Check publication year to see if we should just ignore it
+  let pubYearKey = undefined
+  if (paper['publication_year']) {
+    pubYearKey = 'publication_year'
+  } else if (paper['pubYear']) {
+    pubYearKey = 'pubYear'
+  } else if (paper['pubyear']) {
+    pubYearKey = 'pubyear'
+  }
+
+  if (minPublicationYear != undefined && pubYearKey != undefined && paper[pubYearKey]){
+    const sourcePubYear = (paper[pubYearKey] === '' ? undefined : Number.parseInt(paper[pubYearKey]))
+    if (sourcePubYear != undefined) {
+      console.log(`Source pub year found for error publication: ${sourcePubYear} for doi: ${(doi ? doi: 'undefined')}`)
+      return (sourcePubYear < minPublicationYear)
+    }
+  }
+  return false    
+}
+
 //returns a map of three arrays: 'addedDOIs','failedDOIs', 'errorMessages'
 async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : Promise<DoiStatus> {
   let count = 0
@@ -459,12 +480,18 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
                 //console.log(`added person publication id: ${ mutateResult.data.insert_persons_publications.returning[0].id }`)
                 } catch (error) {
                   const errorMessage = `Error on add person id ${JSON.stringify(personId,null,2)} to publication id: ${publicationId}`
-                  console.log(errorMessage)
-                  doiStatus.errorMessages.push(errorMessage)
                   if (!failedRecords[sourceName]) failedRecords[sourceName] = []
                   _.each(papersByDoi[doi], (paper) => {
-                    paper = _.set(paper, 'error', errorMessage)
-                    failedRecords[sourceName].push(paper)
+                    if (lessThanMinPublicationYear(paper, doi, minPublicationYear)) {
+                      console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${(doi ? doi: 'undefined')} from source: ${sourceName}`)
+                      doiStatus.skippedDOIs.push(doi)
+                    } else {
+                      doiStatus.failedDOIs.push(doi)
+                      console.log(errorMessage)
+                      doiStatus.errorMessages.push(errorMessage)
+                      paper = _.set(paper, 'error', errorMessage)
+                      failedRecords[sourceName].push(paper)
+                    }
                   }) 
                 }
               }, { concurrency: 1 })
@@ -480,12 +507,18 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
           } else {
             if (_.keys(matchedPersons).length <= 0){
               errorMessage = `No author match found for ${doi} and not added to DB`
-              console.log(errorMessage)
-              doiStatus.errorMessages.push(errorMessage)
               if (!failedRecords[sourceName]) failedRecords[sourceName] = []
               _.each(papersByDoi[doi], (paper) => {
-                paper = _.set(paper, 'error', errorMessage)
-                failedRecords[sourceName].push(paper)
+                if (lessThanMinPublicationYear(paper, doi, minPublicationYear)) {
+                  console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${(doi ? doi: 'undefined')} from source: ${sourceName}`)
+                  doiStatus.skippedDOIs.push(doi)
+                } else {
+                  doiStatus.failedDOIs.push(doi)
+                  console.log(errorMessage)
+                  doiStatus.errorMessages.push(errorMessage)
+                  paper = _.set(paper, 'error', errorMessage)
+                  failedRecords[sourceName].push(paper)
+                }
               }) 
             }
           }
@@ -495,14 +528,21 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
           doiStatus.errorMessages.push(errorMessage)
           if (!failedRecords[sourceName]) failedRecords[sourceName] = []
           _.each(papersByDoi[doi], (paper) => {
-            paper = _.set(paper, 'error', errorMessage)
-            failedRecords[sourceName].push(paper)
+            if (lessThanMinPublicationYear(paper, doi, minPublicationYear)) {
+              console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${(doi ? doi: 'undefined')} from source: ${sourceName}`)
+              doiStatus.skippedDOIs.push(doi)
+            } else {
+              doiStatus.failedDOIs.push(doi)
+              console.log(errorMessage)
+              doiStatus.errorMessages.push(errorMessage)
+              paper = _.set(paper, 'error', errorMessage)
+              failedRecords[sourceName].push(paper)
+            }
           }) 
         }
         // console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
         // console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
       } catch (error) {
-        doiStatus.failedDOIs.push(doi)
         let sourceName = 'CrossRef'
         if (papersByDoi[doi].length >= 1){
           if (papersByDoi[doi][0]['scopus_record']){
@@ -516,11 +556,17 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
         if (!failedRecords[sourceName]) failedRecords[sourceName] = []
         const errorMessage = `Error on add DOI: ${doi} error: ${error}`
         _.each(papersByDoi[doi], (paper) => {
-          paper = _.set(paper, 'error', errorMessage)
-          failedRecords[sourceName].push(paper)
+          if (lessThanMinPublicationYear(paper, doi, minPublicationYear)) {
+            console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${(doi ? doi: 'undefined')} from source: ${sourceName}`)
+            doiStatus.skippedDOIs.push(doi)
+          } else {
+            doiStatus.failedDOIs.push(doi)
+            console.log(errorMessage)
+            doiStatus.errorMessages.push(errorMessage)
+            paper = _.set(paper, 'error', errorMessage)
+            failedRecords[sourceName].push(paper)
+          }
         }) 
-        doiStatus.errorMessages.push(errorMessage)
-        console.log(errorMessage)
         // console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
         // console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
       }
