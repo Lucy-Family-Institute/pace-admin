@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const pMap = require('p-map');
 const moment = require('moment');
+const { default: readPersonPublicationsByYear } = require('./gql/readPersonPublicationsByYear');
 
 const writeCsv = require('./units/writeCsv').command;
 const loadCsv = require('./units/loadCsv').command;
@@ -54,6 +55,7 @@ async function mapAuthorFiles (filename) {
     return {
       searchName: author,
       pubTitle: title,
+      pubYear: pub.publicationYear,
       nihGivenName: pub.creators[0].givenName,
       nihFamilyName: pub.creators[0].familyName,
       doi: doi,
