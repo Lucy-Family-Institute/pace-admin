@@ -507,7 +507,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
         let errorMessage = ''
 
         // if at least one author, add the paper, and related personpub objects
-        if((csl['type'] === 'article-journal' || csl['type'] === 'paper-conference' || csl['type'] === 'chapter' || csl['type'] === 'book') && csl.title) {
+        if((csl['type'] === 'article-journal' || csl['type'] === 'article' || csl['type'] === 'paper-conference' || csl['type'] === 'chapter' || csl['type'] === 'book') && csl.title) {
           //push in csl record to jsonb blob
           //console.log(`Trying to insert for for DOI:${doi}, Title: ${csl.title}`)
 
