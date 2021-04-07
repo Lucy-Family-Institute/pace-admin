@@ -187,12 +187,44 @@ async function getConfirmedAuthorsByDoi (papersByDoi, csvColumn :string) {
     return _.mapValues(papers, function (paper) {
       const unparsedName = paper[csvColumn]
       //console.log(`Parsing name: ${unparsedName}`)
-      const parsedName =  humanparser.parseName(unparsedName)
-      //console.log(`Parsed Name is: ${JSON.stringify(parsedName,null,2)}`)
-      return parsedName
+      if (unparsedName) {
+        const parsedName =  humanparser.parseName(unparsedName)
+        //console.log(`Parsed Name is: ${JSON.stringify(parsedName,null,2)}`)
+        return parsedName 
+      } else {
+        return undefined
+      }
     })
   })
   return confirmedAuthorsByDoi
+}
+
+function getConfirmedAuthorsByDOIAuthorList(papersByDoi, csvColumn :string) {
+  const confirmedAuthorsByDoiAuthorList = _.mapValues(papersByDoi, function (papers) {
+    //console.log(`Parsing names from papers ${JSON.stringify(papers,null,2)}`)
+    return _.mapValues(papers, function (paper) {
+      const unparsedList = paper[csvColumn]
+      return createAuthorCSLFromString(unparsedList)
+    })
+  })
+  return confirmedAuthorsByDoiAuthorList
+} 
+
+function createAuthorCSLFromString (authors) {
+  const parsedAuthors = _.split(authors, ';')
+  let authorPosition = 0
+  let cslAuthors = []
+  _.each(parsedAuthors, (parsedAuthor) => {
+    const authorNames = _.split(parsedAuthor, ',')
+    authorPosition += 1
+    const cslAuthor = {
+      family: authorNames[0],
+      given: authorNames[1],
+      position: authorPosition
+    }
+    cslAuthors.push(cslAuthor)
+  })
+  return cslAuthors
 }
 
 async function getCSLAuthors(paperCsl){
@@ -333,6 +365,28 @@ function lessThanMinPublicationYear(paper, doi, minPublicationYear) {
   return false    
 }
 
+async function loadConfirmedAuthorPapersFromCSV(path) {
+  try {
+    const papersByDoi = await getPapersByDoi(path)
+    return papersByDoi
+  } catch (error){
+    console.log(`Error on load confirmed authors: ${error}`)
+    return {}
+  }
+}
+
+async function loadConfirmedPapersByDoi(pathsByYear) {
+  let confirmedPapersByDoi = new Map()
+  await pMap(_.keys(pathsByYear), async (year) => {
+    console.log(`Loading ${year} Confirmed Authors`)
+    //load data
+    await pMap(pathsByYear[year], async (path: string) => {
+      confirmedPapersByDoi = _.merge(confirmedPapersByDoi, await getPapersByDoi(path))
+    }, { concurrency: 1})
+  }, { concurrency: 1 })
+  return confirmedPapersByDoi
+}
+
 //returns a map of three arrays: 'addedDOIs','failedDOIs', 'errorMessages'
 async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : Promise<DoiStatus> {
   let count = 0
@@ -358,16 +412,31 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
     count = dois.length
     console.log(`Papers by DOI Count: ${JSON.stringify(dois.length,null,2)}`)
 
-    const confirmedAuthorColumn = 'nd author (last, first)'
-    const firstDoiConfirmedList = papersByDoi[dois[0]]
-
     //check if confirmed column exists first, if not ignore this step
     let confirmedAuthorsByDoi = {}
-    if (papersByDoi && dois.length > 0 && firstDoiConfirmedList && firstDoiConfirmedList.length > 0 && firstDoiConfirmedList[0][confirmedAuthorColumn]){
-      //get map of DOI's to an array of confirmed authors from the load table
-      confirmedAuthorsByDoi = await getConfirmedAuthorsByDoi(papersByDoi, confirmedAuthorColumn)
+    let confirmedAuthorsByDoiAuthorList = {}
+    let bibTexByDoi = {}
 
+    // get confirmed author lists to papers
+    const confirmedPathsByYear = await getIngestFilePathsByYear("../config/ingestConfidenceReviewFilePaths.json")
+    const confirmedPapersByDoi: {} = await loadConfirmedPapersByDoi(confirmedPathsByYear)
+
+    const confirmedAuthorColumn = 'nd author (last, first)'
+    const confirmedAuthorListColumn = 'author(s)'
+    const confirmedDois = _.keys(confirmedPapersByDoi)
+   
+    if (confirmedPapersByDoi && confirmedDois.length > 0){
+      //get map of DOI's to an array of confirmed authors from the load table
+      confirmedAuthorsByDoi = await getConfirmedAuthorsByDoi(confirmedPapersByDoi, confirmedAuthorColumn)
+      confirmedAuthorsByDoiAuthorList = getConfirmedAuthorsByDOIAuthorList(confirmedPapersByDoi, confirmedAuthorListColumn)
+      bibTexByDoi = _.mapValues(confirmedPapersByDoi, (papers) => {
+        return _.mapValues(papers, (paper) => {
+          return paper['bibtex']
+        })
+      })
       console.log(`Confirmed Authors By Doi are: ${JSON.stringify(confirmedAuthorsByDoi,null,2)}`)
+      console.log(`Confirmed Authors By Doi author list are: ${JSON.stringify(confirmedAuthorsByDoiAuthorList,null,2)}`)
+      console.log(`Confirmed Authors BibText By Doi is: ${JSON.stringify(bibTexByDoi,null,2)}`)
     }
 
     //initalize the doi query and citation engine
@@ -397,15 +466,40 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
         //have each wait a pseudo-random amount of time between 1-5 seconds
 
         await randomWait(loopCounter)
-
-        //get CSL (citation style language) record by doi from dx.dio.org
-        const cslRecords = await Cite.inputAsync(doi)
-        //console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
-
-        const csl = cslRecords[0]
+        let cslRecords = undefined
+        let csl = undefined
+        try {
+        
+          //get CSL (citation style language) record by doi from dx.dio.org
+          cslRecords = await Cite.inputAsync(doi)
+          //console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
+          csl = cslRecords[0]
+        } catch (error) {
+          if (bibTexByDoi[doi] && _.keys(bibTexByDoi[doi]).length > 0){
+            console.log(`Trying to get csl from bibtex for confirmed doi: ${doi}...`)
+            // manually construct csl from metadata in confirmed list
+            const bibTex = bibTexByDoi[doi][_.keys(bibTexByDoi[doi])[0]]
+            if (bibTex) {
+              // console.log(`Trying to get csl from bibtex for confirmed doi: ${doi}, for bibtex found...`)
+              cslRecords = await Cite.inputAsync(bibTex)
+              csl = cslRecords[0]
+              // console.log(`CSL constructed: ${JSON.stringify(csl, null, 2)}`)
+            }
+          } else {
+            throw (error)
+          }
+        }
+        
         //retrieve the authors from the record and put in a map, returned above in array, but really just one element
-        const authors = await getCSLAuthors(csl)
-        //console.log(`Author Map found: ${JSON.stringify(authorMap,null,2)}`)
+        let authors = await getCSLAuthors(csl)
+
+        // default to the confirmed author list if no author list in the csl record
+        // console.log(`Before check authors are: ${JSON.stringify(authors, null, 2)} for doi: ${doi}`)
+        if (!authors || authors.length <= 0 && confirmedAuthorsByDoiAuthorList[doi] && _.keys(confirmedAuthorsByDoiAuthorList[doi]).length > 0) {
+          authors = confirmedAuthorsByDoiAuthorList[doi][_.keys(confirmedAuthorsByDoiAuthorList[doi])[0]]
+          csl.author = authors
+        }
+        // console.log(`Authors found: ${JSON.stringify(authors,null,2)}`)
 
         //for now default source is crossref
         let sourceName = 'CrossRef'

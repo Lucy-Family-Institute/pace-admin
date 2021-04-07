@@ -154,6 +154,7 @@ async function getSimplifliedScopusPapers(scopusPapers, simplifiedPerson){
     return {
       search_family_name : simplifiedPerson.lastName,
       search_given_name : simplifiedPerson.firstInitial,
+      publication_year: paper['prism:coverDate'],
       title: paper['dc:title'],
       journal: paper['prism:publicationName'],
       doi: paper['prism:doi'] ? paper['prism:doi'] : '',
