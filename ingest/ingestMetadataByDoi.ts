@@ -495,7 +495,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
 
         // default to the confirmed author list if no author list in the csl record
         // console.log(`Before check authors are: ${JSON.stringify(authors, null, 2)} for doi: ${doi}`)
-        if (!authors || authors.length <= 0 && confirmedAuthorsByDoiAuthorList[doi] && _.keys(confirmedAuthorsByDoiAuthorList[doi]).length > 0) {
+        if (confirmedAuthorsByDoiAuthorList[doi] && _.keys(confirmedAuthorsByDoiAuthorList[doi]).length > 0) {
           authors = confirmedAuthorsByDoiAuthorList[doi][_.keys(confirmedAuthorsByDoiAuthorList[doi])[0]]
           csl.author = authors
         }
