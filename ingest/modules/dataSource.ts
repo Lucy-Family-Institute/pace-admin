@@ -1,4 +1,5 @@
 import NormedPublication from './normedPublication'
+import NormedPerson from './normedPerson'
 import HarvestSet from './harvestSet'
 export default interface DataSource {
 
@@ -10,6 +11,9 @@ export default interface DataSource {
   
   // assumes that if only one of startDate or endDate provided it would always be startDate first and then have endDate undefined
   getPublicationsByAuthorId?(person: NormedPerson, sessionState: {}, offset: Number, startDate?: Date, endDate?: Date) : Promise<HarvestSet>
+  
+  // assumes that if only one of startDate or endDate provided it would always be startDate first and then have endDate undefined
+  getPublicationsByAuthorId?(person: NormedPerson, offset: Number, startDate?: Date, endDate?: Date) : Promise<HarvestSet>
   
   // returns an array of normalized publication objects given ones retrieved fron this datasource
   getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): NormedPublication[]

@@ -1,11 +1,11 @@
 import { Harvester, HarvestOperation } from '../harvester'
 import { ScopusDataSource } from '../scopusDataSource'
 import NormedPublication from '../normedPublication'
-import { loadPersons} from '../../units/loadPersons'
 import { randomWait } from '../../units/randomWait'
 import { getDateObject } from '../../units/dateRange'
 import HarvestSet from '../harvestSet'
 import DataSource from '../dataSource'
+import NormedPerson from '../normedPerson'
 
 import dotenv from 'dotenv'
 const fs = require('fs');
@@ -76,7 +76,7 @@ beforeAll(async () => {
     // testPersons = await loadPersons(testPersonsFilePath, personPropMap)
     testPersons = [defaultNormedPerson]
 
-    testAllPersons = _.chunk(await loadPersons(testPersonsFilePath, personPropMap), 4)[0]
+    // testAllPersons = _.chunk(await loadPersons(testPersonsFilePath, personPropMap), 4)[0]
 
     jest.setTimeout(1000000)
 })
