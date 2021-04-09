@@ -6,6 +6,7 @@ import { dateRangesOverlapping } from '../units/dateRange'
 import { randomWait } from '../units/randomWait'
 import moment from 'moment'
 import NormedPublication from './normedPublication'
+import NormedPerson from './normedPerson'
 import DataSource from './dataSource'
 import HarvestSet from './harvestSet'
 
@@ -44,6 +45,7 @@ export class Harvester {
           let offset = 0
           // have to alias this because nested this call below makes this undefined
           let thisHarvester = this
+
           let sessionState = {}
           harvestSet = await this.fetchPublications(person, harvestBy, sessionState, offset, searchStartDate, searchEndDate)
           if (harvestSet) {
@@ -51,7 +53,9 @@ export class Harvester {
           }
           const pageSize = this.ds.getRequestPageSize().valueOf()
           const totalResults = harvestSet.totalResults.valueOf()
+
           sessionState = harvestSet.sessionState
+
           if (totalResults > pageSize){
             let numberOfRequests = parseInt(`${totalResults / pageSize}`) //convert to an integer to drop any decimal
             //if no remainder subtract one since already did one call

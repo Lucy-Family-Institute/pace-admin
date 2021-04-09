@@ -1,6 +1,7 @@
 import axios from 'axios'
 import _ from 'lodash'
 import NormedPublication from './normedPublication'
+import NormedPerson from './normedPerson'
 import DataSource from './dataSource'
 import HarvestSet from './HarvestSet'
 

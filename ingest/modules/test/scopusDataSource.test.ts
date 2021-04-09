@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 const fs = require('fs');
 import _ from 'lodash'
 import NormedPublication from '../normedPublication'
+import NormedPerson from '../normedPerson'
 import HarvestSet from '../harvestSet'
 
 let ds: ScopusDataSource
