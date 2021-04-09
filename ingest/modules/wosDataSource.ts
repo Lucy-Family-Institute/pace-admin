@@ -22,6 +22,13 @@ export class WosDataSource implements DataSource {
     return authorQuery
   }
 
+  /**
+   * 
+   * @param query 
+   * @param startDate 
+   * @param endDate 
+   * @returns The soap query string
+   */
   getWoSQuerySOAPString(query, startDate: Date, endDate: Date) {
     let startDateString = getDateString(startDate)
     let endDateString = undefined
