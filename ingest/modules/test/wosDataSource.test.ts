@@ -2,7 +2,7 @@ import { Harvester, HarvestOperation } from '../harvester'
 import { WosDataSource } from '../wosDataSource'
 import NormedPublication from '../normedPublication'
 import HarvestSet from '../HarvestSet'
-import { loadPersons} from '../../units/loadPersons'
+import NormedPerson from '../normedPerson'
 import { randomWait } from '../../units/randomWait'
 import { getDateObject } from '../../units/dateRange'
 import { escapeForRegEx } from '../../units/normalizer'
@@ -77,7 +77,7 @@ beforeAll(async () => {
     // testPersons = await loadPersons(testPersonsFilePath, personPropMap)
     testPersons = [defaultNormedPerson]
 
-    testAllPersons = _.chunk(await loadPersons(testPersonsFilePath, personPropMap), 4)[0]
+    // testAllPersons = _.chunk(await loadPersons(testPersonsFilePath, personPropMap), 4)[0]
 
     jest.setTimeout(1000000)
 })

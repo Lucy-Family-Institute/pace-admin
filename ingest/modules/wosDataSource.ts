@@ -2,6 +2,7 @@ import axios, { AxiosResponse } from 'axios'
 import _ from 'lodash'
 const xmlToJson = require('xml-js');
 import NormedPublication from './normedPublication'
+import NormedPerson from './normedPerson'
 import HarvestSet from './harvestSet'
 import DataSource from './dataSource'
 import { getDateString, getDateObject } from '../units/dateRange'
