@@ -64,7 +64,7 @@ export class WosDataSource implements DataSource {
                             <ns2:retrieve xmlns:ns2="http://woksearchlite.v3.wokmws.thomsonreuters.com">\
                               <queryId>${queryId}</queryId>\
                               <retrieveParameters>\
-                                <firstRecord>${offset}</firstRecord>\
+                                <firstRecord>${offset+1}</firstRecord>\
                                 <count>${limit}</count>\
                               </retrieveParameters>\
                             </ns2:retrieve>\
