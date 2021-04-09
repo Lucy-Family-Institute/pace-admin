@@ -20,7 +20,7 @@
     "graphql-tag": "^2.10.3",
     "mathjax": "3",
     "moment": "^2.24.0",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "quasar": "^1.0.0",
     "sanitize-filename": "^1.6.3",
     "vue-apollo": "^3.0.3",

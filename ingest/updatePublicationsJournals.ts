@@ -5,6 +5,7 @@ import fetch from 'node-fetch'
 import _ from 'lodash'
 import readJournals from './gql/readJournals'
 import readPublicationsWoutJournal from './gql/readPublicationsWoutJournal'
+import readPublicationsWoutJournalByYear from './gql/readPublicationsWoutJournalByYear'
 import updatePubJournal from './gql/updatePubJournal'
 import { __EnumValue } from 'graphql'
 import dotenv from 'dotenv'
@@ -64,9 +65,14 @@ function journalMatchFuzzy (journalTitle, titleKey, journalMap){
   return reducedResults
 }
 
-async function getPublications () {
-  const queryResult = await client.query(readPublicationsWoutJournal())
-  return queryResult.data.publications
+async function getPublications (startYear?) {
+  if (startYear) {
+    const queryResult = await client.query(readPublicationsWoutJournalByYear(startYear))
+    return queryResult.data.publications
+  } else {
+    const queryResult = await client.query(readPublicationsWoutJournal())
+    return queryResult.data.publications
+  }
 }
 
 async function getJournals () {
@@ -76,7 +82,10 @@ async function getJournals () {
 
 async function main (): Promise<void> {
 
-  const publications = await getPublications()
+  // default to startYear undefined to check all missing journals
+  let startYear
+  // startYear = 2020
+  const publications = await getPublications(startYear)
   const journals = await getJournals()
 
   // first normalize the diacritics

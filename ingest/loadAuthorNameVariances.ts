@@ -7,6 +7,7 @@ import _ from 'lodash'
 import { command as loadCsv } from './units/loadCsv'
 import readPersons from '../client/src/gql/readPersons'
 import { __EnumValue } from 'graphql'
+import { getAllSimplifiedPersons, getNameKey } from './modules/queryNormalizedPeople'
 
 import dotenv from 'dotenv'
 
@@ -28,33 +29,14 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 })
 
-async function getAllSimplifiedPersons () {
-  const queryResult = await client.query(readPersons())
-
-  const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
-    return {
-      id: person.id,
-      lastName: person.family_name.toLowerCase(),
-      firstInitial: person.given_name[0].toLowerCase(),
-      firstName: person.given_name.toLowerCase(),
-      startYear: person.start_date,
-      endYear: person.end_date
-    }
-  })
-  return simplifiedPersons
-}
-
-function getNameKey (lastName, firstName) {
-  return `${_.toLower(lastName)}, ${_.toLower(firstName)}`
-}
-
 async function main (): Promise<void> {
   const authorsWithVariances: any = await loadCsv({
-    path: '../data/hcri_researchers_2017-2019_load_name_variances.csv'
+    path: '../data/hcri_researchers_2017-2020_load_name_variances.csv'
   })
 
   // get the set of persons to add variances to
-  const authors = await getAllSimplifiedPersons()
+  const authors = await getAllSimplifiedPersons(client)
+  
   //create map of 'last_name, first_name' to array of related persons with same last name
   const personMap = _.transform(authors, function (result, value) {
     (result[getNameKey(value.lastName, value.firstName)] || (result[getNameKey(value.lastName, value.firstName)] = [])).push(value)
@@ -64,12 +46,13 @@ async function main (): Promise<void> {
 
   // now add author variances
   const insertAuthorVariances = _.transform(authorsWithVariances, (result, author) => {
-    console.log(`Trying to create name variance objects for: ${JSON.stringify(author, null, 2)}`)
     const nameKey = getNameKey(author['family_name'], author['given_name'])
-    console.log(`Name Key is: ${nameKey}`)
     if (personMap[nameKey] && author['name_variances']) {
-      console.log('here')
       const personId = personMap[getNameKey(author['family_name'], author['given_name'])][0].id
+      const existingNameVariances = personMap[getNameKey(author['family_name'], author['given_name'])][0].nameVariances
+      const variancesByName = _.mapKeys(existingNameVariances, (variance) => {
+        return getNameKey(variance['family_name'], variance['given_name'])
+      })
       const nameVariances = author['name_variances'].split(';')
       _.each(nameVariances, (nameVariance) => {
         let obj = {}
@@ -83,14 +66,22 @@ async function main (): Promise<void> {
         if (nameParts[1]) {
           obj['given_name'] = nameParts[1].trim()
         }
-        console.log(`Created insert name var obj: ${JSON.stringify(obj, null, 2)}`)
+        
         // push the object into the array of rows to insert later
-        result.push(obj)
+        // check if name variance object already exists and if so skip
+        // console.log(`Existing variances: ${JSON.stringify(existingNameVariances, null, 2)}`)
+        // console.log(`Current variances: ${JSON.stringify(variancesByName, null, 2)}`)
+        if (!variancesByName[getNameKey(obj['family_name'], obj['given_name'])]) {
+          console.log(`Staging insert Name Variance ${JSON.stringify(obj, null, 2)} for ${getNameKey(author['family_name'], author['given_name'])}`)
+          result.push(obj)
+        } else {
+          console.log(`Skipping Already Existing Name Variance '${obj['family_name']}, ${obj['given_name']}' for ${getNameKey(author['family_name'], author['given_name'])}`)
+        }
       })
     }
   }, [])
 
-  console.log(JSON.stringify(insertAuthorVariances, null, 2))
+  console.log(`Staging ${insertAuthorVariances.length} Name Variances for Insert`)
 
   const resultInsertNameVariances = await client.mutate({
     mutation: gql`
@@ -110,6 +101,8 @@ async function main (): Promise<void> {
       persons: insertAuthorVariances
     }
   })
+
+  console.log(`Inserted ${resultInsertNameVariances.data.insert_persons_namevariances.returning.length} name variances`)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises

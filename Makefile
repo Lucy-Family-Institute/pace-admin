@@ -87,6 +87,8 @@ newdb:
 	cd ingest && ts-node loadJournalsImpactFactors.ts && cd ..
 
 reharvest:
+	cd ingest && ts-node loadAuthors.ts && cd ..
+	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
 	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
 	cd ingest && ts-node loadAwards.ts && cd ..
@@ -102,14 +104,19 @@ load_name_variances:
 load_new_confidence_sets:
 	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
 
+update_wos_data:
+	cd ingest && ts-node fetchWoSAuthorData.ts && cd ..
+
 update_pubmed_data:
 	cd ingest && ts-node fetchPubmedData.js && cd ..
 	cd ingest && ts-node joinAuthorAwards.js && cd ..
-	cd ingest && ts-node fetchPubmedDataByAuthor.js && cd ..
+	cd ingest && ts-node fetchPubmedDataByAuthor.ts && cd ..
 	cd ingest && ts-node joinAuthorPubmedPubs.js && cd ..
 
 update_scopus_data:
 	cd ingest && ts-node fetchScopusAuthorData.ts && cd ..
+
+update_scopus_full_text_data:
 	cd ingest && ts-node fetchScopusFullTextData.ts && cd ..
 
 update_wos_data:
@@ -162,6 +169,9 @@ dashboard-client:
 
 docker:
 	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose up
+
+update_pdfs:
+	cd ingest && ts-node downloadFile.ts && cd ..
 
 clear_pdfs:
 	rm data/pdfs/*

@@ -83,7 +83,7 @@
                     </q-item-section>
 
                     <q-item-section>
-                      <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.persons_publications_metadata_aggregate.aggregate.count }})</q-item-label>
+                      <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.confidencesets_persons_publications.length }})</q-item-label>
                       <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
                     </q-item-section>
 
@@ -183,7 +183,7 @@
                       <q-item-section avatar side>
                         <q-badge
                           :label="getPublicationConfidence(item)*100+'%'"
-                          :color="getPublicationConfidence(item)*100 <= 50 ? 'amber-10' : 'green'"
+                          :color="getPublicationConfidence(item)*100 < 50 ? 'amber-10' : 'green'"
                         />
                       </q-item-section>
                     </template>
@@ -407,7 +407,7 @@ import _ from 'lodash'
 import Cite from 'citation-js'
 
 import readPersonsByInstitutionByYear from '../gql/readPersonsByInstitutionByYear'
-import readPersonsByInstitutionByYearPendingPubs from '../gql/readPersonsByInstitutionByYearPendingPubs'
+// import readPersonsByInstitutionByYearPendingPubs from '../gql/readPersonsByInstitutionByYearPendingPubs'
 import readReviewTypes from '../../../gql/readReviewTypes.gql'
 import readPublications from '../gql/readPublications'
 // import readPendingPublications from '../../../gql/readPendingPublications.gql'
@@ -530,6 +530,9 @@ export default {
       this.showCurrentSelectedPublication()
     },
     selectedPersonTotal: function () {
+      this.loadPersonsWithFilter()
+    },
+    selectedPersonConfidence: function () {
       this.loadPersonsWithFilter()
     },
     publicationsGroupedByView: function () {
@@ -760,16 +763,18 @@ export default {
       console.log('filtering', this.selectedInstitutions)
       this.people = []
       console.log(`Applying year filter to person search year min: ${this.selectedPubYears.min} max: ${this.selectedPubYears.max}`)
-      if (this.selectedPersonTotal === 'All') {
-        const personResult = await this.$apollo.query(readPersonsByInstitutionByYear(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max))
-        this.people = personResult.data.persons
-      } else {
-        const personResult = await this.$apollo.query({
-          query: readPersonsByInstitutionByYearPendingPubs(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max), // this.userId),  // commenting out for now querying by current user
-          fetchPolicy: 'network-only'
-        })
-        this.people = personResult.data.persons
-      }
+      let minConfidence = 0
+      if (this.selectedPersonConfidence === '50%') minConfidence = 0.5
+      // if (this.selectedPersonTotal === 'All') {
+      const personResult = await this.$apollo.query(readPersonsByInstitutionByYear(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, minConfidence))
+      this.people = personResult.data.persons
+      // } else {
+      //   const personResult = await this.$apollo.query({
+      //     query: readPersonsByInstitutionByYearPendingPubs(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max), // this.userId),  // commenting out for now querying by current user
+      //     fetchPolicy: 'network-only'
+      //   })
+      //   this.people = personResult.data.persons
+      // }
 
       // apply any sorting applied
       console.log('filtering', this.selectedPersonSort)
@@ -779,7 +784,8 @@ export default {
         // need to sort by total and then name, not guaranteed to be in order from what is returned from DB
         // first group items by count
         const peopleByCounts = await _.groupBy(this.people, (person) => {
-          return person.persons_publications_metadata_aggregate.aggregate.count
+          return person.confidencesets_persons_publications.length
+          // return person.persons_publications_metadata_aggregate.aggregate.count
         })
 
         // sort each person array by name for each count
@@ -927,7 +933,16 @@ export default {
         this.personPublicationsCombinedMatchesByReview,
         (personPublications) => {
           return _.filter(personPublications, (item) => {
-            const includePublication = item.publication.title.toLowerCase().includes(this.pubSearch.toLowerCase().trim())
+            let includePublication = item.publication.title.toLowerCase().includes(this.pubSearch.toLowerCase().trim())
+            if (includePublication) {
+              // also check if confidence is to be filtered out
+              // console.log('checking if we should include publication')
+              // console.log(`confidence val is: ${this.getPublicationConfidence(item)}`)
+              if (this.selectedPersonConfidence === '50%' && this.getPublicationConfidence(item) < 0.50) {
+                // console.log('trying to filter out publication')
+                includePublication = false
+              }
+            }
             if (!includePublication && this.personPublication && item.id === this.personPublication.id) {
               // clear out the publication from view if it is filtered out of the results
               filterOutCurrentPublication = true
@@ -1273,6 +1288,7 @@ export default {
       this.selectedCenterPubSort = this.selectedCenterPubSort
       this.selectedPersonSort = this.preferredPersonSort
       this.selectedPersonTotal = this.preferredPersonTotal
+      this.selectedPersonConfidence = this.preferredPersonConfidence
       this.selectedPubYears = {
         min: this.yearPubStaticMin,
         max: this.yearPubStaticMax
@@ -1291,12 +1307,14 @@ export default {
     preferredPersonPubSort: get('filter/preferredPersonPubSort'),
     preferredCenterPubSort: get('filter/preferredCenterPubSort'),
     preferredPersonTotal: get('filter/preferredPersonTotal'),
+    preferredPersonConfidence: get('filter/preferredPersonConfidence'),
     selectedInstitutions: sync('filter/selectedInstitutions'),
     institutionOptions: get('filter/institutionOptions'),
     selectedPersonSort: sync('filter/selectedPersonSort'),
     selectedPersonPubSort: sync('filter/selectedPersonPubSort'),
     selectedCenterPubSort: sync('filter/selectedCenterPubSort'),
     selectedPersonTotal: sync('filter/selectedPersonTotal'),
+    selectedPersonConfidence: sync('filter/selectedPersonConfidence'),
     filterReviewStates: get('filter/filterReviewStates'),
     selectedPubYears: sync('filter/selectedPubYears'),
     yearPubStaticMin: get('filter/yearPubStaticMin'),

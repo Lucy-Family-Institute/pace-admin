@@ -13,9 +13,9 @@
     "graphql": "^15.1.0",
     "graphql-tag": "^2.10.3",
     "jsonlines": "^0.1.1",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "meilisearch": "^0.11.0",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "ts-node": "^8.10.2",
     "typescript": "^3.9.5",
     "typesense": "^0.5.1"

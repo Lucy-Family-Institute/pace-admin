@@ -102,8 +102,8 @@ function getWoSQuerySOAPString(authorFamilyName, authorGivenName) {
                               <edition>SCI</edition>\
                             </editions>\
                             <timeSpan>\
-                              <begin>2019-01-01</begin>\
-                              <end>2019-12-31</end>\
+                              <begin>2020-01-01</begin>\
+                              <end>2020-12-31</end>\
                             </timeSpan>\
                             <queryLanguage>en</queryLanguage>\
                         </queryParameters>\
@@ -375,6 +375,7 @@ function getSimplifliedWoSPapers(papers, simplifiedPerson){
       search_given_name : simplifiedPerson.firstInitial,
       title: paper['title'] && paper['title']['value'] && paper['title']['value']['_text'] ? paper['title']['value']['_text'] : '',
       journal: sourceProps && sourceProps['SourceTitle'] && sourceProps['SourceTitle']['_text'] ? sourceProps['SourceTitle']['_text'] : '',
+      publication_year: sourceProps && sourceProps['Published.BiblioYear'] && sourceProps['Published.BiblioYear']['_text'] ? sourceProps['Published.BiblioYear']['_text'] : '',
       doi: otherProps && otherProps['Identifier.Doi'] && otherProps['Identifier.Doi']['_text'] ? otherProps['Identifier.Doi']['_text'] : '',
       wos_id: paper['uid'] && paper['uid']['_text'] ? _.replace(paper['uid']['_text'], 'WOS:', '') : '',
       wos_record : paper
@@ -390,7 +391,7 @@ async function main (): Promise<void> {
   // _.each(results['soap:Envelope']['soap:Body']['ns2:retrieveResponse'].return.records, (record) => {
   //   console.log(record['title']['value']['_text'])
   // })
-  const years = [ 2020, 2019, 2018, 2017, 2016 ]
+  const years = [ 2020 ]
   // const scopusAffiliationId = "60021508"
   let succeededPapers = []
   let failedPapers = []

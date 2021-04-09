@@ -18,7 +18,7 @@
     "combinations": "^1.0.0",
     "cytoscape": "^3.15.1",
     "cytoscape-euler": "^1.2.2",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "meilisearch": "^0.11.0",
     "p-map": "^4.0.0",
     "quasar": "^1.0.0",

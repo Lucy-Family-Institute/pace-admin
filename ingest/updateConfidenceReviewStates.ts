@@ -2,25 +2,14 @@ import _ from 'lodash'
 import { ApolloClient, MutationOptions } from 'apollo-client'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { createHttpLink } from 'apollo-link-http'
-// import fetch from 'node-fetch'
-// import humanparser from 'humanparser'
-// import readConfidenceTypes from './gql/readConfidenceTypes'
-// import readPersons from '../client/src/gql/readPersons'
-// import readLastPersonPubConfidenceSet from './gql/readLastPersonPubConfidenceSet'
-// import readPersonPublications from './gql/readPersonPublications'
-// import readNewPersonPublications from './gql/readNewPersonPublications'
-// import insertConfidenceSets from './gql/insertConfidenceSets'
-// import insertConfidenceSetItems from './gql/insertConfidenceSetItems'
+import fetch from 'node-fetch'
 import pMap from 'p-map'
 // import { command as loadCsv } from './units/loadCsv'
 import { randomWait } from './units/randomWait'
 // const Fuse = require('fuse.js')
 import dotenv from 'dotenv'
 import readAllNewPersonPublications from './gql/readAllNewPersonPublications'
-// import insertReview from '../client/src/gql/insertReview'
-// import readPersonPublicationsByDoi from './gql/readPersonPublicationsByDoi'
-// const getIngestFilePathsByYear = require('./getIngestFilePathsByYear');
-// import { normalizeString, normalizeObjectProperties } from './units/normalizer'
+const getIngestFilePathsByYear = require('./getIngestFilePathsByYear');
 import { command as writeCsv } from './units/writeCsv'
 import moment from 'moment'
 
@@ -50,7 +39,7 @@ async function main() {
 
   // use related github commit hash for the version when algorithm last completed
   // @todo: Extract to ENV?
-  const confidenceAlgorithmVersion = '876b7bd06e1ca819f5fe2f77ee48ea8c491f1ab1'
+  const confidenceAlgorithmVersion = '82aa835eff3da48e497c6eb6b56dafc087c86958'
   // get confirmed author lists to papers
   const pathsByYear = await getIngestFilePathsByYear("../config/ingestConfidenceReviewFilePaths.json")
 
@@ -86,19 +75,28 @@ async function main() {
   // run against all pubs in DB and confirm have same confidence value calculation
   // calculate confidence for publications
   const testAuthors2 = []
-  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===77}))
+  // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===53}))
+  // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===17}))
+  // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===94}))
+  // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===78}))
+  // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===48}))
+  // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===61}))
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===60}))
+  // console.log(`Test authors: ${JSON.stringify(testAuthors2, null, 2)}`)
 
   // get where last confidence test left off
   const lastConfidenceSet = await calculateConfidence.getLastPersonPubConfidenceSet()
   let mostRecentPersonPubId = undefined
   if (lastConfidenceSet) {
+    // mostRecentPersonPubId = 11145
     mostRecentPersonPubId = lastConfidenceSet.persons_publications_id
     console.log(`Last Person Pub Confidence set is: ${mostRecentPersonPubId}`)
-    // mostRecentPersonPubId = 5747
   } else {
     console.log(`Last Person Pub Confidence set is undefined`)
   }
-  const confidenceTests = await calculateConfidence.calculateConfidence (mostRecentPersonPubId, testAuthors, (confirmedAuthorsByDoi || {}))
+  // const publicationYear = 2020
+  const publicationYear = undefined
+  const confidenceTests = await calculateConfidence.calculateConfidence (mostRecentPersonPubId, testAuthors, (confirmedAuthorsByDoi || {}), publicationYear)
 
   // next need to write checks found to DB and then calculate confidence accordingly
   let errorsInsert = []
@@ -184,13 +182,15 @@ async function main() {
   console.log('Synchronizing reviews with pre-existing publications...')
   let loopCounter3 = 0
 
-  // const mostRecentPersonPubId2 = 16943
+  const batchSize = 4000
   console.log(`Most recent person pub id: ${mostRecentPersonPubId}`)
   const newPubsQueryResult = await client.query(
     readAllNewPersonPublications(mostRecentPersonPubId)
   )
   const newPersonPubs = newPubsQueryResult.data.persons_publications
   console.log(`Found ${newPersonPubs.length} New Person Pubs`)
+  // const batchIndex = 3
+  // const batches = _.chunk(newPersonPubs, batchSize)
   await pMap(newPersonPubs, async (newPersonPub) => {
     loopCounter3 += 1
     //have each wait a pseudo-random amount of time between 1-5 seconds

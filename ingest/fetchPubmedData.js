@@ -7,6 +7,7 @@ const pMap = require('p-map');
 const schema = require('schm');
 const translate = require('schm-translate');
 const xmlToJson = require('xml-js');
+import { wait } from "./units/randomWait"
 
 const getIds = require('./units/joinCsvs').command;
 
@@ -54,23 +55,19 @@ const funderIdentifierSchema = schema({
 // });
 const shareWorkSchema = schema({
   title: {type: String, default: null},
+  publicationYear: {type: String, default: null},
   description: {type: String, default: null},
   creators: [creatorSchema],
   resourceIdentifiers: [resourceIdentifierSchema],
   funderIdentifiers: [funderIdentifierSchema],
 }, translate({
   title: 'MedlineCitation.Article.ArticleTitle._text',
+  publicationYear: 'MedlineCitation.Article.Journal.JournalIssue.PubDate.Year._text',
   description: 'MedlineCitation.Article.Abstract.AbstractText._text',
   creators: 'MedlineCitation.Article.AuthorList.Author',
   resourceIdentifiers: 'PubmedData.ArticleIdList.ArticleId',
   funderIdentifiers: 'MedlineCitation.Article.GrantList.Grant'
 }));
-
-async function wait(ms){
-  return new Promise((resolve, reject)=> {
-    setTimeout(() => resolve(true), ms );
-  });
-}
 
 async function getAwardPublications(awardId){
   const ids = await getESearch(awardId);

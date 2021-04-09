@@ -5,6 +5,7 @@ import fetch from 'node-fetch'
 import _ from 'lodash'
 import { command as loadCsv } from './units/loadCsv'
 import readPublicationsWoutAbstract from './gql/readPublicationsWoutAbstract'
+import readPublicationsWoutAbstractByYear from './gql/readPublicationsWoutAbstractByYear'
 import updatePubAbstract from './gql/updatePubAbstract'
 import { __EnumValue } from 'graphql'
 import dotenv from 'dotenv'
@@ -29,9 +30,14 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 })
 
-async function getPublications () {
-  const queryResult = await client.query(readPublicationsWoutAbstract())
-  return queryResult.data.publications
+async function getPublications (startYear?) {
+  if (startYear) {
+    const queryResult = await client.query(readPublicationsWoutAbstractByYear(startYear))
+    return queryResult.data.publications
+  } else {
+    const queryResult = await client.query(readPublicationsWoutAbstract())
+    return queryResult.data.publications
+  }
 }
 
 async function getScopusDataFromCsv (csvPath) {
@@ -54,7 +60,9 @@ async function getScopusDataFromCsv (csvPath) {
 
 async function main (): Promise<void> {
 
-  const publications = await getPublications()
+  let startYear
+  // startYear = 2020
+  const publications = await getPublications(startYear)
   const publicationsBySource = await _.groupBy(publications, (publication) => {
     return publication['source_name']
   })
@@ -66,7 +74,7 @@ async function main (): Promise<void> {
   })
   console.log(`Abstracts found for PubMed ${JSON.stringify(_.keys(pubMedAbstracts).length, null, 2)}`)
 
-  const scopusDataFile = '../data/scopus_full_metadata.20200602154048.csv'
+  const scopusDataFile = '../data/scopus_full_metadata.20210221082710.csv'
   const scopusDataByDoi = await getScopusDataFromCsv(scopusDataFile)
   const scopusAbstracts = {}
   console.log(`Abstracts found for Scopus: ${JSON.stringify(_.keys(scopusDataByDoi).length, null, 2)}`)
@@ -81,9 +89,8 @@ async function main (): Promise<void> {
   await pMap(_.keys(pubMedAbstracts), async (doi) => {
     counter += 1
     randomWait(counter)
-    if (!pubMedAbstracts[doi]){
-      console.log(`Found Doi with null abstract: ${doi}`)
-    } else {
+    if (pubMedAbstracts[doi]){
+      // console.log('Found doi with existing abstract')
       console.log(`Writing abstract for doi: ${doi}`)
       const resultUpdatePubAbstracts = client.mutate(updatePubAbstract(doi, pubMedAbstracts[doi]))
     }
@@ -94,9 +101,8 @@ async function main (): Promise<void> {
   await pMap(_.keys(scopusAbstracts), async (doi) => {
     counter += 1
     randomWait(counter)
-    if (!scopusAbstracts[doi]){
-      console.log(`Found Doi with null abstract: ${doi}`)
-    } else {
+    if (scopusAbstracts[doi]){
+      // console.log('Found doi with existing abstract')
       console.log(`Writing abstract for doi: ${doi}`)
       const resultUpdatePubAbstracts = await client.mutate(updatePubAbstract(doi, scopusAbstracts[doi]))
     }

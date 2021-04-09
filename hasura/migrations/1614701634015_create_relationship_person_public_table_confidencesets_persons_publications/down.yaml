@@ -1,0 +1,6 @@
+- args:
+    relationship: person
+    table:
+      name: confidencesets_persons_publications
+      schema: public
+  type: drop_relationship

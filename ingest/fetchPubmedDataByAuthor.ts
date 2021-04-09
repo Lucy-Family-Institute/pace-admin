@@ -20,7 +20,7 @@ import dotenv from 'dotenv'
 import resolve from 'path'
 import fetch from 'node-fetch'
 import readPersonsByYear from '../client/src/gql/readPersonsByYear'
-import { randomWait } from './units/randomWait'
+import { randomWait, wait } from './units/randomWait'
 
 dotenv.config({
   path: '../.env'
@@ -75,12 +75,14 @@ const funderIdentifierSchema = schema({
 
 const shareWorkSchema = schema({
   title: {type: String, default: null},
+  publicationYear: {type: String, default: null},
   description: {type: String, default: null},
   creators: [creatorSchema],
   resourceIdentifiers: [resourceIdentifierSchema],
   funderIdentifiers: [funderIdentifierSchema],
 }, translate({
   title: 'MedlineCitation.Article.ArticleTitle._text',
+  publicationYear: 'MedlineCitation.Article.Journal.JournalIssue.PubDate.Year._text',
   description: 'MedlineCitation.Article.Abstract.AbstractText._text',
   creators: 'MedlineCitation.Article.AuthorList.Author',
   resourceIdentifiers: 'PubmedData.ArticleIdList.ArticleId',
@@ -97,12 +99,26 @@ async function getAwardPublications(awardId){
 }
 
 async function getPersonPublications(person){
+  const batchSize = 400
   const ids = await getPersonESearch(person)
-  const records = await getEFetch(ids)
-  if(_.get(records, 'PubmedArticleSet.PubmedArticle', null)) {
-    return extractMetadata(records)
-  }
-  return null
+  console.log(`Fetching papers for ${ids.length} ids`)
+  const batches = _.chunk(ids, batchSize)
+  let extractedMetadata = []
+  let counter = 1
+  await pMap(batches, async (batch) => {
+    //const batch = batches[13]
+    const start = ((counter-1) * batchSize)+1
+    let end = batchSize * counter
+    if (end > ids.length) end = ids.length
+    console.log(`Fetching records batch (${start} to ${end}) of ${ids.length} records for ${person.lastName}, ${person.firstName}`)
+    const records = await getEFetch(batch)
+    // const records = await getEFetch(ids)
+    if(_.get(records, 'PubmedArticleSet.PubmedArticle', null)) {
+      extractedMetadata = _.concat(extractedMetadata, extractMetadata(records))
+    }
+    counter += 1
+  }, { concurrency: 1 })
+  return extractedMetadata
 }
 
 async function getESearch(term){
@@ -138,7 +154,7 @@ async function getEFetch(ids){
 async function getPersonESearch(person){
   await wait(1000)
   const personString = `${person['lastName']}, ${person['firstName']}`
-  const term = `${person['lastName']}, ${person['firstName']}[Author] OR ${person['lastName']}, ${person['firstName']}[Investigator] OR ${person['lastName']} ${person['firstName']}[Author] OR ${person['lastName']} ${person['firstName']}[Investigator]`
+  const term = `(Notre Dame[Affiliation]) AND (${person['lastName']}, ${person['firstName']}[Author] OR ${person['lastName']}, ${person['firstName']}[Investigator])` // OR ${person['lastName']} ${person['firstName']}[Author] OR ${person['lastName']} ${person['firstName']}[Investigator]`
   console.log(`Term is: ${term}`)
   const url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
   const response = await axios.get(url, {
@@ -206,15 +222,30 @@ async function main(): Promise<void> {
   // const result = await pMap(uniqueAwardIds, mapper, {concurrency: 2});
 
   // now search by author list in the center
-  const years = [ 2019 ]
+  const years = [ 2020 ]
+  // const years = [ 2020 ]
   await pMap(years, async (year) => {
     const simplifiedPersons = await getSimplifiedPersons(year)
     console.log(`Simplified persons for ${year} are: ${JSON.stringify(simplifiedPersons,null,2)}`)
 
     //create map of last name to array of related persons with same last name
-    const personMap = _.transform(simplifiedPersons, function (result, value) {
-      (result[value['lastName']] || (result[value['lastName']] = [])).push(value)
-    }, {})
+    // const personMap = _.transform(simplifiedPersons, function (result, value) {
+    //   (result[value['lastName']] || (result[value['lastName']] = [])).push(value)
+    // }, {})
+
+    // get short list of ones with errors w/ 2020 only
+    const personWithHarvestErrors = _.filter(simplifiedPersons, (person) => {
+      // "Error on get pubmed papers for author: li, jun: Error: Request failed with status code 414",
+      // "Error on get pubmed papers for author: liu, fang: Error: Request failed with status code 414",
+      // "Error on get pubmed papers for author: liu, xin: Error: Request failed with status code 414",
+      // "Error on get pubmed papers for author: lu, xin: Error: Request failed with status code 414",
+      // "Error on get pubmed papers for author: taylor, richard: Error: Request failed with status code 414"
+      const erroredPersonIds = [49, 52, 53, 54, 82]
+      return _.includes(erroredPersonIds, person.id)
+    })
+
+    // console.log(`Person with harvest errors for ${year} are: ${JSON.stringify(personWithHarvestErrors,null,2)}`)
+
 
     console.log(`Loading Pubmed ${year} Publication Data`)
     //load data from pubmed
@@ -229,7 +260,7 @@ async function main(): Promise<void> {
 
         console.log(`Working on Pubmed papers for ${person['lastName']}, ${person['firstName']}`)
         const response = await getPersonPublications(person)
-        console.log(`Response is: ${JSON.stringify(response, null, 2)}`)
+        // console.log(`Response is: ${JSON.stringify(response, null, 2)}`)
         const filename = path.join(process.cwd(), dataFolderPath, 'pubmedByAuthor', `${_.lowerCase(person['lastName'])}_${_.lowerCase(person['firstName'])}.json`)
         if (response) {
           console.log(`Writing ${filename}`)
@@ -245,7 +276,10 @@ async function main(): Promise<void> {
 
     // const simplifiedPersons2 = _.chunk(simplifiedPersons, 1)
     // console.log(`Simp 2: ${JSON.stringify(simplifiedPersons2, null, 2)}`)
+    // const personResult = await pMap(personWithHarvestErrors, personMapper, {concurrency: 2});
     const personResult = await pMap(simplifiedPersons, personMapper, {concurrency: 3});
+    console.log(`Succeeded pubmed papers ${JSON.stringify(succeededPubmedPapers.length, null, 2)}`)
+    console.log(`Failed pubmed papers ${JSON.stringify(failedPubmedPapers, null, 2)}`)
   }, { concurrency: 1 })
 }
 
