@@ -15,6 +15,8 @@ export default function readPersonPublications (id) {
             title
             doi
             csl_string
+            source_name
+            source_metadata
           }
           confidence,
           id

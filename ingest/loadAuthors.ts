@@ -5,6 +5,10 @@ import gql from 'graphql-tag'
 import fetch from 'node-fetch'
 import _ from 'lodash'
 import { command as loadCsv } from './units/loadCsv'
+import { getAllSimplifiedPersons, getNameKey } from './modules/queryNormalizedPeople'
+import readInstitutions from './gql/readInstitutions'
+import updatePersonDates from './gql/updatePersonDates'
+
 
 import dotenv from 'dotenv'
 
@@ -28,38 +32,99 @@ const client = new ApolloClient({
 
 async function main (): Promise<void> {
   const authors: any = await loadCsv({
-    path: '../data/hcri_researchers_2017-2019.csv'
+    path: '../data/hcri_researchers_2017-2020.csv'
   })
 
-  // insert institutions first
-  const institutions = _.uniq(_.map(authors, 'institution'))
-  const result = await client.mutate({
-    mutation: gql`
-      mutation InsertInstitutionMutation ($institutions:[institutions_insert_input!]!){
-        insert_institutions(
-          objects: $institutions
-          on_conflict: {constraint: institutions_pkey, update_columns: name}
-        ) {
-          returning {
-            id
-            name
-          }
-        }
-      }`,
-    variables: {
-      institutions: _.map(institutions, (i: string) => ({ name: i }))
+  // check for existing authors
+  // get the set of persons to add variances to
+  const authorsExisting = await getAllSimplifiedPersons(client)
+
+  //group the authors by lastname and firstname
+  const authorsByName = _.mapKeys(authorsExisting, (author) => {
+    return getNameKey(author['lastName'], author['firstName'])
+  })
+
+  console.log(`Authors by name: ${_.keys(authorsByName)}`)
+
+  const insertAuthors = []
+  // update any changes in start or end dates, make it a map of existing db id to new object
+  let updateAuthors = {}
+  _.each(authors, (author) => {
+    const key = getNameKey(author['family_name'], author['given_name'])
+    const newStartDate = `${author.start_date}-01-01`
+    const newEndDate = author.end_date ? `${author.end_date}-12-31` : null
+    console.log(`Checking author: ${key}`)
+    if (!authorsByName[key]){
+      console.log(`Author ${key} not found yet, will add to list to insert`)
+      insertAuthors.push(author)
+    } else if (newStartDate !== authorsByName[key]['startYear']) {
+      console.log(`Author ${key} start date changed, will add to list to update, dates were: ${new Date(`${authorsByName[key]['startYear']}`)}-${authorsByName[key]['endYear']} new dates:${newStartDate}-${newEndDate}`)
+      console.log(`Existing author keys are ${_.keys(authorsByName[key])}`)
+      updateAuthors[authorsByName[key]['id']] = author
+    } else if (newEndDate !== authorsByName[key]['endYear']) {
+      console.log(`Author ${key} end date changed, will add to list to update, dates were: ${authorsByName[key]['startYear']}-${authorsByName[key]['endYear']} new dates:${newStartDate}-${newEndDate}`)
+      console.log(`Existing author keys are ${_.keys(authorsByName[key])}`)
+      updateAuthors[authorsByName[key]['id']] = author
+    } else{
+      console.log(`Author ${key} found, will skip insert`)
     }
   })
 
-  // get indexed id's for institutions, and update author list with id's for inserts
-  const insertedInstitutions = result.data.insert_institutions.returning || []
-  const institutionNameIdMap = _.reduce(insertedInstitutions, (obj, inst) => {
+  // check for existing institutions
+  const result = await client.query(readInstitutions())
+  let existingInst = result.data.institutions
+
+  const instByName = _.groupBy(existingInst, (inst) => {
+    return inst['name']
+  })
+
+  // insert institutions first
+  const institutions = _.uniq(_.map(insertAuthors, 'institution'))
+  console.log(`Institutions for add authors ${JSON.stringify(institutions)}`)
+  console.log(`Existing Institutions ${JSON.stringify(existingInst)}`)
+
+
+  const insertInst = []
+  _.each(institutions, (institution) => {
+    if (!instByName[institution]){
+      insertInst.push(institution)
+    }
+  })
+
+  console.log(`Insert Authors: ${insertAuthors.length}`)
+  console.log(`Insert Inst: ${JSON.stringify(insertInst, null, 2)}`)
+
+  if (insertInst.length > 0){
+    const result = await client.mutate({
+      mutation: gql`
+        mutation InsertInstitutionMutation ($institutions:[institutions_insert_input!]!){
+          insert_institutions(
+            objects: $institutions
+            on_conflict: {constraint: institutions_pkey, update_columns: name}
+          ) {
+            returning {
+              id
+              name
+            }
+          }
+        }`,
+      variables: {
+        institutions: _.map(insertInst, (i: string) => ({ name: i }))
+      }
+    })
+
+    // get indexed id's for institutions, and update author list with id's for inserts
+    const insertedInstitutions = result.data.insert_institutions.returning || []
+    existingInst = _.concat(existingInst, insertedInstitutions)
+  }
+
+  const institutionNameIdMap = _.reduce(existingInst, (obj, inst) => {
     if (inst.name && inst.id) { obj[inst.name] = inst.id }
     return obj
   }, {})
 
   // now add authors
-  const authorsWithIds = _.map(authors, author => {
+  const authorsWithIds = _.map(insertAuthors, author => {
     const obj = _.pick(author, ['family_name', 'given_name', 'email', 'position_title'])
     if (institutionNameIdMap[author.institution]) {
       // eslint-disable-next-line 
@@ -100,6 +165,15 @@ async function main (): Promise<void> {
     variables: {
       persons: authorsWithIds
     }
+  })
+
+  // update existing authors as needed
+  console.log(`Update Authors: ${_.keys(updateAuthors).length}`)
+  // need to add update gql
+  _.each(_.keys(updateAuthors), async (id) => {
+    const newStartDate = `${updateAuthors[id].start_date}-01-01`
+    const newEndDate = updateAuthors[id].end_date ? `${updateAuthors[id].end_date}-12-31` : undefined
+    const resultUpdatePersonDates = await client.mutate(updatePersonDates(id, new Date(newStartDate), new Date(newEndDate)))
   })
 }
 

@@ -1,0 +1,13 @@
+- args:
+    name: person
+    table:
+      name: confidencesets_persons_publications
+      schema: public
+    using:
+      manual_configuration:
+        column_mapping:
+          person_id: id
+        remote_table:
+          name: persons
+          schema: public
+  type: create_object_relationship

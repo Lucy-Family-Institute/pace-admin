@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { ApolloClient, MutationOptions } from 'apollo-client'
+import { ApolloClient } from 'apollo-client'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { createHttpLink } from 'apollo-link-http'
 import fetch from 'node-fetch'
@@ -63,73 +63,6 @@ async function getScopusAuthorData(authorGivenName, authorFamilyName, year, scop
 
 }
 
-async function getScopusPaperData(doi){
-  const baseUrl = 'https://api.elsevier.com/content/search/scopus'
-
-  const affiliationId = "60021508"
-
-  const doiQuery = "DOI(" + doi + ")"
-
-  const response = await axios.get(baseUrl, {
-      headers: {
-        'X-ELS-APIKey' : elsApiKey,
-      },
-      params: {
-        query : doiQuery
-      }
-    });
-
-    return response.data;
-
-}
-
-async function getScopusPaperAbstractData (scopusId) {
-  const baseUrl = `https://api.elsevier.com/content/abstract/scopus_id/${scopusId}`
-
-  const response = await axios.get(baseUrl, {
-    headers: {
-      'httpAccept' : 'text/xml',
-      'X-ELS-APIKey' : elsApiKey,
-    }
-  });
-
-  return response.data;
-}
-
-async function getScopusPaperFullText (doi) {
-  const baseUrl = 'https://api.elsevier.com/content/article/eid/1-s2.0-S152500161830594X'
-
-  const fullUrl = baseUrl + doi
-
-
-    const response = await axios.get(baseUrl, {
-        headers: {
-          'httpAccept' : 'text/xml',
-          'X-ELS-APIKey' : elsApiKey,
-        }
-      });
-
-      //console.log(response.data)
-      return response.data;
-}
-
-async function getScopusAuthorAffiliation (scopusId) {
-  const baseUrl = 'https://api.elsevier.com/content/abstract/scopus_id/85059466526?field=author,affiliation'
-
-  //const fullUrl = baseUrl + doi
-
-
-    const response = await axios.get(baseUrl, {
-        headers: {
-          'httpAccept' : 'text/xml',
-          'X-ELS-APIKey' : elsApiKey,
-        }
-      });
-
-      //console.log(response.data)
-      return response.data;
-}
-
 async function getSimplifiedPersons(year) {
   const queryResult = await client.query(readPersonsByYear(year))
 
@@ -158,11 +91,12 @@ async function getScopusAuthorPapers(person, year, scopusAffiliationId) {
     //set request set size
     const pageSize = 25
     let offset = 0
+    let totalResults = 0
 
     //get first page of results, do with first initial for now
     const authorSearchResult = await getScopusAuthorData(person.lowerFirstInitial, person.lowerLastName, year, scopusAffiliationId, pageSize, offset)
     if (authorSearchResult && authorSearchResult['search-results']['opensearch:totalResults']){
-      const totalResults = parseInt(authorSearchResult['search-results']['opensearch:totalResults'])
+      totalResults = parseInt(authorSearchResult['search-results']['opensearch:totalResults'])
       console.log(`Author Search Result Total Results: ${totalResults}`)
       if (totalResults > 0 && authorSearchResult['search-results']['entry']){
         searchPageResults.push(authorSearchResult['search-results']['entry'])
@@ -194,6 +128,12 @@ async function getScopusAuthorPapers(person, year, scopusAffiliationId) {
     }
 
     //flatten the search results page as currently results one per page, and then keyBy scopus id
+    const flattenedResults = _.flattenDepth(searchPageResults, 1)
+    if (flattenedResults.length != totalResults) {
+      throw `All expected results not returned for ${person.lastName}, ${person.firstName}, expected: ${totalResults} actual: ${flattenedResults.length}`
+    } else {
+      console.log(`${year} Retrieved (${flattenedResults.length} of ${totalResults}) expected results for ${person.lastName}, ${person.firstName}`)
+    }
     return _.flattenDepth(searchPageResults, 1)
   } catch (error) {
     console.log(`Error on get info for person: ${error}`)
@@ -216,6 +156,7 @@ async function getSimplifliedScopusPapers(scopusPapers, simplifiedPerson, scopus
       search_person_end_date: `${(simplifiedPerson.endDate ? simplifiedPerson.endDate : '')}`,
       search_person_source_ids_scopus_affiliation_id: scopusAffiliationId,
       search_query: query, 
+      publication_year: paper['prism:coverDate'],
       title: paper['dc:title'],
       journal: paper['prism:publicationName'],
       journal_issn: paper['prism:issn'],
@@ -231,7 +172,7 @@ async function getSimplifliedScopusPapers(scopusPapers, simplifiedPerson, scopus
 
 async function main (): Promise<void> {
 
-  const years = [ 2019, 2018, 2017, 2016 ]
+  const years = [ 2020, 2019, 2018, 2017, 2016 ]
   const scopusAffiliationId = "60021508"
   await pMap(years, async (year) => {
     const simplifiedPersons = await getSimplifiedPersons(year)
@@ -287,7 +228,5 @@ async function main (): Promise<void> {
     console.log(`Get error messages: ${JSON.stringify(failedScopusPapers,null,2)}`)
 
   }, { concurrency: 1 })
-
 }
-
   main();

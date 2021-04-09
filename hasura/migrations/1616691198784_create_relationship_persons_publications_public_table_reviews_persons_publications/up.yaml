@@ -1,0 +1,13 @@
+- args:
+    name: persons_publications
+    table:
+      name: reviews_persons_publications
+      schema: public
+    using:
+      manual_configuration:
+        column_mapping:
+          persons_publications_id: id
+        remote_table:
+          name: persons_publications
+          schema: public
+  type: create_object_relationship

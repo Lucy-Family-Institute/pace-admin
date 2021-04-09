@@ -23,7 +23,7 @@
         class="fullSelect"
       />
     </q-item>
-    <q-item>
+    <!--<q-item>
       <q-select
         name="person_total"
         v-model="selectedPersonTotal"
@@ -31,6 +31,18 @@
         color="primary"
         filled
         label="Total Counts:"
+        class="fullSelect"
+      />
+    </q-item>
+    -->
+    <q-item>
+      <q-select
+        name="person_confidence"
+        v-model="selectedPersonConfidence"
+        :options="personConfidenceOptions"
+        color="primary"
+        filled
+        label="Minimum Confidence:"
         class="fullSelect"
       />
     </q-item>
@@ -54,6 +66,10 @@ export default {
         'Pending',
         'All'
       ],
+      personConfidenceOptions: [
+        '50%',
+        'All'
+      ],
       filterMenuIcons: {
         'institution':
         {
@@ -70,7 +86,8 @@ export default {
     preferredPersonSort: sync('filter/preferredPersonSort'),
     selectedInstitutions: sync('filter/selectedInstitutions'),
     selectedPersonSort: sync('filter/selectedPersonSort'),
-    selectedPersonTotal: sync('filter/selectedPersonTotal')
+    selectedPersonTotal: sync('filter/selectedPersonTotal'),
+    selectedPersonConfidence: sync('filter/selectedPersonConfidence')
   },
   async created () {
     this.fetchData()
@@ -87,6 +104,7 @@ export default {
       this.selectedInstitutions = (this.selectedInstitutions && this.selectedInstitutions.length > 0) ? this.selectedInstitutions : _.clone(this.institutionOptions)
       this.selectedPersonSort = (this.selectedPersonSort) ? this.selectedPersonSort : this.preferredPersonSort
       this.selectedPersonTotal = (this.selectedPersonTotal) ? this.selectedPersonTotal : this.preferredPersonTotal
+      this.selectedPersonConfidence = (this.selectedPersonConfidence) ? this.selectedPersonConfidence : this.preferredPersonConfidence
     }
   }
 }

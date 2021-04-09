@@ -257,6 +257,71 @@ tables:
   delete_permissions: []
   event_triggers: []
   computed_fields: []
+- table: confidencesets_persons_publications
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      manual_configuration:
+        remote_table: persons
+        column_mapping:
+          person_id: id
+    name: person
+    comment: null
+  - using:
+      manual_configuration:
+        remote_table: persons_publications
+        column_mapping:
+          persons_publications_id: id
+    name: persons_publication
+    comment: null
+  - using:
+      manual_configuration:
+        remote_table: publications
+        column_mapping:
+          publication_id: id
+    name: publication
+    comment: null
+  array_relationships:
+  - using:
+      manual_configuration:
+        remote_table: reviews
+        column_mapping:
+          persons_publications_id: persons_publications_id
+    name: reviews
+    comment: null
+  insert_permissions: []
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - id
+      - persons_publications_id
+      - value
+      - datetime
+      - version
+      - person_id
+      - publication_id
+      - title
+      - doi
+      - source_name
+      - year
+      filter: {}
+  update_permissions: []
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
 - table: confidence_type
   is_enum: false
   configuration:
@@ -839,6 +904,13 @@ tables:
     comment: null
   array_relationships:
   - using:
+      manual_configuration:
+        remote_table: confidencesets_persons_publications
+        column_mapping:
+          id: person_id
+    name: confidencesets_persons_publications
+    comment: null
+  - using:
       foreign_key_constraint_on:
         column: person_id
         table: persons_namevariances
@@ -1005,6 +1077,13 @@ tables:
     comment: null
   - using:
       manual_configuration:
+        remote_table: confidencesets_persons_publications
+        column_mapping:
+          id: persons_publications_id
+    name: confidencesets_persons_publications
+    comment: null
+  - using:
+      manual_configuration:
         remote_table: org_reviews
         column_mapping:
           id: persons_publications_id
@@ -1099,6 +1178,20 @@ tables:
         column_mapping:
           publication_id: publication_id
     name: awards
+    comment: null
+  - using:
+      manual_configuration:
+        remote_table: confidencesets
+        column_mapping:
+          id: persons_publications_id
+    name: confidencesets
+    comment: null
+  - using:
+      manual_configuration:
+        remote_table: confidencesets_persons_publications
+        column_mapping:
+          id: persons_publications_id
+    name: confidencesets_persons_publications
     comment: null
   - using:
       manual_configuration:
@@ -1437,6 +1530,65 @@ tables:
       - review_type
       - datetime
       filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: reviews_persons_publications
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      manual_configuration:
+        remote_table: persons_publications
+        column_mapping:
+          persons_publications_id: id
+    name: persons_publications
+    comment: null
+  - using:
+      manual_configuration:
+        remote_table: type_review
+        column_mapping:
+          review_type: value
+    name: type_review
+    comment: null
+  - using:
+      manual_configuration:
+        remote_table: users
+        column_mapping:
+          user_id: id
+    name: user
+    comment: null
+  array_relationships: []
+  insert_permissions: []
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - datetime
+      - doi
+      - id
+      - person_id
+      - persons_publications_id
+      - publication_id
+      - review_organization_value
+      - review_type
+      - source_name
+      - title
+      - user_id
+      - year
+      filter: {}
+  update_permissions: []
   delete_permissions: []
   event_triggers: []
   computed_fields: []
