@@ -1,4 +1,5 @@
 import NormedPublication from './normedPublication'
+import NormedPerson from './normedPerson'
 
 export default interface HarvestSet {
     sourceName: string,
