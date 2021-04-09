@@ -112,6 +112,9 @@ update_scopus_data:
 	cd ingest && ts-node fetchScopusAuthorData.ts && cd ..
 	cd ingest && ts-node fetchScopusFullTextData.ts && cd ..
 
+update_wos_data:
+	cd ingest && ts-node fetchWoSAuthorData.ts && cd ..
+
 load_abstracts:
 	cd ingest && ts-node loadAbstracts.ts && cd ..
 
