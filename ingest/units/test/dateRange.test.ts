@@ -313,3 +313,12 @@ test ('getDateObject returns Date with correct day and time', () => {
   expect(returnedDate.getMonth()).toEqual(1)
   expect(returnedDate.getDate()).toEqual(25)
 })
+
+test ('get DateObject works with date of format MM/DD/YYYY', () => {
+  expect.hasAssertions()
+  const returnedDate: Date = getDateObject('02/25/2018')
+  expect(returnedDate.getFullYear()).toEqual(2018)
+  // month is returned in form of 0-11 so need to adjust accordingly
+  expect(returnedDate.getMonth()).toEqual(1)
+  expect(returnedDate.getDate()).toEqual(25)
+})

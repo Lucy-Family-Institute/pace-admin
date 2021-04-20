@@ -36,7 +36,8 @@ beforeAll(async () => {
     queryUrl: 'https://api.elsevier.com/content/search/scopus',
     apiKey: process.env.SCOPUS_API_KEY,
     sourceName: 'Scopus',
-    pageSize: '25'  // page size must be a string for the request to work
+    pageSize: '25',  // page size must be a string for the request to work
+    requestInterval: 1000
   }
   ds = new ScopusDataSource(dsConfig)
 

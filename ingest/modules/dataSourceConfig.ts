@@ -6,4 +6,5 @@ interface DataSourceConfig {
   password?: string
   sourceName: string
   pageSize: string
+  requestInterval: Number
 }

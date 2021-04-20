@@ -3,6 +3,7 @@ import fs from 'fs'
 import { getDateObject } from '../units/dateRange'
 import { command as loadCsv } from '../units/loadCsv'
 import { command as writeCsv} from '../units/writeCsv'
+import NormedPerson from './normedPerson'
 
 export default class NormedPublication {
   // ------ begin declare properties used when using NormedPublication like an interface

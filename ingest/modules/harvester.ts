@@ -3,7 +3,7 @@ import pMap from 'p-map'
 import pTimes from 'p-times'
 import { command as writeCsv } from '../units/writeCsv'
 import { dateRangesOverlapping } from '../units/dateRange'
-import { randomWait } from '../units/randomWait'
+import { wait, randomWait } from '../units/randomWait'
 import moment from 'moment'
 import NormedPublication from './normedPublication'
 import NormedPerson from './normedPerson'
@@ -62,10 +62,14 @@ export class Harvester {
             if ((totalResults % pageSize) <= 0) {
               numberOfRequests -= 1
             }
+
+            // make variable since 'this' reference scope gets confused inside loops below
+            const currentDS = this.ds
+
             //loop to get the result of the results
             console.log(`Making ${numberOfRequests} requests for ${person.familyName}, ${person.givenNameInitial}`)
             await pTimes (numberOfRequests, async function (index) {
-              randomWait(index)
+              await wait(currentDS.getDataSourceConfig().requestInterval)
               if (offset + pageSize < totalResults){
                 offset += pageSize
               } else {
@@ -154,7 +158,7 @@ export class Harvester {
         break
       }
     }
-    console.log(`Querying scopus with date: ${searchStartDate}, offset: ${offset}, found pubs: ${harvestSet.sourcePublications.length}`)
+    console.log(`Querying ${this.ds.getSourceName()} with date: ${searchStartDate}, offset: ${offset}, found pubs: ${harvestSet.sourcePublications.length} person: ${person.familyName}, ${person.givenName}`)
     const normedPublications: NormedPublication[] = this.ds.getNormedPublications(harvestSet.sourcePublications, person)
     _.set(harvestSet, 'normedPublications',normedPublications)
     return harvestSet

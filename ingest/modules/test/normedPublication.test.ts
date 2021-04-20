@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import { getDateObject } from '../../units/dateRange'
 import NormedPublication from '../normedPublication'
+import NormedPerson from '../normedPerson'
 
 const testCSVPath = './test/fixtures/scopus.2019.csv'
 
