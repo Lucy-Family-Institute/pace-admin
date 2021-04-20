@@ -6,6 +6,7 @@ import NormedPerson from './normedPerson'
 import HarvestSet from './harvestSet'
 import DataSource from './dataSource'
 import { getDateString, getDateObject } from '../units/dateRange'
+import { wait } from '../units/randomWait';
 
 export class WosDataSource implements DataSource {
 
@@ -16,7 +17,6 @@ export class WosDataSource implements DataSource {
     this.dsConfig = dsConfig
   }
 
-  // return the query passed to scopus for searching for given author
   getAuthorQuery(person: NormedPerson){
     let authorQuery = `AU = (${person.familyName}, ${person.givenName}) AND OG = (University of Notre Dame)`
     return authorQuery
@@ -94,7 +94,7 @@ export class WosDataSource implements DataSource {
         }
       }
     ).catch(err=>{console.log(err)})
-    const jsonData =  xmlToJson.xml2js(response['data'], {compact:true});
+    const jsonData =  xmlToJson.xml2js(response['data'], {compact:true});    
     return jsonData
   }
 
@@ -121,9 +121,24 @@ export class WosDataSource implements DataSource {
       sessionState['totalResults'] = totalResults
     }
 
+    await wait(this.dsConfig.requestInterval)
+
     // once query id and total results known retrieve corresponding results given offset
     const results = await this.retrieveWoSAuthorResults(this.getSessionId(), queryId, offset)
-    _.concat(publications, results['soap:Envelope']['soap:Body']['ns2:retrieveResponse'].return.records)
+    
+    const recordsFound = Number.parseInt(results['soap:Envelope']['soap:Body']['ns2:retrieveResponse']['return']['recordsFound']._text ? results['soap:Envelope']['soap:Body']['ns2:retrieveResponse']['return']['recordsFound']._text : '0')
+    if (recordsFound && recordsFound > 0) {
+      if (!Array.isArray(results['soap:Envelope']['soap:Body']['ns2:retrieveResponse'].return.records)){
+        // not returned as array if only one
+        publications.push(results['soap:Envelope']['soap:Body']['ns2:retrieveResponse'].return.records)
+      } else {
+        _.each(results['soap:Envelope']['soap:Body']['ns2:retrieveResponse'].return.records, (record) => {
+          if (record && record != null) {
+            publications.push(record)
+          }
+        })
+      }
+    }
     
     const result: HarvestSet = {
         sourceName: this.getSourceName(),
@@ -155,23 +170,44 @@ export class WosDataSource implements DataSource {
     return jsonData
   }
 
+  /**
+   * 
+   * @param properties 
+   * @returns Takes an array of objects of form [element 1, element 2] where
+   * element is of form {"label": {_text: "property_name"}, "value": {actual_value}}
+   * to form [property_name:actual_value]
+   */
+  getWoSMapLabelsToValues(properties) {
+    let transformedProperties = {}
+    _.each(properties, (property) => {
+      transformedProperties[property['label']['_text']] = property['value']
+    })
+    return transformedProperties
+  }
+
   // returns an array of normalized publication objects given ones retrieved fron this datasource
   getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): NormedPublication[]{
     return _.map(sourcePublications, (pub) => {
+      const otherProps = this.getWoSMapLabelsToValues(pub['other'])
+      const sourceProps = this.getWoSMapLabelsToValues(pub['source'])
+      
         let normedPub: NormedPublication = {
-            title: pub['dc:title'],
-            journalTitle: pub['prism:publicationName'],
-            publicationDate: pub['prism:coverDate'],
+            title: pub['title'] && pub['title']['value'] && pub['title']['value']['_text'] ? pub['title']['value']['_text'] : '',
+            journalTitle: sourceProps && sourceProps['SourceTitle'] && sourceProps['SourceTitle']['_text'] ? sourceProps['SourceTitle']['_text'] : '',
+            publicationDate: sourceProps && sourceProps['Published.BiblioYear'] && sourceProps['Published.BiblioYear']['_text'] ? sourceProps['Published.BiblioYear']['_text'] : '',
             datasourceName: this.dsConfig.sourceName,
-            doi: pub['prism:doi'] ? pub['prism:doi'] : '',
-            sourceId: _.replace(pub['dc:identifier'], 'SCOPUS_ID:', ''),
+            doi: otherProps && otherProps['Identifier.Doi'] && otherProps['Identifier.Doi']['_text'] ? otherProps['Identifier.Doi']['_text'] : '',
+            sourceId: pub['uid'] && pub['uid']['_text'] ? `${Number.parseInt(_.replace(pub['uid']['_text'], 'WOS:', ''))}` : '',
             sourceMetadata: pub
         }
         // add optional properties
-        if (searchPerson) _.set(normedPub, 'searchPerson', searchPerson)
-        if (pub['abstract']) _.set(normedPub, 'abstract', pub['abstract'])
-        if (pub['prism:issn']) _.set(normedPub, 'journalIssn', pub['prism:issn'])
-        if (pub['prism:eIssn']) _.set(normedPub, 'journalEIssn', pub['prism:eIssn'])
+        if (searchPerson){
+          console.log(`Setting search person ${searchPerson.familyName} with start date: ${JSON.stringify(searchPerson.startDate, null, 2)}`)
+          _.set(normedPub, 'searchPerson', searchPerson)
+        } 
+        // don't worry about abstract for now
+        if (otherProps && otherProps['Identifier.Issn'] && otherProps['Identifier.Issn']['_text']) _.set(normedPub, 'journalIssn', otherProps['Identifier.Issn']['_text'])
+        if (otherProps && otherProps['Identifier.Eissn'] && otherProps['Identifier.Eissn']['_text']) _.set(normedPub, 'journalEIssn', otherProps['Identifier.Eissn']['_text'])
         return normedPub
     })
   }
@@ -228,6 +264,10 @@ export class WosDataSource implements DataSource {
     // }
     // console.log(cookie)
     return cookie
+  }
+
+  getDataSourceConfig() {
+    return this.dsConfig
   }
   
 }

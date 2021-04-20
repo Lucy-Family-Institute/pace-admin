@@ -1,5 +1,6 @@
 import { Harvester, HarvestOperation } from '../harvester'
 import { WosDataSource } from '../wosDataSource'
+import DataSource from '../dataSource'
 import NormedPublication from '../normedPublication'
 import HarvestSet from '../HarvestSet'
 import NormedPerson from '../normedPerson'
@@ -37,7 +38,8 @@ const dsConfig: DataSourceConfig = {
     userName: process.env.WOS_USERNAME,
     password: process.env.WOS_PASSWORD,
     sourceName: 'WebOfScience',
-    pageSize: '25'  // page size must be a string for the request to work
+    pageSize: '5',  // page size must be a string for the request to work
+    requestInterval: 10000
 }
 
 const wosDS: WosDataSource = new WosDataSource(dsConfig)
@@ -51,7 +53,7 @@ beforeAll(async () => {
         familyName: 'Zhang',
         givenNameInitial: 'S',
         givenName: 'Siyuan',
-        startDate: getDateObject('2017-01-01'),
+        startDate: getDateObject('2019-01-01'),
         endDate: undefined,
         sourceIds: {
             scopusAffiliationId: '60021508'
@@ -150,17 +152,17 @@ test('test Web of Science harvester.fetchPublications by Author Name', async () 
         normedPublications: expectedNormedPubsByAuthor[`${defaultNormedPerson.familyName}, ${defaultNormedPerson.givenNameInitial}`],
         offset: 0,
         pageSize: Number.parseInt(dsConfig.pageSize),
-        totalResults: 198
+        totalResults: 4
     }
     // for date need to call getDateObject to make sure time zone is set correctly and not accidentally setting to previous date because of hour difference in local timezone
     const results = await wosDS.getPublicationsByAuthorName(defaultNormedPerson, {}, 0, getDateObject('2019-01-01'))
     // as new publications may be added to available, just test that current set includes expected pubs
     expect(results.sourceName).toEqual(expectedHarvestSet.sourceName)
     expect(results.searchPerson).toEqual(expectedHarvestSet.searchPerson)
-    // expect(results.query).toEqual(expectedHarvestSet.query)
-    // expect(results.sourcePublications.length).toEqual(wosDS.getRequestPageSize())
-    // expect(results.normedPublications).toEqual(expect.arrayContaining([expectedHarvestSet.normedPublications[0]]))
-    // expect(results.offset).toEqual(expectedHarvestSet.offset)
+    expect(results.query).toEqual(expectedHarvestSet.query)
+    expect(results.sourcePublications.length).toEqual(expectedHarvestSet.totalResults)
+    expect(results.normedPublications).toEqual(undefined)
+    expect(results.offset).toEqual(expectedHarvestSet.offset)
     expect(results.pageSize).toEqual(expectedHarvestSet.pageSize)
     expect(results.totalResults).toEqual(expectedHarvestSet.totalResults)
 })

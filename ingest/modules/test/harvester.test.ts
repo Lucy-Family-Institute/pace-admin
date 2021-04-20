@@ -10,13 +10,18 @@ import NormedPerson from '../normedPerson'
 import dotenv from 'dotenv'
 const fs = require('fs');
 import _ from 'lodash'
+import { WosDataSource } from '../wosDataSource'
 
 let scopusHarvester: Harvester
+let wosHarvester: Harvester
 let defaultNormedPerson: NormedPerson
 let testPersons: NormedPerson[]
+let testWoSPersons: NormedPerson[]
 let testAllPersons: NormedPerson[]
-let expectedNormedPublications: NormedPublication[]
-let expectedNormedPubsByAuthor
+let expectedScopusNormedPublications: NormedPublication[]
+let expectedScopusNormedPubsByAuthor
+let expectedWosNormedPublications: NormedPublication[]
+let expectedWosNormedPubsByAuthor
 
 const filePath =  '../.env'
 if (!fs.existsSync(filePath)) {
@@ -36,14 +41,26 @@ const scopusConfig: DataSourceConfig = {
     queryUrl: 'https://api.elsevier.com/content/search/scopus',
     apiKey: process.env.SCOPUS_API_KEY,
     sourceName: 'Scopus',
-    pageSize: '25'  // page size must be a string for the request to work
+    pageSize: '25',  // page size must be a string for the request to work
+    requestInterval: 1000
+}
+
+const wosConfig: DataSourceConfig = {
+    baseUrl: 'http://search.webofknowledge.com/esti/wokmws/ws',
+    queryUrl: 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearchLite',
+    userName: process.env.WOS_USERNAME,
+    password: process.env.WOS_PASSWORD,
+    sourceName: 'WebOfScience',
+    pageSize: '5',  // page size must be a string for the request to work
+    requestInterval: 10000 // number milliseconds to wait between requests
 }
 
 const scopusDS: DataSource = new ScopusDataSource(scopusConfig)
+const wosDS: DataSource = new WosDataSource(wosConfig)
 
 beforeAll(async () => {
-    const scopusDS: DataSource = new ScopusDataSource(scopusConfig)
     scopusHarvester = new Harvester(scopusDS)
+    wosHarvester = new Harvester(wosDS)
 
     defaultNormedPerson = {
         id: 94,
@@ -65,18 +82,34 @@ beforeAll(async () => {
         'end_date': 'endDate'
     }
 
-    const testPersonsFilePath = './test/fixtures/persons_sample_2019.csv'
-    const expectedPubCSVPath = './test/fixtures/scopus.2019.csv'
-    expectedNormedPublications = await NormedPublication.loadFromCSV(expectedPubCSVPath)
+    const testPersonsFilePath = './test/fixtures/persons_2020.csv'
+    const expectedScopusPubCSVPath = './test/fixtures/scopus.2019.csv'
+    expectedScopusNormedPublications = await NormedPublication.loadFromCSV(expectedScopusPubCSVPath)
+
     // get map of 'lastname, first initial' to normed publications
-    expectedNormedPubsByAuthor = _.groupBy(expectedNormedPublications, (normedPub: NormedPublication) => {
+    expectedScopusNormedPubsByAuthor = _.groupBy(expectedScopusNormedPublications, (normedPub: NormedPublication) => {
         return `${normedPub.searchPerson.familyName}, ${normedPub.searchPerson.givenNameInitial}`
     })
 
-    // testPersons = await loadPersons(testPersonsFilePath, personPropMap)
-    testPersons = [defaultNormedPerson]
+    const expectedWosPubCSVPath = './test/fixtures/wos.2020.csv'
+    expectedWosNormedPublications = await NormedPublication.loadFromCSV(expectedWosPubCSVPath)
+    // get map of 'lastname, first initial' to normed publications
+    expectedWosNormedPubsByAuthor = _.groupBy(expectedWosNormedPublications, (normedPub: NormedPublication) => {
+        return `${normedPub.searchPerson.familyName}, ${normedPub.searchPerson.givenNameInitial}`
+    })
 
-    // testAllPersons = _.chunk(await loadPersons(testPersonsFilePath, personPropMap), 4)[0]
+    testAllPersons = await NormedPerson.loadFromCSV(testPersonsFilePath)
+    // testPersons = await loadPersons(testPersonsFilePath, personPropMap)
+    // testPersons = [defaultNormedPerson]
+
+    testPersons = _.chunk(testAllPersons, 4)[0]
+
+    testWoSPersons = []
+    _.each(testPersons, (person) => {
+        testWoSPersons.push(_.set(person, 'sourceIds', {}))
+    })
+
+    console.log(`Test persons are: ${JSON.stringify(testPersons, null, 2)}`)
 
     jest.setTimeout(1000000)
 })
@@ -89,10 +122,10 @@ test('test Scopus harvester.fetchPublications by Author Name', async () => {
         searchPerson: defaultNormedPerson,
         query: scopusDS.getAuthorQuery(defaultNormedPerson),
         sourcePublications: [],
-        normedPublications: expectedNormedPubsByAuthor[`${defaultNormedPerson.familyName}, ${defaultNormedPerson.givenNameInitial}`],
+        normedPublications: expectedScopusNormedPubsByAuthor[`${defaultNormedPerson.familyName}, ${defaultNormedPerson.givenNameInitial}`],
         offset: 0,
         pageSize: Number.parseInt(scopusConfig.pageSize),
-        totalResults: 198
+        totalResults: expectedScopusNormedPubsByAuthor[`${defaultNormedPerson.familyName}, ${defaultNormedPerson.givenNameInitial}`].length
     }
     // for date need to call getDateObject to make sure time zone is set correctly and not accidentally setting to previous date because of hour difference in local timezone
     const results = await scopusHarvester.fetchPublications(defaultNormedPerson, HarvestOperation.QUERY_BY_AUTHOR_NAME, {}, 0, getDateObject('2019-01-01'), undefined)
@@ -115,7 +148,7 @@ test('test Scopus harvester.harvest by author name', async () => {
         searchPerson: defaultNormedPerson,
         query: scopusDS.getAuthorQuery(defaultNormedPerson),
         sourcePublications: [],
-        normedPublications: expectedNormedPubsByAuthor[`${defaultNormedPerson.familyName}, ${defaultNormedPerson.givenNameInitial}`],
+        normedPublications: expectedScopusNormedPubsByAuthor[`${defaultNormedPerson.familyName}, ${defaultNormedPerson.givenNameInitial}`],
         offset: 0,
         pageSize: Number.parseInt(scopusConfig.pageSize),
         totalResults: 198
@@ -125,10 +158,10 @@ test('test Scopus harvester.harvest by author name', async () => {
     if ((expectedHarvestSet.totalResults.valueOf() % expectedHarvestSet.pageSize.valueOf()) > 0) {
       expectedHarvestSetArraySize += 1
     }
-    const results: HarvestSet[] = await scopusHarvester.harvest(testPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2019-01-01'))
+    const results: HarvestSet[] = await scopusHarvester.harvest([defaultNormedPerson], HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2019-01-01'))
     // as new publications may be added to available, just test that current set includes expected pubs
     // and that total harvested is in the same power of 10 and less than double the expected amount
-    expect(results.length).toEqual(expectedHarvestSetArraySize) // checking the right number of harvest sets return (in chunks based on page size)
+    // expect(results.length).toEqual(expectedHarvestSetArraySize) // checking the right number of harvest sets return (in chunks based on page size)
     // combine values
     const combinedNormedPubs = _.mapValues(results, (result:HarvestSet) => {
         return result.normedPublications
@@ -146,13 +179,15 @@ test('test Scopus harvester.harvest by author name', async () => {
     })
     expect(resultNormedPubs.length).toBeGreaterThanOrEqual(expectedHarvestSet.totalResults.valueOf())
     // check for each expected pub
+
     _.each(_.keys(expectedNormedPubsByDoi), (doi) => {
 
          // ignore sourcemetadata since things like citedby-count often change over time
-        const expectedPub = _.omit(expectedNormedPubsByDoi[doi], 'sourceMetadata')
-        const receivedPub = _.omit(resultNormedPubsByDoi[doi], 'sourceMetadata')
+         // also igmore sourceIds as those vary across sources
+        const expectedPub = _.omit(expectedNormedPubsByDoi[doi], ['sourceMetadata', 'sourceIds'])
+        const receivedPub = _.omit(resultNormedPubsByDoi[doi], ['sourceMetadata', 'sourceIds'])
        
-        expect(expectedPub).toEqual(receivedPub)
+        expect(receivedPub).toEqual(expectedPub)
         // finally just check that source metadata is defined
         expect(resultNormedPubsByDoi[doi]['sourceMetadata']).toBeDefined()
     })
@@ -162,49 +197,68 @@ test('test scopus harvester.harvestToCsv', async () => {
     await scopusHarvester.harvestToCsv(testPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2019-01-01'))
 })
 
-// test('test scopus harvester.harvestToCsv with full author list', async () => {
-//     // console.log(`Test persons is: ${JSON.stringify(testPersons, null, 2)}`)
-//     // console.log(`Test persons is: ${JSON.stringify(testAllPersons, null, 2)}`)
-//     expect.hasAssertions()
-//     const csvFilePath = await scopusHarvester.harvestToCsv(testAllPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2019-01-01'))
-//     const harvestedPubs = await NormedPublication.loadFromCSV(csvFilePath)
-//     const harvestedByAuthor = _.groupBy(harvestedPubs, (normedPub: NormedPublication) => {
-//         return `${normedPub.searchPerson.familyName}, ${normedPub.searchPerson.givenNameInitial}`
-//     })
-//     // check harvested same as expected
-//     _.each(_.keys(harvestedByAuthor), (author) => {
-//         const harvested = harvestedByAuthor[author]
-//         const expected = expectedNormedPubsByAuthor[author]
-//         const resultNormedPubsByDoi = _.mapKeys(harvested, (normedPub) => {
-//             return normedPub['doi']
-//         })
-//         const expectedNormedPubsByDoi = _.mapKeys(expected, (expectedPub) => {
-//             return expectedPub['doi']
-//         })
-//         _.each(_.keys(resultNormedPubsByDoi), (doi) => {
-//             // ignore sourcemetadata since things like citedby-count often change over time
-//             const expectedPub = _.omit(expectedNormedPubsByDoi[doi], 'sourceMetadata')
-//             const receivedPub = _.omit(resultNormedPubsByDoi[doi], 'sourceMetadata')
-//             expect(receivedPub).toEqual(expectedPub)
-//         })
-//     })
-// })
+
+
+//-------------Web of Science Tests
 
 //TODO load in list of people to test against expected results for 2019
-test('test Scopus harvester.harvest by author id throws error', async () => {
-    // expect.hasAssertions()
-    const expectedHarvestSet: HarvestSet = {
-        sourceName: scopusConfig.sourceName,
-        searchPerson: defaultNormedPerson,
-        query: scopusDS.getAuthorQuery(defaultNormedPerson),
-        sourcePublications: [],
-        normedPublications: expectedNormedPubsByAuthor[`${defaultNormedPerson.familyName}, ${defaultNormedPerson.givenNameInitial}`],
-        offset: 0,
-        pageSize: Number.parseInt(scopusConfig.pageSize),
-        totalResults: 198
-    }
-    const results = await scopusHarvester.harvest(testPersons, HarvestOperation.QUERY_BY_AUTHOR_ID, getDateObject('2019-01-01'))
-    // as new publications may be added to available, just test that current set includes expected pubs
-    // and that total harvested is in the same power of 10 and less than double the expected amount
-    expect(results[0].errors).toEqual(['\'QUERY_BY_AUTHOR_ID\' not supported by datasource harvester Scopus'])
+test('test Web of Science harvester.harvest by author name', async () => {
+
+    const results: HarvestSet[] = await wosHarvester.harvest(testWoSPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2020-01-01'))
+
+    const resultsByPerson = _.groupBy(results, (harvestSet) => {
+        const person = harvestSet.searchPerson
+        return `${person.familyName}, ${person.givenNameInitial}`
+    })
+
+    const pageSize = Number.parseInt(wosConfig.pageSize)
+
+    _.each(_.keys(resultsByPerson), (personKey) => {
+        const personHarvestSets = resultsByPerson[personKey]
+        let expectedNormedPubs = expectedWosNormedPubsByAuthor[personKey]
+        if (!expectedNormedPubs) {
+            expectedNormedPubs = []
+        }
+        let expectedHarvestSetArraySize = parseInt(`${expectedNormedPubs.length / pageSize }`) //convert to an integer to drop any decimal
+        if (expectedNormedPubs.length % pageSize > 0) {
+            expectedHarvestSetArraySize += 1
+        }
+    
+        // as new publications may be added to available, just test that current set includes expected pubs
+        // and that total harvested is in the same power of 10 and less than double the expected amount
+       
+        // combine values
+        const normedPubs = _.mapValues(results, (result:HarvestSet) => {
+            return result.normedPublications
+        })
+        
+        let resultNormedPubs = []
+        _.each(personHarvestSets, (harvestSet, index) => {
+            resultNormedPubs = _.concat(resultNormedPubs, harvestSet.normedPublications)
+        })
+        const resultNormedPubsByDoi = _.mapKeys(resultNormedPubs, (normedPub) => {
+            return normedPub['doi']
+        })
+        const expectedNormedPubsByDoi = _.mapKeys(expectedNormedPubs, (expectedPub) => {
+            return expectedPub['doi']
+        })
+        expect(resultNormedPubs.length).toBeGreaterThanOrEqual(expectedNormedPubs.length)
+        // check for each expected pub
+
+        _.each(_.keys(expectedNormedPubsByDoi), (doi) => {
+
+            // ignore sourcemetadata since things like citedby-count often change over time
+            const expectedPub = _.omit(expectedNormedPubsByDoi[doi], 'sourceMetadata')
+            const receivedPub = _.omit(resultNormedPubsByDoi[doi], 'sourceMetadata')
+        
+
+            expect(receivedPub).toEqual(expectedPub)
+            // finally just check that source metadata is defined
+            expect(resultNormedPubsByDoi[doi]['sourceMetadata']).toBeDefined()
+        })
+    })
+})
+
+test('test Web of Science harvester.harvestToCsv', async () => {
+    await wosHarvester.harvestToCsv(testWoSPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2020-01-01'))
 })

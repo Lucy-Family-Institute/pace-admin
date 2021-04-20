@@ -110,5 +110,9 @@ export class ScopusDataSource implements DataSource {
   async initialize() {
 
   }
+
+  getDataSourceConfig() {
+    return this.dsConfig
+  }
   
 }

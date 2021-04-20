@@ -23,4 +23,6 @@ export default interface DataSource {
 
   // perform any actions necessary to initialize a connection to the datasource
   initialize(): Promise<void>
+
+  getDataSourceConfig(): DataSourceConfig
 }
