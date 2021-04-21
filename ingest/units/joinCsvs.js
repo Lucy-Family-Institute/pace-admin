@@ -18,7 +18,7 @@ function nameMatchFuzzy(last, first, lastFuzzy) {
     return result['item'] ? result['item'] : result
   })
   // console.log(`Reduced last name results are: ${JSON.stringify(reducedLastNameResults, null, 2)}`)
-  const fuzzyHarperFirst = new Fuse(reducedLastNameResults, {
+  const fuzzyFirst = new Fuse(reducedLastNameResults, {
     caseSensitive: false,
     shouldSort: true,
     includeScore: false,
@@ -26,7 +26,7 @@ function nameMatchFuzzy(last, first, lastFuzzy) {
     findAllMatches: true,
     threshold: 0.001,
   });
-  const results = fuzzyHarperFirst.search(first);
+  const results = fuzzyFirst.search(first);
   // console.log(`First name match results are: ${JSON.stringify(results, null, 2)}`)
   return results.length > 0 ? results[0] : null;
 }
@@ -38,7 +38,7 @@ function nameMatchElasticLunr(last, first, index) {
   // index.addField('firstname');
   // index.setRef('netid')
 
-  // _.forEach(harper, (value) => {
+  // _.forEach(centerMembers, (value) => {
   //   index.addDoc(value);
   // });
 
@@ -49,16 +49,16 @@ async function returnNihIds() {
 
   console.log('here')
 
-  // Load names from the Harper Institute
+  // Load names from the Center/Institute
   try {
-    const harper = await loadCsv({
+    const centerMembers = await loadCsv({
       path: '../data/hcri_researchers_2017-2020.csv',
     });
 
     console.log('here2')
     // Build the index for lastnames (and we'll pass this in later)
     // so we only have to do it once
-    const fuzzyHarperLast = new Fuse(harper, {
+    const fuzzyLast = new Fuse(centerMembers, {
       caseSensitive: false,
       shouldSort: true,
       includeScore: false,
@@ -87,13 +87,13 @@ async function returnNihIds() {
         reduceMethod: 'majority',
       });
 
-      // console.log(`Looking at award ${JSON.stringify(award, null, 2)} Parsed Lead Name: ${JSON.stringify(parsedLeadName, null, 2)}`)// Fuzzy Harper: ${JSON.stringify(fuzzyHarperLast, null, 2)}`)
+      // console.log(`Looking at award ${JSON.stringify(award, null, 2)} Parsed Lead Name: ${JSON.stringify(parsedLeadName, null, 2)}`)// Fuzzy : ${JSON.stringify(fuzzyLast, null, 2)}`)
 
       // Run the fuzzy name match on the first one that matches, if a match, continue
-      if(nameMatchFuzzy(parsedLeadName.last, parsedLeadName.first, fuzzyHarperLast)
-        || nameMatchFuzzy(parsedAwardName.last, parsedAwardName.first, fuzzyHarperLast)) {
+      if(nameMatchFuzzy(parsedLeadName.last, parsedLeadName.first, fuzzyLast)
+        || nameMatchFuzzy(parsedAwardName.last, parsedAwardName.first, fuzzyLast)) {
         
-        // console.log (`Found a match for ${fuzzyHarperLast}`)
+        // console.log (`Found a match for ${fuzzyLast}`)
         // Filter by NIH
         if(_.startsWith(award['Prime Sponsor'], 'National Institutes of Health')) {
           // console.log('found NIH match')
@@ -108,7 +108,7 @@ async function returnNihIds() {
         }
       }
 
-      //console.log(`Read from Harper: ${JSON.stringify(harper, null, 2)}`)
+      //console.log(`Read from centerMembers: ${JSON.stringify(centerMembers, null, 2)}`)
       return null;
     });
 

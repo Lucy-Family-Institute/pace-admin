@@ -1303,6 +1303,7 @@ export default {
   computed: {
     userId: sync('auth/userId'),
     isLoggedIn: sync('auth/isLoggedIn'),
+    selectedCenter: sync('filter/selectedCenter'),
     preferredPersonSort: get('filter/preferredPersonSort'),
     preferredPersonPubSort: get('filter/preferredPersonPubSort'),
     preferredCenterPubSort: get('filter/preferredCenterPubSort'),

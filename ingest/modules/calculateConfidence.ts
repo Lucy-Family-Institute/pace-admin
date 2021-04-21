@@ -354,7 +354,7 @@ export class CalculateConfidence {
     const reducedLastNameResults = _.map(lastNameResults, (result) => {
       return result['item'] ? result['item'] : result
     })
-    const fuzzyHarperFirst = new Fuse(reducedLastNameResults, {
+    const fuzzyFirst = new Fuse(reducedLastNameResults, {
       caseSensitive: false,
       shouldSort: true,
       includeScore: false,
@@ -362,7 +362,7 @@ export class CalculateConfidence {
       findAllMatches: true,
       threshold: 0.100,
     });
-    const results = fuzzyHarperFirst.search(testFirst);
+    const results = fuzzyFirst.search(testFirst);
     return results.length > 0 ? results[0] : null;
   }
 

@@ -390,7 +390,7 @@ function nameMatchFuzzy (searchLast, lastKey, searchFirst, firstKey, nameMap) {
     return result['item'] ? result['item'] : result
   })
   // console.log(`Reduced last name results are: ${JSON.stringify(reducedLastNameResults, null, 2)}`)
-  const fuzzyHarperFirst = new Fuse(reducedLastNameResults, {
+  const fuzzyFirst = new Fuse(reducedLastNameResults, {
     caseSensitive: false,
     shouldSort: true,
     includeScore: false,
@@ -399,7 +399,7 @@ function nameMatchFuzzy (searchLast, lastKey, searchFirst, firstKey, nameMap) {
     threshold: 0.100,
   });
   // console.log(`search first: ${searchFirst} test first is: ${testFirst}`)
-  const results = fuzzyHarperFirst.search(testFirst);
+  const results = fuzzyFirst.search(testFirst);
   // console.log(`First name match results are: ${JSON.stringify(results, null, 2)}`)
   return results.length > 0 ? results[0] : null;
 }

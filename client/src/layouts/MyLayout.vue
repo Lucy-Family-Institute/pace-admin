@@ -28,10 +28,11 @@
         </q-tabs>
         <q-space/>
         <q-select
-          v-model="model"
+          v-model="selectedCenter"
           :options="options"
           class="white"
           v-if="isLoggedIn"
+          map-options
         />
 
         <q-btn-group unelevated spread>
@@ -70,8 +71,11 @@ export default {
   name: 'MyLayout',
   data () {
     return {
-      model: 'Harper Cancer Research Institute',
-      options: [ 'Harper Cancer Research Institute' ]
+      // selectedCenter: 'Harper Cancer Research Institute',
+      options: [{
+        label: 'Harper Cancer Research Institute',
+        value: 'HCRI'
+      }]
     }
   },
   async created () {
@@ -82,7 +86,10 @@ export default {
   },
   computed: {
     isLoggedIn: sync('auth/isLoggedIn'),
-    userId: sync('auth/userId')
+    userId: sync('auth/userId'),
+    selectedCenter: sync('filter/selectedCenter'),
+    preferredSelectedCenter: sync('filter/preferredSelectedCenter')
+
   },
   methods: {
     openURL,
@@ -108,6 +115,10 @@ export default {
         }
       } else if (this.isLoggedIn === false) {
         this.userId = null
+      }
+
+      if (!this.selectedCenter) {
+        this.selectedCenter = this.preferredSelectedCenter
       }
     }
   }
