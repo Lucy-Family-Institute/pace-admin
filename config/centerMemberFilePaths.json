@@ -1,0 +1,8 @@
+{
+  "2020": [
+    "../data/hcri_members_2017-2020.csv"
+  ],
+  "NDENERGY": [
+    "../data/ndenergy_members_2017-2020.csv"
+  ]
+}
