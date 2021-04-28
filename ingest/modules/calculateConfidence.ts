@@ -20,7 +20,7 @@ import dotenv from 'dotenv'
 import readAllNewPersonPublications from '../gql/readAllNewPersonPublications'
 import insertReview from '../../client/src/gql/insertReview'
 import readPersonPublicationsByDoi from '../gql/readPersonPublicationsByDoi'
-const getIngestFilePathsByYear = require('../getIngestFilePathsByYear');
+const getIngestFilePaths = require('../getIngestFilePaths');
 import { normalizeString, normalizeObjectProperties } from '../units/normalizer'
 import { command as writeCsv } from '../units/writeCsv'
 import moment from 'moment'

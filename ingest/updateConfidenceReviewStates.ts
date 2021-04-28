@@ -22,7 +22,7 @@ import dotenv from 'dotenv'
 import readAllNewPersonPublications from './gql/readAllNewPersonPublications'
 import insertReview from '../client/src/gql/insertReview'
 import readPersonPublicationsByDoi from './gql/readPersonPublicationsByDoi'
-const getIngestFilePathsByYear = require('./getIngestFilePathsByYear');
+const getIngestFilePaths = require('./getIngestFilePaths');
 import { removeSpaces, normalizeString, normalizeObjectProperties } from './units/normalizer'
 
 dotenv.config({
@@ -899,7 +899,7 @@ async function main() {
   // @todo: Extract to ENV?
   const confidenceAlgorithmVersion = '82aa835eff3da48e497c6eb6b56dafc087c86958'
   // get confirmed author lists to papers
-  const pathsByYear = await getIngestFilePathsByYear("../config/ingestConfidenceReviewFilePaths.json")
+  const pathsByYear = await getIngestFilePaths("../config/ingestConfidenceReviewFilePaths.json")
 
   // get the set of persons to test
   const testAuthors = await getAllSimplifiedPersons()

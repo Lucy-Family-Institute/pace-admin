@@ -29,7 +29,7 @@
         <q-space/>
         <q-select
           v-model="selectedCenter"
-          :options="options"
+          :options="centerOptions"
           class="white"
           v-if="isLoggedIn"
           map-options
@@ -67,6 +67,8 @@ import { sync } from 'vuex-pathify'
 import _ from 'lodash'
 import axios from 'axios'
 
+import readOrganizations from '../../../gql/readOrganizations.gql'
+
 export default {
   name: 'MyLayout',
   data () {
@@ -87,9 +89,9 @@ export default {
   computed: {
     isLoggedIn: sync('auth/isLoggedIn'),
     userId: sync('auth/userId'),
+    centerOptions: sync('filter/centerOptions'),
     selectedCenter: sync('filter/selectedCenter'),
     preferredSelectedCenter: sync('filter/preferredSelectedCenter')
-
   },
   methods: {
     openURL,
@@ -116,6 +118,17 @@ export default {
       } else if (this.isLoggedIn === false) {
         this.userId = null
       }
+
+      const results = await this.$apollo.query({
+        query: readOrganizations
+      })
+
+      this.centerOptions = _.map(results.data.review_organization, (reviewOrg) => {
+        return {
+          label: reviewOrg.comment,
+          value: reviewOrg.value
+        }
+      })
 
       if (!this.selectedCenter) {
         this.selectedCenter = this.preferredSelectedCenter

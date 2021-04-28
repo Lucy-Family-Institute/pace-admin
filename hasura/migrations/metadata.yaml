@@ -919,6 +919,12 @@ tables:
   - using:
       foreign_key_constraint_on:
         column: person_id
+        table: persons_organizations
+    name: persons_organizations
+    comment: null
+  - using:
+      foreign_key_constraint_on:
+        column: person_id
         table: persons_publications
     name: persons_publications
     comment: null
@@ -1040,6 +1046,67 @@ tables:
       - person_id
       - family_name
       - given_name
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: persons_organizations
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      foreign_key_constraint_on: person_id
+    name: person
+    comment: null
+  - using:
+      foreign_key_constraint_on: organization_value
+    name: review_organization
+    comment: null
+  array_relationships: []
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - id
+      - person_id
+      - organization_value
+      - start_date
+      - end_date
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - end_date
+      - start_date
+      - id
+      - person_id
+      - organization_value
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - end_date
+      - start_date
+      - id
+      - person_id
+      - organization_value
       filter: {}
   delete_permissions: []
   event_triggers: []
@@ -1433,7 +1500,19 @@ tables:
       delete: null
     custom_column_names: {}
   object_relationships: []
-  array_relationships: []
+  array_relationships:
+  - using:
+      foreign_key_constraint_on:
+        column: organization_value
+        table: persons_organizations
+    name: persons_organizations
+    comment: null
+  - using:
+      foreign_key_constraint_on:
+        column: review_organization_value
+        table: reviews
+    name: reviews
+    comment: null
   insert_permissions:
   - role: user
     comment: null
