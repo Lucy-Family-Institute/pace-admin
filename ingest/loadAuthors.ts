@@ -8,7 +8,8 @@ import { command as loadCsv } from './units/loadCsv'
 import { getAllSimplifiedPersons, getAllCenterMembers, getNameKey } from './modules/queryNormalizedPeople'
 import readInstitutions from './gql/readInstitutions'
 import updatePersonDates from './gql/updatePersonDates'
-
+import updateMemberDates from './gql/updateMemberDates'
+import updateMemberStartDate from './gql/updateMemberStartDate'
 
 import dotenv from 'dotenv'
 import pMap from 'p-map'
@@ -30,7 +31,12 @@ const client = new ApolloClient({
     },
     fetch: fetch as any
   }),
-  cache: new InMemoryCache()
+  cache: new InMemoryCache(),
+  defaultOptions: {
+    query: {
+      fetchPolicy: 'network-only',
+    },
+  },
 })
 
 /**
@@ -99,11 +105,11 @@ async function insertNewAuthors(newAuthors){
     return obj
   }, {})
 
-  console.log(`Institution to id map: ${JSON.stringify(institutionNameIdMap, null, 2)}`)
+  // console.log(`Institution to id map: ${JSON.stringify(institutionNameIdMap, null, 2)}`)
 
   // now add authors
   const authorsWithIds = _.map(newAuthors, (author) => {
-    console.log(`Working on insert author: ${JSON.stringify(author, null, 2)}`)
+    // console.log(`Working on insert author: ${JSON.stringify(author, null, 2)}`)
     const obj = _.pick(author, ['family_name', 'given_name', 'email', 'position_title'])
     if (institutionNameIdMap[author.institution]) {
       // eslint-disable-next-line 
@@ -119,7 +125,7 @@ async function insertNewAuthors(newAuthors){
     }
     return obj
   })
-  console.log(`New Authors translated for insert: ${authorsWithIds[0]}`)
+  // console.log(`New Authors translated for insert: ${authorsWithIds[0]}`)
 
   const resultInsertAuthors = await client.mutate({
     mutation: gql`
@@ -145,8 +151,8 @@ async function insertNewAuthors(newAuthors){
       persons: authorsWithIds
     }
   })
-
-  return resultInsertAuthors.data.returning
+  console.log(`Finished inserting total new authors: ${resultInsertAuthors.data.insert_persons.returning.length}`)
+  return resultInsertAuthors.data.insert_persons.returning
 }
 
 async function insertNewCenterMembers(newMembers){
@@ -169,7 +175,7 @@ async function insertNewCenterMembers(newMembers){
       persons_organizations: newMembers
     }
   })
-  return resultInsertMembers.data.returning
+  return resultInsertMembers.data.insert_persons_organizations.returning
 }
 
 // expects a map of current center member DB ids to object with new attributes
@@ -188,7 +194,7 @@ async function main (): Promise<void> {
         path: filePath
       })
 
-      console.log(`Load Center member objects for center '${center}': ${JSON.stringify(loadCenterMembers, null, 2)}`)
+      // console.log(`Load Center member objects for center '${center}': ${JSON.stringify(loadCenterMembers, null, 2)}`)
   
       // check for existing authors
       let authorsExisting = await getAllSimplifiedPersons(client)
@@ -198,7 +204,7 @@ async function main (): Promise<void> {
         return getNameKey(author['lastName'], author['firstName'])
       })
 
-      console.log(`Authors by name: ${_.keys(authorsByName)}`)
+      // console.log(`Authors by name: ${_.keys(authorsByName)}`)
     
       // this is a map of name to array of members with that new author in case author is duplicated for more than one center in the load file
       const newAuthors = {}
@@ -211,42 +217,40 @@ async function main (): Promise<void> {
         }
       })
 
-      console.log(`New Authors prepped for insert are: ${JSON.stringify(newAuthors, null, 2)}`)
+      // console.log(`New Authors prepped for insert are: ${JSON.stringify(newAuthors, null, 2)}`)
 
+      let insertedAuthors = undefined
       if (_.keys(newAuthors).length>0){
-        const insertedAuthors = await insertNewAuthors(_.values(newAuthors))
+        insertedAuthors = await insertNewAuthors(_.values(newAuthors))
       }
       // just reload authors
       authorsExisting = await getAllSimplifiedPersons(client)
       //group the authors by lastname and firstname
+
+      // console.log(`Authors by name before reload: ${_.keys(authorsByName).length}`)
       authorsByName = _.mapKeys(authorsExisting, (author) => {
         return getNameKey(author['lastName'], author['firstName'])
       })
+      // console.log(`Authors by name after reload: ${_.keys(authorsByName).length}`)
+
 
       //// ---- Now insert member entries or update entries if start or end dates have changed ---- ////
 
       // sort into new members and existing member lists, grouped by center name
-      // map name keys to member objects and then group by center
-
-      const loadMembersByCenter = _.groupBy(loadCenterMembers, (member) => {
-        return member['center']
-      })
-
-      let loadMembersByNameByCenter = {}
-      _.each(_.keys(loadMembersByCenter), (center) => {
-        loadMembersByNameByCenter[center] = _.mapKeys(loadMembersByCenter[center], (loadMember) => {
-          return getNameKey(loadMember['family_name'], loadMember['given_name'])
-        })
+      const loadMembersByName = _.mapKeys(loadCenterMembers, (loadMember) => {
+        return getNameKey(loadMember['family_name'], loadMember['given_name'])
       })
 
       // get existing members in DB
       const existingCenterMembers = await getAllCenterMembers(client)
+
+      // console.log(`Existing center members retrievied: ${JSON.stringify(existingCenterMembers, null, 2)}`)
       // group existing members by center by name
       const existingMembersByCenter = _.groupBy(existingCenterMembers, (member) => {
         return member.organizationValue
       })
 
-      let existingMembersByNameByCenter = {}
+      const existingMembersByNameByCenter = {}
       _.each(_.keys(existingMembersByCenter), (center) => {
         existingMembersByNameByCenter[center] = _.mapKeys(existingMembersByCenter[center], (member) => {
           return getNameKey(member['familyName'], member['givenName'])
@@ -255,71 +259,82 @@ async function main (): Promise<void> {
 
 
       // sort name keys into new or updated lists by center
-      const sortedMemberNamesByCenter = {}
-      _.each(_.keys(loadMembersByNameByCenter), (center) => {
-        sortedMemberNamesByCenter[center] = _.groupBy(_.keys(loadMembersByNameByCenter[center]), (nameKey) => {
-          if (existingMembersByNameByCenter[center] && existingMembersByNameByCenter[center][nameKey]){
+      const sortedMembers = _.groupBy(_.keys(loadMembersByName), (nameKey) => {
+        if (existingMembersByNameByCenter[center] && existingMembersByNameByCenter[center][nameKey]){
+          const newStartDate = `${loadMembersByName[nameKey]['start_date']}-01-01`
+          const newEndDate = loadMembersByName[nameKey] && loadMembersByName[nameKey]['end_date'] ? `${loadMembersByName[nameKey]['end_date']}-12-31` : null
+          if (newStartDate !== existingMembersByNameByCenter[center][nameKey]['startDate'] ||
+            newEndDate !== existingMembersByNameByCenter[center][nameKey]['endDate']) {
+            console.log(`Member ${nameKey} start date changed, will add to list to update, dates were: ${existingMembersByNameByCenter[center][nameKey]['startDate']}-${existingMembersByNameByCenter[center][nameKey]['endDate']} new dates:${newStartDate}-${newEndDate}`)
             return 'update'
-          } else {
-            return 'new'
+          } else{
+            // console.log(`No change to '${center}' member Author ${nameKey} found, will skip update`)
+            return 'nochange'
           }
-        })
+        } else {
+          return 'new'
+        }
       })
 
-      console.log(`Sorted member ingest list: ${JSON.stringify(sortedMemberNamesByCenter, null, 2)}`)
+      console.log(`Sorted member ingest list new members: ${(sortedMembers['new'] ? sortedMembers['new'].length : 0)} of ${loadCenterMembers.length}`)
+      console.log(`Sorted member ingest list no change needed members: ${(sortedMembers['nochange'] ? sortedMembers['nochange'].length : 0)} of ${loadCenterMembers.length}`)
+      console.log(`Sorted member ingest list update members: ${(sortedMembers['update'] ? sortedMembers['update'].length : 0)} of ${loadCenterMembers.length}`)
+      // console.log(`Authors by name is: ${JSON.stringify(authorsByName, null, 2)}`)
 
       // insert new members with existing persons linked
       const insertMembers = []
-      _.each(sortedMemberNamesByCenter, (center: string) => {
-        _.each(sortedMemberNamesByCenter['new'], (nameKey: string) => {
-          let insertMember = {
-            person_id: authorsByName[nameKey].id,
-            organization_value: center
-          }
-          if (loadMembersByNameByCenter[center][nameKey]['start_date']) {
-            insertMember['start_date'] = new Date(loadMembersByNameByCenter[center][nameKey]['start_date'])
-          }
+      // adding wider scope variable since not being pasted to nested scope
+      // let currentCenter = center
+      _.each(sortedMembers['new'], (nameKey: string) => {
+        // console.log(`Authors by name keys are: ${JSON.stringify(_.keys(authorsByName), null, 2)}`)
+        // console.log(`Creating insert member for center ${center} and ${nameKey}`)
+        let insertMember = {
+          person_id: authorsByName[nameKey].id,
+          organization_value: center
+        }
+        if (loadMembersByName[nameKey]['start_date']) {
+          insertMember['start_date'] = new Date(loadMembersByName[nameKey]['start_date'])
+        }
 
-          if (loadMembersByNameByCenter[center][nameKey]['end_date']) {
-            insertMember['end_date'] = new Date(loadMembersByNameByCenter[center][nameKey]['end_date'])
-          }
+        if (loadMembersByName[nameKey]['end_date']) {
+          insertMember['end_date'] = new Date(`${loadMembersByName[nameKey]['end_date']}-12-31`)
+        }
 
-          insertMembers.push(insertMember)
-        })
+        insertMembers.push(insertMember)
       })
 
       // insert the new members
+      // console.log(`Prepped for Inserted Center Members are: ${JSON.stringify(insertMembers, null, 2)}`)
       const result = await insertNewCenterMembers(insertMembers)
-      console.log(`Inserted Center Members are: ${JSON.stringify(result, null, 2)}`)
+      
+      console.log(`Existing Center ${center} Members total: ${loadCenterMembers.length - insertMembers.length} of ${loadCenterMembers.length}`)
+      console.log(`Inserted Center ${center} Members total: ${(result ? result.length: 0)} of ${insertMembers.length}`)
+      console.log(`Center ${center} Existing Authors ${loadCenterMembers.length - _.keys(newAuthors).length} of ${loadCenterMembers.length} found`)
+      console.log(`Center ${center} New Authors inserted total: ${(insertedAuthors ? insertedAuthors.length : 0)} of ${_.keys(newAuthors).length}`)
 
       // update members as needed
-      const updateMembers = []
-      _.each(sortedMemberNamesByCenter, (center: string) => {
-        _.each(sortedMemberNamesByCenter['update'], (nameKey: string) => {
-          const newStartDate = `${loadMembersByNameByCenter[center][nameKey]['start_date']}-01-01`
-          const newEndDate = loadMembersByNameByCenter[center][nameKey] ? `${loadMembersByNameByCenter[center][nameKey]}-12-31` : null
-          if (newStartDate !== existingMembersByNameByCenter[center][nameKey]['start_date'] ||
-          newEndDate !== existingMembersByNameByCenter[center][nameKey]['end_date']) {
-            console.log(`Member${nameKey} start date changed, will add to list to update, dates were: ${new Date(`${existingMembersByNameByCenter[center][nameKey]['start_date']}`)}-${existingMembersByNameByCenter[center][nameKey]['end_date']} new dates:${newStartDate}-${newEndDate}`)
-            console.log(`Existing member keys are ${_.keys(existingMembersByNameByCenter[center][nameKey])}`)
-            updateMembers[existingMembersByNameByCenter[center][nameKey]['id']] = loadMembersByNameByCenter[center][nameKey]
-          } else{
-            console.log(`No change to '${center}' member Author ${nameKey} found, will skip update`)
-          }
-        })
+      const updateMembers = {}
+      _.each(sortedMembers['update'], (nameKey: string) => {
+        updateMembers[existingMembersByNameByCenter[center][nameKey]['id']] = loadMembersByName[nameKey]
       })
 
+      // console.log(`Update members prepped are: ${JSON.stringify(updateMembers, null, 2)}`)
+      
       // update existing members if dates changed
-  
-
-      // // update existing authors as needed
-      // console.log(`Update Authors: ${_.keys(updateAuthors).length}`)
-      // // need to add update gql
-      // _.each(_.keys(updateAuthors), async (id) => {
-      //   const newStartDate = `${updateAuthors[id].start_date}-01-01`
-      //   const newEndDate = updateAuthors[id].end_date ? `${updateAuthors[id].end_date}-12-31` : undefined
-      //   const resultUpdatePersonDates = await client.mutate(updatePersonDates(id, new Date(newStartDate), new Date(newEndDate)))
-      // })
+      let updatedCount = 0
+      await pMap(_.keys(updateMembers), async (id) => {
+        const newStartDate = `${updateMembers[id]['start_date']}-01-01`
+        const newEndDate = updateMembers[id]['end_date'] ? `${updateMembers[id]['end_date']}-12-31` : undefined
+        if (newEndDate) {
+          const resultUpdateMemberDates = await client.mutate(updateMemberDates(Number.parseInt(`${id}`), new Date(newStartDate), new Date(newEndDate)))
+          updatedCount += resultUpdateMemberDates.data.update_persons_organizations.returning.length
+        } else {
+          console.log(`Updating member with id: ${id}, with start date: ${newStartDate}`)
+          const resultUpdateMemberDates = await client.mutate(updateMemberStartDate(Number.parseInt(`${id}`), new Date(newStartDate)))
+          updatedCount += resultUpdateMemberDates.data.update_persons_organizations.returning.length
+        }
+      }, { concurrency: 1 })
+      console.log(`Center ${center} Updated Members total: ${updatedCount} of ${_.keys(updateMembers).length}`)
     }, {concurrency: 1})
   }, {concurrency: 1})
 

@@ -59,8 +59,8 @@ function mapToCenterMembers(members: Array<any>) : NormedCenterMember[] {
       familyName: _.toLower(member.person.family_name),
       givenName: _.toLower(member.person.given_name),
       givenNameInitial: _.toLower(member.person.given_name[0]),
-      startDate: member.person.start_date,
-      endDate: member.person.end_date,
+      startDate: member.start_date,
+      endDate: member.end_date,
       sourceIds: {}
     }
     normedMembers.push(normedMember)
