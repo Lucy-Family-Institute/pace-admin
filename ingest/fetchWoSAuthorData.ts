@@ -5,7 +5,7 @@ import { createHttpLink } from 'apollo-link-http'
 import fetch from 'node-fetch'
 import pMap from 'p-map'
 import pTimes from 'p-times'
-import readPersonsByYear from '../client/src/gql/readPersonsByYear'
+import readPersonsByYearAllCenters from '../client/src/gql/readPersonsByYearAllCenters'
 import readPublicationsByPersonByConfidence from '../client/src/gql/readPublicationsByPersonByConfidence'
 import { command as loadCsv } from './units/loadCsv'
 import { split } from 'apollo-link'
@@ -84,6 +84,7 @@ async function wosAuthenticate() {
 }
 
 function getWoSRESTQueryString(authorFamilyName, authorGivenName) {
+  // update to search on all name variations
   const query = `AU = (${authorFamilyName}, ${authorGivenName})`
   return query
 }
@@ -281,7 +282,7 @@ async function getConfirmedDOIsByPerson(){
 }
 
 async function getSimplifiedPersons(year) {
-  const queryResult = await client.query(readPersonsByYear(year))
+  const queryResult = await client.query(readPersonsByYearAllCenters(year))
 
   const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
     return {
@@ -289,6 +290,7 @@ async function getSimplifiedPersons(year) {
       lastName: _.lowerCase(person.family_name),
       firstInitial: _.lowerCase(person.given_name[0]),
       firstName: _.lowerCase(person.given_name),
+      nameVariances: person.persons_namevariances,
       startYear: person.start_date,
       endYear: person.end_date
     }
@@ -366,13 +368,13 @@ function getWoSMapLabelsToValues(properties) {
 // 'year', 'title', 'journal', 'doi', 'scopus_id', 'scopus_record'
 //
 // scopus_record is the original json object
-function getSimplifliedWoSPapers(papers, simplifiedPerson){
+function getSimplifliedWoSPapers(papers, searchFamilyName, searchGivenName){
   return _.map(papers, (paper) => {
     const otherProps = getWoSMapLabelsToValues(paper['other'])
     const sourceProps = getWoSMapLabelsToValues(paper['source'])
     return {
-      search_family_name : simplifiedPerson.lastName,
-      search_given_name : simplifiedPerson.firstInitial,
+      search_family_name : searchFamilyName,
+      search_given_name : searchGivenName,
       title: paper['title'] && paper['title']['value'] && paper['title']['value']['_text'] ? paper['title']['value']['_text'] : '',
       journal: sourceProps && sourceProps['SourceTitle'] && sourceProps['SourceTitle']['_text'] ? sourceProps['SourceTitle']['_text'] : '',
       publication_year: sourceProps && sourceProps['Published.BiblioYear'] && sourceProps['Published.BiblioYear']['_text'] ? sourceProps['Published.BiblioYear']['_text'] : '',
@@ -407,6 +409,8 @@ async function main (): Promise<void> {
 
     // console.log(`Person with harvest errors for ${year} are: ${JSON.stringify(personWithHarvestErrors,null,2)}`)
     console.log(`Simplified persons for ${year} are: ${JSON.stringify(simplifiedPersons,null,2)}`)
+    console.log(`Simplified persons for ${year} are: ${JSON.stringify(simplifiedPersons.length,null,2)}`)
+
 
     let personCounter = 0
 
@@ -416,14 +420,29 @@ async function main (): Promise<void> {
       try {
         personCounter += 1
         console.log(`Getting papers for ${person.lastName}, ${person.firstName}`)
-        await wait(1500)
-        // console.log(`Finished wait Getting papers for ${person.lastName}, ${person.firstName}`)
-        const records = await getWoSAuthorPapers(sessionId, person.lastName, person.firstName)
-        //const records = await getWoSRESTAuthorPapers(person.lastName, person.firstName)
-        const simplifiedPapers = getSimplifliedWoSPapers(records, person)
-        // console.log(`simplified papers are: ${JSON.stringify(simplifiedPapers, null, 2)}`)
-        //push in whole array for now and flatten later
-        succeededPapers.push(simplifiedPapers)
+        // run for each name plus name variance, put name variance second in case undefined
+        let searchNames = _.concat([{given_name: person.firstName, family_name: person.lastName }], person.nameVariances)
+        
+        await pMap(searchNames, async (searchName) => {
+          await wait(1500)
+          // console.log(`Finished wait Getting papers for ${person.lastName}, ${person.firstName}`)
+          const records = await getWoSAuthorPapers(sessionId, searchName.family_name, searchName.given_name)
+          //const records = await getWoSRESTAuthorPapers(person.lastName, person.firstName)
+          const simplifiedPapers = getSimplifliedWoSPapers(records, searchName.family_name, searchName.given_name)
+          // console.log(`simplified papers are: ${JSON.stringify(simplifiedPapers, null, 2)}`)
+          //push in whole array for now and flatten later
+          succeededPapers.push(simplifiedPapers)
+
+          // now do with just first initial
+          await wait(1500)
+          // console.log(`Finished wait Getting papers for ${person.lastName}, ${person.firstName}`)
+          const records2 = await getWoSAuthorPapers(sessionId, searchName.family_name, searchName.given_name[0])
+          //const records = await getWoSRESTAuthorPapers(person.lastName, person.firstName)
+          const simplifiedPapers2 = getSimplifliedWoSPapers(records2, searchName.family_name, searchName.given_name[0])
+          // console.log(`simplified papers are: ${JSON.stringify(simplifiedPapers, null, 2)}`)
+          //push in whole array for now and flatten later
+          succeededPapers.push(simplifiedPapers2)
+        }, { concurrency: 1})
         succeededAuthors.push(person)
       } catch (error) {
         const errorMessage = `Error on get WoS papers for author: ${person.lastName}, ${person.firstName}: ${error}`
