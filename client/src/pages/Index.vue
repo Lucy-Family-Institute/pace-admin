@@ -55,7 +55,7 @@
             <q-item-section avatar>
               <q-icon name="tune"/>
             </q-item-section>
-            <q-item-section header align="left">Filter</q-item-section>
+            <q-item-section header align="left">Filter ({{ (people ? people.length : 0) }} Authors Shown)</q-item-section>
           </q-btn>
           <q-item-label header>Notre Dame Author Review</q-item-label>
           <!-- TODO calculate exact height below -->
@@ -406,7 +406,9 @@ import insertReview from '../gql/insertReview'
 import _ from 'lodash'
 import Cite from 'citation-js'
 
-import readPersonsByInstitutionByYear from '../gql/readPersonsByInstitutionByYear'
+// import readPersonsByInstitutionByYear from '../gql/readPersonsByInstitutionByYear'
+import readPersonsByInstitutionByYearAllCenters from '../gql/readPersonsByInstitutionByYearAllCenters'
+import readPersonsByInstitutionByYearByOrganization from '../gql/readPersonsByInstitutionByYearByOrganization'
 // import readPersonsByInstitutionByYearPendingPubs from '../gql/readPersonsByInstitutionByYearPendingPubs'
 import readReviewTypes from '../../../gql/readReviewTypes.gql'
 import readPublications from '../gql/readPublications'
@@ -506,6 +508,9 @@ export default {
   watch: {
     $route: 'fetchData',
     selectedInstitutions: function () {
+      this.loadPersonsWithFilter()
+    },
+    selectedCenter: function () {
       this.loadPersonsWithFilter()
     },
     changedPubYears: async function () {
@@ -766,8 +771,13 @@ export default {
       let minConfidence = 0
       if (this.selectedPersonConfidence === '50%') minConfidence = 0.5
       // if (this.selectedPersonTotal === 'All') {
-      const personResult = await this.$apollo.query(readPersonsByInstitutionByYear(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, minConfidence))
-      this.people = personResult.data.persons
+      if (!this.selectedCenter || !this.selectedCenter.value || this.selectedCenter.value === 'ND') {
+        const personResult = await this.$apollo.query(readPersonsByInstitutionByYearAllCenters(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, minConfidence))
+        this.people = personResult.data.persons
+      } else {
+        const personResult = await this.$apollo.query(readPersonsByInstitutionByYearByOrganization(this.selectedCenter.value, this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, minConfidence))
+        this.people = personResult.data.persons
+      }
       // } else {
       //   const personResult = await this.$apollo.query({
       //     query: readPersonsByInstitutionByYearPendingPubs(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max), // this.userId),  // commenting out for now querying by current user

@@ -74,10 +74,10 @@ export default {
   data () {
     return {
       // selectedCenter: 'Harper Cancer Research Institute',
-      options: [{
-        label: 'Harper Cancer Research Institute',
-        value: 'HCRI'
-      }]
+      // options: [{
+      //   label: 'Harper Cancer Research Institute',
+      //   value: 'HCRI'
+      // }]
     }
   },
   async created () {
