@@ -91,6 +91,7 @@ async function updateAndRetrieveInstitutions(insertInstitutionsIfNeeded?: any[])
     }
   }
 
+  console.log(`Returning existing list of institutions: ${JSON.stringify(existingInst, null ,2)}`)
   return existingInst
 }
 
@@ -99,17 +100,18 @@ async function insertNewAuthors(newAuthors){
   const newAuthorInstitutions = _.uniq(_.map(newAuthors, 'institution'))
 
   // get institution list for author inserts
-  let currentInstitutions = updateAndRetrieveInstitutions(newAuthorInstitutions)
+  let currentInstitutions = await updateAndRetrieveInstitutions(newAuthorInstitutions)
+  console.log(`Current institutions retrieved: ${JSON.stringify(currentInstitutions, null, 2)}`)
   const institutionNameIdMap = _.reduce(currentInstitutions, (obj, inst) => {
     if (inst.name && inst['id']) { obj[inst.name] = inst['id'] }
     return obj
   }, {})
 
-  // console.log(`Institution to id map: ${JSON.stringify(institutionNameIdMap, null, 2)}`)
+  console.log(`Institution to id map: ${JSON.stringify(institutionNameIdMap, null, 2)}`)
 
   // now add authors
   const authorsWithIds = _.map(newAuthors, (author) => {
-    // console.log(`Working on insert author: ${JSON.stringify(author, null, 2)}`)
+    console.log(`Working on insert author: ${JSON.stringify(author, null, 2)}`)
     const obj = _.pick(author, ['family_name', 'given_name', 'email', 'position_title'])
     if (institutionNameIdMap[author.institution]) {
       // eslint-disable-next-line 

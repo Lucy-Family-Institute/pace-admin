@@ -98,6 +98,9 @@ reharvest:
 ingest_metadata:
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
 
+recheck_author_matches:
+	cd ingest && ts-node updatePersonPublicationsMatches.ts && cd ..
+
 load_authors:
 	cd ingest && ts-node loadAuthors.ts && cd ..
 

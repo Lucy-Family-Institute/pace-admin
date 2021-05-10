@@ -9,7 +9,7 @@ import { NormalizedCacheObject } from 'apollo-cache-inmemory'
 
 // @todo compare to normedPerson.ts; note this has startYear, endYear
 // and normedPerson.ts has startDate and endDate
-interface SimplifiedPerson {
+export interface SimplifiedPerson {
   id: number;
   lastName: string;
   firstInitial: string;
