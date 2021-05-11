@@ -10,8 +10,6 @@ import { randomWait } from './units/randomWait'
 import { command as loadCsv } from './units/loadCsv'
 import { CalculateConfidence } from './modules/calculateConfidence'
 
-// import readPublicationsPersonCounts from './gql/readPublicationsPersonCounts'
-// import readPublication from './gql/readPublication'
 import readAllPersonPublications from './gql/readAllPersonPublications'
 import readPublicationsCSL from './gql/readPublicationsCSL'
 import readPersonPublications from './gql/readPersonPublications'
@@ -377,9 +375,9 @@ async function main() {
   const insertPersonPubs = []
   const totalDois = _.keys(pubsByDoi).length
 
-  const subset = _.chunk(_.keys(pubsByDoi), 20)
-  await pMap(subset[0], async (doi, index) => {
-  // await pMap(_.keys(pubsByDoi), async (doi, index) => {
+  // const subset = _.chunk(_.keys(pubsByDoi), 20)
+  // await pMap(subset[0], async (doi, index) => {
+  await pMap(_.keys(pubsByDoi), async (doi, index) => {
     const bibTex = getBibTexByDoi(bibTexByDois, doi)
     const csl = pubsByDoi[doi][0]['csl']
     authorsMatchedByDoi[doi] = await findAuthorMatches(simplifiedPersons, confirmedAuthorsByDoi[doi], doi, csl, bibTex)
