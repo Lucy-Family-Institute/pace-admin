@@ -4,5 +4,8 @@
   ],
   "NDENERGY": [
     "../data/ndenergy_members_2017-2020.csv"
+  ],
+  "EIGH": [
+    "../data/eigh_members_2017-2020.csv"
   ]
 }

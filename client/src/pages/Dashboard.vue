@@ -703,7 +703,7 @@ export default {
       try {
         console.log(`Starting query publications ${moment().format('HH:mm:ss:SSS')}`)
         const pubsWithReviewResult = await this.$apollo.query({
-          query: readPersonPublicationsAll(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, this.userId),
+          query: readPersonPublicationsAll(this.selectedInstitutions, this.selectedCenter.value, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, this.userId),
           fetchPolicy: 'network-only'
         })
         // console.log('***', pubsWithReviewResult)

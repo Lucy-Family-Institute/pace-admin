@@ -42,7 +42,7 @@ async function mapGrantFiles (filename) {
     }, { concurrency: 1 });
 
     const centerMembers = await loadCsv({
-      path: '../data/hcri_researchers_2017-2020.csv',
+      path: '../data/researchers_2017-2020_load_name_variances.csv',
     });
 
     const parsedName = await nameParser({

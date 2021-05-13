@@ -1,6 +1,7 @@
 import { make } from 'vuex-pathify'
 
 const state = {
+  personSortKey: 0,
   selectedCenter: undefined,
   preferredSelectedCenter: { label: 'Harper Cancer Research Institute', value: 'HCRI' },
   centerOptions: [],

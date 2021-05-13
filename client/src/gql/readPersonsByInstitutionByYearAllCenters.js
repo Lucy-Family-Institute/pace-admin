@@ -49,6 +49,22 @@ export default function readPersonsByInstitutionByYearAllCenters (institutionNam
           institution {
             name
           }
+          reviews_persons_publications(
+            distinct_on: doi, 
+            order_by: {
+              doi: asc, 
+              datetime: desc
+            }, 
+            where: {
+              review_organization_value: {_eq: "ND"}, 
+              year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}},
+              review_type: {_neq: "pending"}
+            }) {
+            doi
+            person_id
+            title
+            review_type
+          }
           confidencesets_persons_publications(
             distinct_on: doi, 
             order_by: {
@@ -60,6 +76,8 @@ export default function readPersonsByInstitutionByYearAllCenters (institutionNam
               value: {_gte: "${minConfidence}"},
             }
           ) {
+            persons_publications_id
+            title
             doi
             value
             year
