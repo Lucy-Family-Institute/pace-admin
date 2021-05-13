@@ -298,6 +298,13 @@ tables:
           persons_publications_id: persons_publications_id
     name: reviews
     comment: null
+  - using:
+      manual_configuration:
+        remote_table: reviews_persons_publications
+        column_mapping:
+          persons_publications_id: persons_publications_id
+    name: reviews_persons_publications
+    comment: null
   insert_permissions: []
   select_permissions:
   - role: user
@@ -940,6 +947,13 @@ tables:
         column: person_id
         table: persons_units
     name: persons_units
+    comment: null
+  - using:
+      manual_configuration:
+        remote_table: reviews_persons_publications
+        column_mapping:
+          id: person_id
+    name: reviews_persons_publications
     comment: null
   insert_permissions:
   - role: user
@@ -1645,7 +1659,14 @@ tables:
           user_id: id
     name: user
     comment: null
-  array_relationships: []
+  array_relationships:
+  - using:
+      manual_configuration:
+        remote_table: confidencesets
+        column_mapping:
+          persons_publications_id: persons_publications_id
+    name: confidencesets
+    comment: null
   insert_permissions: []
   select_permissions:
   - role: user

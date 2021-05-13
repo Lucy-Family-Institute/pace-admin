@@ -57,7 +57,7 @@
             <q-item-section header align="left">Filter</q-item-section>
           </q-btn>
             <q-item header>
-              <q-item-label header>Center and Institute Review</q-item-label>
+              <q-item-label header>{{ selectedCenter.label }} Review</q-item-label>
             </q-item>
               <CenterReviewPubFilter />
               <q-tabs
@@ -549,6 +549,9 @@ export default {
   watch: {
     $route: 'fetchData',
     selectedInstitutions: function () {
+      this.loadPublications()
+    },
+    selectedCenter: function () {
       this.loadPublications()
     },
     changedPubYears: async function () {
@@ -1468,7 +1471,7 @@ export default {
         console.log(`Starting query publications ${moment().format('HH:mm:ss:SSS')}`)
         // for now assume only one review, needs to be fixed later
         const pubsWithReviewResult = await this.$apollo.query({
-          query: readPersonPublicationsAll(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max),
+          query: readPersonPublicationsAll(this.selectedInstitutions, this.selectedCenter.value, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max),
           fetchPolicy: 'network-only'
         })
         // console.log('***', pubsWithReviewResult)

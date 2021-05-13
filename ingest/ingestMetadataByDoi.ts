@@ -697,6 +697,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
     return doiStatus
   } catch (error){
     console.log(`Error on get path ${path}: ${error}`)
+    throw(error)
     return doiStatus // Returning what has been completed
   }
 }

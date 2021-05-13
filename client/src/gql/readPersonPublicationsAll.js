@@ -1,7 +1,7 @@
 import gql from 'graphql-tag'
 import _ from 'lodash'
 
-export default function readPersonPublicationsAllJS (institutionNames, pubYearMin, pubYearMax, memberYearMin, memberYearMax) {
+export default function readPersonPublicationsAllJS (institutionNames, organizationValue, pubYearMin, pubYearMax, memberYearMin, memberYearMax) {
   const startDateLT = `1/1/${memberYearMax + 1}`
   const endDateGT = `12/31/${memberYearMin - 1}`
   let namesString = ''
@@ -19,13 +19,29 @@ export default function readPersonPublicationsAllJS (institutionNames, pubYearMi
           where: {
             person: {
               _and: [
-                {start_date: {_lt: "${startDateLT}"}}, 
-
+                {
+                  persons_organizations : {
+                    organization_value: {_eq: ${organizationValue}}
+                  }
+                }
+                {
+                  persons_organizations: {
+                    start_date: {_lt: "${startDateLT}"}
+                  }
+                }, 
                 {institution: {name: {_in: [${namesString}]}}},
                 {
                   _or: [
-                    {end_date: {_gt: "${endDateGT}"}}, 
-                    {end_date: {_is_null: true}}
+                    {
+                      persons_organizations: {
+                        end_date: {_gt: "${endDateGT}"}
+                      }
+                    }, 
+                    {
+                      persons_organizations: {
+                        end_date: {_is_null: true}
+                      }
+                    }
                   ]
                 }
               ]
