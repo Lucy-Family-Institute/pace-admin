@@ -437,6 +437,7 @@ export default {
   data: () => ({
     reviewStates: undefined,
     selectedReviewState: undefined,
+    personScrollIndex: 0,
     dom,
     date,
     firstModel: 375,
@@ -1373,6 +1374,9 @@ export default {
         max: this.yearMemberStaticMax
       }
     }
+  },
+  mounted () {
+    this.$refs.personScroll.scrollTo(this.personScrollIndex)
   },
   computed: {
     personSortKey: sync('filter/personSortKey'),
