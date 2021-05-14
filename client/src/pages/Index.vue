@@ -64,6 +64,7 @@
             :items="people"
             bordered
             separator
+            :key="peopleScrollKey"
             :ref="`personScroll`"
           >
             <template v-slot="{ item, index }">
@@ -83,7 +84,7 @@
                     </q-item-section>
 
                     <q-item-section>
-                      <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ getPersonPublicationCount(item) }})</q-item-label>
+                      <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.person_publication_count }})</q-item-label>
                       <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
                     </q-item-section>
 
@@ -497,7 +498,8 @@ export default {
     reviewTypeFilter: 'pending',
     publicationsReloadPending: false,
     drawer: false,
-    miniState: false
+    miniState: false,
+    peopleScrollKey: 0
   }),
   beforeDestroy () {
     clearInterval(this.interval)
@@ -554,6 +556,10 @@ export default {
     }
   },
   methods: {
+    changedPendingCounts: function () {
+      this.personSortKey += 1
+      this.peopleScrollKey += 1
+    },
     drawerClick (e) {
       // if in "mini" state and user
       // click on drawer, we switch it to "normal" mode
@@ -793,7 +799,10 @@ export default {
       _.each(this.people, (person) => {
         const reviewedDois = {}
         _.each(person.reviews_persons_publications, (review) => {
-          reviewedDois[review.doi] = review
+          if (review.review_type && review.review_type !== 'pending') {
+            console.log(`Review type is: ${review.review_type}, counting doi as reviewed`)
+            reviewedDois[review.doi] = review
+          }
         })
 
         // check for dois that are in the confidence set list and keep those, all others ignore
@@ -804,7 +813,15 @@ export default {
             filteredReviewedDoisCount += 1
           }
         })
+
         this.personReviewedPubCounts[person.id] = filteredReviewedDoisCount
+      })
+
+      console.log(`Reviewed counts are: ${JSON.stringify(this.personReviewedPubCounts, null, 2)}`)
+
+      // set the pub counts for person
+      this.people = _.map(this.people, (person) => {
+        return _.set(person, 'person_publication_count', this.getPersonPublicationCount(person))
       })
 
       // apply any sorting applied
@@ -967,7 +984,10 @@ export default {
           publicationDoisOutOfSync.push(doi)
         }
       })
-      console.log(`Warning: Dois found with reviews out of sync: ${JSON.stringify(publicationDoisOutOfSync, null, 2)}`)
+
+      if (publicationDoisOutOfSync.length > 0) {
+        console.log(`Warning: Dois found with reviews out of sync: ${JSON.stringify(publicationDoisOutOfSync, null, 2)}`)
+      }
 
       // initialize the list in view
       this.setCurrentPersonPublicationsCombinedMatches()
@@ -1209,11 +1229,21 @@ export default {
               const currentPersonIndex = _.findIndex(this.people, (person) => {
                 return person.id === this.person.id
               })
+              this.personReviewedPubCounts[this.person.id] += 1
+              this.people[currentPersonIndex].person_publication_count -= 1
+              this.changedPendingCounts()
+              // this.people[currentPersonIndex].reviews_persons_publications_aggregate.aggregate.count = 1
+              // this.$refs[`person${currentPersonIndex}`].$el.click()
               this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
             } else if (this.selectedPersonTotal === 'Pending' && reviewType === 'pending') {
               const currentPersonIndex = _.findIndex(this.people, (person) => {
                 return person.id === this.person.id
               })
+              this.personReviewedPubCounts[this.person.id] -= 1
+              this.people[currentPersonIndex].person_publication_count += 1
+              this.changedPendingCounts()
+              // this.people[currentPersonIndex].reviews_persons_publications_aggregate.aggregate.count += 1
+              // this.$refs[`person${currentPersonIndex}`].$el.click()
               this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
             }
           }
@@ -1347,6 +1377,7 @@ export default {
     }
   },
   computed: {
+    personSortKey: sync('filter/personSortKey'),
     userId: sync('auth/userId'),
     isLoggedIn: sync('auth/isLoggedIn'),
     selectedCenter: sync('filter/selectedCenter'),

@@ -66,9 +66,29 @@ ifeq (,$(shell which ts-node))
 	npm -g install ts-node
 endif
 
+load_authors:
+	cd ingest && ts-node loadAuthors.ts && cd ..
+
+load_name_variances:
+	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
+
+ingest_metadata:
+	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
 
 update_confidence_reviews:
 	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
+
+synchronize_reviews:
+	cd ingest && ts-node synchronizeReviewStates.ts && cd ..
+
+recheck_author_matches:
+	cd ingest && ts-node updatePersonPublicationsMatches.ts && cd ..
+
+load_abstracts:
+	cd ingest && ts-node loadAbstracts.ts && cd ..
+
+load_awards:
+	cd ingest && ts-node loadAwards.ts && cd ..
 
 cleardb:
 	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose down -v
@@ -95,21 +115,6 @@ reharvest:
 	cd ingest && ts-node loadAbstracts.ts && cd ..
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
 
-ingest_metadata:
-	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
-
-recheck_author_matches:
-	cd ingest && ts-node updatePersonPublicationsMatches.ts && cd ..
-
-synchronize_reviews:
-	cd ingest && ts-node synchronizeReviewStates.ts && cd ..
-
-load_authors:
-	cd ingest && ts-node loadAuthors.ts && cd ..
-
-load_name_variances:
-	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
-
 load_new_confidence_sets:
 	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
 
@@ -127,12 +132,6 @@ update_scopus_data:
 
 update_scopus_full_text_data:
 	cd ingest && ts-node fetchScopusFullTextData.ts && cd ..
-
-load_abstracts:
-	cd ingest && ts-node loadAbstracts.ts && cd ..
-
-load_awards:
-	cd ingest && ts-node loadAwards.ts && cd ..
 
 load_journals:
 	cd ingest && ts-node loadJournals.ts && cd ..
