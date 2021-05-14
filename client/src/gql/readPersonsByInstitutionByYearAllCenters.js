@@ -57,8 +57,7 @@ export default function readPersonsByInstitutionByYearAllCenters (institutionNam
             }, 
             where: {
               review_organization_value: {_eq: "ND"}, 
-              year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}},
-              review_type: {_neq: "pending"}
+              year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}
             }) {
             doi
             person_id
@@ -81,6 +80,11 @@ export default function readPersonsByInstitutionByYearAllCenters (institutionNam
             doi
             value
             year
+          }
+          reviews_persons_publications_aggregate(distinct_on: doi, order_by: {doi: asc, datetime: desc}) {
+            aggregate {
+              count(columns: doi)
+            }
           }
           persons_publications_metadata_aggregate (distinct_on: doi, where: {year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}}) {
             aggregate {

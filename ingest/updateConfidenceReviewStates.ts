@@ -997,23 +997,28 @@ async function main() {
   console.log(`Passed tests: ${confidenceTests['passed'].length} Warning tests: ${confidenceTests['warning'].length} Failed Tests: ${confidenceTests['failed'].length}`)
 
   // add any reviews as needed
-  console.log('Synchronizing reviews with pre-existing publications...')
-  // console.log(`New Person pubs by doi: ${JSON.stringify(newPersonPublicationsByDoi, null, 2)}`)
-  let loopCounter3 = 0
+  // console.log('Synchronizing reviews with pre-existing publications...')
+  // // console.log(`New Person pubs by doi: ${JSON.stringify(newPersonPublicationsByDoi, null, 2)}`)
+  // let loopCounter3 = 0
 
-  const batchSize = 4000
-  console.log(`Most recent person pub id: ${mostRecentPersonPubId}`)
-  const newPubsQueryResult = await client.query(
-    readAllNewPersonPublications(mostRecentPersonPubId)
-  )
-  const newPersonPubs = newPubsQueryResult.data.persons_publications
-  console.log(`Found ${newPersonPubs.length} New Person Pubs`)
-  // const batchIndex = 3
+  // const batchSize = 4000
+  // // const otherRecentPub = 15206
+
+  // console.log(`Most recent person pub id: ${mostRecentPersonPubId}`)
+  // const newPubsQueryResult = await client.query(
+  //   readAllNewPersonPublications(mostRecentPersonPubId)
+  // )
+  // const newPersonPubs = newPubsQueryResult.data.persons_publications
+  // console.log(`Found ${newPersonPubs.length} New Person Pubs`)
+  // // const batchIndex = 2
   // const batches = _.chunk(newPersonPubs, batchSize)
-  await pMap(newPersonPubs, async (newPersonPub) => {
-    loopCounter3 += 1
-    await synchronizeReviews(newPersonPub['publication']['doi'], newPersonPub['person_id'], newPersonPub['id'], loopCounter3)
-  }, {concurrency: 1})
+  // await pMap(batches, async (batch) => {
+  // // await pMap(newPersonPubs, async (newPersonPub) => {
+  //   await pMap(batch, async (newPersonPub) => {
+  //     loopCounter3 += 1
+  //     await synchronizeReviews(newPersonPub['publication']['doi'], newPersonPub['person_id'], newPersonPub['id'], loopCounter3)
+  //   }, {concurrency: 1})
+  // }, { concurrency: 1 })
 }
 
 main()
