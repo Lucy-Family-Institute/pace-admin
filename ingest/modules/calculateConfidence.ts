@@ -20,7 +20,7 @@ import dotenv from 'dotenv'
 import readAllNewPersonPublications from '../gql/readAllNewPersonPublications'
 import insertReview from '../../client/src/gql/insertReview'
 import readPersonPublicationsByDoi from '../gql/readPersonPublicationsByDoi'
-const getIngestFilePathsByYear = require('../getIngestFilePathsByYear');
+const getIngestFilePaths = require('../getIngestFilePaths');
 import { normalizeString, normalizeObjectProperties } from '../units/normalizer'
 import { command as writeCsv } from '../units/writeCsv'
 import moment from 'moment'
@@ -42,7 +42,10 @@ const client = new ApolloClient({
   }),
   cache: new InMemoryCache()
 })
-
+interface MatchedPerson {
+  person: any; // TODO: What is this creature?
+  confidence: number;
+}
 export class CalculateConfidence {
 
   constructor () {
@@ -170,73 +173,44 @@ export class CalculateConfidence {
   // author map assumed to be doi mapped to two arrays: first authors and other authors
   // returns a map of person ids to the person object and confidence value for any persons that matched coauthor attributes
   // example: {1: {person: simplepersonObject, confidence: 0.5}, 51: {person: simplepersonObject, confidence: 0.8}}
-  async matchPeopleToPaperAuthors(personMap, authors, confirmedAuthors){
+  async matchPeopleToPaperAuthors(publicationCSL, simplifiedPersons, personMap, authors, confirmedAuthors, sourceName) : Promise<Map<number,MatchedPerson>> {
 
-    // match to last name
-    // match to first initial (increase confidence)
+    //match to last name
+    //match to first initial (increase confidence)
     let matchedPersonMap = new Map()
 
-    _.each(authors, async (author) => {
+    const confidenceTypesByRank = await this.getConfidenceTypesByRank()
+    await pMap(simplifiedPersons, async (person) => {
+      
+      //console.log(`Testing Author for match: ${author.family}, ${author.given}`)
 
-      //check if persons last name in author list, if so mark a match
-      if(_.has(personMap, _.lowerCase(author.family))){
-
-        let firstInitialFound = false
-        let affiliationFound = false
-        let firstNameFound = false
-        //check for any matches of first initial or affiliation
-        _.each(personMap[_.lowerCase(author.family)], async (testPerson) => {
-          let confidenceVal = 0.0
-
-          //match on last name found increment confidence by 0.3
-          confidenceVal += 0.3
-
-          if (_.lowerCase(author.given)[0] === testPerson.firstInitial){
-            firstInitialFound = true
-
-            if (author.given.toLowerCase()=== testPerson.firstName){
-              firstNameFound = true
-            }
-            // split the given name based on spaces
-            const givenParts = _.split(author.given, ' ')
-            _.each(givenParts, (part) => {
-              if (_.lowerCase(part) === testPerson.firstName){
-                firstNameFound = true
-              }
-            })
-          }
-          if(!_.isEmpty(author.affiliation)) {
-            if(/notre dame/gi.test(author.affiliation[0].name)) {
-              affiliationFound = true
-            }
-          }
-
-          if (affiliationFound) confidenceVal += 0.15
-          if (firstInitialFound) {
-            confidenceVal += 0.15
-            if (firstNameFound) {
-              confidenceVal += 0.25
-            }
-            //check if author in confirmed list and change confidence to 0.99 if found
-            if (confirmedAuthors){
-              _.each(confirmedAuthors, function (confirmedAuthor){
-                if (_.lowerCase(confirmedAuthor.lastName) === testPerson.lastName &&
-                  _.lowerCase(confirmedAuthor.firstName) === testPerson.firstName){
-                  confidenceVal = 0.99
-                }
-              })
-            }
-          }
-
-          //add person to map with confidence value > 0
-          if (confidenceVal > 0) {
-            console.log(`Match found for Author: ${author.family}, ${author.given}`)
-            matchedPersonMap[testPerson.id] = {'person': testPerson, 'confidence': confidenceVal}
-          }
+        const passedConfidenceTests = await this.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank)
+        // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
+        // returns a new map of rank -> confidenceTestName -> calculatedValue
+        const passedConfidenceTestsWithConf = await this.calculateAuthorConfidence(passedConfidenceTests)
+        // calculate overall total and write the confidence set and comments to the DB
+        let confidenceTotal = 0.0
+        _.mapValues(passedConfidenceTestsWithConf, (confidenceTests, rank) => {
+          _.mapValues(confidenceTests, (confidenceTest) => {
+            confidenceTotal += confidenceTest['confidenceValue']
+          })
         })
-      }
-    })
+        // set ceiling to 99%
+        if (confidenceTotal >= 1.0) confidenceTotal = 0.99
+        // have to do some weird conversion stuff to keep the decimals correct
+        confidenceTotal = Number.parseFloat(confidenceTotal.toFixed(3))
+        // console.log(`passed confidence tests are: ${JSON.stringify(passedConfidenceTestsWithConf, null, 2)}`)
+        //check if persons last name in author list, if so mark a match
+            //add person to map with confidence value > 0
+          if (confidenceTotal > 0) {
+            // console.log(`Match found for Author: ${author.family}, ${author.given}`)
+            let matchedPerson: MatchedPerson = { 'person': person, 'confidence': confidenceTotal }
+            matchedPersonMap[person['id']] = matchedPerson
+            //console.log(`After add matched persons map is: ${JSON.stringify(matchedPersonMap,null,2)}`)
+          }
+    }, { concurrency: 1 })
 
+    //console.log(`After tests matchedPersonMap is: ${JSON.stringify(matchedPersonMap,null,2)}`)
     return matchedPersonMap
   }
 
@@ -354,7 +328,7 @@ export class CalculateConfidence {
     const reducedLastNameResults = _.map(lastNameResults, (result) => {
       return result['item'] ? result['item'] : result
     })
-    const fuzzyHarperFirst = new Fuse(reducedLastNameResults, {
+    const fuzzyFirst = new Fuse(reducedLastNameResults, {
       caseSensitive: false,
       shouldSort: true,
       includeScore: false,
@@ -362,7 +336,7 @@ export class CalculateConfidence {
       findAllMatches: true,
       threshold: 0.100,
     });
-    const results = fuzzyHarperFirst.search(testFirst);
+    const results = fuzzyFirst.search(testFirst);
     return results.length > 0 ? results[0] : null;
   }
 
