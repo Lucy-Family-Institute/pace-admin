@@ -25,8 +25,8 @@ export default {
       },
       cy: null,
       graph: [
-        { "data": {"id":"a","type":"person","label":"Sara Ceballos","isHarper":"false"}},
-        { "data":{"id":"b","type":"person","label":"Joe Smith","isHarper":"false"}},
+        { "data": {"id":"a","type":"person","label":"Sara Ceballos","isCenterMember":"false"}},
+        { "data":{"id":"b","type":"person","label":"Joe Smith","isCenterMember":"false"}},
         { "data":{"id":"a-b","source":"a","target":"b"}}
       ]
     }

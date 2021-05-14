@@ -22,7 +22,7 @@ import dotenv from 'dotenv'
 import readAllNewPersonPublications from './gql/readAllNewPersonPublications'
 import insertReview from '../client/src/gql/insertReview'
 import readPersonPublicationsByDoi from './gql/readPersonPublicationsByDoi'
-const getIngestFilePathsByYear = require('./getIngestFilePathsByYear');
+const getIngestFilePaths = require('./getIngestFilePaths');
 import { removeSpaces, normalizeString, normalizeObjectProperties } from './units/normalizer'
 
 dotenv.config({
@@ -390,7 +390,7 @@ function nameMatchFuzzy (searchLast, lastKey, searchFirst, firstKey, nameMap) {
     return result['item'] ? result['item'] : result
   })
   // console.log(`Reduced last name results are: ${JSON.stringify(reducedLastNameResults, null, 2)}`)
-  const fuzzyHarperFirst = new Fuse(reducedLastNameResults, {
+  const fuzzyFirst = new Fuse(reducedLastNameResults, {
     caseSensitive: false,
     shouldSort: true,
     includeScore: false,
@@ -399,7 +399,7 @@ function nameMatchFuzzy (searchLast, lastKey, searchFirst, firstKey, nameMap) {
     threshold: 0.100,
   });
   // console.log(`search first: ${searchFirst} test first is: ${testFirst}`)
-  const results = fuzzyHarperFirst.search(testFirst);
+  const results = fuzzyFirst.search(testFirst);
   // console.log(`First name match results are: ${JSON.stringify(results, null, 2)}`)
   return results.length > 0 ? results[0] : null;
 }
@@ -899,7 +899,7 @@ async function main() {
   // @todo: Extract to ENV?
   const confidenceAlgorithmVersion = '82aa835eff3da48e497c6eb6b56dafc087c86958'
   // get confirmed author lists to papers
-  const pathsByYear = await getIngestFilePathsByYear("../config/ingestConfidenceReviewFilePaths.json")
+  const pathsByYear = await getIngestFilePaths("../config/ingestConfidenceReviewFilePaths.json")
 
   // get the set of persons to test
   const testAuthors = await getAllSimplifiedPersons()

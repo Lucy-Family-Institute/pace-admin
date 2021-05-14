@@ -57,7 +57,7 @@
             <q-item-section header align="left">Filter</q-item-section>
           </q-btn>
             <q-item header>
-              <q-item-label header>Center and Institute Review</q-item-label>
+              <q-item-label header>{{ selectedCenter.label }} Review</q-item-label>
             </q-item>
               <CenterReviewPubFilter />
               <q-tabs
@@ -430,7 +430,6 @@ import readPublications from '../gql/readPublications'
 import readPersonPublicationsAll from '../gql/readPersonPublicationsAll'
 import readPersonPublicationsConfSets from '../gql/readPersonPublicationsConfSets'
 import readPersonPublicationsReviews from '../gql/readPersonPublicationsReviews'
-// import readPersonPublicationsHCRIReviews from '../gql/readPersonPublicationsHCRIReviews'
 import readAuthorsByPublications from '../gql/readAuthorsByPublications'
 // import readPublicationsByReviewState from '../../../gql/readPublicationsByReviewState.gql'
 import readPublication from '../../../gql/readPublication.gql'
@@ -550,6 +549,9 @@ export default {
   watch: {
     $route: 'fetchData',
     selectedInstitutions: function () {
+      this.loadPublications()
+    },
+    selectedCenter: function () {
       this.loadPublications()
     },
     changedPubYears: async function () {
@@ -1469,7 +1471,7 @@ export default {
         console.log(`Starting query publications ${moment().format('HH:mm:ss:SSS')}`)
         // for now assume only one review, needs to be fixed later
         const pubsWithReviewResult = await this.$apollo.query({
-          query: readPersonPublicationsAll(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max),
+          query: readPersonPublicationsAll(this.selectedInstitutions, this.selectedCenter.value, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max),
           fetchPolicy: 'network-only'
         })
         // console.log('***', pubsWithReviewResult)
@@ -1489,15 +1491,16 @@ export default {
           return reviewPersonPub.persons_publications_id
         })
 
-        console.log(`Starting query publications HCRI reviews ${moment().format('HH:mm:ss:SSS')}`)
+        console.log(`This selectedCenter is: ${JSON.stringify(this.selectedCenter, null, 2)}`)
+        console.log(`Starting query publications ${this.selectedCenter.value} reviews ${moment().format('HH:mm:ss:SSS')}`)
 
-        const pubsWithHCRIReviewsResult = await this.$apollo.query({
-          query: readPersonPublicationsReviews(_.keys(personPubByIds), 'HCRI'),
+        const pubsWithCenterReviewsResult = await this.$apollo.query({
+          query: readPersonPublicationsReviews(_.keys(personPubByIds), this.selectedCenter.value),
           fetchPolicy: 'network-only'
         })
         // console.log('***', pubsWithReviewResult)
-        console.log(`Finished query publications HCRI reviews ${moment().format('HH:mm:ss:SSS')}`)
-        const personPubHCRIReviews = _.groupBy(pubsWithHCRIReviewsResult.data.reviews_persons_publications, (reviewPersonPub) => {
+        console.log(`Finished query publications ${this.selectedCenter.value} reviews ${moment().format('HH:mm:ss:SSS')}`)
+        const personPubCenterReviews = _.groupBy(pubsWithCenterReviewsResult.data.reviews_persons_publications, (reviewPersonPub) => {
           return reviewPersonPub.persons_publications_id
         })
 
@@ -1512,36 +1515,13 @@ export default {
         const personPubConfidenceSets = _.groupBy(pubsWithConfResult.data.confidencesets_persons_publications, (confPersonPub) => {
           return confPersonPub.persons_publications_id
         })
-        // console.log(`Starting query publications ND Reviews ${moment().format('HH:mm:ss:SSS')}`)
-        // // for now assume only one review, needs to be fixed later
-        // const pubsWithReviewResultNDReviews = await this.$apollo.query({
-        //   query: readPersonPublicationsNDReviews(_.keys(personPubConfidenceSets)),
-        //   fetchPolicy: 'network-only'
-        // })
-        // // console.log('***', pubsWithReviewResult)
-        // console.log(`Finished query publications ND Reviews ${moment().format('HH:mm:ss:SSS')}`)
-        // const personPubNDReviews = _.mapKeys(pubsWithReviewResultNDReviews.data.persons_publications, (personPub) => {
-        //   return personPub.id
-        // })
-        // // console.log(`Person pub nd reviews are: ${JSON.stringify(personPubNDReviews, null, 2)}`)
-        // console.log(`Starting query publications HCRI Reviews ${moment().format('HH:mm:ss:SSS')}`)
-        // // for now assume only one review, needs to be fixed later
-        // const pubsWithReviewResultHCRIReviews = await this.$apollo.query({
-        //   query: readPersonPublicationsHCRIReviews(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max),
-        //   fetchPolicy: 'network-only'
-        // })
-        // // console.log('***', pubsWithReviewResult)
-        // console.log(`Finished query publications HCRI Reviews ${moment().format('HH:mm:ss:SSS')}`)
-        // const personPubHCRIReviews = _.mapKeys(pubsWithReviewResultHCRIReviews.data.persons_publications, (personPub) => {
-        //   return personPub.id
-        // })
         console.log(`Start query publications authors ${moment().format('HH:mm:ss:SSS')}`)
         this.publications = _.map(pubsWithReviewResult.data.persons_publications, (personPub) => {
           // change doi to lowercase
           _.set(personPub.publication, 'doi', _.toLower(personPub.publication.doi))
           _.set(personPub, 'confidencesets', _.cloneDeep(personPubConfidenceSets[personPub.id]))
           _.set(personPub, 'reviews', _.cloneDeep(personPubNDReviews[personPub.id]))
-          _.set(personPub, 'org_reviews', _.cloneDeep(personPubHCRIReviews[personPub.id]))
+          _.set(personPub, 'org_reviews', _.cloneDeep(personPubCenterReviews[personPub.id]))
           return personPub
         })
         const publicationIds = _.map(this.publications, (pub) => {
@@ -1663,8 +1643,12 @@ export default {
         await _.each(personPubs, async (personPub) => {
           // const personPub = personPubs[0]
           console.log(`Adding Review for person publication: ${personPub.id}`)
+          let selectedCenterValue = this.selectedCenter
+          if (!selectedCenterValue) {
+            selectedCenterValue = this.preferredSelectedCenter.value
+          }
           const mutateResult = await this.$apollo.mutate(
-            insertReview(this.userId, personPub.id, reviewType, 'HCRI')
+            insertReview(this.userId, personPub.id, reviewType, selectedCenterValue)
           )
           console.log('&&', reviewType, this.reviewTypeFilter)
           if (mutateResult && personPub.id === personPublication.id) {
@@ -1832,7 +1816,8 @@ export default {
   },
   computed: {
     userId: sync('auth/userId'),
-    isLoggedIn: sync('auth/isLoggedIn'),
+    selectedCenter: sync('filter/selectedCenter'),
+    preferredSelectedCenter: sync('filter/preferredSelectedCenter'),
     preferredPersonSort: get('filter/preferredPersonSort'),
     preferredPersonPubSort: get('filter/preferredPersonPubSort'),
     preferredCenterPubSort: get('filter/preferredCenterPubSort'),

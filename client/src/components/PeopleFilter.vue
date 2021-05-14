@@ -15,6 +15,7 @@
     <q-item>
       <q-select
         name="sort_person"
+        :key="personSortKey"
         v-model="selectedPersonSort"
         :options="sortPersonOptions"
         color="primary"
@@ -23,7 +24,7 @@
         class="fullSelect"
       />
     </q-item>
-    <!--<q-item>
+    <q-item>
       <q-select
         name="person_total"
         v-model="selectedPersonTotal"
@@ -34,7 +35,6 @@
         class="fullSelect"
       />
     </q-item>
-    -->
     <q-item>
       <q-select
         name="person_confidence"
@@ -81,6 +81,7 @@ export default {
     }
   },
   computed: {
+    personSortKey: sync('filter/personSortKey'),
     institutionOptions: sync('filter/institutionOptions'),
     preferredPersonTotal: sync('filter/preferredPersonTotal'),
     preferredPersonSort: sync('filter/preferredPersonSort'),
