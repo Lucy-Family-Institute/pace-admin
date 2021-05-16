@@ -560,7 +560,8 @@ export default {
     changedPendingCounts: function (personIndex) {
       // this.personSortKey += 1
       // this.peopleScrollKey += 1
-      this.showCurrentSelectedPerson()
+      // this.$refs['personScroll'].refresh()
+      // this.showCurrentSelectedPerson()
     },
     drawerClick (e) {
       // if in "mini" state and user
