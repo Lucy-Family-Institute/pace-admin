@@ -452,23 +452,28 @@ async function main (): Promise<void> {
       }
     }, {concurrency: 1})
 
+  
     //flatten out succeedPaperArray for data for csv and change WoS json object to string
     const outputPapers = _.map(_.flatten(succeededPapers), paper => {
       paper['wos_record'] = JSON.stringify(paper['wos_record'])
       return paper
     })
 
-    //write data out to csv
-    //console.log(outputScopusPapers)
-    await writeCsv({
-      path: `../data/wos.${year}.${moment().format('YYYYMMDDHHmmss')}.csv`,
-      data: outputPapers,
-    });
-    console.log(`Total Succeeded Papers: ${outputPapers.length}`)
-    console.log(`Total Succeeded Authors: ${succeededAuthors.length}`)
-    console.log(`Total Failed Authors: ${failedAuthors.length}`)
-    console.log(`Get error messages: ${JSON.stringify(failedPapers,null,2)}`)
+    const batchSize = 200
+    const batches = _.chunk(outputPapers, batchSize)
 
+    await pMap(batches, async (batch, index) => {
+      //write data out to csv
+      //console.log(outputScopusPapers)
+      await writeCsv({
+        path: `../data/wos.${year}.${moment().format('YYYYMMDDHHmmss')}_${index}.csv`,
+        data: batch,
+      });
+      console.log(`Total Succeeded Papers: ${batch.length}`)
+      console.log(`Total Succeeded Authors: ${succeededAuthors.length}`)
+      console.log(`Total Failed Authors: ${failedAuthors.length}`)
+      console.log(`Get error messages: ${JSON.stringify(failedPapers,null,2)}`)
+    }, { concurrency: 1 } )
   }, { concurrency: 1 })
   }
 

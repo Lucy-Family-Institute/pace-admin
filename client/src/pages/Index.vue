@@ -437,6 +437,7 @@ export default {
   data: () => ({
     reviewStates: undefined,
     selectedReviewState: undefined,
+    personScrollIndex: 0,
     dom,
     date,
     firstModel: 375,
@@ -556,9 +557,11 @@ export default {
     }
   },
   methods: {
-    changedPendingCounts: function () {
-      this.personSortKey += 1
-      this.peopleScrollKey += 1
+    changedPendingCounts: function (personIndex) {
+      // this.personSortKey += 1
+      // this.peopleScrollKey += 1
+      // this.$refs['personScroll'].refresh()
+      // this.showCurrentSelectedPerson()
     },
     drawerClick (e) {
       // if in "mini" state and user
@@ -800,7 +803,6 @@ export default {
         const reviewedDois = {}
         _.each(person.reviews_persons_publications, (review) => {
           if (review.review_type && review.review_type !== 'pending') {
-            console.log(`Review type is: ${review.review_type}, counting doi as reviewed`)
             reviewedDois[review.doi] = review
           }
         })
@@ -817,7 +819,7 @@ export default {
         this.personReviewedPubCounts[person.id] = filteredReviewedDoisCount
       })
 
-      console.log(`Reviewed counts are: ${JSON.stringify(this.personReviewedPubCounts, null, 2)}`)
+      // console.log(`Reviewed counts are: ${JSON.stringify(this.personReviewedPubCounts, null, 2)}`)
 
       // set the pub counts for person
       this.people = _.map(this.people, (person) => {
@@ -1231,9 +1233,8 @@ export default {
               })
               this.personReviewedPubCounts[this.person.id] += 1
               this.people[currentPersonIndex].person_publication_count -= 1
-              this.changedPendingCounts()
+              await this.changedPendingCounts(currentPersonIndex)
               // this.people[currentPersonIndex].reviews_persons_publications_aggregate.aggregate.count = 1
-              // this.$refs[`person${currentPersonIndex}`].$el.click()
               this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
             } else if (this.selectedPersonTotal === 'Pending' && reviewType === 'pending') {
               const currentPersonIndex = _.findIndex(this.people, (person) => {
@@ -1241,9 +1242,8 @@ export default {
               })
               this.personReviewedPubCounts[this.person.id] -= 1
               this.people[currentPersonIndex].person_publication_count += 1
-              this.changedPendingCounts()
+              await this.changedPendingCounts(currentPersonIndex)
               // this.people[currentPersonIndex].reviews_persons_publications_aggregate.aggregate.count += 1
-              // this.$refs[`person${currentPersonIndex}`].$el.click()
               this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
             }
           }
@@ -1375,6 +1375,9 @@ export default {
         max: this.yearMemberStaticMax
       }
     }
+  },
+  mounted () {
+    this.$refs.personScroll.scrollTo(this.personScrollIndex)
   },
   computed: {
     personSortKey: sync('filter/personSortKey'),
