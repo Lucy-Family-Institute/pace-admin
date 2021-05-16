@@ -75,20 +75,23 @@ load_name_variances:
 ingest_metadata:
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
 
-update_confidence_reviews:
+load_new_confidence_sets:
 	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
 
 synchronize_reviews:
 	cd ingest && ts-node synchronizeReviewStates.ts && cd ..
-
-recheck_author_matches:
-	cd ingest && ts-node updatePersonPublicationsMatches.ts && cd ..
 
 load_abstracts:
 	cd ingest && ts-node loadAbstracts.ts && cd ..
 
 load_awards:
 	cd ingest && ts-node loadAwards.ts && cd ..
+
+update_pub_journals:
+	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
+
+recheck_author_matches:
+	cd ingest && ts-node updatePersonPublicationsMatches.ts && cd ..
 
 cleardb:
 	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose down -v
@@ -114,9 +117,6 @@ reharvest:
 	cd ingest && ts-node loadAwards.ts && cd ..
 	cd ingest && ts-node loadAbstracts.ts && cd ..
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
-
-load_new_confidence_sets:
-	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
 
 update_wos_data:
 	cd ingest && ts-node fetchWoSAuthorData.ts && cd ..
@@ -146,9 +146,6 @@ load_funders:
 
 update_awards_funders:
 	cd ingest && ts-node updateAwardsFunders.ts && cd ..
-
-update_pub_journals:
-	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
 
 scopus_author_data:
 	cd ingest && ts-node fetchScopusAuthorObjects.ts && cd ..
