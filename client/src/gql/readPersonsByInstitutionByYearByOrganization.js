@@ -20,26 +20,20 @@ export default function readPersonsByInstitutionByYearByOrganization (organizati
           distinct_on: id,
           where: {
             _and: [
-              {
-                persons_organizations : {
-                  organization_value: {_eq: ${organizationValue}}
-                }
-              }
-              {
-                persons_organizations: {
-                  start_date: {_lt: "${startDateLT}"}
-                }
-              }, 
               {institution: {name: {_in: [${namesString}]}}},
               {
                 _or: [
                   {
                     persons_organizations: {
+                      start_date: {_lt: "${startDateLT}"},
+                      organization_value: {_eq: ${organizationValue}},
                       end_date: {_gt: "${endDateGT}"}
                     }
                   }, 
                   {
                     persons_organizations: {
+                      start_date: {_lt: "${startDateLT}"},
+                      organization_value: {_eq: ${organizationValue}},
                       end_date: {_is_null: true}
                     }
                   }

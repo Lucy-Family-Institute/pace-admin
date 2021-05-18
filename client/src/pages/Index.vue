@@ -785,13 +785,14 @@ export default {
     async loadPersonsWithFilter () {
       console.log('filtering', this.selectedInstitutions)
       this.people = []
-      console.log(`Applying year filter to person search year min: ${this.selectedPubYears.min} max: ${this.selectedPubYears.max}`)
+      // console.log(`Applying year filter to person search year min: ${this.selectedPubYears.min} max: ${this.selectedPubYears.max}`)
       let minConfidence = 0
       if (this.selectedPersonConfidence === '50%') minConfidence = 0.5
       if (!this.selectedCenter || !this.selectedCenter.value || this.selectedCenter.value === 'ND') {
         const personResult = await this.$apollo.query(readPersonsByInstitutionByYearAllCenters(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, minConfidence), { fetchPolicy: 'network-only' })
         this.people = personResult.data.persons
       } else {
+        console.log(`Getting people for ${this.selectedCenter.value}`)
         const personResult = await this.$apollo.query(readPersonsByInstitutionByYearByOrganization(this.selectedCenter.value, this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, minConfidence), { fetchPolicy: 'network-only' })
         this.people = personResult.data.persons
       }
