@@ -377,6 +377,7 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
 async function main() {
 
   const pathsByYear = {
+    2020: ['../data/JournalsImpactFactor_2019.csv'],
     2019: ['../data/JournalsImpactFactor_2019.csv'],
     2018: ['../data/JournalsImpactFactor_2018.csv'],
     2017: ['../data/JournalsImpactFactor_2017.csv']
