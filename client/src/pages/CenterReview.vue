@@ -422,8 +422,8 @@ import insertReview from '../gql/insertReview'
 import _ from 'lodash'
 import Cite from 'citation-js'
 
-import readPersonsByInstitutionByYear from '../gql/readPersonsByInstitutionByYear'
-import readPersonsByInstitutionByYearPendingPubs from '../gql/readPersonsByInstitutionByYearPendingPubs'
+// import readPersonsByInstitutionByYear from '../gql/readPersonsByInstitutionByYear'
+// import readPersonsByInstitutionByYearPendingPubs from '../gql/readPersonsByInstitutionByYearPendingPubs'
 import readReviewTypes from '../../../gql/readReviewTypes.gql'
 import readPublications from '../gql/readPublications'
 // import readPendingPublications from '../../../gql/readPendingPublications.gql'
@@ -442,6 +442,7 @@ import MemberYearFilter from '../components/MemberYearFilter.vue'
 import sanitize from 'sanitize-filename'
 import moment from 'moment'
 import pMap from 'p-map'
+import readPersonsByInstitutionByYearByOrganization from '../gql/readPersonsByInstitutionByYearByOrganization'
 // import VueFuse from 'vue-fuse'
 
 // Vue.use(VueFuse)
@@ -857,16 +858,8 @@ export default {
       console.log('filtering', this.selectedInstitutions)
       this.people = []
       console.log(`Applying year filter to person search year min: ${this.selectedPubYears.min} max: ${this.selectedPubYears.max}`)
-      if (this.selectedPersonTotal === 'All') {
-        const personResult = await this.$apollo.query(readPersonsByInstitutionByYear(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, 0.0))
-        this.people = personResult.data.persons
-      } else {
-        const personResult = await this.$apollo.query({
-          query: readPersonsByInstitutionByYearPendingPubs(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, this.userId),
-          fetchPolicy: 'network-only'
-        })
-        this.people = personResult.data.persons
-      }
+      const personResult = await this.$apollo.query(readPersonsByInstitutionByYearByOrganization(this.selectedCenter.value, this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, 0.0))
+      this.people = personResult.data.persons
 
       // apply any sorting applied
       console.log('filtering', this.selectedPersonSort)
