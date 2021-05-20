@@ -84,8 +84,7 @@ async function getScopusDataFromCsv (csvPath) {
 
 async function main (): Promise<void> {
 
-  let startYear
-  // startYear = 2020
+  let startYear = 2020
   const publications = await getPublications(startYear)
   const publicationsBySource = await _.groupBy(publications, (publication) => {
     return publication['source_name']
