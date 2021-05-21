@@ -4,7 +4,7 @@ import HarvestSet from './harvestSet'
 export default interface DataSource {
 
   // return the query passed to scopus for searching for given author
-  getAuthorQuery(person: NormedPerson) : string
+  getAuthorQuery(person: NormedPerson, startDate?: Date, endDate?: Date)
 
   // assumes that if only one of startDate or endDate provided it would always be startDate first and then have endDate undefined
   getPublicationsByAuthorName(person: NormedPerson, sessionState: {}, offset: Number, startDate?: Date, endDate?: Date) : Promise<HarvestSet>
