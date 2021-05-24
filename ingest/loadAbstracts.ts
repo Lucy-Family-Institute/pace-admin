@@ -1,11 +1,9 @@
 import { ApolloClient } from 'apollo-client'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { createHttpLink } from 'apollo-link-http'
-import gql from 'graphql-tag'
 import fetch from 'node-fetch'
 import _ from 'lodash'
 import { command as loadCsv } from './units/loadCsv'
-import readPersons from '../client/src/gql/readPersons'
 import readPublicationsWoutAbstract from './gql/readPublicationsWoutAbstract'
 import readPublicationsWoutAbstractByYear from './gql/readPublicationsWoutAbstractByYear'
 import updatePubAbstract from './gql/updatePubAbstract'
@@ -17,11 +15,6 @@ import { randomWait } from './units/randomWait'
 dotenv.config({
   path: '../.env'
 })
-
-const axios = require('axios');
-
-const elsApiKey = process.env.SCOPUS_API_KEY
-const elsCookie = process.env.SCOPUS_API_COOKIE
 
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
@@ -36,23 +29,6 @@ const client = new ApolloClient({
   }),
   cache: new InMemoryCache()
 })
-
-async function getScopusPaperAbstractData (pii) {
-  const baseUrl = `https://api.elsevier.com/content/article/pii/${pii}`
-  console.log(`Base url is: ${baseUrl}`)
-
-  const response = await axios.get(baseUrl, {
-    headers: {
-      'httpAccept' : 'text/xml',
-      'X-ELS-APIKey' : elsApiKey,
-      'Cookie': elsCookie
-    },
-    withCredentials: true
-  });
-
-  //console.log(response.data)
-  return response.data;
-}
 
 async function getPublications (startYear?) {
   if (startYear) {
@@ -116,7 +92,6 @@ async function main (): Promise<void> {
       // console.log('Found doi with existing abstract')
       console.log(`Writing abstract for doi: ${doi}`)
       const resultUpdatePubAbstracts = client.mutate(updatePubAbstract(doi, pubMedAbstracts[doi]))
-      // console.log(`Returned result pubmed: ${resultUpdatePubAbstracts}`)
     }
   }, { concurrency: 5})
 
@@ -129,7 +104,6 @@ async function main (): Promise<void> {
       // console.log('Found doi with existing abstract')
       console.log(`Writing abstract for doi: ${doi}`)
       const resultUpdatePubAbstracts = await client.mutate(updatePubAbstract(doi, scopusAbstracts[doi]))
-      // console.log(`Returned result scopus: ${resultUpdatePubAbstracts}`)
     }
   }, { concurrency: 5})
 }
