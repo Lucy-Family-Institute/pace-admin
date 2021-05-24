@@ -1,0 +1,12 @@
+- args:
+    name: persons_organizations
+    table:
+      name: review_organization
+      schema: public
+    using:
+      foreign_key_constraint_on:
+        column: organization_value
+        table:
+          name: persons_organizations
+          schema: public
+  type: create_array_relationship

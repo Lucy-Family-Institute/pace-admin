@@ -2,6 +2,7 @@ import { make } from 'vuex-pathify'
 
 const state = {
   dashboardMiniState: false,
+  graphKey: 0,
   facetFilters: [],
   facetsDistribution: null,
   results: []

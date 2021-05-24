@@ -28,10 +28,11 @@
         </q-tabs>
         <q-space/>
         <q-select
-          v-model="model"
-          :options="options"
+          v-model="selectedCenter"
+          :options="centerOptions"
           class="white"
           v-if="isLoggedIn"
+          map-options
         />
 
         <q-btn-group unelevated spread>
@@ -66,12 +67,17 @@ import { sync } from 'vuex-pathify'
 import _ from 'lodash'
 import axios from 'axios'
 
+import readOrganizations from '../../../gql/readOrganizations.gql'
+
 export default {
   name: 'MyLayout',
   data () {
     return {
-      model: 'Harper Cancer Research Institute',
-      options: [ 'Harper Cancer Research Institute' ]
+      // selectedCenter: 'Harper Cancer Research Institute',
+      // options: [{
+      //   label: 'Harper Cancer Research Institute',
+      //   value: 'HCRI'
+      // }]
     }
   },
   async created () {
@@ -82,7 +88,10 @@ export default {
   },
   computed: {
     isLoggedIn: sync('auth/isLoggedIn'),
-    userId: sync('auth/userId')
+    userId: sync('auth/userId'),
+    centerOptions: sync('filter/centerOptions'),
+    selectedCenter: sync('filter/selectedCenter'),
+    preferredSelectedCenter: sync('filter/preferredSelectedCenter')
   },
   methods: {
     openURL,
@@ -108,6 +117,21 @@ export default {
         }
       } else if (this.isLoggedIn === false) {
         this.userId = null
+      }
+
+      const results = await this.$apollo.query({
+        query: readOrganizations
+      })
+
+      this.centerOptions = _.map(results.data.review_organization, (reviewOrg) => {
+        return {
+          label: reviewOrg.comment,
+          value: reviewOrg.value
+        }
+      })
+
+      if (!this.selectedCenter) {
+        this.selectedCenter = this.preferredSelectedCenter
       }
     }
   }
