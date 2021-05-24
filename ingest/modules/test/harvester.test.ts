@@ -115,7 +115,7 @@ beforeAll(async () => {
     // testPersons = await loadPersons(testPersonsFilePath, personPropMap)
     // testPersons = [defaultNormedPerson]
 
-    testPersons = _.chunk(testAllPersons, 10)[0]
+    testPersons = _.chunk(testAllPersons, 5)[0]
 
     testWoSPersons = []
     _.each(testPersons, (person) => {
