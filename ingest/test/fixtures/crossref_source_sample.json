@@ -1,0 +1,213 @@
+{
+"indexed": {
+    "date-parts": [
+    [
+        2021,
+        4,
+        29
+    ]
+    ],
+    "date-time": "2021-04-29T04:16:00Z",
+    "timestamp": 1619669760054
+},
+"reference-count": 5,
+"publisher": "Informa UK Limited",
+"issue": "1",
+"content-domain": {
+    "domain": [
+    "www.tandfonline.com"
+    ],
+    "crossmark-restriction": true
+},
+"short-container-title": [
+    "Multivariate Behavioral Research"
+],
+"published-print": {
+    "date-parts": [
+    [
+        2021,
+        1,
+        2
+    ]
+    ]
+},
+"DOI": "10.1080/00273171.2020.1852908",
+"type": "journal-article",
+"created": {
+    "date-parts": [
+    [
+        2020,
+        12,
+        2
+    ]
+    ],
+    "date-time": "2020-12-02T17:11:55Z",
+    "timestamp": 1606929115000
+},
+"page": "152-152",
+"update-policy": "http://dx.doi.org/10.1080/tandf_crossmark_01",
+"source": "Crossref",
+"is-referenced-by-count": 0,
+"title": [
+    "A Bootstrap Procedure for Testing P-Technique Factor Analysis"
+],
+"prefix": "10.1080",
+"volume": "56",
+"author": [
+    {
+    "given": "Lauren",
+    "family": "Trichtinger",
+    "sequence": "first",
+    "affiliation": [
+        {
+        "name": "University of Notre Dame, Notre Dame, Indiana, USA"
+        }
+    ]
+    },
+    {
+    "given": "Guangjian",
+    "family": "Zhang",
+    "sequence": "additional",
+    "affiliation": [
+        {
+        "name": "University of Notre Dame, Notre Dame, Indiana, USA"
+        }
+    ]
+    }
+],
+"member": "301",
+"published-online": {
+    "date-parts": [
+    [
+        2020,
+        12,
+        2
+    ]
+    ]
+},
+"reference": [
+    {
+    "key": "CIT0001",
+    "DOI": "10.1006/jrpe.1997.2206",
+    "doi-asserted-by": "publisher"
+    },
+    {
+    "key": "CIT0002",
+    "DOI": "10.1111/j.2044-8317.1984.tb00789.x",
+    "doi-asserted-by": "publisher"
+    },
+    {
+    "key": "CIT0003",
+    "DOI": "10.1080/00273171.2020.1717414",
+    "doi-asserted-by": "publisher"
+    },
+    {
+    "key": "CIT0004",
+    "DOI": "10.1177/0049124105280200",
+    "doi-asserted-by": "publisher"
+    },
+    {
+    "key": "CIT0005",
+    "DOI": "10.1006/jmva.1999.1858",
+    "doi-asserted-by": "publisher"
+    }
+],
+"container-title": [
+    "Multivariate Behavioral Research"
+],
+"language": "en",
+"link": [
+    {
+    "URL": "https://www.tandfonline.com/doi/pdf/10.1080/00273171.2020.1852908",
+    "content-type": "unspecified",
+    "content-version": "vor",
+    "intended-application": "similarity-checking"
+    }
+],
+"deposited": {
+    "date-parts": [
+    [
+        2021,
+        4,
+        28
+    ]
+    ],
+    "date-time": "2021-04-28T05:37:36Z",
+    "timestamp": 1619588256000
+},
+"score": 30.343414,
+"issued": {
+    "date-parts": [
+    [
+        2020,
+        12,
+        2
+    ]
+    ]
+},
+"references-count": 5,
+"journal-issue": {
+    "published-print": {
+    "date-parts": [
+        [
+        2021,
+        1,
+        2
+        ]
+    ]
+    },
+    "issue": "1"
+},
+"alternative-id": [
+    "10.1080/00273171.2020.1852908"
+],
+"URL": "http://dx.doi.org/10.1080/00273171.2020.1852908",
+"relation": {
+    "cites": []
+},
+"ISSN": [
+    "0027-3171",
+    "1532-7906"
+],
+"issn-type": [
+    {
+    "value": "0027-3171",
+    "type": "print"
+    },
+    {
+    "value": "1532-7906",
+    "type": "electronic"
+    }
+],
+"subject": [
+    "Statistics and Probability",
+    "Experimental and Cognitive Psychology",
+    "Arts and Humanities (miscellaneous)",
+    "General Medicine"
+],
+"assertion": [
+    {
+    "value": "The publishing and review policy for this title is described in its Aims & Scope.",
+    "order": 1,
+    "name": "peerreview_statement",
+    "label": "Peer Review Statement"
+    },
+    {
+    "value": "http://www.tandfonline.com/action/journalInformation?show=aimsScope&journalCode=hmbr20",
+    "URL": "http://www.tandfonline.com/action/journalInformation?show=aimsScope&journalCode=hmbr20",
+    "order": 2,
+    "name": "aims_and_scope_url",
+    "label": "Aim & Scope"
+    },
+    {
+    "value": "2020-12-02",
+    "order": 3,
+    "name": "published",
+    "label": "Published",
+    "group": {
+        "name": "publication_history",
+        "label": "Publication History"
+    }
+    }
+]
+}
