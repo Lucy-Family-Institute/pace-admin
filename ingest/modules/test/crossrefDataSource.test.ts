@@ -89,31 +89,31 @@ test('test CrossRef generate author query string with start and end date', () =>
     expect(query).toEqual({
         'query.author': `${_.toLower(person.givenName)}+${_.toLower(person.familyName)}`,
         'query.affiliation': 'notre+dame',
-        'filter': 'from-pub-date:2020-01-01,to-pub-date:2020-12-31'
+        'filter': 'from-pub-date:2020-01-01,until-pub-date:2020-12-31'
     })
 })
 
-test('test CrossREf harvester.fetchPublications by Author Name', async () => {
-    expect.hasAssertions()
-    const expectedHarvestSet: HarvestSet = {
-        sourceName: dsConfig.sourceName,
-        searchPerson: defaultNormedPerson,
-        query: JSON.stringify(crossrefDS.getAuthorQuery(defaultNormedPerson)),
-        sourcePublications: [],
-        normedPublications: expectedNormedPubsByAuthor[`${defaultNormedPerson.familyName}, ${defaultNormedPerson.givenNameInitial}`],
-        offset: 0,
-        pageSize: Number.parseInt(dsConfig.pageSize),
-        totalResults: 4
-    }
-    // for date need to call getDateObject to make sure time zone is set correctly and not accidentally setting to previous date because of hour difference in local timezone
-    const results = await crossrefDS.getPublicationsByAuthorName(defaultNormedPerson, {}, 0, getDateObject('2020-01-01'), getDateObject('2020-12-31'))
-    // as new publications may be added to available, just test that current set includes expected pubs
-    expect(results.sourceName).toEqual(expectedHarvestSet.sourceName)
-    expect(results.searchPerson).toEqual(expectedHarvestSet.searchPerson)
-    expect(results.query).toEqual(expectedHarvestSet.query)
-    expect(results.sourcePublications.length).toEqual(expectedHarvestSet.totalResults)
-    expect(results.normedPublications).toEqual(undefined)
-    expect(results.offset).toEqual(expectedHarvestSet.offset)
-    expect(results.pageSize).toEqual(expectedHarvestSet.pageSize)
-    expect(results.totalResults).toEqual(expectedHarvestSet.totalResults)
-})
+// test('test CrossRef harvester.fetchPublications by Author Name', async () => {
+//     expect.hasAssertions()
+//     const expectedHarvestSet: HarvestSet = {
+//         sourceName: dsConfig.sourceName,
+//         searchPerson: defaultNormedPerson,
+//         query: JSON.stringify(crossrefDS.getAuthorQuery(defaultNormedPerson)),
+//         sourcePublications: [],
+//         normedPublications: expectedNormedPubsByAuthor[`${defaultNormedPerson.familyName}, ${defaultNormedPerson.givenNameInitial}`],
+//         offset: 0,
+//         pageSize: Number.parseInt(dsConfig.pageSize),
+//         totalResults: 4
+//     }
+//     // for date need to call getDateObject to make sure time zone is set correctly and not accidentally setting to previous date because of hour difference in local timezone
+//     const results = await crossrefDS.getPublicationsByAuthorName(defaultNormedPerson, {}, 0, getDateObject('2020-01-01'), getDateObject('2020-12-31'))
+//     // as new publications may be added to available, just test that current set includes expected pubs
+//     expect(results.sourceName).toEqual(expectedHarvestSet.sourceName)
+//     expect(results.searchPerson).toEqual(expectedHarvestSet.searchPerson)
+//     expect(results.query).toEqual(expectedHarvestSet.query)
+//     expect(results.sourcePublications.length).toEqual(expectedHarvestSet.totalResults)
+//     expect(results.normedPublications).toEqual(undefined)
+//     expect(results.offset).toEqual(expectedHarvestSet.offset)
+//     expect(results.pageSize).toEqual(expectedHarvestSet.pageSize)
+//     expect(results.totalResults).toEqual(expectedHarvestSet.totalResults)
+// })
