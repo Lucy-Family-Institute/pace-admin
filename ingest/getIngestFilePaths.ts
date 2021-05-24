@@ -4,7 +4,7 @@ const fs = require('fs');
 // as strings.  The value for each year is an array of strings; Each
 // element in the array is a string representing the path to the files
 // to use for ingest.
-async function getIngestFilePathsByYear(filePath = "../config/ingestFilePaths.json", filesystem = fs) {
+async function getIngestFilePaths(filePath = "../config/ingestFilePaths.json", filesystem = fs) {
   if (!filesystem.existsSync(filePath)) {
     throw `Invalid path on load csv from: ${filePath}`
   }
@@ -13,4 +13,4 @@ async function getIngestFilePathsByYear(filePath = "../config/ingestFilePaths.js
   return json
 }
 
-module.exports = getIngestFilePathsByYear
+module.exports = getIngestFilePaths

@@ -14,7 +14,7 @@ From the PACE Admin root directory:
 You should see something like:
 
 ```sh
- PASS  test/getIngestFilePathsByYear.test.js
+ PASS  test/getIngestFilePaths.test.js
  PASS  units/test/normalizer.test.ts
 
 Test Suites: 2 passed, 2 total

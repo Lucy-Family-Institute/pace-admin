@@ -1,5 +1,5 @@
 <template>
-    <d3-network :net-nodes="nodes" :net-links="links" :options="options" />
+    <d3-network :key="graphKey" :net-nodes="nodes" :net-links="links" :options="options" />
 </template>
 
 <script>
@@ -28,7 +28,8 @@ export default {
     this.prepareResults = debounce(this.prepareResults, 200)
   },
   computed: {
-    results: sync('filter/results')
+    results: sync('filter/results'),
+    graphKey: sync('filter/graphKey')
     // dashboardMiniState: sync('filter/dashboardMiniState'),
     // facetFilters: sync('filter/facetFilters'),
     // facetsDistribution: sync('filter/facetsDistribution')

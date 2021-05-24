@@ -33,10 +33,15 @@
               <apexchart style="max-width:425px" :width="`${(dashboardMiniState) ? 250: 425}`" type="pie" :options="publisherPieOptions" :series="publisherPieSeries"></apexchart>
             </q-card-section>
           </q-card> -->
-          <q-card class="my-card" flat bordered>
-            <q-card-section>
+          <q-card v-if="dashboardMiniState" class="my-card" flat bordered>
+            <q-card-section style="max-width:250px" :width="250">
               <NetworkD3 />
-            </q-card-section>
+             </q-card-section>
+          </q-card>
+          <q-card v-if="!dashboardMiniState" class="graph-card" flat bordered>
+            <q-card-section style="max-width:915px" :width="915">
+              <NetworkD3 />
+             </q-card-section>
           </q-card>
         </div>
       </template>
@@ -301,6 +306,7 @@ export default {
     this.updateGraphs = debounce(this.updateGraphs, 500)
   },
   computed: {
+    graphKey: sync('filter/graphKey'),
     dashboardMiniState: sync('filter/dashboardMiniState'),
     facetFilters: sync('filter/facetFilters'),
     facetsDistribution: sync('filter/facetsDistribution')
@@ -328,6 +334,7 @@ export default {
       // if in "mini" state and user
       // click on drawer, we switch it to "normal" mode
       this.dashboardMiniState = !this.dashboardMiniState
+      this.graphKey += 1
       this.updateModelWidth()
     },
     getFirstModelWidth (dashboardMiniState) {
@@ -594,6 +601,9 @@ export default {
 .my-card
   width: 100%
   max-width: 450px
+.graph-card
+  width: 100%
+  max-width: 915px
 
 .clickable
    text-decoration: underline
