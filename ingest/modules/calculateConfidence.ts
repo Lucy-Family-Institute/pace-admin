@@ -189,7 +189,7 @@ export class CalculateConfidence {
       
       //console.log(`Testing Author for match: ${author.family}, ${author.given}`)
 
-        const passedConfidenceTests = await this.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank)
+        const passedConfidenceTests = await this.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank, sourceName)
         // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
         // returns a new map of rank -> confidenceTestName -> calculatedValue
         const passedConfidenceTestsWithConf = await this.calculateAuthorConfidence(passedConfidenceTests)

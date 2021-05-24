@@ -60,6 +60,7 @@ export class CrossRefDataSource implements DataSource {
     // } else {
     //   totalResults = 0
     // }
+    console.log(`CrossRef results are: ${JSON.stringify(results['message']['items'][0], null, 2)}`)
     console.log(`CrossRef results are: ${JSON.stringify(_.keys(results['message']), null, 2)}`)
     console.log(`CrossRef results facets are: ${JSON.stringify(results['message']['facets'], null, 2)}`)
     console.log(`CrossRef results total-results are: ${JSON.stringify(results['message']['total-results'], null, 2)}`)
