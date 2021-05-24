@@ -118,6 +118,9 @@ reharvest:
 	cd ingest && ts-node loadAbstracts.ts && cd ..
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
 
+update_crossref_data:
+	cd ingest && ts-node fetchCrossRefAuthorData.ts && cd ..
+
 update_wos_data:
 	cd ingest && ts-node fetchWoSAuthorData.ts && cd ..
 

@@ -1,11 +1,13 @@
 import { Harvester, HarvestOperation } from '../harvester'
 import { ScopusDataSource } from '../scopusDataSource'
+import {CrossRefDataSource } from '../crossrefDataSource'
 import NormedPublication from '../normedPublication'
 import { randomWait } from '../../units/randomWait'
 import { getDateObject } from '../../units/dateRange'
 import HarvestSet from '../harvestSet'
 import DataSource from '../dataSource'
 import NormedPerson from '../normedPerson'
+import DataSourceConfig from '../dataSourceConfig'
 
 import dotenv from 'dotenv'
 const fs = require('fs');
@@ -14,6 +16,7 @@ import { WosDataSource } from '../wosDataSource'
 
 let scopusHarvester: Harvester
 let wosHarvester: Harvester
+let crossrefHarvester: Harvester
 let defaultNormedPerson: NormedPerson
 let testPersons: NormedPerson[]
 let testWoSPersons: NormedPerson[]
@@ -55,12 +58,22 @@ const wosConfig: DataSourceConfig = {
     requestInterval: 10000 // number milliseconds to wait between requests
 }
 
+const crossrefConfig: DataSourceConfig = {
+    baseUrl: 'https://api.crossref.org',
+    queryUrl: 'https://api.crossref.org/works',
+    sourceName: 'CrossRef',
+    pageSize: '5',  // page size must be a string for the request to work
+    requestInterval: 10000
+}
+
 const scopusDS: DataSource = new ScopusDataSource(scopusConfig)
 const wosDS: DataSource = new WosDataSource(wosConfig)
+const crossrefDS: DataSource = new CrossRefDataSource(crossrefConfig)
 
 beforeAll(async () => {
     scopusHarvester = new Harvester(scopusDS)
     wosHarvester = new Harvester(wosDS)
+    crossrefHarvester = new Harvester(crossrefDS)
 
     defaultNormedPerson = {
         id: 94,
@@ -102,7 +115,7 @@ beforeAll(async () => {
     // testPersons = await loadPersons(testPersonsFilePath, personPropMap)
     // testPersons = [defaultNormedPerson]
 
-    testPersons = _.chunk(testAllPersons, 4)[0]
+    testPersons = _.chunk(testAllPersons, 10)[0]
 
     testWoSPersons = []
     _.each(testPersons, (person) => {
@@ -261,4 +274,68 @@ test('test Web of Science harvester.harvest by author name', async () => {
 
 test('test Web of Science harvester.harvestToCsv', async () => {
     await wosHarvester.harvestToCsv(testWoSPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2020-01-01'))
+})
+
+//-------------CrossRef Tests
+
+//TODO load in list of people to test against expected results for 2019
+test('test CrossRef harvester.harvest by author name', async () => {
+
+    const results: HarvestSet[] = await crossrefHarvester.harvest(testPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2020-01-01'), getDateObject('2020-12-31'))
+
+    const resultsByPerson = _.groupBy(results, (harvestSet) => {
+        const person = harvestSet.searchPerson
+        return `${person.familyName}, ${person.givenNameInitial}`
+    })
+
+    const pageSize = Number.parseInt(crossrefConfig.pageSize)
+
+    _.each(_.keys(resultsByPerson), (personKey) => {
+        const personHarvestSets = resultsByPerson[personKey]
+        let expectedNormedPubs = undefined // expectedCrossRefNormedPubsByAuthor[personKey]
+        if (!expectedNormedPubs) {
+            expectedNormedPubs = []
+        }
+        let expectedHarvestSetArraySize = parseInt(`${expectedNormedPubs.length / pageSize }`) //convert to an integer to drop any decimal
+        if (expectedNormedPubs.length % pageSize > 0) {
+            expectedHarvestSetArraySize += 1
+        }
+    
+        // as new publications may be added to available, just test that current set includes expected pubs
+        // and that total harvested is in the same power of 10 and less than double the expected amount
+       
+        // combine values
+        const normedPubs = _.mapValues(results, (result:HarvestSet) => {
+            return result.normedPublications
+        })
+        
+        let resultNormedPubs = []
+        _.each(personHarvestSets, (harvestSet, index) => {
+            resultNormedPubs = _.concat(resultNormedPubs, harvestSet.normedPublications)
+        })
+        const resultNormedPubsByDoi = _.mapKeys(resultNormedPubs, (normedPub) => {
+            return normedPub['doi']
+        })
+        const expectedNormedPubsByDoi = _.mapKeys(expectedNormedPubs, (expectedPub) => {
+            return expectedPub['doi']
+        })
+        expect(resultNormedPubs.length).toBeGreaterThanOrEqual(expectedNormedPubs.length)
+        // check for each expected pub
+
+        _.each(_.keys(expectedNormedPubsByDoi), (doi) => {
+
+            // ignore sourcemetadata since things like citedby-count often change over time
+            const expectedPub = _.omit(expectedNormedPubsByDoi[doi], 'sourceMetadata')
+            const receivedPub = _.omit(resultNormedPubsByDoi[doi], 'sourceMetadata')
+        
+
+            expect(receivedPub).toEqual(expectedPub)
+            // finally just check that source metadata is defined
+            expect(resultNormedPubsByDoi[doi]['sourceMetadata']).toBeDefined()
+        })
+    })
+})
+
+test('test CrossRef harvester.harvestToCsv', async () => {
+    await crossrefHarvester.harvestToCsv(testPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2020-01-01'), getDateObject('2020-12-31'))
 })

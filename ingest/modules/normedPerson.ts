@@ -10,6 +10,7 @@ export default class NormedPerson {
   givenName: string
   startDate: Date
   endDate: Date
+  nameVariances?: []
   sourceIds: {
     scopusAffiliationId?: string
   }

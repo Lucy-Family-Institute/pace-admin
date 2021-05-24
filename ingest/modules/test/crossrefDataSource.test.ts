@@ -7,6 +7,8 @@ import NormedPerson from '../normedPerson'
 import { randomWait } from '../../units/randomWait'
 import { getDateObject } from '../../units/dateRange'
 import { escapeForRegEx } from '../../units/normalizer'
+import {loadJSONFromFile} from '../..//units/loadJSONFromFile'
+import DataSourceConfig from '../dataSourceConfig'
 
 import dotenv from 'dotenv'
 const fs = require('fs');
@@ -17,7 +19,10 @@ let defaultNormedPerson: NormedPerson
 let testPersons: NormedPerson[]
 let testAllPersons: NormedPerson[]
 let expectedNormedPublications: NormedPublication[]
+let defaultPubSourceMetadata
 let expectedNormedPubsByAuthor
+let defaultExpectedNormedPublication: NormedPublication
+
 
 const filePath =  '../.env'
 if (!fs.existsSync(filePath)) {
@@ -36,15 +41,36 @@ const dsConfig: DataSourceConfig = {
     baseUrl: 'https://api.crossref.org',
     queryUrl: 'https://api.crossref.org/works',
     sourceName: 'CrossRef',
-    pageSize: '5',  // page size must be a string for the request to work
+    pageSize: '100',  // page size must be a string for the request to work
     requestInterval: 10000
 }
+
+// for now this is the set expected every time, not fully optimized yet
+const defaultExpectedResultKeys = [
+    "publisher",
+    "container-title",
+    "DOI",
+    "type",
+    "created",
+    "source",
+    "title",
+    "volume",
+    "author",
+    "reference",
+    "issued",
+    "ISSN",
+    "subject"
+  ]
+
+const crossrefSampleRecordPath = './test/fixtures/crossref_source_sample.json'
 
 const crossrefDS: CrossRefDataSource = new CrossRefDataSource(dsConfig)
 
 beforeAll(async () => {
     // const wosDS: DataSource = new WosDataSource(dsConfig)
     crossrefHarvester = new Harvester(crossrefDS)
+
+    defaultPubSourceMetadata = loadJSONFromFile(crossrefSampleRecordPath)
 
     defaultNormedPerson = {
         id: 94,
@@ -58,21 +84,35 @@ beforeAll(async () => {
         }
     }
 
-    const personPropMap = {
-        id: 'id',
-        'given_name': 'givenName',
-        'family_name': 'familyName',
-        'start_date': 'startDate',
-        'end_date': 'endDate'
-    }
+    defaultExpectedNormedPublication = {
+        searchPerson: defaultNormedPerson,
+        title: 'A Bootstrap Procedure for Testing P-Technique Factor Analysis',
+        journalTitle: 'Multivariate Behavioral Research',
+        journalIssn: '0027-3171',
+        journalEIssn: '1532-7906',
+        doi: '10.1080/00273171.2020.1852908',
+        publicationDate: '2020-12-2',
+        datasourceName: dsConfig.sourceName,
+        sourceId: '10.1080/00273171.2020.1852908',
+        sourceMetadata: defaultPubSourceMetadata
+      }
 
-    const testPersonsFilePath = './test/fixtures/persons_sample_2019.csv'
-    // const expectedPubCSVPath = './test/fixtures/scopus.2019.csv'
-    // expectedNormedPublications = await NormedPublication.loadFromCSV(expectedPubCSVPath)
-    // get map of 'lastname, first initial' to normed publications
-    expectedNormedPubsByAuthor = _.groupBy(expectedNormedPublications, (normedPub: NormedPublication) => {
-        return `${normedPub.searchPerson.familyName}, ${normedPub.searchPerson.givenNameInitial}`
-    })
+
+    // const personPropMap = {
+    //     id: 'id',
+    //     'given_name': 'givenName',
+    //     'family_name': 'familyName',
+    //     'start_date': 'startDate',
+    //     'end_date': 'endDate'
+    // }
+
+    // const testPersonsFilePath = './test/fixtures/persons_sample_2019.csv'
+    // // const expectedPubCSVPath = './test/fixtures/scopus.2019.csv'
+    // // expectedNormedPublications = await NormedPublication.loadFromCSV(expectedPubCSVPath)
+    // // get map of 'lastname, first initial' to normed publications
+    // expectedNormedPubsByAuthor = _.groupBy(expectedNormedPublications, (normedPub: NormedPublication) => {
+    //     return `${normedPub.searchPerson.familyName}, ${normedPub.searchPerson.givenNameInitial}`
+    // })
 
     // testPersons = await loadPersons(testPersonsFilePath, personPropMap)
     testPersons = [defaultNormedPerson]
@@ -93,27 +133,42 @@ test('test CrossRef generate author query string with start and end date', () =>
     })
 })
 
-// test('test CrossRef harvester.fetchPublications by Author Name', async () => {
-//     expect.hasAssertions()
-//     const expectedHarvestSet: HarvestSet = {
-//         sourceName: dsConfig.sourceName,
-//         searchPerson: defaultNormedPerson,
-//         query: JSON.stringify(crossrefDS.getAuthorQuery(defaultNormedPerson)),
-//         sourcePublications: [],
-//         normedPublications: expectedNormedPubsByAuthor[`${defaultNormedPerson.familyName}, ${defaultNormedPerson.givenNameInitial}`],
-//         offset: 0,
-//         pageSize: Number.parseInt(dsConfig.pageSize),
-//         totalResults: 4
-//     }
-//     // for date need to call getDateObject to make sure time zone is set correctly and not accidentally setting to previous date because of hour difference in local timezone
-//     const results = await crossrefDS.getPublicationsByAuthorName(defaultNormedPerson, {}, 0, getDateObject('2020-01-01'), getDateObject('2020-12-31'))
-//     // as new publications may be added to available, just test that current set includes expected pubs
-//     expect(results.sourceName).toEqual(expectedHarvestSet.sourceName)
-//     expect(results.searchPerson).toEqual(expectedHarvestSet.searchPerson)
-//     expect(results.query).toEqual(expectedHarvestSet.query)
-//     expect(results.sourcePublications.length).toEqual(expectedHarvestSet.totalResults)
-//     expect(results.normedPublications).toEqual(undefined)
-//     expect(results.offset).toEqual(expectedHarvestSet.offset)
-//     expect(results.pageSize).toEqual(expectedHarvestSet.pageSize)
-//     expect(results.totalResults).toEqual(expectedHarvestSet.totalResults)
-// })
+test('test CrossRef harvester.fetchPublications by Author Name', async () => {
+    expect.hasAssertions()
+    const expectedHarvestSet: HarvestSet = {
+        sourceName: dsConfig.sourceName,
+        searchPerson: defaultNormedPerson,
+        query: JSON.stringify(crossrefDS.getAuthorQuery(defaultNormedPerson, getDateObject('2020-01-01'), getDateObject('2020-12-31'))),
+        sourcePublications: [],
+        normedPublications: undefined, // expectedNormedPubsByAuthor[`${defaultNormedPerson.familyName}, ${defaultNormedPerson.givenNameInitial}`],
+        offset: 0,
+        pageSize: Number.parseInt(dsConfig.pageSize),
+        totalResults: 54
+    }
+    // for date need to call getDateObject to make sure time zone is set correctly and not accidentally setting to previous date because of hour difference in local timezone
+    const results = await crossrefDS.getPublicationsByAuthorName(defaultNormedPerson, {}, 0, getDateObject('2020-01-01'), getDateObject('2020-12-31'))
+    // as new publications may be added to available, just test that current set includes expected pubs
+    expect(results.sourceName).toEqual(expectedHarvestSet.sourceName)
+    expect(results.searchPerson).toEqual(expectedHarvestSet.searchPerson)
+    expect(results.query).toEqual(expectedHarvestSet.query)
+    expect(results.sourcePublications.length).toEqual(expectedHarvestSet.totalResults)
+    expect(results.normedPublications).toEqual(undefined)
+    expect(results.offset).toEqual(expectedHarvestSet.offset)
+    expect(results.pageSize).toEqual(expectedHarvestSet.pageSize)
+    expect(results.totalResults).toEqual(expectedHarvestSet.totalResults)
+})
+
+test('test CrossRef crossrefSource.getNormedPublications', () => {
+    expect.hasAssertions()
+    const testPubs = [ defaultPubSourceMetadata ]
+    const normedPubResults = crossrefDS.getNormedPublications(testPubs, defaultNormedPerson)
+    // expect(normedPubResults.length).toEqual(1)
+    // as the source metadata can vary only check the other values and that source metadata is not null
+    _.each(_.keys(normedPubResults[0]), (key) => {
+        if (key === 'source_metadata') {
+          expect(normedPubResults[0][key]).toBeDefined
+        } else {
+          expect(normedPubResults[0][key]).toEqual(defaultExpectedNormedPublication[key])
+        }
+    })
+})
