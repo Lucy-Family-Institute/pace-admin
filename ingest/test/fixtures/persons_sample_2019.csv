@@ -1,0 +1,5 @@
+id,given_name,family_name,email,position_title,institution_id,start_date,end_date,person_source_ids_scopus_affiliation_id
+1,Mark,Alber,malber@nd.edu,Professor of Mathematics,1,1/1/17,12/31/17,60021508
+94,Siyuan,Zhang,szhang8@nd.edu,Nancy Dee Associate Professor of Cancer Research,1,1/1/17,,60021508
+95,Min,Zhao,mzhao3@nd.edu,Tissue Bank Technician,3,1/1/19,,60021508
+96,Pinar,Zorlutuna,pinar.zorlutuna.1@nd.edu,Associate Professor of Aerospace and Mechanical Engineering at the University of Notre Dame,1,1/1/17,,60021508

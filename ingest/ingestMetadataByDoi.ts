@@ -1,19 +1,15 @@
 import axios from 'axios'
 import _ from 'lodash'
-import { ApolloClient, MutationOptions } from 'apollo-client'
+import { ApolloClient } from 'apollo-client'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { createHttpLink } from 'apollo-link-http'
 import fetch from 'node-fetch'
-import pEachSeries from 'p-each-series'
-import readUsers from '../client/src/gql/readPersons'
 import insertPublication from './gql/insertPublication'
 import insertPersonPublication from './gql/insertPersonPublication'
 import insertPubAuthor from './gql/insertPubAuthor'
 import { command as loadCsv } from './units/loadCsv'
-import { responsePathAsArray } from 'graphql'
 import Cite from 'citation-js'
 import pMap from 'p-map'
-import { command as nameParser } from './units/nameParser'
 import humanparser from 'humanparser'
 import { randomWait } from './units/randomWait'
 import { command as writeCsv } from './units/writeCsv'
@@ -21,7 +17,7 @@ import moment from 'moment'
 
 import dotenv from 'dotenv'
 import readPublicationsByDoi from './gql/readPublicationsByDoi'
-import readPersonPublicationsByDoi from './gql/readPersonPublicationsByDoi'
+
 import { getAllSimplifiedPersons } from './modules/queryNormalizedPeople'
 import { CalculateConfidence } from './modules/calculateConfidence'
 // import insertReview from '../client/src/gql/insertReview'
@@ -43,22 +39,6 @@ const client = new ApolloClient({
   }),
   cache: new InMemoryCache()
 })
-
-// var publicationId= undefined;
-
-// async function getDoiPaperData (doi) {
-//   const result = await axios({
-//       method: 'get',
-//       url: `http://dx.doi.org/${doi}`,
-
-//       headers: {
-//         //get result in csl-json format
-//         'Accept': 'application/citeproc+json'
-//       }
-//   })
-
-//   return result.data;
-// }
 
 function getPublicationYear (csl) : Number {
   // look for both online and print dates, and make newer date win if different
@@ -117,11 +97,9 @@ async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName
       //for now convert csl json object to a string when storing in DB
       insertPublication ([publication])
     )
-    //console.log(`Insert mutate pub result ${JSON.stringify(mutatePubResult.data,null,2)}`)
     const publicationId = 0+parseInt(`${ mutatePubResult.data.insert_publications.returning[0].id }`);
     // console.log(`Added publication with id: ${ publicationId }`)
 
-    //console.log(`Pub Id: ${publicationId} Adding ${authorMap.firstAuthors.length + authorMap.otherAuthors.length} total authors`)
     const insertAuthors = _.map(authors, (author) => {
       return {
         publication_id: publicationId,
@@ -132,7 +110,6 @@ async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName
     })
 
     try {
-      //console.log(`publication id: ${ publicationId } inserting first author: ${ JSON.stringify(firstAuthor) }`)
       const mutateFirstAuthorResult = await client.mutate(
         insertPubAuthor(insertAuthors)
       )
@@ -157,8 +134,6 @@ async function getPapersByDoi (csvPath: string) {
      path: csvPath
     })
 
-    //console.log(`Getting Keys for author papers`)
-
     //normalize column names to all lowercase
     const authorLowerPapers = _.mapValues(authorPapers, function (paper) {
       return _.mapKeys(paper, function (value, key) {
@@ -170,7 +145,6 @@ async function getPapersByDoi (csvPath: string) {
 
     const papersByDoi = _.groupBy(authorLowerPapers, function(paper) {
       //strip off 'doi:' if present
-      //console.log('in loop')
       return _.replace(paper['doi'], 'doi:', '')
     })
     //console.log('Finished load')
@@ -183,7 +157,6 @@ async function getPapersByDoi (csvPath: string) {
 
 async function getConfirmedAuthorsByDoi (papersByDoi, csvColumn :string) {
   const confirmedAuthorsByDoi = _.mapValues(papersByDoi, function (papers) {
-    //console.log(`Parsing names from papers ${JSON.stringify(papers,null,2)}`)
     return _.mapValues(papers, function (paper) {
       const unparsedName = paper[csvColumn]
       //console.log(`Parsing name: ${unparsedName}`)
@@ -235,21 +208,17 @@ async function getCSLAuthors(paperCsl){
   }
 
   let authorCount = 0
-  //console.log(`Before author loop paper csl: ${JSON.stringify(paperCsl,null,2)}`)
   _.each(paperCsl.author, async (author) => {
     // skip if family_name undefined
     if (author.family != undefined){
-      //console.log(`Adding author ${JSON.stringify(author,null,2)}`)
       authorCount += 1
 
       //if given name empty change to empty string instead of null, so that insert completes
       if (author.given === undefined) author.given = ''
 
       if (_.lowerCase(author.sequence) === 'first' ) {
-        //console.log(`found first author ${ JSON.stringify(author) }`)
         authMap.firstAuthors.push(author)
       } else {
-        //console.log(`found add\'l author ${ JSON.stringify(author) }`)
         authMap.otherAuthors.push(author)
       }
     }
@@ -267,7 +236,6 @@ async function getCSLAuthors(paperCsl){
   //concat author arrays together
   const authors = _.concat(authMap.firstAuthors, authMap.otherAuthors)
 
-  //console.log(`Author Map found: ${JSON.stringify(authMap,null,2)}`)
   return authors
 }
 
@@ -291,7 +259,7 @@ async function matchPeopleToPaperAuthors(publicationCSL, simplifiedPersons, pers
     
      //console.log(`Testing Author for match: ${author.family}, ${author.given}`)
 
-      const passedConfidenceTests = await calculateConfidence.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank)
+      const passedConfidenceTests = await calculateConfidence.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank, sourceName)
       // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
       // returns a new map of rank -> confidenceTestName -> calculatedValue
       const passedConfidenceTestsWithConf = await calculateConfidence.calculateAuthorConfidence(passedConfidenceTests)
@@ -330,11 +298,6 @@ async function isPublicationAlreadyInDB (doi, sourceName) : Promise<boolean> {
     }
   })
   return foundPub
-}
-
-async function getPersonPublications (doi: string, personId: number) {
-  const queryResult = await client.query(readPersonPublicationsByDoi(doi, personId))
-  return queryResult.data.persons_publications_metadata
 }
 
 interface DoiStatus {
@@ -509,10 +472,8 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
         // if at least one author, add the paper, and related personpub objects
         if((csl['type'] === 'article-journal' || csl['type'] === 'article' || csl['type'] === 'paper-conference' || csl['type'] === 'chapter' || csl['type'] === 'book') && csl.title) {
           //push in csl record to jsonb blob
-          //console.log(`Trying to insert for for DOI:${doi}, Title: ${csl.title}`)
 
           //check for SCOPUS
-          //console.log(`Checking paper if from scopus: ${JSON.stringify(papersByDoi[doi],null,2)}`)
           //there may be more than one author match with same paper, and just grab first one
           if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['scopus_record']){
             sourceName = 'Scopus'
@@ -702,31 +663,6 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
   }
 }
 
-// async function synchronizeReviews(doi, personId, newPersonPubId) {
-//   // check if the publication is already in the DB
-//   const personPubsInDB = await getPersonPublications(doi, personId)
-//   const reviews = {}
-//   // assume reviews are ordered by datetime desc
-//   _.each(personPubsInDB, (personPub) => {
-//     // console.log(`Person Pub returned for review check is: ${JSON.stringify(personPub, null, 2)}`)
-//     _.each(personPub.reviews_aggregate.nodes, (review) => {
-//       if (!reviews[review.review_organization_value]) {
-//         reviews[review.review_organization_value] = review
-//       }
-//     })
-//   })
-
-//   console.log(`New Person Pub Id is: ${JSON.stringify(newPersonPubId, null, 2)} inserting reviews: ${_.keys(reviews).length}`)
-//   await pMap(_.keys(reviews), async (reviewOrgValue) => {
-//     // insert with same org value and most recent status to get in sync with other pubs in DB
-//     const review = reviews[reviewOrgValue]
-//     // console.log(`Inserting review for New Person Pub Id: ${JSON.stringify(newPersonPubId, null, 2)}`)
-//     const mutateResult = await client.mutate(
-//       insertReview(review.user_id, newPersonPubId, review.review_type, reviewOrgValue)
-//     )
-//   }, { concurrency: 1})
-// }
-
 const getIngestFilePaths = require('./getIngestFilePaths');
 
 //returns status map of what was done
@@ -739,7 +675,6 @@ const pathsByYear = await getIngestFilePaths('../config/ingestFilePaths.json')
 
   let doiStatus = new Map()
   await pMap(_.keys(pathsByYear), async (year) => {
-    //const simplifiedPersons = await getSimplifiedPersonsByYear(year)
     console.log(`Simplified persons for ${year} are: ${JSON.stringify(simplifiedPersons,null,2)}`)
 
     //create map of last name to array of related persons with same last name

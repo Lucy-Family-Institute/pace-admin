@@ -2,10 +2,14 @@
 
 ## Unit Tests
 
+Before you get started, you will need a copy of `.env` with credentials; These belong in the root directory of the repository.
+
 From the PACE Admin root directory:
 
-1. `cd ./ingest`
-2. `yarn test`
+1. `cd /path/to/pace-admin`
+2. `make start_docker`
+3. `cd ./ingest`
+4. `yarn test`
 
 You should see something like:
 
