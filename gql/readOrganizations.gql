@@ -1,0 +1,6 @@
+query MyQuery {
+  review_organization {
+    value
+    comment
+  }
+}

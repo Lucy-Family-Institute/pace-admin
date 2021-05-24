@@ -381,7 +381,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
     let bibTexByDoi = {}
 
     // get confirmed author lists to papers
-    const confirmedPathsByYear = await getIngestFilePathsByYear("../config/ingestConfidenceReviewFilePaths.json")
+    const confirmedPathsByYear = await getIngestFilePaths("../config/ingestConfidenceReviewFilePaths.json")
     const confirmedPapersByDoi: {} = await loadConfirmedPapersByDoi(confirmedPathsByYear)
 
     const confirmedAuthorColumn = 'nd author (last, first)'
@@ -658,16 +658,17 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
     return doiStatus
   } catch (error){
     console.log(`Error on get path ${path}: ${error}`)
+    throw(error)
     return doiStatus // Returning what has been completed
   }
 }
 
-const getIngestFilePathsByYear = require('./getIngestFilePathsByYear');
+const getIngestFilePaths = require('./getIngestFilePaths');
 
 //returns status map of what was done
 async function main() {
 
-const pathsByYear = await getIngestFilePathsByYear()
+const pathsByYear = await getIngestFilePaths('../config/ingestFilePaths.json')
 
   //just get all simplified persons as will filter later
   const simplifiedPersons = await getAllSimplifiedPersons(client)

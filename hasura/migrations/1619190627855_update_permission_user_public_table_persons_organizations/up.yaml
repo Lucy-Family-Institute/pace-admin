@@ -1,0 +1,16 @@
+- args:
+    permission:
+      allow_aggregations: true
+      columns:
+      - end_date
+      - start_date
+      - id
+      - person_id
+      - organization_value
+      filter: {}
+      limit: null
+    role: user
+    table:
+      name: persons_organizations
+      schema: public
+  type: create_select_permission

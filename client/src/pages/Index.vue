@@ -55,7 +55,7 @@
             <q-item-section avatar>
               <q-icon name="tune"/>
             </q-item-section>
-            <q-item-section header align="left">Filter</q-item-section>
+            <q-item-section header align="left">Filter ({{ (people ? people.length : 0) }} Authors Shown)</q-item-section>
           </q-btn>
           <q-item-label header>Notre Dame Author Review</q-item-label>
           <!-- TODO calculate exact height below -->
@@ -64,6 +64,7 @@
             :items="people"
             bordered
             separator
+            :key="peopleScrollKey"
             :ref="`personScroll`"
           >
             <template v-slot="{ item, index }">
@@ -83,7 +84,7 @@
                     </q-item-section>
 
                     <q-item-section>
-                      <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.confidencesets_persons_publications.length }})</q-item-label>
+                      <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.person_publication_count }})</q-item-label>
                       <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
                     </q-item-section>
 
@@ -406,7 +407,9 @@ import insertReview from '../gql/insertReview'
 import _ from 'lodash'
 import Cite from 'citation-js'
 
-import readPersonsByInstitutionByYear from '../gql/readPersonsByInstitutionByYear'
+// import readPersonsByInstitutionByYear from '../gql/readPersonsByInstitutionByYear'
+import readPersonsByInstitutionByYearAllCenters from '../gql/readPersonsByInstitutionByYearAllCenters'
+import readPersonsByInstitutionByYearByOrganization from '../gql/readPersonsByInstitutionByYearByOrganization'
 // import readPersonsByInstitutionByYearPendingPubs from '../gql/readPersonsByInstitutionByYearPendingPubs'
 import readReviewTypes from '../../../gql/readReviewTypes.gql'
 import readPublications from '../gql/readPublications'
@@ -434,6 +437,7 @@ export default {
   data: () => ({
     reviewStates: undefined,
     selectedReviewState: undefined,
+    personScrollIndex: 0,
     dom,
     date,
     firstModel: 375,
@@ -442,6 +446,7 @@ export default {
     publications: [],
     publicationsGroupedByReview: {},
     personPublicationsCombinedMatches: [],
+    personReviewedPubCounts: {},
     personPublicationsCombinedMatchesByReview: {},
     filteredPersonPublicationsCombinedMatchesByReview: {},
     publicationsGroupedByDoiByReview: {},
@@ -494,7 +499,8 @@ export default {
     reviewTypeFilter: 'pending',
     publicationsReloadPending: false,
     drawer: false,
-    miniState: false
+    miniState: false,
+    peopleScrollKey: 0
   }),
   beforeDestroy () {
     clearInterval(this.interval)
@@ -506,6 +512,9 @@ export default {
   watch: {
     $route: 'fetchData',
     selectedInstitutions: function () {
+      this.loadPersonsWithFilter()
+    },
+    selectedCenter: function () {
       this.loadPersonsWithFilter()
     },
     changedPubYears: async function () {
@@ -548,6 +557,12 @@ export default {
     }
   },
   methods: {
+    changedPendingCounts: function (personIndex) {
+      // this.personSortKey += 1
+      // this.peopleScrollKey += 1
+      // this.$refs['personScroll'].refresh()
+      // this.showCurrentSelectedPerson()
+    },
     drawerClick (e) {
       // if in "mini" state and user
       // click on drawer, we switch it to "normal" mode
@@ -759,22 +774,58 @@ export default {
         }
       }
     },
+
+    getPersonPublicationCount (person) {
+      if (this.selectedPersonTotal === 'All') {
+        return person.confidencesets_persons_publications.length
+      } else {
+        return person.confidencesets_persons_publications.length - this.personReviewedPubCounts[person.id]
+      }
+    },
     async loadPersonsWithFilter () {
       console.log('filtering', this.selectedInstitutions)
       this.people = []
-      console.log(`Applying year filter to person search year min: ${this.selectedPubYears.min} max: ${this.selectedPubYears.max}`)
+      // console.log(`Applying year filter to person search year min: ${this.selectedPubYears.min} max: ${this.selectedPubYears.max}`)
       let minConfidence = 0
       if (this.selectedPersonConfidence === '50%') minConfidence = 0.5
-      // if (this.selectedPersonTotal === 'All') {
-      const personResult = await this.$apollo.query(readPersonsByInstitutionByYear(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, minConfidence))
-      this.people = personResult.data.persons
-      // } else {
-      //   const personResult = await this.$apollo.query({
-      //     query: readPersonsByInstitutionByYearPendingPubs(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max), // this.userId),  // commenting out for now querying by current user
-      //     fetchPolicy: 'network-only'
-      //   })
-      //   this.people = personResult.data.persons
-      // }
+      if (!this.selectedCenter || !this.selectedCenter.value || this.selectedCenter.value === 'ND') {
+        const personResult = await this.$apollo.query(readPersonsByInstitutionByYearAllCenters(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, minConfidence), { fetchPolicy: 'network-only' })
+        this.people = personResult.data.persons
+      } else {
+        console.log(`Getting people for ${this.selectedCenter.value}`)
+        const personResult = await this.$apollo.query(readPersonsByInstitutionByYearByOrganization(this.selectedCenter.value, this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, minConfidence), { fetchPolicy: 'network-only' })
+        this.people = personResult.data.persons
+      }
+
+      // calculate the total count to show
+      this.personReviewedPubCounts = {}
+      console.log('Checking for reviewed pub counts...')
+      _.each(this.people, (person) => {
+        const reviewedDois = {}
+        _.each(person.reviews_persons_publications, (review) => {
+          if (review.review_type && review.review_type !== 'pending') {
+            reviewedDois[review.doi] = review
+          }
+        })
+
+        // check for dois that are in the confidence set list and keep those, all others ignore
+        let filteredReviewedDoisCount = 0
+        _.each(person.confidencesets_persons_publications, (confidenceSet) => {
+          const doi = confidenceSet.doi
+          if (reviewedDois[doi]) {
+            filteredReviewedDoisCount += 1
+          }
+        })
+
+        this.personReviewedPubCounts[person.id] = filteredReviewedDoisCount
+      })
+
+      // console.log(`Reviewed counts are: ${JSON.stringify(this.personReviewedPubCounts, null, 2)}`)
+
+      // set the pub counts for person
+      this.people = _.map(this.people, (person) => {
+        return _.set(person, 'person_publication_count', this.getPersonPublicationCount(person))
+      })
 
       // apply any sorting applied
       console.log('filtering', this.selectedPersonSort)
@@ -784,8 +835,7 @@ export default {
         // need to sort by total and then name, not guaranteed to be in order from what is returned from DB
         // first group items by count
         const peopleByCounts = await _.groupBy(this.people, (person) => {
-          return person.confidencesets_persons_publications.length
-          // return person.persons_publications_metadata_aggregate.aggregate.count
+          return this.getPersonPublicationCount(person)
         })
 
         // sort each person array by name for each count
@@ -896,10 +946,20 @@ export default {
       })
       console.log(`Finish group by publications for person id: ${this.person.id} ${moment().format('HH:mm:ss:SSS')}`)
 
+      // check for any doi's with reviews out of sync,
+      // if more than one review type found add doi mapped to array of reviewtype to array pub list
+      let publicationDoisByReviewType = {}
       // put in pubs grouped by doi for each review status
       _.each(this.reviewStates, (reviewType) => {
         const publications = this.publicationsGroupedByReview[reviewType]
         this.publicationsGroupedByDoiByReview[reviewType] = _.groupBy(publications, (personPub) => {
+          if (!publicationDoisByReviewType[personPub.publication.doi]) {
+            publicationDoisByReviewType[personPub.publication.doi] = {}
+          }
+          if (!publicationDoisByReviewType[personPub.publication.doi][reviewType]) {
+            publicationDoisByReviewType[personPub.publication.doi][reviewType] = []
+          }
+          publicationDoisByReviewType[personPub.publication.doi][reviewType].push(personPub)
           return `${personPub.publication.doi}`
         })
 
@@ -912,17 +972,26 @@ export default {
           _.each(personPubs, (personPub, index) => {
             if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
               currentPersonPub = personPub
-              // if (currentPersonPub.publication.funders && currentPersonPub.publication.funders.length > 0) {
-              //   this.fundersByDoi[doi] = (currentPersonPub.publication.funders) ? currentPersonPub.publication.funders : []
-              //   _.each(this.fundersByDoi[doi], (funder) => {
-              //     console.log(`doi: ${doi} funders: ${JSON.stringify(funder, null, 2)}`)
-              //   })
-              // }
             }
           })
           return currentPersonPub
         })
       })
+
+      // check for any doi's with reviews out of sync
+      const publicationDoisOutOfSync = []
+
+      _.each(_.keys(publicationDoisByReviewType), (doi) => {
+        if (_.keys(publicationDoisByReviewType[doi]).length > 1) {
+          console.log(`Warning: Doi out of sync found: ${doi} for person id: ${this.person.id} doi record: ${JSON.stringify(publicationDoisByReviewType[doi], null, 2)}`)
+          publicationDoisOutOfSync.push(doi)
+        }
+      })
+
+      if (publicationDoisOutOfSync.length > 0) {
+        console.log(`Warning: Dois found with reviews out of sync: ${JSON.stringify(publicationDoisOutOfSync, null, 2)}`)
+      }
+
       // initialize the list in view
       this.setCurrentPersonPublicationsCombinedMatches()
       // console.log(`Funders by Doi ${JSON.stringify(_.keys(this.fundersByDoi).length, null, 2)}`)
@@ -1163,11 +1232,19 @@ export default {
               const currentPersonIndex = _.findIndex(this.people, (person) => {
                 return person.id === this.person.id
               })
+              this.personReviewedPubCounts[this.person.id] += 1
+              this.people[currentPersonIndex].person_publication_count -= 1
+              await this.changedPendingCounts(currentPersonIndex)
+              // this.people[currentPersonIndex].reviews_persons_publications_aggregate.aggregate.count = 1
               this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
             } else if (this.selectedPersonTotal === 'Pending' && reviewType === 'pending') {
               const currentPersonIndex = _.findIndex(this.people, (person) => {
                 return person.id === this.person.id
               })
+              this.personReviewedPubCounts[this.person.id] -= 1
+              this.people[currentPersonIndex].person_publication_count += 1
+              await this.changedPendingCounts(currentPersonIndex)
+              // this.people[currentPersonIndex].reviews_persons_publications_aggregate.aggregate.count += 1
               this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
             }
           }
@@ -1300,9 +1377,14 @@ export default {
       }
     }
   },
+  mounted () {
+    this.$refs.personScroll.scrollTo(this.personScrollIndex)
+  },
   computed: {
+    personSortKey: sync('filter/personSortKey'),
     userId: sync('auth/userId'),
     isLoggedIn: sync('auth/isLoggedIn'),
+    selectedCenter: sync('filter/selectedCenter'),
     preferredPersonSort: get('filter/preferredPersonSort'),
     preferredPersonPubSort: get('filter/preferredPersonPubSort'),
     preferredCenterPubSort: get('filter/preferredCenterPubSort'),
