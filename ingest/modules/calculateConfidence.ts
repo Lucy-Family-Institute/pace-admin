@@ -93,8 +93,8 @@ export class CalculateConfidence {
         _.each (person.persons_namevariances, (nameVariance) => {
           names.push({
             lastName: nameVariance.family_name.toLowerCase(),
-            firstInitial: nameVariance.given_name[0].toLowerCase(),
-            firstName: nameVariance.given_name.toLowerCase()
+            firstInitial: (nameVariance.given_name ? nameVariance.given_name[0].toLowerCase() : ''),
+            firstName: (nameVariance.given_name ? nameVariance.given_name.toLowerCase() : '')
           })
         })
       }
