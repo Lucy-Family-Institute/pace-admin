@@ -9,7 +9,8 @@ import { randomWait } from './units/randomWait'
 // const Fuse = require('fuse.js')
 import dotenv from 'dotenv'
 import readAllNewPersonPublications from './gql/readAllNewPersonPublications'
-const getIngestFilePathsByYear = require('./getIngestFilePathsByYear');
+
+const getIngestFilePaths = require('./getIngestFilePaths');
 import { command as writeCsv } from './units/writeCsv'
 import moment from 'moment'
 
@@ -41,7 +42,7 @@ async function main() {
   // @todo: Extract to ENV?
   const confidenceAlgorithmVersion = '82aa835eff3da48e497c6eb6b56dafc087c86958'
   // get confirmed author lists to papers
-  const pathsByYear = await getIngestFilePathsByYear("../config/ingestConfidenceReviewFilePaths.json")
+  const pathsByYear = await getIngestFilePaths("../config/ingestConfidenceReviewFilePaths.json")
 
   // get the set of persons to test
   const testAuthors = await calculateConfidence.getAllSimplifiedPersons()
@@ -176,27 +177,6 @@ async function main() {
   console.log(`Total Sets Tried: ${totalConfidenceSets} Passed: ${passedInsert.length} Failed: ${errorsInsert.length}`)
   console.log(`Total Set Items Tried: ${totalSetItems} Passed: ${totalSetItemsInserted}`)
   console.log(`Passed tests: ${confidenceTests['passed'].length} Warning tests: ${confidenceTests['warning'].length} Failed Tests: ${confidenceTests['failed'].length}`)
-
-
-  // add any reviews as needed
-  console.log('Synchronizing reviews with pre-existing publications...')
-  let loopCounter3 = 0
-
-  const batchSize = 4000
-  console.log(`Most recent person pub id: ${mostRecentPersonPubId}`)
-  const newPubsQueryResult = await client.query(
-    readAllNewPersonPublications(mostRecentPersonPubId)
-  )
-  const newPersonPubs = newPubsQueryResult.data.persons_publications
-  console.log(`Found ${newPersonPubs.length} New Person Pubs`)
-  // const batchIndex = 3
-  // const batches = _.chunk(newPersonPubs, batchSize)
-  await pMap(newPersonPubs, async (newPersonPub) => {
-    loopCounter3 += 1
-    //have each wait a pseudo-random amount of time between 1-5 seconds
-    await randomWait(loopCounter3)
-    await calculateConfidence.synchronizeReviews(newPersonPub['publication']['doi'], newPersonPub['person_id'], newPersonPub['id'], loopCounter3)
-  }, {concurrency: 10})
 }
 
 main()

@@ -41,8 +41,8 @@ async function mapGrantFiles (filename) {
       creators = `${creators}${creator.familyName}, ${creator.givenName}`
     }, { concurrency: 1 });
 
-    const harper = await loadCsv({
-      path: '../data/hcri_researchers_2017-2020.csv',
+    const centerMembers = await loadCsv({
+      path: '../data/researchers_2017-2020_load_name_variances.csv',
     });
 
     const parsedName = await nameParser({
@@ -50,10 +50,10 @@ async function mapGrantFiles (filename) {
       reduceMethod: 'majority',
     });
 
-    const isHarperResult = fuzzyMatchName({
+    const isCenterMembersResult = fuzzyMatchName({
       first: parsedName.first,
       last: parsedName.last,
-      corpus: harper,
+      corpus: centerMembers,
       keyFirst: 'given_name',
       keyLast: 'family_name',
     });
@@ -113,7 +113,7 @@ async function mapGrantFiles (filename) {
       authorPosition: 1, // index + 1,
       isFirstAuthor: true, //index === 0,
       isLastAuthor: (pub.creators.length - 1) === 1, // index,
-      isHarper: isHarperResult !== null,
+      isCenterMember: isCenterMembersResult !== null,
       isInvestigator: isAwardInvestigatorResult !== null,
       isLeadInvestigator: isLeadInvestigatorResult !== null,
     };
