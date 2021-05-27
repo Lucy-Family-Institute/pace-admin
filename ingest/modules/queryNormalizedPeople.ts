@@ -31,7 +31,8 @@ interface NormedCenterMember {
   startDate: Date
   endDate: Date
   sourceIds: {
-    scopusAffiliationId?: string
+    scopusAffiliationId?: string,
+    semanticScholarId?: string
   }
 }
 
@@ -45,7 +46,7 @@ function mapToNormedPersons(people: Array<any>) : Array<NormedPerson> {
       startDate: getDateObject(person.start_date),
       endDate: getDateObject(person.end_date),
       nameVariances: person.persons_namevariances,
-      sourceIds: {}
+      sourceIds: { semanticScholarId: person.semantic_scholar_id }
     }
     return np
   })
@@ -80,7 +81,7 @@ function mapToCenterMembers(members: Array<any>) : NormedCenterMember[] {
       givenNameInitial: _.toLower(member.person.given_name[0]),
       startDate: member.start_date,
       endDate: member.end_date,
-      sourceIds: {}
+      sourceIds: { semanticScholarId: member.person.semantic_scholar_id }
     }
     normedMembers.push(normedMember)
   })

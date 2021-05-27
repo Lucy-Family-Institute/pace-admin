@@ -1,6 +1,7 @@
 import NormedPublication from './normedPublication'
 import NormedPerson from './normedPerson'
 import HarvestSet from './harvestSet'
+import DataSourceConfig from './dataSourceConfig'
 export default interface DataSource {
 
   // return the query passed to scopus for searching for given author

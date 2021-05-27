@@ -1,4 +1,5 @@
 import fs from 'fs'
+import _ from 'lodash'
 
 // Return a parsed JSON Hash object.  The keys are the years, encoded
 // as strings.  The value for each year is an array of strings; Each
@@ -13,6 +14,21 @@ function loadJSONFromFile(filePath) {
   return json
 }
 
+
+function loadDirList (dir) {
+  if (fs.existsSync(dir) && fs.lstatSync(dir).isDirectory()){
+    return _.map(fs.readdirSync(dir), (file) => {
+      return `${dir}/${file}`
+    })
+  }
+}
+
+function isDir (path) {
+  return (fs.existsSync(path) && fs.lstatSync(path).isDirectory())
+}
+
 export { 
-  loadJSONFromFile
+  loadJSONFromFile,
+  loadDirList,
+  isDir
 }
