@@ -69,8 +69,8 @@ endif
 load_authors:
 	cd ingest && ts-node loadAuthors.ts && cd ..
 
-load_name_variances:
-	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
+load_author_attributes:
+	cd ingest && ts-node loadAuthorAttributes.ts && cd ..
 
 ingest_metadata:
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
@@ -99,7 +99,7 @@ migrate:
 	cd hasura && hasura migrate apply && cd ..
 newdb:
 	cd ingest && ts-node loadAuthors.ts && cd ..
-	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
+	cd ingest && ts-node loadAuthorAttributes.ts && cd ..
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
 	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
 	cd ingest && ts-node loadAwards.ts && cd ..
@@ -111,7 +111,7 @@ newdb:
 
 reharvest:
 	cd ingest && ts-node loadAuthors.ts && cd ..
-	cd ingest && ts-node loadAuthorNameVariances.ts && cd ..
+	cd ingest && ts-node loadAuthorAttributes.ts && cd ..
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
 	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
 	cd ingest && ts-node loadAwards.ts && cd ..
@@ -120,6 +120,9 @@ reharvest:
 
 update_crossref_data:
 	cd ingest && ts-node fetchCrossRefAuthorData.ts && cd ..
+
+update_semantic_scholar_data:
+	cd ingest && ts-node fetchSemanticScholarAuthorData.ts && cd ..
 
 update_wos_data:
 	cd ingest && ts-node fetchWoSAuthorData.ts && cd ..

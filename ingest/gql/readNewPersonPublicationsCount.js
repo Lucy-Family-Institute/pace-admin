@@ -1,10 +1,10 @@
 import gql from 'graphql-tag'
 
-export default function readNewPersonPublications (personId, greaterThanPersonPubId, minConfidence) {
+export default function readNewPersonPublicationsCount (id, greaterThanPersonPubId, minConfidence) {
   return {
     query: gql`
       query MyQuery ($person_id: Int!, $greater_than_id: Int!, $min_confidence: float8!){
-        persons_publications(
+        persons_publications_aggregate(
           where: {
             person_id: {_eq: $person_id},
             id: {_gt: $greater_than_id},
@@ -12,19 +12,14 @@ export default function readNewPersonPublications (personId, greaterThanPersonPu
           },
           order_by: {id: asc}
         ) {
-          publication {
-            id
-            title
-            doi
-            source_name
+          aggregate {
+            count(columns: id)
           }
-          confidence,
-          id
         }
       }
     `,
     variables: {
-      person_id: personId,
+      person_id: id,
       greater_than_id: greaterThanPersonPubId,
       min_confidence: minConfidence
     }

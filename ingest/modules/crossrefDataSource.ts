@@ -104,7 +104,7 @@ export class CrossRefDataSource implements DataSource {
 
   // returns an array of normalized publication objects given ones retrieved fron this datasource
   getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): NormedPublication[]{
-    return _.map(sourcePublications, (pub) => {
+    const normedPubs =  _.map(sourcePublications, (pub) => {
       let publicationDate = ''
       if (pub['issued'] && pub['issued']['date-parts'] && pub['issued']['date-parts'][0] && pub['issued']['date-parts'][0][0]) {
         const dateParts = pub['issued']['date-parts'][0]
@@ -119,13 +119,14 @@ export class CrossRefDataSource implements DataSource {
       }
       let normedPub: NormedPublication = {
           title: pub['title'][0],
-          journalTitle: pub['container-title'][0],
+          journalTitle: pub['container-title'] ? pub['container-title'][0] : (pub['short-container-title'] ? pub['short-containter-title'] : ''),
           publicationDate: publicationDate,
           datasourceName: this.dsConfig.sourceName,
           doi: pub['DOI'] ? pub['DOI'] : '',
           sourceId: pub['DOI'] ? pub['DOI'] : '',
           sourceMetadata: pub
       }
+      // console.log(`Setting search person for normed pubs: ${JSON.stringify(searchPerson, null, 2)}`)
       // add optional properties
       if (searchPerson) _.set(normedPub, 'searchPerson', searchPerson)
       // if (pub['abstract']) _.set(normedPub, 'abstract', pub['abstract'])
@@ -142,6 +143,10 @@ export class CrossRefDataSource implements DataSource {
       }
       // console.log(`Created normed pub: ${JSON.stringify(normedPub, null, 2)}`)
       return normedPub
+    })
+
+    return _.filter(normedPubs, (pub) => {
+      return (pub !== undefined && pub !== null)
     })
   }
 

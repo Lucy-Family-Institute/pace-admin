@@ -7,6 +7,7 @@ import HarvestSet from './harvestSet'
 import DataSource from './dataSource'
 import { getDateString, getDateObject } from '../units/dateRange'
 import { wait } from '../units/randomWait';
+import DataSourceConfig from './dataSourceConfig'
 
 export class WosDataSource implements DataSource {
 

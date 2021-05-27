@@ -9,10 +9,14 @@ import readConfidenceTypes from '../gql/readConfidenceTypes'
 import readPersons from '../../client/src/gql/readPersons'
 import readLastPersonPubConfidenceSet from '../gql/readLastPersonPubConfidenceSet'
 import readPersonPublications from '../gql/readPersonPublications'
+import readPersonPublication from '../gql/readPersonPublication'
 import readNewPersonPublications from '../gql/readNewPersonPublications'
+import readNewPersonPublicationsCount from '../gql/readNewPersonPublicationsCount'
+import readPersonPublicationsRange from '../gql/readPersonPublicationsRange'
 import insertConfidenceSets from '../gql/insertConfidenceSets'
 import insertConfidenceSetItems from '../gql/insertConfidenceSetItems'
 import pMap from 'p-map'
+import pTimes from 'p-times'
 import { command as loadCsv } from '../units/loadCsv'
 import { randomWait } from '../units/randomWait'
 const Fuse = require('fuse.js')
@@ -64,15 +68,32 @@ export class CalculateConfidence {
     }
   }
 
-  async getPersonPublications (personId, mostRecentPersonPubId, publicationYear?) {
+  async getPersonPublication(personPubId) {
+    const queryResult = await client.query(readPersonPublication(personPubId))
+    return (queryResult.data.persons_publications.length > 0 ? queryResult.data.persons_publications[0] : undefined)
+  }
+
+  async getPersonPublicationsCount (personId, startPersonPubId, minConfidence=0.0) {
+    const queryResult = await client.query(readNewPersonPublicationsCount(personId, startPersonPubId, minConfidence))
+    return queryResult.data.persons_publications_aggregate.aggregate.count
+  }
+
+  async getPersonPublications (personId, startPersonPubId, minConfidence, publicationYear?) {
+    console.log(`Getting Person Publications for person id: ${personId}`)
     if (publicationYear) {
+      console.log(`Querying for person id: '${personId}' publications by year ${publicationYear}`)
       const queryResult = await client.query(readPersonPublicationsByYear(personId, publicationYear))
+      console.log(`Done querying for person id: '${personId}' publications by year ${publicationYear}`)
       return queryResult.data.persons_publications 
-    } else if (mostRecentPersonPubId===undefined) {
+    } else if (startPersonPubId===undefined) {
+      console.log(`Querying for person id: '${personId}' all publications`)
       const queryResult = await client.query(readPersonPublications(personId))
+      console.log(`Done querying for person id: '${personId}' all publications`)
       return queryResult.data.persons_publications
     } else {
-      const queryResult = await client.query(readNewPersonPublications(personId, mostRecentPersonPubId))
+      console.log(`Querying for person id: '${personId}' all recent publications`)
+      const queryResult = await client.query(readNewPersonPublications(personId, startPersonPubId, minConfidence))
+      console.log(`Done querying for person id: '${personId}' all recent publications`)
       return queryResult.data.persons_publications
     }
   }
@@ -127,7 +148,7 @@ export class CalculateConfidence {
         })
       })
 
-      console.log(`After lowercase ${_.keys(authorLowerPapers[0])}`)
+      // console.log(`After lowercase ${_.keys(authorLowerPapers[0])}`)
 
       const papersByDoi = _.groupBy(authorLowerPapers, function(paper) {
         //strip off 'doi:' if present
@@ -650,52 +671,67 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
 
     console.log('Entering loop 1...')
 
+    const minConfidence = 0.40
+
     await pMap(testAuthors, async (testAuthor) => {
       console.log(`Confidence Test Author is: ${testAuthor['names'][0]['lastName']}, ${testAuthor['names'][0]['firstName']}`)
       // if most recent person pub id is defined, it will not recalculate past confidence sets
-      const personPublications = await this.getPersonPublications(testAuthor['id'], mostRecentPersonPubId, publicationYear)
-      console.log(`Found '${personPublications.length}' new possible pub matches for Test Author: ${testAuthor['names'][0]['lastName']}, ${testAuthor['names'][0]['firstName']}`)
-      console.log(`Entering loop 2 Test Author: ${testAuthor['names'][0]['lastName']}`)
-      await pMap(personPublications, async (personPublication) => {
-        const publicationCsl = JSON.parse(personPublication['publication']['csl_string'])
-        const sourceMetadata = personPublication['publication']['source_metadata']
-        const sourceName = personPublication['publication']['source_name']
-        // console.log(`Source metadata is: ${JSON.stringify(sourceMetadata, null, 2)}`)
-        const passedConfidenceTests = await this.performAuthorConfidenceTests (testAuthor, publicationCsl, confirmedAuthors[personPublication['publication']['doi']], confidenceTypesByRank, sourceName, sourceMetadata)
+      const personPubCount = await this.getPersonPublicationsCount(testAuthor['id'], mostRecentPersonPubId, minConfidence)
+      console.log(`Found '${personPubCount}' new possible pub matches for Test Author: ${testAuthor['names'][0]['lastName']}, ${testAuthor['names'][0]['firstName']}`)
 
-        // returns a new map of rank -> confidenceTestName -> calculatedValue
-        const passedConfidenceTestsWithConf = await this.calculateAuthorConfidence(passedConfidenceTests)
-        // calculate overall total and write the confidence set and comments to the DB
-        let confidenceTotal = 0.0
-        _.mapValues(passedConfidenceTestsWithConf, (confidenceTests, rank) => {
-          _.mapValues(confidenceTests, (confidenceTest) => {
-            confidenceTotal += confidenceTest['confidenceValue']
+      const resultLimit = 1000
+      let numberOfRequests = 1
+      if (personPubCount > resultLimit){
+        numberOfRequests += parseInt(`${personPubCount / resultLimit}`) //convert to an integer to drop any decimal
+      }
+      const thisConf = this
+      await pTimes (numberOfRequests, async function (index) {
+        console.log(`Performing request (${(index+1)} of ${numberOfRequests}) for Test Author: ${testAuthor['names'][0]['lastName']}, ${testAuthor['names'][0]['firstName']}`)
+        const personPublications = await thisConf.getPersonPublications(testAuthor['id'], mostRecentPersonPubId, minConfidence, publicationYear)
+        console.log(`Entering loop 2 Test Author: ${testAuthor['names'][0]['lastName']}`)
+        await pMap(personPublications, async (personPublication) => {
+          // need to load csl one by one since query fails otherwise
+          const currentPersonPublication = await thisConf.getPersonPublication(personPublication['id'])
+          const publicationCsl = JSON.parse(currentPersonPublication['publication']['csl_string'])
+          const sourceMetadata = currentPersonPublication['publication']['source_metadata']
+          const sourceName = currentPersonPublication['publication']['source_name']
+          // console.log(`Source metadata is: ${JSON.stringify(sourceMetadata, null, 2)}`)
+          const passedConfidenceTests = await thisConf.performAuthorConfidenceTests (testAuthor, publicationCsl, confirmedAuthors[personPublication['publication']['doi']], confidenceTypesByRank, sourceName, sourceMetadata)
+
+          // returns a new map of rank -> confidenceTestName -> calculatedValue
+          const passedConfidenceTestsWithConf = await thisConf.calculateAuthorConfidence(passedConfidenceTests)
+          // calculate overall total and write the confidence set and comments to the DB
+          let confidenceTotal = 0.0
+          _.mapValues(passedConfidenceTestsWithConf, (confidenceTests, rank) => {
+            _.mapValues(confidenceTests, (confidenceTest) => {
+              confidenceTotal += confidenceTest['confidenceValue']
+            })
           })
-        })
-        // set ceiling to 99%
-        if (confidenceTotal >= 1.0) confidenceTotal = 0.99
-        // have to do some weird conversion stuff to keep the decimals correct
-        confidenceTotal = Number.parseFloat(confidenceTotal.toFixed(3))
-        //update to current matched authors before proceeding with next tests
-        let publicationAuthorMap = this.getPublicationAuthorMap(publicationCsl)
-        const newTest = {
-          author: testAuthor,
-          confirmedAuthors: confirmedAuthors[personPublication['publication']['doi']],
-          confidenceItems: passedConfidenceTestsWithConf,
-          persons_publications_id: personPublication['id'],
-          doi: personPublication['publication']['doi'],
-          prevConf: personPublication['confidence'],
-          newConf: confidenceTotal
-        };
-        if (confidenceTotal === personPublication['confidence']) {
-          passedTests.push(newTest)
-        } else if (confidenceTotal > personPublication['confidence']) {
-          warningTests.push(newTest)
-        } else {
-          failedTests.push(newTest)
-        }
-      }, {concurrency: 1})
-      console.log(`Exiting loop 2 Test Author: ${testAuthor['names'][0]['lastName']}`)
+          // set ceiling to 99%
+          if (confidenceTotal >= 1.0) confidenceTotal = 0.99
+          // have to do some weird conversion stuff to keep the decimals correct
+          confidenceTotal = Number.parseFloat(confidenceTotal.toFixed(3))
+          //update to current matched authors before proceeding with next tests
+          let publicationAuthorMap = thisConf.getPublicationAuthorMap(publicationCsl)
+          const newTest = {
+            author: testAuthor,
+            confirmedAuthors: confirmedAuthors[personPublication['publication']['doi']],
+            confidenceItems: passedConfidenceTestsWithConf,
+            persons_publications_id: personPublication['id'],
+            doi: personPublication['publication']['doi'],
+            prevConf: personPublication['confidence'],
+            newConf: confidenceTotal
+          };
+          if (confidenceTotal === personPublication['confidence']) {
+            passedTests.push(newTest)
+          } else if (confidenceTotal > personPublication['confidence']) {
+            warningTests.push(newTest)
+          } else {
+            failedTests.push(newTest)
+          }
+        }, {concurrency: 10})
+        console.log(`Exiting loop 2 Test Author: ${testAuthor['names'][0]['lastName']}`)
+      }, { concurrency: 1})
     }, { concurrency: 1 })
 
     console.log('Exited loop 1')
