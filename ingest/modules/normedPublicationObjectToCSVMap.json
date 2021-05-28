@@ -18,5 +18,6 @@
   "sourceId": "source_id",
   "sourceMetadata": "source_metadata",
   "journalIssn": "journal_issn",
-  "journalEIssn": "journal_eissn"
+  "journalEIssn": "journal_eissn",
+  "abstract": "abstract"
 }
