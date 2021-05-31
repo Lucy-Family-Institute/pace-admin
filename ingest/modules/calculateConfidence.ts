@@ -671,7 +671,7 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
 
     console.log('Entering loop 1...')
 
-    const minConfidence = 0.40
+    const minConfidence = 0.46
 
     await pMap(testAuthors, async (testAuthor) => {
       console.log(`Confidence Test Author is: ${testAuthor['names'][0]['lastName']}, ${testAuthor['names'][0]['firstName']}`)
@@ -782,11 +782,12 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
           await randomWait(loopCounter)
           loopCounter += 1
           _.each(confidenceTest['confidenceItems'][rank], (confidenceType) => {
-            let obj = {}
-            obj['confidenceset_id'] = confidenceSetId
-            obj['confidence_type_id'] = confidenceType['confidenceTypeId']
-            obj['value'] = confidenceType['confidenceValue']
-            obj['comment'] = confidenceType['confidenceComment']
+            const obj = {
+              'confidenceset_id': confidenceSetId,
+              'confidence_type_id': confidenceType['confidenceTypeId'],
+              'value': confidenceType['confidenceValue'],
+              'comment': confidenceType['confidenceComment']
+            }
             // push the object into the array of rows to insert later
             confidenceSetItems.push(obj)
           })
