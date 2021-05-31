@@ -6,10 +6,6 @@ import fetch from 'node-fetch'
 import pMap from 'p-map'
 import pTimes from 'p-times'
 import readPersonsByYear from '../client/src/gql/readPersonsByYear'
-// import readPublicationsByPersonByConfidence from '../client/src/gql/readPublicationsByPersonByConfidence'
-// import { command as loadCsv } from './units/loadCsv'
-import { split } from 'apollo-link'
-import { fetchByDoi } from './utils/cslParser'
 import { command as writeCsv } from './units/writeCsv'
 import moment from 'moment'
 import dotenv from 'dotenv'
@@ -73,11 +69,14 @@ async function getSimplifiedPersons(year) {
   const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
     return {
       id: person.id,
-      lastName: _.lowerCase(person.family_name),
-      firstInitial: _.lowerCase(person.given_name[0]),
-      firstName: _.lowerCase(person.given_name),
-      startYear: person.start_date,
-      endYear: person.end_date
+      lastName: person.family_name,
+      firstInitial: person.given_name[0],
+      firstName: person.given_name, 
+      lowerLastName: _.lowerCase(person.family_name),
+      lowerFirstInitial: _.lowerCase(person.given_name[0]),
+      lowerFirstName: _.lowerCase(person.given_name),
+      startDate: person.start_date,
+      endDate: person.end_date
     }
   })
   return simplifiedPersons
@@ -95,13 +94,11 @@ async function getScopusAuthorPapers(person, year, scopusAffiliationId) {
     let totalResults = 0
 
     //get first page of results, do with first initial for now
-    const authorSearchResult = await getScopusAuthorData(person.firstInitial, person.lastName, year, scopusAffiliationId, pageSize, offset)
-    //console.log(`Author Search Result first page: ${JSON.stringify(authorSearchResult,null,2)}`)
+    const authorSearchResult = await getScopusAuthorData(person.lowerFirstInitial, person.lowerLastName, year, scopusAffiliationId, pageSize, offset)
     if (authorSearchResult && authorSearchResult['search-results']['opensearch:totalResults']){
       totalResults = parseInt(authorSearchResult['search-results']['opensearch:totalResults'])
       console.log(`Author Search Result Total Results: ${totalResults}`)
       if (totalResults > 0 && authorSearchResult['search-results']['entry']){
-        //console.log(`Author ${person.lastName}, ${person.firstName} adding ${authorSearchResult['search-results']['entry'].length} results`)
         searchPageResults.push(authorSearchResult['search-results']['entry'])
         if (totalResults > pageSize){
           let numberOfRequests = parseInt(`${totalResults / pageSize}`) //convert to an integer to drop any decimal
@@ -118,10 +115,9 @@ async function getScopusAuthorPapers(person, year, scopusAffiliationId) {
             } else {
               offset += totalResults - offset
             }
-            const authorSearchResultNext = await getScopusAuthorData(person.firstInitial, person.lastName, year, scopusAffiliationId, pageSize, offset)
+            const authorSearchResultNext = await getScopusAuthorData(person.lowerFirstInitial, person.lowerLastName, year, scopusAffiliationId, pageSize, offset)
 
             if (authorSearchResultNext['search-results']['entry']) {
-              //console.log(`Getting Author Search Result page ${index+2}: ${authorSearchResultNext['search-results']['entry'].length} objects`)
               searchPageResults.push(authorSearchResultNext['search-results']['entry'])
             }
           }, { concurrency: 3})
@@ -149,17 +145,27 @@ async function getScopusAuthorPapers(person, year, scopusAffiliationId) {
 // 'year', 'title', 'journal', 'doi', 'scopus_id', 'scopus_record'
 //
 // scopus_record is the original json object
-async function getSimplifliedScopusPapers(scopusPapers, simplifiedPerson){
+async function getSimplifliedScopusPapers(scopusPapers, simplifiedPerson, scopusAffiliationId, query){
   return _.map(scopusPapers, (paper) => {
     return {
-      search_family_name : simplifiedPerson.lastName,
-      search_given_name : simplifiedPerson.firstInitial,
+      search_person_id : simplifiedPerson.id,
+      search_person_family_name : simplifiedPerson.lastName,
+      search_person_given_name : simplifiedPerson.firstName,
+      search_person_given_name_initial: simplifiedPerson.firstInitial,
+      search_person_start_date: `${simplifiedPerson.startDate}`,
+      search_person_end_date: `${(simplifiedPerson.endDate ? simplifiedPerson.endDate : '')}`,
+      search_person_source_ids_scopus_affiliation_id: scopusAffiliationId,
+      search_query: query, 
       publication_year: paper['prism:coverDate'],
       title: paper['dc:title'],
       journal: paper['prism:publicationName'],
+      journal_issn: paper['prism:issn'],
+      journal_eissn: paper['prism:eIssn'],
+      publication_date: paper['prism:coverDate'],
       doi: paper['prism:doi'] ? paper['prism:doi'] : '',
-      scopus_id: _.replace(paper['dc:identifier'], 'SCOPUS_ID:', ''),
-      scopus_record : paper
+      source_id: _.replace(paper['dc:identifier'], 'SCOPUS_ID:', ''),
+      source_metadata: paper,
+      source_name: 'Scopus'
     }
   })
 }
@@ -171,11 +177,6 @@ async function main (): Promise<void> {
   await pMap(years, async (year) => {
     const simplifiedPersons = await getSimplifiedPersons(year)
     console.log(`Simplified persons for ${year} are: ${JSON.stringify(simplifiedPersons,null,2)}`)
-
-    //create map of last name to array of related persons with same last name
-    // const personMap = _.transform(simplifiedPersons, function (result, value) {
-    //   (result[value.lastName] || (result[value.lastName] = [])).push(value)
-    // }, {})
 
     console.log(`Loading ${year} Publication Data`)
     //load data from scopus
@@ -195,12 +196,11 @@ async function main (): Promise<void> {
         randomWait(personCounter)
 
         const authorPapers = await getScopusAuthorPapers(person, year, scopusAffiliationId)
-        //console.log(`Author Papers Found for ${person.lastName}, ${person.firstName}: ${JSON.stringify(authorPapers,null,2)}`)
         console.log(`Author papers total for ${person.lastName}, ${person.firstName}: ${JSON.stringify(_.keys(authorPapers).length,null,2)}`)
 
         //get simplified scopus papers
-        const simplifiedAuthorPapers = await getSimplifliedScopusPapers(authorPapers, person)
-        //console.log(`Simplified Scopus Author ${person.lastName}, ${person.firstName} Papers: ${JSON.stringify(simplifiedAuthorPapers,null,2)}`)
+        const authorQuery = "AUTHFIRST("+ person.lowerFirstInitial +") and AUTHLASTNAME("+ person.lowerLastName+") and AF-ID(" + scopusAffiliationId + ")"
+        const simplifiedAuthorPapers = await getSimplifliedScopusPapers(authorPapers, person, scopusAffiliationId, authorQuery)
 
         //push in whole array for now and flatten later
         succeededScopusPapers.push(simplifiedAuthorPapers)
@@ -215,12 +215,11 @@ async function main (): Promise<void> {
 
     //flatten out succeedScopusPaperArray for data for csv and change scopus json object to string
     const outputScopusPapers = _.map(_.flatten(succeededScopusPapers), paper => {
-      paper['scopus_record'] = JSON.stringify(paper['scopus_record'])
+      paper['source_metadata'] = JSON.stringify(paper['source_metadata'])
       return paper
     })
 
     //write data out to csv
-    //console.log(outputScopusPapers)
     await writeCsv({
       path: `../data/scopus.${year}.${moment().format('YYYYMMDDHHmmss')}.csv`,
       data: outputScopusPapers,
@@ -229,6 +228,5 @@ async function main (): Promise<void> {
     console.log(`Get error messages: ${JSON.stringify(failedScopusPapers,null,2)}`)
 
   }, { concurrency: 1 })
-  }
-
+}
   main();

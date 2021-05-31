@@ -1,27 +1,24 @@
 import axios from 'axios'
-import _ from 'lodash'
-import { ApolloClient, MutationOptions } from 'apollo-client'
+import _, { lte } from 'lodash'
+import { ApolloClient } from 'apollo-client'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { createHttpLink } from 'apollo-link-http'
 import fetch from 'node-fetch'
-import pEachSeries from 'p-each-series'
-import readUsers from '../client/src/gql/readPersons'
 import insertPublication from './gql/insertPublication'
 import insertPersonPublication from './gql/insertPersonPublication'
 import insertPubAuthor from './gql/insertPubAuthor'
 import { command as loadCsv } from './units/loadCsv'
-import { responsePathAsArray } from 'graphql'
 import Cite from 'citation-js'
 import pMap from 'p-map'
-import { command as nameParser } from './units/nameParser'
 import humanparser from 'humanparser'
 import { randomWait } from './units/randomWait'
 import { command as writeCsv } from './units/writeCsv'
+import { isDir, loadDirList } from './units/loadJSONFromFile'
 import moment from 'moment'
 
 import dotenv from 'dotenv'
 import readPublicationsByDoi from './gql/readPublicationsByDoi'
-import readPersonPublicationsByDoi from './gql/readPersonPublicationsByDoi'
+
 import { getAllSimplifiedPersons } from './modules/queryNormalizedPeople'
 import { CalculateConfidence } from './modules/calculateConfidence'
 // import insertReview from '../client/src/gql/insertReview'
@@ -33,6 +30,7 @@ dotenv.config({
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
 
+// make sure to not be caching results if checking doi more than once
 const client = new ApolloClient({
   link: createHttpLink({
     uri: graphQlEndPoint,
@@ -41,24 +39,13 @@ const client = new ApolloClient({
     },
     fetch: fetch as any
   }),
-  cache: new InMemoryCache()
+  cache: new InMemoryCache(),
+  defaultOptions: {
+    query: {
+      fetchPolicy: 'network-only',
+    },
+  },
 })
-
-// var publicationId= undefined;
-
-// async function getDoiPaperData (doi) {
-//   const result = await axios({
-//       method: 'get',
-//       url: `http://dx.doi.org/${doi}`,
-
-//       headers: {
-//         //get result in csl-json format
-//         'Accept': 'application/citeproc+json'
-//       }
-//   })
-
-//   return result.data;
-// }
 
 function getPublicationYear (csl) : Number {
   // look for both online and print dates, and make newer date win if different
@@ -117,11 +104,9 @@ async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName
       //for now convert csl json object to a string when storing in DB
       insertPublication ([publication])
     )
-    //console.log(`Insert mutate pub result ${JSON.stringify(mutatePubResult.data,null,2)}`)
     const publicationId = 0+parseInt(`${ mutatePubResult.data.insert_publications.returning[0].id }`);
     // console.log(`Added publication with id: ${ publicationId }`)
 
-    //console.log(`Pub Id: ${publicationId} Adding ${authorMap.firstAuthors.length + authorMap.otherAuthors.length} total authors`)
     const insertAuthors = _.map(authors, (author) => {
       return {
         publication_id: publicationId,
@@ -132,7 +117,6 @@ async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName
     })
 
     try {
-      //console.log(`publication id: ${ publicationId } inserting first author: ${ JSON.stringify(firstAuthor) }`)
       const mutateFirstAuthorResult = await client.mutate(
         insertPubAuthor(insertAuthors)
       )
@@ -157,8 +141,6 @@ async function getPapersByDoi (csvPath: string) {
      path: csvPath
     })
 
-    //console.log(`Getting Keys for author papers`)
-
     //normalize column names to all lowercase
     const authorLowerPapers = _.mapValues(authorPapers, function (paper) {
       return _.mapKeys(paper, function (value, key) {
@@ -166,11 +148,10 @@ async function getPapersByDoi (csvPath: string) {
       })
     })
 
-    console.log(`After lowercase ${_.keys(authorLowerPapers[0])}`)
+    // console.log(`After lowercase ${_.keys(authorLowerPapers[0])}`)
 
     const papersByDoi = _.groupBy(authorLowerPapers, function(paper) {
       //strip off 'doi:' if present
-      //console.log('in loop')
       return _.replace(paper['doi'], 'doi:', '')
     })
     //console.log('Finished load')
@@ -183,7 +164,6 @@ async function getPapersByDoi (csvPath: string) {
 
 async function getConfirmedAuthorsByDoi (papersByDoi, csvColumn :string) {
   const confirmedAuthorsByDoi = _.mapValues(papersByDoi, function (papers) {
-    //console.log(`Parsing names from papers ${JSON.stringify(papers,null,2)}`)
     return _.mapValues(papers, function (paper) {
       const unparsedName = paper[csvColumn]
       //console.log(`Parsing name: ${unparsedName}`)
@@ -235,21 +215,17 @@ async function getCSLAuthors(paperCsl){
   }
 
   let authorCount = 0
-  //console.log(`Before author loop paper csl: ${JSON.stringify(paperCsl,null,2)}`)
   _.each(paperCsl.author, async (author) => {
     // skip if family_name undefined
     if (author.family != undefined){
-      //console.log(`Adding author ${JSON.stringify(author,null,2)}`)
       authorCount += 1
 
       //if given name empty change to empty string instead of null, so that insert completes
       if (author.given === undefined) author.given = ''
 
       if (_.lowerCase(author.sequence) === 'first' ) {
-        //console.log(`found first author ${ JSON.stringify(author) }`)
         authMap.firstAuthors.push(author)
       } else {
-        //console.log(`found add\'l author ${ JSON.stringify(author) }`)
         authMap.otherAuthors.push(author)
       }
     }
@@ -267,7 +243,6 @@ async function getCSLAuthors(paperCsl){
   //concat author arrays together
   const authors = _.concat(authMap.firstAuthors, authMap.otherAuthors)
 
-  //console.log(`Author Map found: ${JSON.stringify(authMap,null,2)}`)
   return authors
 }
 
@@ -279,7 +254,7 @@ interface MatchedPerson {
 // author map assumed to be doi mapped to two arrays: first authors and other authors
 // returns a map of person ids to the person object and confidence value for any persons that matched coauthor attributes
 // example: {1: {person: simplepersonObject, confidence: 0.5}, 51: {person: simplepersonObject, confidence: 0.8}}
-async function matchPeopleToPaperAuthors(publicationCSL, simplifiedPersons, personMap, authors, confirmedAuthors, sourceName) : Promise<Map<number,MatchedPerson>> {
+async function matchPeopleToPaperAuthors(publicationCSL, simplifiedPersons, personMap, authors, confirmedAuthors, sourceName, minConfidence?) : Promise<Map<number,MatchedPerson>> {
 
   const calculateConfidence: CalculateConfidence = new CalculateConfidence()
   //match to last name
@@ -291,7 +266,7 @@ async function matchPeopleToPaperAuthors(publicationCSL, simplifiedPersons, pers
     
      //console.log(`Testing Author for match: ${author.family}, ${author.given}`)
 
-      const passedConfidenceTests = await calculateConfidence.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank)
+      const passedConfidenceTests = await calculateConfidence.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank, sourceName)
       // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
       // returns a new map of rank -> confidenceTestName -> calculatedValue
       const passedConfidenceTestsWithConf = await calculateConfidence.calculateAuthorConfidence(passedConfidenceTests)
@@ -308,13 +283,13 @@ async function matchPeopleToPaperAuthors(publicationCSL, simplifiedPersons, pers
       confidenceTotal = Number.parseFloat(confidenceTotal.toFixed(3))
       // console.log(`passed confidence tests are: ${JSON.stringify(passedConfidenceTestsWithConf, null, 2)}`)
       //check if persons last name in author list, if so mark a match
-          //add person to map with confidence value > 0
-        if (confidenceTotal > 0) {
-          // console.log(`Match found for Author: ${author.family}, ${author.given}`)
-          let matchedPerson: MatchedPerson = { 'person': person, 'confidence': confidenceTotal }
-          matchedPersonMap[person['id']] = matchedPerson
-          //console.log(`After add matched persons map is: ${JSON.stringify(matchedPersonMap,null,2)}`)
-        }
+      //add person to map with confidence value > 0
+      if (confidenceTotal > 0 && (!minConfidence || confidenceTotal >= minConfidence)) {
+        // console.log(`Match found for Author: ${author.family}, ${author.given}`)
+        let matchedPerson: MatchedPerson = { 'person': person, 'confidence': confidenceTotal }
+        matchedPersonMap[person['id']] = matchedPerson
+        //console.log(`After add matched persons map is: ${JSON.stringify(matchedPersonMap,null,2)}`)
+      }
    }, { concurrency: 1 })
 
    //console.log(`After tests matchedPersonMap is: ${JSON.stringify(matchedPersonMap,null,2)}`)
@@ -332,16 +307,12 @@ async function isPublicationAlreadyInDB (doi, sourceName) : Promise<boolean> {
   return foundPub
 }
 
-async function getPersonPublications (doi: string, personId: number) {
-  const queryResult = await client.query(readPersonPublicationsByDoi(doi, personId))
-  return queryResult.data.persons_publications_metadata
-}
-
 interface DoiStatus {
   addedDOIs: Array<string>;
   skippedDOIs: Array<string>;
   failedDOIs: Array<string>;
   errorMessages: Array<string>;
+  combinedFailedRecords: {}
 }
 
 function lessThanMinPublicationYear(paper, doi, minPublicationYear) {
@@ -394,9 +365,11 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
     addedDOIs: [],
     skippedDOIs: [],
     failedDOIs: [],
-    errorMessages: []
+    errorMessages: [],
+    combinedFailedRecords: {}
   }
   try {
+    const minConfidence = 0.40
     const calculateConfidence: CalculateConfidence = new CalculateConfidence()
     // get the set of persons to test
     const testAuthors = await calculateConfidence.getAllSimplifiedPersons()
@@ -434,9 +407,9 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
           return paper['bibtex']
         })
       })
-      console.log(`Confirmed Authors By Doi are: ${JSON.stringify(confirmedAuthorsByDoi,null,2)}`)
-      console.log(`Confirmed Authors By Doi author list are: ${JSON.stringify(confirmedAuthorsByDoiAuthorList,null,2)}`)
-      console.log(`Confirmed Authors BibText By Doi is: ${JSON.stringify(bibTexByDoi,null,2)}`)
+      // console.log(`Confirmed Authors By Doi are: ${JSON.stringify(confirmedAuthorsByDoi,null,2)}`)
+      // console.log(`Confirmed Authors By Doi author list are: ${JSON.stringify(confirmedAuthorsByDoiAuthorList,null,2)}`)
+      // console.log(`Confirmed Authors BibText By Doi is: ${JSON.stringify(bibTexByDoi,null,2)}`)
     }
 
     //initalize the doi query and citation engine
@@ -509,10 +482,8 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
         // if at least one author, add the paper, and related personpub objects
         if((csl['type'] === 'article-journal' || csl['type'] === 'article' || csl['type'] === 'paper-conference' || csl['type'] === 'chapter' || csl['type'] === 'book') && csl.title) {
           //push in csl record to jsonb blob
-          //console.log(`Trying to insert for for DOI:${doi}, Title: ${csl.title}`)
 
           //check for SCOPUS
-          //console.log(`Checking paper if from scopus: ${JSON.stringify(papersByDoi[doi],null,2)}`)
           //there may be more than one author match with same paper, and just grab first one
           if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['scopus_record']){
             sourceName = 'Scopus'
@@ -532,7 +503,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
           }
           //match paper authors to people
           //console.log(`Testing for Author Matches for DOI: ${doi}`)
-          const matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthorsByDoi[doi], sourceName)
+          const matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthorsByDoi[doi], sourceName, minConfidence)
           //console.log(`Person to Paper Matches: ${JSON.stringify(matchedPersons,null,2)}`)
 
           if (_.keys(matchedPersons).length > 0){
@@ -581,6 +552,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
                       doiStatus.skippedDOIs.push(doi)
                     } else {
                       doiStatus.failedDOIs.push(doi)
+                      doiStatus.combinedFailedRecords[doi] = paper
                       console.log(errorMessage)
                       doiStatus.errorMessages.push(errorMessage)
                       paper = _.set(paper, 'error', errorMessage)
@@ -608,6 +580,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
                   doiStatus.skippedDOIs.push(doi)
                 } else {
                   doiStatus.failedDOIs.push(doi)
+                  doiStatus.combinedFailedRecords[doi] = paper
                   console.log(errorMessage)
                   doiStatus.errorMessages.push(errorMessage)
                   paper = _.set(paper, 'error', errorMessage)
@@ -617,7 +590,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
             }
           }
         } else {
-          errorMessage = `${doi} and not added to DB because not an article or no title defined in DOI csl record, csl is: ${JSON.stringify(csl, null, 2)}`
+          errorMessage = `${doi} and not added to DB because not an article or no title defined in DOI csl record` //, csl is: ${JSON.stringify(csl, null, 2)}`
           console.log(errorMessage)
           doiStatus.errorMessages.push(errorMessage)
           if (!failedRecords[sourceName]) failedRecords[sourceName] = []
@@ -627,6 +600,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
               doiStatus.skippedDOIs.push(doi)
             } else {
               doiStatus.failedDOIs.push(doi)
+              doiStatus.combinedFailedRecords[doi] = paper
               console.log(errorMessage)
               doiStatus.errorMessages.push(errorMessage)
               paper = _.set(paper, 'error', errorMessage)
@@ -655,6 +629,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
             doiStatus.skippedDOIs.push(doi)
           } else {
             doiStatus.failedDOIs.push(doi)
+            doiStatus.combinedFailedRecords[doi] = paper
             console.log(errorMessage)
             doiStatus.errorMessages.push(errorMessage)
             paper = _.set(paper, 'error', errorMessage)
@@ -664,7 +639,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
         // console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
         // console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
       }
-    }, { concurrency: 5 })
+    }, { concurrency: 20 }) // this needs to be 1 thread for now so no collisions on duplicate pubs in list when checking if already in DB
 
     // // add any reviews as needed
     // console.log('Synchronizing reviews with pre-existing publications...')
@@ -694,6 +669,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
         })
       }, { concurrency: 1 })
     }
+   
     return doiStatus
   } catch (error){
     console.log(`Error on get path ${path}: ${error}`)
@@ -701,31 +677,6 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
     return doiStatus // Returning what has been completed
   }
 }
-
-// async function synchronizeReviews(doi, personId, newPersonPubId) {
-//   // check if the publication is already in the DB
-//   const personPubsInDB = await getPersonPublications(doi, personId)
-//   const reviews = {}
-//   // assume reviews are ordered by datetime desc
-//   _.each(personPubsInDB, (personPub) => {
-//     // console.log(`Person Pub returned for review check is: ${JSON.stringify(personPub, null, 2)}`)
-//     _.each(personPub.reviews_aggregate.nodes, (review) => {
-//       if (!reviews[review.review_organization_value]) {
-//         reviews[review.review_organization_value] = review
-//       }
-//     })
-//   })
-
-//   console.log(`New Person Pub Id is: ${JSON.stringify(newPersonPubId, null, 2)} inserting reviews: ${_.keys(reviews).length}`)
-//   await pMap(_.keys(reviews), async (reviewOrgValue) => {
-//     // insert with same org value and most recent status to get in sync with other pubs in DB
-//     const review = reviews[reviewOrgValue]
-//     // console.log(`Inserting review for New Person Pub Id: ${JSON.stringify(newPersonPubId, null, 2)}`)
-//     const mutateResult = await client.mutate(
-//       insertReview(review.user_id, newPersonPubId, review.review_type, reviewOrgValue)
-//     )
-//   }, { concurrency: 1})
-// }
 
 const getIngestFilePaths = require('./getIngestFilePaths');
 
@@ -738,8 +689,10 @@ const pathsByYear = await getIngestFilePaths('../config/ingestFilePaths.json')
   const simplifiedPersons = await getAllSimplifiedPersons(client)
 
   let doiStatus = new Map()
+  let doiFailed = new Map()
+  let combinedFailed = {}
+
   await pMap(_.keys(pathsByYear), async (year) => {
-    //const simplifiedPersons = await getSimplifiedPersonsByYear(year)
     console.log(`Simplified persons for ${year} are: ${JSON.stringify(simplifiedPersons,null,2)}`)
 
     //create map of last name to array of related persons with same last name
@@ -750,18 +703,40 @@ const pathsByYear = await getIngestFilePaths('../config/ingestFilePaths.json')
     console.log(`Loading ${year} Publication Data`)
     //load data
     await pMap(pathsByYear[year], async (path) => {
-      const doiStatusByYear = await loadPersonPapersFromCSV(personMap, path, year)
-      doiStatus[year] = doiStatusByYear
+      let loadPaths = []
+      if (isDir(path)) {
+        loadPaths = loadDirList(path)
+      } else {
+        loadPaths.push(path)
+      }
+      await pMap(loadPaths, async (filePath) => {
+        const doiStatusByYear = await loadPersonPapersFromCSV(personMap, filePath, year)
+        doiStatus[year] = doiStatusByYear
+        combinedFailed = _.merge(combinedFailed, doiStatusByYear.combinedFailedRecords)
+      }, { concurrency: 1 })
     }, { concurrency: 1})
-  }, { concurrency: 1 })
+  }, { concurrency: 1 }) // these all need to be 1 thread so no collisions on checking if pub already exists if present in multiple files
 
   // console.log(`DOI Status: ${JSON.stringify(doiStatus,null,2)}`)
-  _.each(_.keys(pathsByYear), (year) => {
+  await pMap(_.keys(pathsByYear), async (year) => {
+     // write combined failure results limited to 1 per doi
+     if (combinedFailed && _.keys(combinedFailed).length > 0){
+      const failedCSVFile = `../data/combined_failed.${moment().format('YYYYMMDDHHmmss')}.csv`
+
+      console.log(`Write failed doi's to csv file: ${failedCSVFile}`)
+      // console.log(`Failed records are: ${JSON.stringify(failedRecords[sourceName], null, 2)}`)
+      //write data out to csv
+      await writeCsv({
+        path: failedCSVFile,
+        data: _.values(combinedFailed),
+      })
+
+    }
     console.log(`DOIs errors for year ${year}: ${JSON.stringify(doiStatus[year].errorMessages, null, 2)}`)
     console.log(`DOIs failed: ${doiStatus[year].failedDOIs.length} for year: ${year}`)
     console.log(`DOIs added: ${doiStatus[year].addedDOIs.length} for year: ${year}`)
     console.log(`DOIs skipped: ${doiStatus[year].skippedDOIs.length} for year: ${year}`)
-  })
+  }, { concurrency: 1})
 }
 
 main()

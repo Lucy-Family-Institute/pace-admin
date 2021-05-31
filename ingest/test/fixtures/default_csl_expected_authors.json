@@ -1,0 +1,342 @@
+{
+    "10.1039/c8sc05273e" : [
+        {
+            "given": "Lin",
+            "family": "Zhang",
+            "position": 1,
+            "sequence": "first",
+            "affiliation": [
+                {
+                    "name": "MOE Key Laboratory of Bioinformatics"
+                },
+                {
+                    "name": "Center for Synthetic and Systems Biology"
+                },
+                {
+                    "name": "School of Life Sciences"
+                },
+                {
+                    "name": "Tsinghua University"
+                },
+                {
+                    "name": "Beijing"
+                }
+            ]
+        },
+        {
+            "given": "Hao",
+            "family": "Shen",
+            "position": 2,
+            "sequence": "additional",
+            "affiliation": [
+                {
+                    "name": "Institute for Protein Design"
+                },
+                {
+                    "name": "Department of Biochemistry"
+                },
+                {
+                    "name": "University of Washington"
+                },
+                {
+                    "name": "Seattle"
+                },
+                {
+                    "name": "USA"
+                }
+            ]
+        },
+        {
+            "given": "Yiyi",
+            "family": "Gong",
+            "position": 3,
+            "sequence": "additional",
+            "affiliation": [
+                {
+                    "name": "Central Research Laboratory"
+                },
+                {
+                    "name": "Peking Union Medical College Hospital"
+                },
+                {
+                    "name": "Chinese Academy of Medical Sciences and Peking Union Medical College"
+                },
+                {
+                    "name": "Beijing"
+                },
+                {
+                    "name": "China"
+                }
+            ]
+        },
+        {
+            "given": "Xiaojing",
+            "family": "Pang",
+            "position": 4,
+            "sequence": "additional",
+            "affiliation": [
+                {
+                    "name": "Tsinghua-Peking Center for Life Sciences"
+                },
+                {
+                    "name": "School of Medicine"
+                },
+                {
+                    "name": "Tsinghua University"
+                },
+                {
+                    "name": "Beijing"
+                },
+                {
+                    "name": "China"
+                }
+            ]
+        },
+        {
+            "given": "Meiqi",
+            "family": "Yi",
+            "position": 5,
+            "sequence": "additional",
+            "affiliation": [
+                {
+                    "name": "MOE Key Laboratory of Bioinformatics"
+                },
+                {
+                    "name": "Center for Synthetic and Systems Biology"
+                },
+                {
+                    "name": "School of Life Sciences"
+                },
+                {
+                    "name": "Tsinghua University"
+                },
+                {
+                    "name": "Beijing"
+                }
+            ]
+        },
+        {
+            "given": "Lin",
+            "family": "Guo",
+            "position": 6,
+            "sequence": "additional",
+            "affiliation": [
+                {
+                    "name": "MOE Key Laboratory of Bioinformatics"
+                },
+                {
+                    "name": "Center for Synthetic and Systems Biology"
+                },
+                {
+                    "name": "School of Life Sciences"
+                },
+                {
+                    "name": "Tsinghua University"
+                },
+                {
+                    "name": "Beijing"
+                }
+            ]
+        },
+        {
+            "given": "Jin",
+            "family": "Li",
+            "position": 7,
+            "sequence": "additional",
+            "affiliation": [
+                {
+                    "name": "MOE Key Laboratory of Bioinformatics"
+                },
+                {
+                    "name": "Center for Synthetic and Systems Biology"
+                },
+                {
+                    "name": "School of Life Sciences"
+                },
+                {
+                    "name": "Tsinghua University"
+                },
+                {
+                    "name": "Beijing"
+                }
+            ]
+        },
+        {
+            "given": "Sam",
+            "family": "Arroyo",
+            "position": 8,
+            "sequence": "additional",
+            "affiliation": [
+                {
+                    "name": "Department of Biological Sciences"
+                },
+                {
+                    "name": "University of Notre Dame"
+                },
+                {
+                    "name": "South Bend"
+                },
+                {
+                    "name": "USA"
+                }
+            ]
+        },
+        {
+            "given": "Xin",
+            "family": "Lu",
+            "position": 9,
+            "sequence": "additional",
+            "affiliation": [
+                {
+                    "name": "Department of Biological Sciences"
+                },
+                {
+                    "name": "University of Notre Dame"
+                },
+                {
+                    "name": "South Bend"
+                },
+                {
+                    "name": "USA"
+                }
+            ]
+        },
+        {
+            "given": "Sergey",
+            "family": "Ovchinnikov",
+            "position": 10,
+            "sequence": "additional",
+            "affiliation": [
+                {
+                    "name": "Institute for Protein Design"
+                },
+                {
+                    "name": "Department of Biochemistry"
+                },
+                {
+                    "name": "University of Washington"
+                },
+                {
+                    "name": "Seattle"
+                },
+                {
+                    "name": "USA"
+                }
+            ]
+        },
+        {
+            "given": "Gong",
+            "family": "Cheng",
+            "position": 11,
+            "sequence": "additional",
+            "affiliation": [
+                {
+                    "name": "Tsinghua-Peking Center for Life Sciences"
+                },
+                {
+                    "name": "School of Medicine"
+                },
+                {
+                    "name": "Tsinghua University"
+                },
+                {
+                    "name": "Beijing"
+                },
+                {
+                    "name": "China"
+                }
+            ]
+        },
+        {
+            "given": "Xudong",
+            "family": "Liu",
+            "position": 12,
+            "sequence": "additional",
+            "affiliation": [
+                {
+                    "name": "Central Research Laboratory"
+                },
+                {
+                    "name": "Peking Union Medical College Hospital"
+                },
+                {
+                    "name": "Chinese Academy of Medical Sciences and Peking Union Medical College"
+                },
+                {
+                    "name": "Beijing"
+                },
+                {
+                    "name": "China"
+                }
+            ]
+        },
+        {
+            "given": "Xu",
+            "family": "Jiang",
+            "position": 13,
+            "sequence": "additional",
+            "affiliation": [
+                {
+                    "name": "Central Research Laboratory"
+                },
+                {
+                    "name": "Peking Union Medical College Hospital"
+                },
+                {
+                    "name": "Chinese Academy of Medical Sciences and Peking Union Medical College"
+                },
+                {
+                    "name": "Beijing"
+                },
+                {
+                    "name": "China"
+                }
+            ]
+        },
+        {
+            "given": "Shan",
+            "family": "Feng",
+            "position": 14,
+            "sequence": "additional",
+            "affiliation": [
+                {
+                    "name": "Mass Spectrometry Facility"
+                },
+                {
+                    "name": "Westlake Lake University"
+                },
+                {
+                    "name": "Hangzhou"
+                },
+                {
+                    "name": "China"
+                }
+            ]
+        },
+        {
+            "ORCID": "http://orcid.org/0000-0002-2545-9841",
+            "given": "Haiteng",
+            "family": "Deng",
+            "position": 15,
+            "sequence": "additional",
+            "affiliation": [
+                {
+                    "name": "MOE Key Laboratory of Bioinformatics"
+                },
+                {
+                    "name": "Center for Synthetic and Systems Biology"
+                },
+                {
+                    "name": "School of Life Sciences"
+                },
+                {
+                    "name": "Tsinghua University"
+                },
+                {
+                    "name": "Beijing"
+                }
+            ],
+            "authenticated-orcid": false
+        }
+    ]
+}
