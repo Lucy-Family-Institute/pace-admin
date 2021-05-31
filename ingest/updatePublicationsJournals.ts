@@ -1,10 +1,8 @@
 import { ApolloClient } from 'apollo-client'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { createHttpLink } from 'apollo-link-http'
-import gql from 'graphql-tag'
 import fetch from 'node-fetch'
 import _ from 'lodash'
-import { command as loadCsv } from './units/loadCsv'
 import readJournals from './gql/readJournals'
 import readPublicationsWoutJournal from './gql/readPublicationsWoutJournal'
 import readPublicationsWoutJournalByYear from './gql/readPublicationsWoutJournalByYear'
@@ -43,14 +41,6 @@ const client = new ApolloClient({
   cache: new InMemoryCache()
 })
 
-// remove diacritic characters (used later for fuzzy matching of names)
-function removeSpacesObjectProperities (object, properties) {
-  const newObject = _.clone(object)
-  _.each (properties, (property) => {
-    newObject[property] = removeSpaces(newObject[property])
-  })
-  return newObject
-}
 
 function journalMatchFuzzy (journalTitle, titleKey, journalMap){
   // first normalize the diacritics
@@ -59,7 +49,6 @@ function journalMatchFuzzy (journalTitle, titleKey, journalMap){
   })
   // normalize last name checking against as well
   const testTitle = normalizeString(journalTitle, { removeSpaces: true, skipLower: true })
-  // console.log(`After diacritic switch ${JSON.stringify(nameMap, null, 2)} converted to: ${JSON.stringify(testNameMap, null, 2)}`)
   const lastFuzzy = new Fuse(journalMap, {
     caseSensitive: false,
     shouldSort: true,
@@ -73,7 +62,6 @@ function journalMatchFuzzy (journalTitle, titleKey, journalMap){
   const reducedResults = _.map(journalResults, (result) => {
     return result['item'] ? result['item'] : result
   })
-  // console.log(`For testing: ${testLast} Last name results: ${JSON.stringify(lastNameResults, null, 2)}`)
   return reducedResults
 }
 
@@ -127,9 +115,7 @@ async function main (): Promise<void> {
         'Matches': matchedJournals
       }
       if (matchedJournals.length > 1) {
-        // console.log('here')
         _.each(matchedJournals, (matched) => {
-          // console.log(`Testing ${matched['title']} against ${testTitle}`)
           if (_.lowerCase(matched['title']) === _.lowerCase(testTitle)) {
             matchedInfo['Matches'] = [matched]
           }
@@ -141,10 +127,8 @@ async function main (): Promise<void> {
         }
       } else if (matchedJournals.length <= 0) {
         zeroMatches.push(matchedInfo)
-        // zeroMatches.push(`No Matched journals for publication title - ${publication['title']}, journal - ${testTitle}: ${JSON.stringify(matchedJournals, null, 2)}`)
       } else {
         singleMatches.push(matchedInfo)
-        // singleMatches.push(`Matched journal for publication title - ${publication['title']}, journal - ${testTitle}: ${JSON.stringify(matchedJournals, null, 2)}`)
       }
     }
   }, {concurrency: 60})
@@ -161,7 +145,6 @@ async function main (): Promise<void> {
     await randomWait(loopCounter)
     console.log(`Updating journal of pub ${loopCounter} ${matched['Article']}`)
     const resultUpdatePubJournal = await client.mutate(updatePubJournal(matched['doi'], matched['Matches'][0]['id']))
-    // console.log(`Returned result journal: ${JSON.stringify(resultUpdatePubJournal.data.update_publications.returning, null, 2)}`)
   }, {concurrency: 10})
 }
 

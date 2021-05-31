@@ -31,7 +31,12 @@ const client = new ApolloClient({
     },
     fetch: fetch as any
   }),
-  cache: new InMemoryCache()
+  cache: new InMemoryCache(),
+  defaultOptions: {
+    query: {
+      fetchPolicy: 'network-only',
+    },
+  },
 })
 
 async function getPapersByDoi (csvPath: string) {

@@ -4,6 +4,8 @@ import readCenterMembers from '../../client/src/gql/readCenterMembers'
 import _ from 'lodash'
 import { ApolloClient } from 'apollo-client'
 import { NormalizedCacheObject } from 'apollo-cache-inmemory'
+import NormedPerson from '../modules/normedPerson'
+import { getDateObject } from '../units/dateRange'
 // This set of functions provide common methods for retrieving a
 // SimplifiedPerson.
 
@@ -29,8 +31,26 @@ interface NormedCenterMember {
   startDate: Date
   endDate: Date
   sourceIds: {
-    scopusAffiliationId?: string
+    scopusAffiliationId?: string,
+    semanticScholarId?: string
   }
+}
+
+function mapToNormedPersons(people: Array<any>) : Array<NormedPerson> {
+  const normedPersons = _.map(people, (person) => {
+    let np: NormedPerson = {
+      id: person.id,
+      familyName: _.toLower(person.family_name),
+      givenNameInitial: _.toLower(person.given_name[0]),
+      givenName: _.toLower(person.given_name),
+      startDate: getDateObject(person.start_date),
+      endDate: getDateObject(person.end_date),
+      nameVariances: person.persons_namevariances,
+      sourceIds: { semanticScholarId: person.semantic_scholar_id }
+    }
+    return np
+  })
+  return normedPersons
 }
 
 function mapToSimplifiedPeople(people: Array<any>) : Array<SimplifiedPerson> {
@@ -61,7 +81,7 @@ function mapToCenterMembers(members: Array<any>) : NormedCenterMember[] {
       givenNameInitial: _.toLower(member.person.given_name[0]),
       startDate: member.start_date,
       endDate: member.end_date,
-      sourceIds: {}
+      sourceIds: { semanticScholarId: member.person.semantic_scholar_id }
     }
     normedMembers.push(normedMember)
   })
@@ -85,4 +105,9 @@ export async function getSimplifiedPersonsByYear(year: number, client: ApolloCli
 export async function getAllCenterMembers(client: ApolloClient<NormalizedCacheObject>) : Promise<Array<NormedCenterMember>> {
   const queryResult = await client.query(readCenterMembers())
   return mapToCenterMembers(queryResult.data.persons_organizations)
+}
+
+export async function getAllNormedPersonsByYear (year: number, client: ApolloClient<NormalizedCacheObject>) : Promise<Array<NormedPerson>> {
+  const queryResult = await client.query(readPersonsByYear(year))
+  return mapToNormedPersons(queryResult.data.persons)
 }
