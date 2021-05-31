@@ -312,6 +312,7 @@ interface DoiStatus {
   skippedDOIs: Array<string>;
   failedDOIs: Array<string>;
   errorMessages: Array<string>;
+  combinedFailedRecords: {}
 }
 
 function lessThanMinPublicationYear(paper, doi, minPublicationYear) {
@@ -364,7 +365,8 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
     addedDOIs: [],
     skippedDOIs: [],
     failedDOIs: [],
-    errorMessages: []
+    errorMessages: [],
+    combinedFailedRecords: {}
   }
   try {
     const minConfidence = 0.40
@@ -550,6 +552,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
                       doiStatus.skippedDOIs.push(doi)
                     } else {
                       doiStatus.failedDOIs.push(doi)
+                      doiStatus.combinedFailedRecords[doi] = paper
                       console.log(errorMessage)
                       doiStatus.errorMessages.push(errorMessage)
                       paper = _.set(paper, 'error', errorMessage)
@@ -577,6 +580,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
                   doiStatus.skippedDOIs.push(doi)
                 } else {
                   doiStatus.failedDOIs.push(doi)
+                  doiStatus.combinedFailedRecords[doi] = paper
                   console.log(errorMessage)
                   doiStatus.errorMessages.push(errorMessage)
                   paper = _.set(paper, 'error', errorMessage)
@@ -596,6 +600,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
               doiStatus.skippedDOIs.push(doi)
             } else {
               doiStatus.failedDOIs.push(doi)
+              doiStatus.combinedFailedRecords[doi] = paper
               console.log(errorMessage)
               doiStatus.errorMessages.push(errorMessage)
               paper = _.set(paper, 'error', errorMessage)
@@ -624,6 +629,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
             doiStatus.skippedDOIs.push(doi)
           } else {
             doiStatus.failedDOIs.push(doi)
+            doiStatus.combinedFailedRecords[doi] = paper
             console.log(errorMessage)
             doiStatus.errorMessages.push(errorMessage)
             paper = _.set(paper, 'error', errorMessage)
@@ -663,6 +669,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
         })
       }, { concurrency: 1 })
     }
+   
     return doiStatus
   } catch (error){
     console.log(`Error on get path ${path}: ${error}`)
@@ -682,6 +689,9 @@ const pathsByYear = await getIngestFilePaths('../config/ingestFilePaths.json')
   const simplifiedPersons = await getAllSimplifiedPersons(client)
 
   let doiStatus = new Map()
+  let doiFailed = new Map()
+  let combinedFailed = {}
+
   await pMap(_.keys(pathsByYear), async (year) => {
     console.log(`Simplified persons for ${year} are: ${JSON.stringify(simplifiedPersons,null,2)}`)
 
@@ -702,17 +712,31 @@ const pathsByYear = await getIngestFilePaths('../config/ingestFilePaths.json')
       await pMap(loadPaths, async (filePath) => {
         const doiStatusByYear = await loadPersonPapersFromCSV(personMap, filePath, year)
         doiStatus[year] = doiStatusByYear
+        combinedFailed = _.merge(combinedFailed, doiStatusByYear.combinedFailedRecords)
       }, { concurrency: 1 })
     }, { concurrency: 1})
   }, { concurrency: 1 }) // these all need to be 1 thread so no collisions on checking if pub already exists if present in multiple files
 
   // console.log(`DOI Status: ${JSON.stringify(doiStatus,null,2)}`)
-  _.each(_.keys(pathsByYear), (year) => {
+  await pMap(_.keys(pathsByYear), async (year) => {
+     // write combined failure results limited to 1 per doi
+     if (combinedFailed && _.keys(combinedFailed).length > 0){
+      const failedCSVFile = `../data/combined_failed.${moment().format('YYYYMMDDHHmmss')}.csv`
+
+      console.log(`Write failed doi's to csv file: ${failedCSVFile}`)
+      // console.log(`Failed records are: ${JSON.stringify(failedRecords[sourceName], null, 2)}`)
+      //write data out to csv
+      await writeCsv({
+        path: failedCSVFile,
+        data: _.values(combinedFailed),
+      })
+
+    }
     console.log(`DOIs errors for year ${year}: ${JSON.stringify(doiStatus[year].errorMessages, null, 2)}`)
     console.log(`DOIs failed: ${doiStatus[year].failedDOIs.length} for year: ${year}`)
     console.log(`DOIs added: ${doiStatus[year].addedDOIs.length} for year: ${year}`)
     console.log(`DOIs skipped: ${doiStatus[year].skippedDOIs.length} for year: ${year}`)
-  })
+  }, { concurrency: 1})
 }
 
 main()
