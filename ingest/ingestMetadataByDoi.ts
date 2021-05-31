@@ -30,6 +30,7 @@ dotenv.config({
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
 
+// make sure to not be caching results if checking doi more than once
 const client = new ApolloClient({
   link: createHttpLink({
     uri: graphQlEndPoint,
@@ -38,7 +39,12 @@ const client = new ApolloClient({
     },
     fetch: fetch as any
   }),
-  cache: new InMemoryCache()
+  cache: new InMemoryCache(),
+  defaultOptions: {
+    query: {
+      fetchPolicy: 'network-only',
+    },
+  },
 })
 
 function getPublicationYear (csl) : Number {
@@ -627,7 +633,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
         // console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
         // console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
       }
-    }, { concurrency: 1 }) // this needs to be 1 thread for now so no collisions on duplicate pubs in list when checking if already in DB
+    }, { concurrency: 20 }) // this needs to be 1 thread for now so no collisions on duplicate pubs in list when checking if already in DB
 
     // // add any reviews as needed
     // console.log('Synchronizing reviews with pre-existing publications...')
@@ -698,7 +704,7 @@ const pathsByYear = await getIngestFilePaths('../config/ingestFilePaths.json')
         doiStatus[year] = doiStatusByYear
       }, { concurrency: 1 })
     }, { concurrency: 1})
-  }, { concurrency: 1 })
+  }, { concurrency: 1 }) // these all need to be 1 thread so no collisions on checking if pub already exists if present in multiple files
 
   // console.log(`DOI Status: ${JSON.stringify(doiStatus,null,2)}`)
   _.each(_.keys(pathsByYear), (year) => {
