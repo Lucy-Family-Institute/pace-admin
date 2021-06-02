@@ -33,7 +33,7 @@ const client = new ApolloClient({
 
 async function main (): Promise<void> {
   const authorsWithVariances: any = await loadCsv({
-    path: '../data/researchers_2017-2020_attributes.csv'
+    path: '../data/input/researchers_2017-2020_attributes.csv'
   })
 
   // get the set of persons to add variances to
@@ -51,8 +51,18 @@ async function main (): Promise<void> {
 
   // now add author variances
   const insertAuthorVariances = _.transform(authorsWithVariances, (result, author) => {
-    const nameKey = getNameKey(author['family_name'], author['given_name'])
-    const personId = personMap[getNameKey(author['family_name'], author['given_name'])][0].id
+    let familyNameIndex = -1
+    _.each(_.keys(author), (key, index) => {
+      // console.log(`Key is ${key}, index is: ${index}`)
+      if (key.includes('family_name')) {
+        // console.log(`Setting family index to: ${index}`)
+        familyNameIndex = index
+      }
+    })   
+    const nameKey = getNameKey(author[_.keys(author)[familyNameIndex]], author['given_name'])
+    // console.log(`Person map is: ${JSON.stringify(_.keys(personMap).length, null, 2)}`)
+    // console.log(`Name key is: ${nameKey}`)
+    const personId = personMap[nameKey][0].id
     if (personMap[nameKey]) {
       if (author['semantic_scholar_id']){
         if (!updateSourceIds[personId]){
@@ -61,7 +71,7 @@ async function main (): Promise<void> {
         updateSourceIds[personId]['semanticScholarId'] = author['semantic_scholar_id']
       }
       if (author['name_variances']) {
-        const existingNameVariances = personMap[getNameKey(author['family_name'], author['given_name'])][0].nameVariances
+        const existingNameVariances = personMap[nameKey][0].nameVariances
         const variancesByName = _.mapKeys(existingNameVariances, (variance) => {
           return getNameKey(variance['family_name'], variance['given_name'])
         })
