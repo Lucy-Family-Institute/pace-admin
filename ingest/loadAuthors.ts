@@ -110,24 +110,31 @@ async function insertNewAuthors(newAuthors){
   console.log(`Institution to id map: ${JSON.stringify(institutionNameIdMap, null, 2)}`)
 
   // now add authors
-  const authorsWithIds = _.map(newAuthors, (author) => {
-    console.log(`Working on insert author: ${JSON.stringify(author, null, 2)}`)
-    const obj = _.pick(author, ['family_name', 'given_name', 'email', 'position_title'])
-    if (institutionNameIdMap[author.institution]) {
-      // eslint-disable-next-line 
-      obj["institution_id"] = institutionNameIdMap[author.institution]
+  const authorsWithIds = []
+  _.each(newAuthors, (author) => {
+    // console.log(`Working on insert author: ${JSON.stringify(author, null, 2)}`)
+    // console.log(`Keys are: ${JSON.stringify(_.keys(author), null, 2)}`) 
+    // find family name key index since seems to fail sometimes
+    let familyNameIndex = -1
+    _.each(_.keys(author), (key, index) => {
+      // console.log(`Key is ${key}, index is: ${index}`)
+      if (key.includes('family_name')) {
+        // console.log(`Setting family index to: ${index}`)
+        familyNameIndex = index
+      }
+    })   
+    const obj = {
+      family_name: (familyNameIndex >= 0 ? author[_.keys(author)[familyNameIndex]] : author['family_name']),
+      given_name: author['given_name'],
+      email: author['email'],
+      position_title: author['position_title'],
+      institution_id: institutionNameIdMap[author.institution],
+      start_date: new Date(author.start_date),
+      end_date: new Date(`12/31/${author.end_date}`)
     }
-    if (author.start_date) {
-      // eslint-disable-next-line 
-      obj["start_date"] = new Date(author.start_date)
-    }
-    if (author.end_date) {
-      // eslint-disable-next-line 
-      obj["end_date"] = new Date(`12/31/${author.end_date}`)
-    }
-    return obj
+    authorsWithIds.push(obj)
   })
-  // console.log(`New Authors translated for insert: ${authorsWithIds[0]}`)
+  console.log(`New Authors translated for insert: ${JSON.stringify(authorsWithIds, null, 2)}`)
 
   const resultInsertAuthors = await client.mutate({
     mutation: gql`
@@ -191,7 +198,7 @@ async function main (): Promise<void> {
   const loadCenterMemberPaths = await getIngestFilePaths("../config/centerMemberFilePaths.json")
 
   await pMap(_.keys(loadCenterMemberPaths), async (center) => {
-    await pMap(loadCenterMemberPaths[center], async (filePath) => {
+    await pMap(loadCenterMemberPaths[center], async (filePath: string) => {
       const loadCenterMembers: any = await loadCsv({
         path: filePath
       })
@@ -212,7 +219,15 @@ async function main (): Promise<void> {
       const newAuthors = {}
       
       _.each(loadCenterMembers, (loadMember) => {
-        const authorKey = getNameKey(loadMember['family_name'], loadMember['given_name'])
+        let familyNameIndex = -1
+        _.each(_.keys(loadMember), (key, index) => {
+          // console.log(`Key is ${key}, index is: ${index}`)
+          if (key.includes('family_name')) {
+            // console.log(`Setting family index to: ${index}`)
+            familyNameIndex = index
+          }
+        })   
+        const authorKey = getNameKey(loadMember[_.keys(loadMember)[familyNameIndex]], loadMember['given_name'])
         if (!authorsByName[authorKey]){
           // use key to make sure no duplicates
           newAuthors[authorKey] = loadMember
@@ -239,8 +254,16 @@ async function main (): Promise<void> {
       //// ---- Now insert member entries or update entries if start or end dates have changed ---- ////
 
       // sort into new members and existing member lists, grouped by center name
-      const loadMembersByName = _.mapKeys(loadCenterMembers, (loadMember) => {
-        return getNameKey(loadMember['family_name'], loadMember['given_name'])
+      const loadMembersByName = _.mapKeys(loadCenterMembers, (loadMember, index) => {
+        let familyNameIndex = -1
+        _.each(_.keys(loadMember), (key, index) => {
+          // console.log(`Key is ${key}, index is: ${index}`)
+          if (key.includes('family_name')) {
+            // console.log(`Setting family index to: ${index}`)
+            familyNameIndex = index
+          }
+        })   
+        return  getNameKey(loadMember[_.keys(loadMember)[familyNameIndex]], loadMember['given_name'])
       })
 
       // get existing members in DB
@@ -289,7 +312,7 @@ async function main (): Promise<void> {
       // let currentCenter = center
       _.each(sortedMembers['new'], (nameKey: string) => {
         // console.log(`Authors by name keys are: ${JSON.stringify(_.keys(authorsByName), null, 2)}`)
-        // console.log(`Creating insert member for center ${center} and ${nameKey}`)
+        console.log(`Creating insert member for center ${center} and ${nameKey}`)
         let insertMember = {
           person_id: authorsByName[nameKey].id,
           organization_value: center
