@@ -12,6 +12,7 @@ import readPersonPublications from '../gql/readPersonPublications'
 import readPersonPublication from '../gql/readPersonPublication'
 import readNewPersonPublications from '../gql/readNewPersonPublications'
 import readNewPersonPublicationsCount from '../gql/readNewPersonPublicationsCount'
+import readPersonPublicationsCountByYear from '../gql/readPersonPublicationsCountByYear'
 import readPersonPublicationsRange from '../gql/readPersonPublicationsRange'
 import insertConfidenceSets from '../gql/insertConfidenceSets'
 import insertConfidenceSetItems from '../gql/insertConfidenceSetItems'
@@ -73,9 +74,14 @@ export class CalculateConfidence {
     return (queryResult.data.persons_publications.length > 0 ? queryResult.data.persons_publications[0] : undefined)
   }
 
-  async getPersonPublicationsCount (personId, startPersonPubId, minConfidence=0.0) {
-    const queryResult = await client.query(readNewPersonPublicationsCount(personId, startPersonPubId, minConfidence))
-    return queryResult.data.persons_publications_aggregate.aggregate.count
+  async getPersonPublicationsCount (personId, startPersonPubId, minConfidence=0.0, publicationYear?) {
+    if (publicationYear) {
+      const queryResult = await client.query(readPersonPublicationsCountByYear(personId, publicationYear))
+      return queryResult.data.persons_publications_aggregate.aggregate.count
+    } else {
+      const queryResult = await client.query(readNewPersonPublicationsCount(personId, startPersonPubId, minConfidence))
+      return queryResult.data.persons_publications_aggregate.aggregate.count
+    }
   }
 
   async getPersonPublications (personId, startPersonPubId, minConfidence, publicationYear?) {
@@ -671,7 +677,7 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
 
     console.log('Entering loop 1...')
 
-    const minConfidence = 0.46
+    const minConfidence = 0.45
 
     await pMap(testAuthors, async (testAuthor) => {
       console.log(`Confidence Test Author is: ${testAuthor['names'][0]['lastName']}, ${testAuthor['names'][0]['firstName']}`)

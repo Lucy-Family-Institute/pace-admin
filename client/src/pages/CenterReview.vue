@@ -1390,6 +1390,7 @@ export default {
         personPublication.confidencesets.length > 0) {
         return personPublication.confidencesets[0].value
       } else {
+        console.log(`Warning no confidence set found for person pubication: ${personPublication.id}`)
         return personPublication.confidence
       }
     },
@@ -1548,9 +1549,11 @@ export default {
     },
     getReviewedAuthor (personPublication) {
       const obj = _.clone(personPublication.person)
-      const confidenceset = personPublication.confidencesets[0]
+      const confidenceset = (personPublication.confidencesets && personPublication.confidencesets[0] ? personPublication.confidencesets[0] : undefined)
       if (confidenceset) {
         _.set(obj, 'confidenceset_value', confidenceset['value'])
+      } else {
+        console.log(`Warning no confidence set found for person pubication: ${personPublication.id}`)
       }
       return obj
     },
