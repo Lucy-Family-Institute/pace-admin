@@ -59,7 +59,11 @@ async function main (): Promise<void> {
 
   const semanticScholarDS: SemanticScholarDataSource = new SemanticScholarDataSource(dsConfig)
   const semanticScholarHarvester: Harvester = new Harvester(semanticScholarDS)
+
+  const possibleAuthorIdsPath = '../data/mined_semantic_scholar_ids.20210606222156.csv'
+  const possibleAuthorIdsByPersonId: {} = await semanticScholarDS.loadPossibleAuthorIdsFromCSV(possibleAuthorIdsPath, 'person_id', 'matched_author_author_id')
   
+  console.log(`Possible Author Ids by Person Id: ${JSON.stringify(possibleAuthorIdsByPersonId, null, 2)}`)
   const years = [ 2020 ]
   let succeededPapers = []
   let failedPapers = []
@@ -78,30 +82,6 @@ async function main (): Promise<void> {
 
 
     let personCounter = 0
-
-    // const person: NormedPerson = {
-    //   id: 49,
-    //   familyName: 'Li',
-    //   givenName: 'Jun',
-    //   givenNameInitial: 'J',
-    //   startDate: getDateObject('2017-01-01'),
-    //   endDate: undefined,
-    //   sourceIds: {
-    //     semanticScholarId: '46276642'
-    //   }
-    // }
-
-    // const person2: NormedPerson = {
-    //   id: 2052,
-    //   familyName: 'Taflanidis',
-    //   givenName: 'Alex',
-    //   givenNameInitial: 'A',
-    //   startDate: getDateObject('2020-01-01'),
-    //   endDate: undefined,
-    //   sourceIds: {
-    //     semanticScholarId: '2533688'
-    //   }
-    // }
     
     // const normedPersons: NormedPerson[] = [person, person2]
     const subset = _.chunk(normedPersons, 1)
@@ -110,14 +90,31 @@ async function main (): Promise<void> {
       try {
         personCounter += 1
         const person = persons[0]
-        if (person.sourceIds && person.sourceIds.semanticScholarId) {
+        const personId = person['id']
+        if (person.sourceIds && person.sourceIds.semanticScholarId || possibleAuthorIdsByPersonId[`${personId}`]) {
           console.log(`Getting papers for ${person.familyName}, ${person.givenName}`)
           // run for each name plus name variance, put name variance second in case undefined
           // let searchNames = _.concat([{given_name: person.firstName, family_name: person.lastName }], person.nameVariances)
           // if (person.id === 2052) {
-          await semanticScholarHarvester.harvestToCsv(resultsDir, persons, HarvestOperation.QUERY_BY_AUTHOR_ID, getDateObject(`${year}-01-01`), getDateObject(`${year}-12-31`), `${person.familyName}_${person.givenName}`)
-            // await pMap(searchNames, async (searchName) => {
-          await wait(1500)
+          // do for each possible id
+          let semanticScholarIds = []
+          if (!person.sourceIds) {
+            person.sourceIds = {}
+          }
+          
+          if (person.sourceIds && person.sourceIds.semanticScholarId) {
+            semanticScholarIds.push(person.sourceIds.semanticScholarId)
+          } else if (possibleAuthorIdsByPersonId[`${personId}`]) {
+            semanticScholarIds = _.concat(semanticScholarIds, possibleAuthorIdsByPersonId[`${personId}`])
+          }
+          await pMap(semanticScholarIds, async (scholarId) => {
+            let harvestPerson = _.clone(person)
+            harvestPerson.sourceIds.semanticScholarId = scholarId
+            const harvestPersons = [harvestPerson]
+            await semanticScholarHarvester.harvestToCsv(resultsDir, persons, HarvestOperation.QUERY_BY_AUTHOR_ID, getDateObject(`${year}-01-01`), getDateObject(`${year}-12-31`), `${person.familyName}_${person.givenName}`)
+              // await pMap(searchNames, async (searchName) => {
+            await wait(1500)
+          }, { concurrency: 1})
             
           // }, { concurrency: 1})
           succeededAuthors = _.concat(succeededAuthors, persons)

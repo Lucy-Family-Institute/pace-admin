@@ -6,6 +6,7 @@ import _ from 'lodash'
 import NormedPublication from '../normedPublication'
 import NormedPerson from '../normedPerson'
 import HarvestSet from '../harvestSet'
+import DataSourceConfig from '../dataSourceConfig'
 
 let ds: ScopusDataSource
 let dsConfig: DataSourceConfig

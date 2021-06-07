@@ -551,14 +551,19 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
     }
   }
 
-  async performAuthorConfidenceTests (author, publicationCsl, confirmedAuthors, confidenceTypesByRank, sourceName, sourceMetadata?) {
+  async performAuthorConfidenceTests (author, publicationCsl, confirmedAuthors, confidenceTypesByRank, sourceName, sourceMetadata?, pubAuthorMap?) {
     // array of arrays for each rank sorted 1 to highest number
     // iterate through each group by rank if no matches in one rank, do no execute the next rank
     const sortedRanks = _.sortBy(_.keys(confidenceTypesByRank), (value) => { return value })
     // now just push arrays in order into another array
 
     //update to current matched authors before proceeding with next tests
-    let publicationAuthorMap = this.getPublicationAuthorMap(publicationCsl)
+    let publicationAuthorMap
+    if (pubAuthorMap) {
+      publicationAuthorMap = pubAuthorMap
+    } else {
+      publicationAuthorMap = this.getPublicationAuthorMap(publicationCsl)
+    }
     // initialize map to store passed tests by rank
     let passedConfidenceTests = {}
     let stopTesting = false

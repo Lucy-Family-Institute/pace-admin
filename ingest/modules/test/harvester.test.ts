@@ -115,7 +115,7 @@ beforeAll(async () => {
     // testPersons = await loadPersons(testPersonsFilePath, personPropMap)
     // testPersons = [defaultNormedPerson]
 
-    testPersons = _.chunk(testAllPersons, 5)[0]
+    testPersons = _.chunk(testAllPersons, 2)[0]
 
     testWoSPersons = []
     _.each(testPersons, (person) => {
@@ -206,12 +206,6 @@ test('test Scopus harvester.harvest by author name', async () => {
     })
 })
 
-test('test scopus harvester.harvestToCsv', async () => {
-    await scopusHarvester.harvestToCsv(testPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2019-01-01'))
-})
-
-
-
 //-------------Web of Science Tests
 
 //TODO load in list of people to test against expected results for 2019
@@ -270,10 +264,6 @@ test('test Web of Science harvester.harvest by author name', async () => {
             expect(resultNormedPubsByDoi[doi]['sourceMetadata']).toBeDefined()
         })
     })
-})
-
-test('test Web of Science harvester.harvestToCsv', async () => {
-    await wosHarvester.harvestToCsv(testWoSPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2020-01-01'))
 })
 
 //-------------CrossRef Tests
@@ -337,5 +327,5 @@ test('test CrossRef harvester.harvest by author name', async () => {
 })
 
 test('test CrossRef harvester.harvestToCsv', async () => {
-    await crossrefHarvester.harvestToCsv(testPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2020-01-01'), getDateObject('2020-12-31'))
+    await crossrefHarvester.harvestToCsv('../data/', testPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2020-01-01'), getDateObject('2020-12-31'))
 })
