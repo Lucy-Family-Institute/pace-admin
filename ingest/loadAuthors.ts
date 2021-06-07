@@ -9,7 +9,7 @@ import { getAllSimplifiedPersons, getAllCenterMembers, getNameKey } from './modu
 import readInstitutions from './gql/readInstitutions'
 import updatePersonDates from './gql/updatePersonDates'
 import updateMemberDates from './gql/updateMemberDates'
-import updateMemberStartDate from './gql/updateMemberStartDate'
+import updateMemberStartDateEndDateIsNull from './gql/updateMemberStartDateEndDateIsNull'
 
 import dotenv from 'dotenv'
 import pMap from 'p-map'
@@ -130,7 +130,7 @@ async function insertNewAuthors(newAuthors){
       position_title: author['position_title'],
       institution_id: institutionNameIdMap[author.institution],
       start_date: new Date(author.start_date),
-      end_date: new Date(`12/31/${author.end_date}`)
+      end_date: (author.end_date ? new Date(`12/31/${author.end_date}`) : undefined)
     }
     authorsWithIds.push(obj)
   })
@@ -351,12 +351,13 @@ async function main (): Promise<void> {
         const newStartDate = `${updateMembers[id]['start_date']}-01-01`
         const newEndDate = updateMembers[id]['end_date'] ? `${updateMembers[id]['end_date']}-12-31` : undefined
         if (newEndDate) {
-          const resultUpdateMemberDates = await client.mutate(updateMemberDates(Number.parseInt(`${id}`), new Date(newStartDate), new Date(newEndDate)))
+          console.log(`Updating member with id: ${id}, start date: ${newStartDate} with end date: ${newEndDate}`)
+          const resultUpdateMemberDates = await client.mutate(updateMemberDates(Number.parseInt(`${id}`), new Date(newStartDate), (newEndDate ? new Date(newEndDate) : undefined)))
           updatedCount += resultUpdateMemberDates.data.update_persons_organizations.returning.length
         } else {
-          console.log(`Updating member with id: ${id}, with start date: ${newStartDate}`)
-          const resultUpdateMemberDates = await client.mutate(updateMemberStartDate(Number.parseInt(`${id}`), new Date(newStartDate)))
-          updatedCount += resultUpdateMemberDates.data.update_persons_organizations.returning.length
+          console.log(`Updating member with id: ${id}, with start date: ${newStartDate}, end date: null`)
+          const resultUpdateMemberStartDates = await client.mutate(updateMemberStartDateEndDateIsNull(Number.parseInt(`${id}`), new Date(newStartDate)))
+          updatedCount += resultUpdateMemberStartDates.data.update_persons_organizations.returning.length
         }
       }, { concurrency: 1 })
       console.log(`Center ${center} Updated Members total: ${updatedCount} of ${_.keys(updateMembers).length}`)
