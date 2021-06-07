@@ -160,6 +160,9 @@ scopus_author_data:
 dashboard-ingest:
 	cd dashboard-search && ts-node src/ingest.ts && cd ..
 
+mine_semantic_scholar_ids:
+	cd ingest && ts-node mineSemanticScholarAuthorIds.ts && cd ..
+
 install: install_docker_compose install_hasura_cli install_yarn install_quasar install_js install_ts_node install_typescript
 	echo 'Installing'
 

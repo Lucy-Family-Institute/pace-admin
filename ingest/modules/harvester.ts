@@ -44,15 +44,15 @@ export class Harvester {
         if (dateRangesOverlapping(person.startDate, person.endDate, searchStartDate, searchEndDate)) {
           // harvest for each name variance
           const nameVariances = (person.nameVariances ? person.nameVariances : [])
-          const normedNameVariances = _.map(nameVariances, (variance) => {
-            return {
-              givenName: variance.given_name,
-              familyName: variance.family_name
-            }
-          })
-
-          normedNameVariances.push({ givenName: person.givenName, familyName: person.familyName})
-          
+          let normedNameVariances = [{ givenName: person.givenName, familyName: person.familyName}]
+          if (harvestBy === HarvestOperation.QUERY_BY_AUTHOR_NAME){
+            normedNameVariances = _.concat(normedNameVariances, _.map(nameVariances, (variance) => {
+              return {
+                givenName: variance.given_name,
+                familyName: variance.family_name
+              }
+            }))
+          }          
           await pMap (normedNameVariances, async (name) => {
             const currentHarvestSets: HarvestSet[] = []
             let searchPerson = _.cloneDeep(person)

@@ -1,0 +1,2745 @@
+{
+  "abstract": "Turbot (Scophthalmus maximus) is an important marine fish both in Europe and North China. Although there are plenty of studies on the reproduction of turbot, the complete cytological process of spermatogenesis remains unclear. In this study, we investigated the submicroscopic structure of total 23 types of male germ cells throughout the breeding season, with a relatively complete process of the primary spermatocytes. We found that the spermatid tail formed early at Spermatid II, and there were at least 16 spherical mitochondria in the spermatozoa. The hepatosomatic index (HSI) and gonadosomatic index (GSI) both peaked during the breeding season. Preliminary analysis showed that the vitality of mature sperm was negatively correlated with the proportion of sperm deformity. The serum 3,5,3′-triiodothyronine (T3), 5-hydroxytryptamine (5-HT), testosterone (T), 17α,20β-Dihydroxy-4-pregnen-3-one (17α,20β-DHP), and 17β-estradiol (E2) all increased during the maturity period, with the change of T content most noticeable. Whereas in the testis, an overall high level of 11-ketotestosterone (11-KT) was more remarkable. The expression and localization of androgen receptor (AR) mRNA showed that the AR was highly expressed at the stages of II (15 – 70 g), with a slight rebound at the mature stages [IV(2200 g) to V(2500 g)], whose change was ahead to the changes of T and 11-KT. Fluorescence in situ hybridization (FISH) analysis showed that the AR mainly distributed in but not limited to Sertoli cells. This study represents the most complete overview of the reproductive cycle and spermatogenesis of turbot, which provides an important reference for the reproduction research and the guidance of flatfish breeding.",
+  "arxivId": null,
+  "authors": [
+    {
+      "authorId": "2004650058",
+      "name": "Yifan Liu",
+      "url": "https://www.semanticscholar.org/author/2004650058"
+    },
+    {
+      "authorId": "47362470",
+      "name": "Q. Liu",
+      "url": "https://www.semanticscholar.org/author/47362470"
+    },
+    {
+      "authorId": "1892177",
+      "name": "Shihong Xu",
+      "url": "https://www.semanticscholar.org/author/1892177"
+    },
+    {
+      "authorId": null,
+      "name": "Yanfeng Wang",
+      "url": null
+    },
+    {
+      "authorId": "40530954",
+      "name": "C. Feng",
+      "url": "https://www.semanticscholar.org/author/40530954"
+    },
+    {
+      "authorId": "48504726",
+      "name": "Chunyan Zhao",
+      "url": "https://www.semanticscholar.org/author/48504726"
+    },
+    {
+      "authorId": "91001132",
+      "name": "Z. Song",
+      "url": "https://www.semanticscholar.org/author/91001132"
+    },
+    {
+      "authorId": "46276642",
+      "name": "Junbing Li",
+      "url": "https://www.semanticscholar.org/author/46276642"
+    }
+  ],
+  "citationVelocity": 0,
+  "citations": [],
+  "corpusId": 231544085,
+  "doi": "10.3389/fmars.2020.592880",
+  "fieldsOfStudy": null,
+  "influentialCitationCount": 0,
+  "isOpenAccess": false,
+  "isPublisherLicensed": true,
+  "numCitedBy": 0,
+  "numCiting": 109,
+  "paperId": "28036d3e027f650fde7795021f2621719c7ad1b2",
+  "references": [
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "27944814",
+          "name": "A. Hernandez"
+        }
+      ],
+      "doi": "10.1016/bs.vh.2017.06.005",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "14bf9fd728b633b50a2f802b455c02b3ca1d4339",
+      "title": "Thyroid Hormone Role and Economy in the Developing Testis.",
+      "url": "https://www.semanticscholar.org/paper/14bf9fd728b633b50a2f802b455c02b3ca1d4339",
+      "venue": "Vitamins and hormones",
+      "year": 2018
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "121168522",
+          "name": "Ee-Yung Chung"
+        }
+      ],
+      "doi": "10.1016/j.tice.2007.11.003",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "df72a428de0f1ebe06efbef20cae724dc252b97d",
+      "title": "Ultrastructure of germ cells, the Leydig cells, and Sertoli cells during spermatogenesis in Boleophthalmus pectinirostris (Teleostei, Perciformes, Gobiidae).",
+      "url": "https://www.semanticscholar.org/paper/df72a428de0f1ebe06efbef20cae724dc252b97d",
+      "venue": "Tissue & cell",
+      "year": 2008
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "68991934",
+          "name": "Csaba"
+        },
+        {
+          "authorId": "1962415746",
+          "name": "Csernus"
+        },
+        {
+          "authorId": "1962413788",
+          "name": "Gerendai"
+        }
+      ],
+      "doi": "10.1046/j.1365-2826.1998.00217.x",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "454acb9887cd10b5d1fbc6adc63b7820dce14d64",
+      "title": "Intratesticular Serotonin Affects Steroidogenesis in the Rat Testis",
+      "url": "https://www.semanticscholar.org/paper/454acb9887cd10b5d1fbc6adc63b7820dce14d64",
+      "venue": "Journal of neuroendocrinology",
+      "year": 1998
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "72208582",
+          "name": "Peter Palma"
+        },
+        {
+          "authorId": "3114852",
+          "name": "A. Takemura"
+        },
+        {
+          "authorId": "90997659",
+          "name": "Gardel Xyza S. Libunao"
+        },
+        {
+          "authorId": "79644318",
+          "name": "Joshua Superio"
+        },
+        {
+          "authorId": "1436332303",
+          "name": "E. G. D. Jesus-Ayson"
+        },
+        {
+          "authorId": "16170916",
+          "name": "F. G. Ayson"
+        },
+        {
+          "authorId": "5751298",
+          "name": "J. Nocillado"
+        },
+        {
+          "authorId": "90511728",
+          "name": "L. P. Dennis"
+        },
+        {
+          "authorId": "123784522",
+          "name": "J. Chan"
+        },
+        {
+          "authorId": "145443459",
+          "name": "Truong Quoc Thai"
+        },
+        {
+          "authorId": "4755121",
+          "name": "Nguyễn Hữu Ninh"
+        },
+        {
+          "authorId": "34645285",
+          "name": "A. Elizur"
+        }
+      ],
+      "doi": "10.1016/J.AQUACULTURE.2019.05.001",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "bdf2fde58a5010537cec4fd1042d5ed211a2dccb",
+      "title": "Reproductive development of the threatened giant grouper Epinephelus lanceolatus",
+      "url": "https://www.semanticscholar.org/paper/bdf2fde58a5010537cec4fd1042d5ed211a2dccb",
+      "venue": "",
+      "year": 2019
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "6355339",
+          "name": "S. Ventelä"
+        },
+        {
+          "authorId": "3919960",
+          "name": "J. Toppari"
+        },
+        {
+          "authorId": "5518246",
+          "name": "M. Parvinen"
+        }
+      ],
+      "doi": "10.1091/MBC.E02-10-0647",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "b99ff8cc7608867df6684fff73228c9ecd85b1a2",
+      "title": "Intercellular organelle traffic through cytoplasmic bridges in early spermatids of the rat: mechanisms of haploid gene product sharing.",
+      "url": "https://www.semanticscholar.org/paper/b99ff8cc7608867df6684fff73228c9ecd85b1a2",
+      "venue": "Molecular biology of the cell",
+      "year": 2003
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "46603431",
+          "name": "L. Ribas"
+        },
+        {
+          "authorId": "3503992",
+          "name": "D. Robledo"
+        },
+        {
+          "authorId": "1398156626",
+          "name": "A. Gómez-Tato"
+        },
+        {
+          "authorId": "115064373",
+          "name": "A. Viñas"
+        },
+        {
+          "authorId": "143828432",
+          "name": "P. Martínez"
+        },
+        {
+          "authorId": "4826079",
+          "name": "F. Piferrer"
+        }
+      ],
+      "doi": "10.1016/J.AQUACULTURE.2017.03.032",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "16791c3543ca22b2395fbc11ee0d48abdaae7cc3",
+      "title": "Transcriptomic study of gonadal sex differenciation in turbot (Scophthalmus maximus) using a species-specific microarray enriched with reproduction-related genes",
+      "url": "https://www.semanticscholar.org/paper/16791c3543ca22b2395fbc11ee0d48abdaae7cc3",
+      "venue": "",
+      "year": 2017
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "48207123",
+          "name": "L. Zhou"
+        },
+        {
+          "authorId": "40509099",
+          "name": "Xueying Wang"
+        },
+        {
+          "authorId": "2028762",
+          "name": "Q. Liu"
+        },
+        {
+          "authorId": "1892177",
+          "name": "Shihong Xu"
+        },
+        {
+          "authorId": "47941016",
+          "name": "Haixia Zhao"
+        },
+        {
+          "authorId": "2491932",
+          "name": "Mingming Han"
+        },
+        {
+          "authorId": null,
+          "name": "Yunong Wang"
+        },
+        {
+          "authorId": "34528882",
+          "name": "Z. Song"
+        },
+        {
+          "authorId": "51257708",
+          "name": "J. Li"
+        }
+      ],
+      "doi": "10.1007/s10126-019-09911-z",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "515ef74b159249a9fa55eb92cd555a6417b7f0fe",
+      "title": "Visualization of Turbot (Scophthalmus maximus) Primordial Germ Cells in vivo Using Fluorescent Protein Mediated by the 3′ Untranslated Region of nanos3 or vasa Gene",
+      "url": "https://www.semanticscholar.org/paper/515ef74b159249a9fa55eb92cd555a6417b7f0fe",
+      "venue": "Marine Biotechnology",
+      "year": 2019
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "116186109",
+          "name": "C. Beyer"
+        }
+      ],
+      "doi": null,
+      "intent": [
+        "background"
+      ],
+      "isInfluential": true,
+      "paperId": "092f46e02f0eafd1fc81500f3516dfdd59dee951",
+      "title": "Endocrine control of sexual behavior.",
+      "url": "https://www.semanticscholar.org/paper/092f46e02f0eafd1fc81500f3516dfdd59dee951",
+      "venue": "",
+      "year": 1979
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "144918870",
+          "name": "F. Lin"
+        },
+        {
+          "authorId": "1892177",
+          "name": "Shihong Xu"
+        },
+        {
+          "authorId": "4983605",
+          "name": "D. Ma"
+        },
+        {
+          "authorId": "10699048",
+          "name": "Z. Xiao"
+        },
+        {
+          "authorId": "48504713",
+          "name": "Chunyan Zhao"
+        },
+        {
+          "authorId": "5135844",
+          "name": "Y. Xiao"
+        },
+        {
+          "authorId": "50310960",
+          "name": "Liang Chi"
+        },
+        {
+          "authorId": "2028762",
+          "name": "Q. Liu"
+        },
+        {
+          "authorId": "49299028",
+          "name": "J. Li"
+        }
+      ],
+      "doi": "10.1002/mrd.22120",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "de4e985991dbddc7923cd46f1a43e31b74dea635",
+      "title": "Germ line specific expression of a vasa homologue gene in turbot (Scophthalmus maximus): Evidence for vasa localization at cleavage furrows in euteleostei",
+      "url": "https://www.semanticscholar.org/paper/de4e985991dbddc7923cd46f1a43e31b74dea635",
+      "venue": "Molecular reproduction and development",
+      "year": 2012
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "40632038",
+          "name": "A. Kumar"
+        },
+        {
+          "authorId": "8006967",
+          "name": "K. Dumasia"
+        },
+        {
+          "authorId": "4086187",
+          "name": "Sharvari S. Deshpande"
+        },
+        {
+          "authorId": "41016550",
+          "name": "S. Raut"
+        },
+        {
+          "authorId": "3694862",
+          "name": "N. Balasinor"
+        }
+      ],
+      "doi": "10.1016/j.jsbmb.2018.04.018",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "705dcbd017a6f9646eca723a1b89f87296106512",
+      "title": "Delineating the regulation of estrogen and androgen receptor expression by sex steroids during rat spermatogenesis",
+      "url": "https://www.semanticscholar.org/paper/705dcbd017a6f9646eca723a1b89f87296106512",
+      "venue": "The Journal of Steroid Biochemistry and Molecular Biology",
+      "year": 2018
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "1398823739",
+          "name": "C. da Cruz-Landim"
+        },
+        {
+          "authorId": "16203092",
+          "name": "Fábio Camargo Abdalla"
+        },
+        {
+          "authorId": "1399230899",
+          "name": "M. D. da Cruz-Höfling"
+        }
+      ],
+      "doi": "10.32604/biocell.2003.27.319",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "7dd87eeb62815869355db34b6c48595cea497932",
+      "title": "Morphological study of the spermatogenesis in the teleost Piaractus mesopotamicus.",
+      "url": "https://www.semanticscholar.org/paper/7dd87eeb62815869355db34b6c48595cea497932",
+      "venue": "Biocell : official journal of the Sociedades Latinoamericanas de Microscopia Electronica ... et. al",
+      "year": 2003
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "65805231",
+          "name": "M. Hermida"
+        },
+        {
+          "authorId": "2452412",
+          "name": "C. Bouza"
+        },
+        {
+          "authorId": "143689885",
+          "name": "C. Fernández"
+        },
+        {
+          "authorId": "10352568",
+          "name": "A. Sciara"
+        },
+        {
+          "authorId": "1390098901",
+          "name": "S. T. Rodríguez-Ramilo"
+        },
+        {
+          "authorId": "104222406",
+          "name": "J. Fernández"
+        },
+        {
+          "authorId": "32496567",
+          "name": "P. Martínez"
+        }
+      ],
+      "doi": "10.1016/J.AQUACULTURE.2013.07.040",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "2945b17ec060eae062cb748a40a754b38c525cc9",
+      "title": "Compilation of mapping resources in turbot (Scophthalmus maximus): A new integrated consensus genetic map",
+      "url": "https://www.semanticscholar.org/paper/2945b17ec060eae062cb748a40a754b38c525cc9",
+      "venue": "",
+      "year": 2013
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "34710293",
+          "name": "M. P. Greenbaum"
+        },
+        {
+          "authorId": "5157789",
+          "name": "T. Iwamori"
+        },
+        {
+          "authorId": "4561220",
+          "name": "G. M. Buchold"
+        },
+        {
+          "authorId": "4131824",
+          "name": "M. Matzuk"
+        }
+      ],
+      "doi": "10.1101/cshperspect.a005850",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "cde2e17c78fdc3dec52b01b5b50135dd6df2674e",
+      "title": "Germ cell intercellular bridges.",
+      "url": "https://www.semanticscholar.org/paper/cde2e17c78fdc3dec52b01b5b50135dd6df2674e",
+      "venue": "Cold Spring Harbor perspectives in biology",
+      "year": 2011
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "1401858980",
+          "name": "S. C. Mendis-Handagama"
+        },
+        {
+          "authorId": "14534506",
+          "name": "H. B. Siril Ariyaratne"
+        }
+      ],
+      "doi": null,
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "96be850170bc72b054349c02363edefeca69e9bf",
+      "title": "Leydig cells, thyroid hormones and steroidogenesis.",
+      "url": "https://www.semanticscholar.org/paper/96be850170bc72b054349c02363edefeca69e9bf",
+      "venue": "Indian journal of experimental biology",
+      "year": 2005
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "2050985999",
+          "name": "Björn Hermelink"
+        },
+        {
+          "authorId": "2050170385",
+          "name": "Sven Wuertz"
+        },
+        {
+          "authorId": "2050942039",
+          "name": "Bernhard Rennert"
+        },
+        {
+          "authorId": "2050043808",
+          "name": "W. Kloas"
+        },
+        {
+          "authorId": "145784113",
+          "name": "C. Schulz"
+        }
+      ],
+      "doi": "10.1016/J.AQUACULTURE.2013.02.026",
+      "intent": [
+        "result",
+        "background"
+      ],
+      "isInfluential": true,
+      "paperId": "a4f6619b680851667fc8d8d17825c2ed63fdb85f",
+      "title": "Temperature control of pikeperch (Sander lucioperca) maturation in recirculating aquaculture systems—induction of puberty and course of gametogenesis",
+      "url": "https://www.semanticscholar.org/paper/a4f6619b680851667fc8d8d17825c2ed63fdb85f",
+      "venue": "",
+      "year": 2013
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "4592141",
+          "name": "F. Chauvigné"
+        },
+        {
+          "authorId": "4474351",
+          "name": "J. Parhi"
+        },
+        {
+          "authorId": "49648482",
+          "name": "J. Ollé"
+        },
+        {
+          "authorId": "144449517",
+          "name": "J. Cerdà"
+        }
+      ],
+      "doi": "10.1016/j.cbpa.2017.01.008",
+      "intent": [
+        "result",
+        "background"
+      ],
+      "isInfluential": true,
+      "paperId": "438b738ba30df22bda4018d3c16a65c924650cdb",
+      "title": "Dual estrogenic regulation of the nuclear progestin receptor and spermatogonial renewal during gilthead seabream (Sparus aurata) spermatogenesis.",
+      "url": "https://www.semanticscholar.org/paper/438b738ba30df22bda4018d3c16a65c924650cdb",
+      "venue": "Comparative biochemistry and physiology. Part A, Molecular & integrative physiology",
+      "year": 2017
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "1441210990",
+          "name": "Juan Díaz-Ramos"
+        },
+        {
+          "authorId": "1441208498",
+          "name": "Maribel Flores-Flores"
+        },
+        {
+          "authorId": "4256130",
+          "name": "M. E. Ayala"
+        },
+        {
+          "authorId": "1403637743",
+          "name": "A. Aragón-Martínez"
+        }
+      ],
+      "doi": "10.1080/19396368.2018.1472825",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "58436d5f2d14194b9e2e8f2aabd3ac4616630cc6",
+      "title": "Impaired serotonin communication during juvenile development in rats diminishes adult sperm quality",
+      "url": "https://www.semanticscholar.org/paper/58436d5f2d14194b9e2e8f2aabd3ac4616630cc6",
+      "venue": "Systems biology in reproductive medicine",
+      "year": 2018
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "1728781",
+          "name": "T. Miura"
+        },
+        {
+          "authorId": "47758567",
+          "name": "C. Miura"
+        }
+      ],
+      "doi": "10.1023/B:FISH.0000030522.71779.47",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "a8801fe7a5d931f9375b0c6551c3ad047e6a08c6",
+      "title": "Molecular control mechanisms of fish spermatogenesis",
+      "url": "https://www.semanticscholar.org/paper/a8801fe7a5d931f9375b0c6551c3ad047e6a08c6",
+      "venue": "Fish Physiology and Biochemistry",
+      "year": 2004
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "4105930",
+          "name": "M. Leal"
+        },
+        {
+          "authorId": "27231934",
+          "name": "E. R. Cardoso"
+        },
+        {
+          "authorId": "143823017",
+          "name": "R. Nóbrega"
+        },
+        {
+          "authorId": "4339865",
+          "name": "S. R. Batlouni"
+        },
+        {
+          "authorId": "4761708",
+          "name": "J. Bogerd"
+        },
+        {
+          "authorId": "4518932",
+          "name": "L. França"
+        },
+        {
+          "authorId": "31069226",
+          "name": "R. Schulz"
+        }
+      ],
+      "doi": "10.1095/biolreprod.109.076299",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "d1687c4ac2f93a1ba9910f39fa4e8824e19541d2",
+      "title": "Histological and Stereological Evaluation of Zebrafish (Danio rerio) Spermatogenesis with an Emphasis on Spermatogonial Generations1",
+      "url": "https://www.semanticscholar.org/paper/d1687c4ac2f93a1ba9910f39fa4e8824e19541d2",
+      "venue": "Biology of reproduction",
+      "year": 2009
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "31796882",
+          "name": "M. Siddique"
+        },
+        {
+          "authorId": "6571945",
+          "name": "O. Linhart"
+        },
+        {
+          "authorId": "5685296",
+          "name": "S. Krejszeff"
+        },
+        {
+          "authorId": "3501405",
+          "name": "D. Żarski"
+        },
+        {
+          "authorId": "4344387",
+          "name": "T. Pitcher"
+        },
+        {
+          "authorId": "2265767",
+          "name": "S. N. Politis"
+        },
+        {
+          "authorId": "153715125",
+          "name": "I. Butts"
+        }
+      ],
+      "doi": "10.1016/j.ygcen.2016.07.004",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "5ad32712b9009980bb296341440d36756aa5bb2d",
+      "title": "Paternal identity impacts embryonic development for two species of freshwater fish.",
+      "url": "https://www.semanticscholar.org/paper/5ad32712b9009980bb296341440d36756aa5bb2d",
+      "venue": "General and comparative endocrinology",
+      "year": 2017
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "104604397",
+          "name": "Xiang‐Guo Zhang"
+        }
+      ],
+      "doi": "10.1002/9780470277867.CH10",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "22115032b3221a1eaf6b5111d25bbad5a4ac99c6",
+      "title": "Aquaculture in China",
+      "url": "https://www.semanticscholar.org/paper/22115032b3221a1eaf6b5111d25bbad5a4ac99c6",
+      "venue": "",
+      "year": 2007
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "49542577",
+          "name": "A. Munakata"
+        },
+        {
+          "authorId": "3674032",
+          "name": "M. Kobayashi"
+        }
+      ],
+      "doi": "10.1016/j.ygcen.2009.04.011",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": true,
+      "paperId": "a86aa1c58d171a848ef773ac643c108e51abcac9",
+      "title": "Endocrine control of sexual behavior in teleost fish.",
+      "url": "https://www.semanticscholar.org/paper/a86aa1c58d171a848ef773ac643c108e51abcac9",
+      "venue": "General and comparative endocrinology",
+      "year": 2010
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "4123797",
+          "name": "M. Boj"
+        },
+        {
+          "authorId": "4592141",
+          "name": "F. Chauvigné"
+        },
+        {
+          "authorId": "4396247",
+          "name": "C. Zapater"
+        },
+        {
+          "authorId": "144449517",
+          "name": "J. Cerdà"
+        }
+      ],
+      "doi": "10.1371/journal.pone.0142512",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "92e94c2b7e35cc1dd06c1fbcf73d9befb547d04b",
+      "title": "Gonadotropin-Activated Androgen-Dependent and Independent Pathways Regulate Aquaporin Expression during Teleost (Sparus aurata) Spermatogenesis",
+      "url": "https://www.semanticscholar.org/paper/92e94c2b7e35cc1dd06c1fbcf73d9befb547d04b",
+      "venue": "PloS one",
+      "year": 2015
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "4516893",
+          "name": "M. Lehti"
+        },
+        {
+          "authorId": "38247786",
+          "name": "A. Sironen"
+        }
+      ],
+      "doi": "10.1530/REP-15-0310",
+      "intent": [
+        "result"
+      ],
+      "isInfluential": false,
+      "paperId": "1eb3f97de63344f6831b5d1b1d957c1265988c65",
+      "title": "Formation and function of the manchette and flagellum during spermatogenesis.",
+      "url": "https://www.semanticscholar.org/paper/1eb3f97de63344f6831b5d1b1d957c1265988c65",
+      "venue": "Reproduction",
+      "year": 2016
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "33590024",
+          "name": "A. Scott"
+        },
+        {
+          "authorId": "5311454",
+          "name": "J. Sumpter"
+        },
+        {
+          "authorId": "1398518283",
+          "name": "N. Stacey"
+        }
+      ],
+      "doi": "10.1111/j.1095-8649.2009.02483.x",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "a6b23ca3c81d9427132ed8dab19a0ebc28417cee",
+      "title": "The role of the maturation-inducing steroid, 17,20beta-dihydroxypregn-4-en-3-one, in male fishes: a review.",
+      "url": "https://www.semanticscholar.org/paper/a6b23ca3c81d9427132ed8dab19a0ebc28417cee",
+      "venue": "Journal of fish biology",
+      "year": 2010
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "104737639",
+          "name": "E. Chung"
+        },
+        {
+          "authorId": "102234853",
+          "name": "Y. Yang"
+        },
+        {
+          "authorId": "152481445",
+          "name": "Hee-Woong Kang"
+        },
+        {
+          "authorId": "72530383",
+          "name": "Kiho Choi"
+        },
+        {
+          "authorId": "35578914",
+          "name": "Je-Cheon Jun"
+        },
+        {
+          "authorId": "145580304",
+          "name": "K. Lee"
+        }
+      ],
+      "doi": null,
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "f2c60f896d8abc724b5a2d065981cec38f5f3161",
+      "title": "Ultrastructure of Germ Cells and the Functions of Leydig Cells and Sertoli Cells Associated with Spermatogenesis in Pampus argenteus (Teleostei: Perciformes: Stromateidae)",
+      "url": "https://www.semanticscholar.org/paper/f2c60f896d8abc724b5a2d065981cec38f5f3161",
+      "venue": "",
+      "year": 2010
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "2279924",
+          "name": "J. Tyminski"
+        },
+        {
+          "authorId": "123490262",
+          "name": "James Gelsleichter"
+        },
+        {
+          "authorId": "33160704",
+          "name": "P. Motta"
+        }
+      ],
+      "doi": "10.1016/j.ygcen.2015.08.018",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "f1ea16fa80e4bad8fc0a4c349da1bc417b36b99e",
+      "title": "Androgen receptors in the bonnethead, Sphyrna tiburo: cDNA cloning and tissue-specific expression in the male reproductive tract.",
+      "url": "https://www.semanticscholar.org/paper/f1ea16fa80e4bad8fc0a4c349da1bc417b36b99e",
+      "venue": "General and comparative endocrinology",
+      "year": 2015
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "6006591",
+          "name": "I. Gerendai"
+        },
+        {
+          "authorId": "3976918",
+          "name": "P. Banczerowski"
+        },
+        {
+          "authorId": "3942957",
+          "name": "V. Csernus"
+        },
+        {
+          "authorId": "4270912",
+          "name": "B. Halász"
+        }
+      ],
+      "doi": "10.1016/j.autneu.2006.06.002",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "8a3f95d3bd5c68063cc424bc8e8a2bc25c050bde",
+      "title": "Innervation and serotoninergic receptors of the testis interact with local action of interleukin-1beta on steroidogenesis",
+      "url": "https://www.semanticscholar.org/paper/8a3f95d3bd5c68063cc424bc8e8a2bc25c050bde",
+      "venue": "Autonomic Neuroscience",
+      "year": 2007
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "145259368",
+          "name": "H. Ueda"
+        },
+        {
+          "authorId": "5463400",
+          "name": "A. Kambegawa"
+        },
+        {
+          "authorId": "3176927",
+          "name": "Y. Nagahama"
+        }
+      ],
+      "doi": "10.1016/0016-6480(85)90415-0",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "90cd04eabbc4264012a204dc615a7730a43d6e07",
+      "title": "Involvement of gonadotrophin and steroid hormones in spermiation in the amago salmon, Oncorhynchus rhodurus, and goldfish, Carassius auratus.",
+      "url": "https://www.semanticscholar.org/paper/90cd04eabbc4264012a204dc615a7730a43d6e07",
+      "venue": "General and comparative endocrinology",
+      "year": 1985
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "8684270",
+          "name": "M. S. Wagner"
+        },
+        {
+          "authorId": "3585957",
+          "name": "S. M. Wajner"
+        },
+        {
+          "authorId": "145137300",
+          "name": "A. Maia"
+        }
+      ],
+      "doi": "10.1677/JOE-08-0218",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "06cfc189fdbee766412b4a801d8cf4b010ba6721",
+      "title": "The role of thyroid hormone in testicular development and function.",
+      "url": "https://www.semanticscholar.org/paper/06cfc189fdbee766412b4a801d8cf4b010ba6721",
+      "venue": "The Journal of endocrinology",
+      "year": 2008
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "3694182",
+          "name": "Finn-Arne Weltzien"
+        },
+        {
+          "authorId": "152478642",
+          "name": "G. Taranger"
+        },
+        {
+          "authorId": "4878075",
+          "name": "Ø. Karlsen"
+        },
+        {
+          "authorId": "32347638",
+          "name": "B. Norberg"
+        }
+      ],
+      "doi": "10.1016/S1095-6433(02)00092-2",
+      "intent": [
+        "result",
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "a14adb4fd20798b91aa0e5e3220e7202b1e5aff5",
+      "title": "Spermatogenesis and related plasma androgen levels in Atlantic halibut (Hippoglossus hippoglossus L.).",
+      "url": "https://www.semanticscholar.org/paper/a14adb4fd20798b91aa0e5e3220e7202b1e5aff5",
+      "venue": "Comparative biochemistry and physiology. Part A, Molecular & integrative physiology",
+      "year": 2002
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": null,
+          "name": "Mohamed A. Amer"
+        },
+        {
+          "authorId": null,
+          "name": "Takeshi Miura"
+        },
+        {
+          "authorId": "3714288",
+          "name": "C. Miura"
+        },
+        {
+          "authorId": null,
+          "name": "Kohei Yamauchi"
+        }
+      ],
+      "doi": "10.1095/biolreprod65.4.1057",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "162a89dcd36efbbf2236e0a253d8d1cc5f0c5a20",
+      "title": "Involvement of Sex Steroid Hormones in the Early Stages of Spermatogenesis in Japanese Huchen (Hucho perryi )1",
+      "url": "https://www.semanticscholar.org/paper/162a89dcd36efbbf2236e0a253d8d1cc5f0c5a20",
+      "venue": "Biology of reproduction",
+      "year": 2001
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "49101666",
+          "name": "E. Benini"
+        },
+        {
+          "authorId": "2265767",
+          "name": "S. N. Politis"
+        },
+        {
+          "authorId": "5130828",
+          "name": "Johanna S Kottmann"
+        },
+        {
+          "authorId": "153715125",
+          "name": "I. Butts"
+        },
+        {
+          "authorId": "1402855928",
+          "name": "S. R. Sørensen"
+        },
+        {
+          "authorId": "145150481",
+          "name": "J. Tomkiewicz"
+        }
+      ],
+      "doi": "10.1111/rda.13219",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "cdc5c8636a8f35a56fa0220dc2996ed707261eca",
+      "title": "Effect of parental origin on early life history traits of European eel",
+      "url": "https://www.semanticscholar.org/paper/cdc5c8636a8f35a56fa0220dc2996ed707261eca",
+      "venue": "Reproduction in domestic animals = Zuchthygiene",
+      "year": 2018
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "6894543",
+          "name": "W. Kloas"
+        },
+        {
+          "authorId": "4281074",
+          "name": "R. Urbatzka"
+        },
+        {
+          "authorId": "3383147",
+          "name": "R. Opitz"
+        },
+        {
+          "authorId": "5843384",
+          "name": "S. Wuertz"
+        },
+        {
+          "authorId": "34199076",
+          "name": "Thomas Behrends"
+        },
+        {
+          "authorId": "6009252",
+          "name": "B. Hermelink"
+        },
+        {
+          "authorId": "114311990",
+          "name": "F. Hofmann"
+        },
+        {
+          "authorId": "15149395",
+          "name": "Oana Jagnytsch"
+        },
+        {
+          "authorId": "8412500",
+          "name": "H. Kroupova"
+        },
+        {
+          "authorId": "47437411",
+          "name": "C. Lorenz"
+        },
+        {
+          "authorId": "9748200",
+          "name": "N. Neumann"
+        },
+        {
+          "authorId": "145417447",
+          "name": "C. Pietsch"
+        },
+        {
+          "authorId": "5862526",
+          "name": "A. Trubiroha"
+        },
+        {
+          "authorId": "1402506930",
+          "name": "Christoph Van Ballegooy"
+        },
+        {
+          "authorId": "49648239",
+          "name": "C. Wiedemann"
+        },
+        {
+          "authorId": "6464564",
+          "name": "I. Lutz"
+        }
+      ],
+      "doi": "10.1111/j.1749-6632.2009.04453.x",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "a149487cce4ec7ebbdaf0bf2369b495a7e59e374",
+      "title": "Endocrine Disruption in Aquatic Vertebrates",
+      "url": "https://www.semanticscholar.org/paper/a149487cce4ec7ebbdaf0bf2369b495a7e59e374",
+      "venue": "Annals of the New York Academy of Sciences",
+      "year": 2009
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "4623053",
+          "name": "C. Meston"
+        },
+        {
+          "authorId": "4512381",
+          "name": "B. Gorzalka"
+        }
+      ],
+      "doi": "10.1080/02791072.1992.10471616",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "679ff9bb039111b5a758f846d562e4c85856065e",
+      "title": "Psychoactive drugs and human sexual behavior: the role of serotonergic activity.",
+      "url": "https://www.semanticscholar.org/paper/679ff9bb039111b5a758f846d562e4c85856065e",
+      "venue": "Journal of psychoactive drugs",
+      "year": 1992
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "11542329",
+          "name": "J. Malison"
+        },
+        {
+          "authorId": "20802509",
+          "name": "L. S. Procarione"
+        },
+        {
+          "authorId": "37042654",
+          "name": "T. Barry"
+        },
+        {
+          "authorId": "40079622",
+          "name": "A. Kapuscinski"
+        },
+        {
+          "authorId": "11383494",
+          "name": "T. Kayes"
+        }
+      ],
+      "doi": "10.1007/BF00004330",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "9dc91e5b5bdb1e8707cdd737ce389fb1f33778c3",
+      "title": "Endocrine and gonadal changes during the annual reproductive cycle of the freshwater teleost,Stizostedion vitreum",
+      "url": "https://www.semanticscholar.org/paper/9dc91e5b5bdb1e8707cdd737ce389fb1f33778c3",
+      "venue": "Fish Physiology and Biochemistry",
+      "year": 2004
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "144918870",
+          "name": "F. Lin"
+        },
+        {
+          "authorId": "152996465",
+          "name": "C. Y. Zhao"
+        },
+        {
+          "authorId": "47411329",
+          "name": "S. H. Xu"
+        },
+        {
+          "authorId": "48114667",
+          "name": "D. Y. Ma"
+        },
+        {
+          "authorId": "10699048",
+          "name": "Z. Xiao"
+        },
+        {
+          "authorId": "5135844",
+          "name": "Y. Xiao"
+        },
+        {
+          "authorId": "153250319",
+          "name": "C. A. Xu"
+        },
+        {
+          "authorId": "48873718",
+          "name": "Q. Liu"
+        },
+        {
+          "authorId": "47786729",
+          "name": "J. Li"
+        }
+      ],
+      "doi": "10.1016/j.theriogenology.2013.06.016",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "bd98341b09a30889eff9bf8733ef79b399564bc0",
+      "title": "Germline-specific and sexually dimorphic expression of a dead end gene homologue in turbot (Scophthalmus maximus).",
+      "url": "https://www.semanticscholar.org/paper/bd98341b09a30889eff9bf8733ef79b399564bc0",
+      "venue": "Theriogenology",
+      "year": 2013
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "143611680",
+          "name": "J. Gui"
+        },
+        {
+          "authorId": "33062075",
+          "name": "Q. Tang"
+        },
+        {
+          "authorId": "2774283",
+          "name": "Z. Li"
+        },
+        {
+          "authorId": "8190446",
+          "name": "Jiashou Liu"
+        },
+        {
+          "authorId": "144773284",
+          "name": "S. D. Silva"
+        }
+      ],
+      "doi": "10.1002/9781119120759",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": true,
+      "paperId": "93a1ef59114e54cc4275ee07d31d3af4e9d275dd",
+      "title": "Aquaculture in China: Success Stories and Modern Trends",
+      "url": "https://www.semanticscholar.org/paper/93a1ef59114e54cc4275ee07d31d3af4e9d275dd",
+      "venue": "",
+      "year": 2018
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "46444623",
+          "name": "Y. Lou"
+        },
+        {
+          "authorId": "143827636",
+          "name": "H. Takahashi"
+        }
+      ],
+      "doi": "10.1002/jmor.1052000307",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "30bf2d022cc7cc02d0c8fe23e21d6ddd3a30b53e",
+      "title": "Spermiogenesis in the Nile tilapia Oreochromis niloticus with notes on a unique pattern of nuclear chromatin condensation",
+      "url": "https://www.semanticscholar.org/paper/30bf2d022cc7cc02d0c8fe23e21d6ddd3a30b53e",
+      "venue": "Journal of morphology",
+      "year": 1989
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "4516893",
+          "name": "M. Lehti"
+        },
+        {
+          "authorId": "38247786",
+          "name": "A. Sironen"
+        }
+      ],
+      "doi": "10.1093/biolre/iox096",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "48f23881d22c0a7ebaec1e544ddd1dd8b8b6eed0",
+      "title": "Formation and function of sperm tail structures in association with sperm motility defects†",
+      "url": "https://www.semanticscholar.org/paper/48f23881d22c0a7ebaec1e544ddd1dd8b8b6eed0",
+      "venue": "Biology of Reproduction",
+      "year": 2017
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "8109791",
+          "name": "C. Tubbs"
+        },
+        {
+          "authorId": "145735917",
+          "name": "P. Thomas"
+        }
+      ],
+      "doi": "10.1016/j.steroids.2007.12.022",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "1022fa09995066845c6b94ad50bb6b0352a9160a",
+      "title": "Functional characteristics of membrane progestin receptor alpha (mPRα) subtypes: A review with new data showing mPRα expression in seatrout sperm and its association with sperm motility",
+      "url": "https://www.semanticscholar.org/paper/1022fa09995066845c6b94ad50bb6b0352a9160a",
+      "venue": "Steroids",
+      "year": 2008
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "1770280",
+          "name": "G. Fink"
+        },
+        {
+          "authorId": "1988582",
+          "name": "B. Sumner"
+        },
+        {
+          "authorId": "2389120",
+          "name": "R. Rosie"
+        },
+        {
+          "authorId": "48789290",
+          "name": "H. Wilson"
+        },
+        {
+          "authorId": "39805357",
+          "name": "J. Mcqueen"
+        }
+      ],
+      "doi": "10.1016/S0166-4328(99)00082-0",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "444f9f738b159ea4fac81e872d61dd2d277d9e32",
+      "title": "Androgen actions on central serotonin neurotransmission: relevance for mood, mental state and memory",
+      "url": "https://www.semanticscholar.org/paper/444f9f738b159ea4fac81e872d61dd2d277d9e32",
+      "venue": "Behavioural Brain Research",
+      "year": 1999
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "31069226",
+          "name": "R. Schulz"
+        },
+        {
+          "authorId": "16129209",
+          "name": "Maurice Liemburg"
+        },
+        {
+          "authorId": "1422968034",
+          "name": "Á. García-López"
+        },
+        {
+          "authorId": "18808368",
+          "name": "W. V. Dijk"
+        },
+        {
+          "authorId": "4761708",
+          "name": "J. Bogerd"
+        }
+      ],
+      "doi": "10.1016/j.ygcen.2008.01.002",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "bb421b6afc4a4f4211b017d55c6fcae620071710",
+      "title": "Androgens modulate testicular androgen production in African catfish (Clarias gariepinus) depending on the stage of maturity and type of androgen.",
+      "url": "https://www.semanticscholar.org/paper/bb421b6afc4a4f4211b017d55c6fcae620071710",
+      "venue": "General and comparative endocrinology",
+      "year": 2008
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "1703365",
+          "name": "L. Bernstein"
+        }
+      ],
+      "doi": "10.1126/SCIENCE.193.4250.311-A",
+      "intent": [
+        "result"
+      ],
+      "isInfluential": false,
+      "paperId": "bc5c8ca69ca68635974ef9c08a5ac0cae557d798",
+      "title": "Effects of salinity.",
+      "url": "https://www.semanticscholar.org/paper/bc5c8ca69ca68635974ef9c08a5ac0cae557d798",
+      "venue": "Science",
+      "year": 1976
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "70096426",
+          "name": "B. Borg"
+        }
+      ],
+      "doi": "10.1016/0742-8413(94)00063-G",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "5b1930fd377a823b8226cfe6f5f638874179b29f",
+      "title": "Androgens in teleost fishes",
+      "url": "https://www.semanticscholar.org/paper/5b1930fd377a823b8226cfe6f5f638874179b29f",
+      "venue": "",
+      "year": 1994
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "47120429",
+          "name": "X. Wang"
+        },
+        {
+          "authorId": "2028762",
+          "name": "Q. Liu"
+        },
+        {
+          "authorId": "47411408",
+          "name": "Shihong Xu"
+        },
+        {
+          "authorId": "5135844",
+          "name": "Y. Xiao"
+        },
+        {
+          "authorId": "47904631",
+          "name": "Y. Wang"
+        },
+        {
+          "authorId": "40530954",
+          "name": "C. Feng"
+        },
+        {
+          "authorId": "6529145",
+          "name": "Rui Xue"
+        },
+        {
+          "authorId": "47941016",
+          "name": "Haixia Zhao"
+        },
+        {
+          "authorId": "34528882",
+          "name": "Z. Song"
+        },
+        {
+          "authorId": "39359220",
+          "name": "J. Li"
+        }
+      ],
+      "doi": "10.1038/s41598-018-34149-5",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "a400bff3316c81443e124398882fc66a390c17bd",
+      "title": "Transcriptome Dynamics During Turbot Spermatogenesis Predicting the Potential Key Genes Regulating Male Germ Cell Proliferation and Maturation",
+      "url": "https://www.semanticscholar.org/paper/a400bff3316c81443e124398882fc66a390c17bd",
+      "venue": "Scientific Reports",
+      "year": 2018
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "39762365",
+          "name": "J. Martin"
+        },
+        {
+          "authorId": "34740456",
+          "name": "M. Bertram"
+        },
+        {
+          "authorId": "4081376",
+          "name": "M. Saaristo"
+        },
+        {
+          "authorId": "40760356",
+          "name": "Tiarne E. Ecker"
+        },
+        {
+          "authorId": "79431175",
+          "name": "Stephanie L Hannington"
+        },
+        {
+          "authorId": "122143214",
+          "name": "James L. Tanner"
+        },
+        {
+          "authorId": "5592766",
+          "name": "M. Michelangeli"
+        },
+        {
+          "authorId": "1382489600",
+          "name": "M. O’Bryan"
+        },
+        {
+          "authorId": "7778947",
+          "name": "B. Wong"
+        }
+      ],
+      "doi": "10.1016/j.scitotenv.2018.09.294",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "e4ebd9c42e255f9cd1424ba91ad9d126d3950949",
+      "title": "Impact of the widespread pharmaceutical pollutant fluoxetine on behaviour and sperm traits in a freshwater fish.",
+      "url": "https://www.semanticscholar.org/paper/e4ebd9c42e255f9cd1424ba91ad9d126d3950949",
+      "venue": "The Science of the total environment",
+      "year": 2019
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "4909752",
+          "name": "A. Bani"
+        },
+        {
+          "authorId": "3887264",
+          "name": "A. H. Vayghan"
+        },
+        {
+          "authorId": "2049668348",
+          "name": "MirGhasem NaserAlavi"
+        }
+      ],
+      "doi": "10.1111/ARE.12762",
+      "intent": [
+        "result"
+      ],
+      "isInfluential": false,
+      "paperId": "a9afa5ad5d67ded23f558d941eb1e9f06397786a",
+      "title": "The effects of salinity on reproductive performance and plasma levels of sex steroids in Caspian kutum Rutilus frisii kutum",
+      "url": "https://www.semanticscholar.org/paper/a9afa5ad5d67ded23f558d941eb1e9f06397786a",
+      "venue": "",
+      "year": 2016
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "46428800",
+          "name": "T. Miura"
+        },
+        {
+          "authorId": "46612749",
+          "name": "K. Yamauchi"
+        },
+        {
+          "authorId": "34781421",
+          "name": "H. Takahashi"
+        },
+        {
+          "authorId": "3176927",
+          "name": "Y. Nagahama"
+        }
+      ],
+      "doi": "10.1002/JEZ.1402610316",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "4c100af3744c1881c39b9945b2d801675ea3b716",
+      "title": "The role of hormones in the acquisition of sperm motility in salmonid fish.",
+      "url": "https://www.semanticscholar.org/paper/4c100af3744c1881c39b9945b2d801675ea3b716",
+      "venue": "The Journal of experimental zoology",
+      "year": 1992
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "1401221564",
+          "name": "P. O’Shaughnessy"
+        }
+      ],
+      "doi": "10.1016/j.semcdb.2014.02.010",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "fd457c3007e3f5e60feb466653bf8e31aba82c94",
+      "title": "Hormonal control of germ cell development and spermatogenesis.",
+      "url": "https://www.semanticscholar.org/paper/fd457c3007e3f5e60feb466653bf8e31aba82c94",
+      "venue": "Seminars in cell & developmental biology",
+      "year": 2014
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "4684746",
+          "name": "C. Mylonas"
+        },
+        {
+          "authorId": "6187941",
+          "name": "A. Fostier"
+        },
+        {
+          "authorId": "3978560",
+          "name": "S. Zanuy"
+        }
+      ],
+      "doi": "10.1016/j.ygcen.2009.03.007",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "d4ee50c030b40511dfb234a44f50c51a28667f5f",
+      "title": "Broodstock management and hormonal manipulations of fish reproduction.",
+      "url": "https://www.semanticscholar.org/paper/d4ee50c030b40511dfb234a44f50c51a28667f5f",
+      "venue": "General and comparative endocrinology",
+      "year": 2010
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "1418936560",
+          "name": "A. H. Fallah-Rad"
+        },
+        {
+          "authorId": "145249404",
+          "name": "M. L. Connor"
+        },
+        {
+          "authorId": "10226631",
+          "name": "R. D. Del Vecchio"
+        }
+      ],
+      "doi": "10.1530/REP.0.1210639",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "81cb70f967304efca2fb4692540beb6e55ff9df2",
+      "title": "Effect of transient early hyperthyroidism on onset of puberty in Suffolk ram lambs.",
+      "url": "https://www.semanticscholar.org/paper/81cb70f967304efca2fb4692540beb6e55ff9df2",
+      "venue": "Reproduction",
+      "year": 2001
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "31069226",
+          "name": "R. Schulz"
+        },
+        {
+          "authorId": "5139706",
+          "name": "L. R. de França"
+        },
+        {
+          "authorId": "3534864",
+          "name": "Jean-Jacques Lareyre"
+        },
+        {
+          "authorId": "133962308",
+          "name": "F. Le Gac"
+        },
+        {
+          "authorId": "1399209416",
+          "name": "H. Chiarini-Garcia"
+        },
+        {
+          "authorId": "143823017",
+          "name": "R. Nóbrega"
+        },
+        {
+          "authorId": "1728781",
+          "name": "T. Miura"
+        }
+      ],
+      "doi": "10.1016/j.ygcen.2009.02.013",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": true,
+      "paperId": "818d3347abd2fce15bc6ae82d9918f8c958f159f",
+      "title": "Spermatogenesis in fish.",
+      "url": "https://www.semanticscholar.org/paper/818d3347abd2fce15bc6ae82d9918f8c958f159f",
+      "venue": "General and comparative endocrinology",
+      "year": 2010
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "4285674",
+          "name": "Elizabeth I. Tang"
+        },
+        {
+          "authorId": "3854370",
+          "name": "D. Mruk"
+        },
+        {
+          "authorId": "145875722",
+          "name": "C. Y. Cheng"
+        }
+      ],
+      "doi": "10.1016/j.semcdb.2016.01.004",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "9df5b5ef8ee2ffcd254ca4fa257b000c74c74bdd",
+      "title": "Regulation of microtubule (MT)-based cytoskeleton in the seminiferous epithelium during spermatogenesis.",
+      "url": "https://www.semanticscholar.org/paper/9df5b5ef8ee2ffcd254ca4fa257b000c74c74bdd",
+      "venue": "Seminars in cell & developmental biology",
+      "year": 2016
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "47782492",
+          "name": "Piotr Miciński"
+        },
+        {
+          "authorId": "5915776",
+          "name": "K. Pawlicki"
+        },
+        {
+          "authorId": "39821665",
+          "name": "E. Wielgus"
+        },
+        {
+          "authorId": "3669645",
+          "name": "M. Bochenek"
+        },
+        {
+          "authorId": "6139510",
+          "name": "P. Gogol"
+        },
+        {
+          "authorId": "6214292",
+          "name": "Beata Ficek"
+        }
+      ],
+      "doi": "10.1016/S1642-431X(12)60050-3",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "ddb37c78246836aba6d57c2f7fd1030bd80e749f",
+      "title": "Total reactive antioxidant potential and DNA fragmentation index as fertility sperm parameters.",
+      "url": "https://www.semanticscholar.org/paper/ddb37c78246836aba6d57c2f7fd1030bd80e749f",
+      "venue": "Reproductive biology",
+      "year": 2011
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "8006967",
+          "name": "K. Dumasia"
+        },
+        {
+          "authorId": "40632038",
+          "name": "A. Kumar"
+        },
+        {
+          "authorId": "4086187",
+          "name": "Sharvari S. Deshpande"
+        },
+        {
+          "authorId": "39355312",
+          "name": "Shobha Sonawane"
+        },
+        {
+          "authorId": "3694862",
+          "name": "N. Balasinor"
+        }
+      ],
+      "doi": "10.1016/j.mce.2016.03.024",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "57e5d37e9858da95ef49b058e8062b9e5859145f",
+      "title": "Differential roles of estrogen receptors, ESR1 and ESR2, in adult rat spermatogenesis",
+      "url": "https://www.semanticscholar.org/paper/57e5d37e9858da95ef49b058e8062b9e5859145f",
+      "venue": "Molecular and Cellular Endocrinology",
+      "year": 2016
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "1397083794",
+          "name": "P. de Waal"
+        },
+        {
+          "authorId": "1414201518",
+          "name": "D S Wang"
+        },
+        {
+          "authorId": "1403388217",
+          "name": "W A Nijenhuis"
+        },
+        {
+          "authorId": "31069226",
+          "name": "R. Schulz"
+        },
+        {
+          "authorId": "4761708",
+          "name": "J. Bogerd"
+        }
+      ],
+      "doi": "10.1530/REP-08-0055",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "e8de6d6103c8a15448c66d021418a7cccb7e028b",
+      "title": "Functional characterization and expression analysis of the androgen receptor in zebrafish (Danio rerio) testis.",
+      "url": "https://www.semanticscholar.org/paper/e8de6d6103c8a15448c66d021418a7cccb7e028b",
+      "venue": "Reproduction",
+      "year": 2008
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "4214729",
+          "name": "Jiyeon Hyeon"
+        },
+        {
+          "authorId": "88576191",
+          "name": "Sung-Pyo Hur"
+        },
+        {
+          "authorId": "7412275",
+          "name": "Byeong-Hoon Kim"
+        },
+        {
+          "authorId": "90597510",
+          "name": "Jun-Hwan Byun"
+        },
+        {
+          "authorId": "121855793",
+          "name": "Eun-Su Kim"
+        },
+        {
+          "authorId": "88463917",
+          "name": "B. Lim"
+        },
+        {
+          "authorId": "27969079",
+          "name": "Bae-Ik Lee"
+        },
+        {
+          "authorId": "1455997658",
+          "name": "S. Kim"
+        },
+        {
+          "authorId": "3114852",
+          "name": "A. Takemura"
+        },
+        {
+          "authorId": "8364407",
+          "name": "S. Kim"
+        }
+      ],
+      "doi": "10.3390/cells8040310",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "b9e72c14f4eb460f27e593272411da713317c0c9",
+      "title": "Involvement of Estrogen and Its Receptors in Morphological Changes in the Eyes of the Japanese Eel, Anguilla japonica, in the Process of Artificially-Induced Maturation",
+      "url": "https://www.semanticscholar.org/paper/b9e72c14f4eb460f27e593272411da713317c0c9",
+      "venue": "Cells",
+      "year": 2019
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "1728781",
+          "name": "T. Miura"
+        },
+        {
+          "authorId": "50510386",
+          "name": "M. Higuchi"
+        },
+        {
+          "authorId": "47230970",
+          "name": "Y. Ozaki"
+        },
+        {
+          "authorId": "2054097003",
+          "name": "T. Ohta"
+        },
+        {
+          "authorId": "144207640",
+          "name": "C. Miura"
+        }
+      ],
+      "doi": "10.1073/PNAS.0508419103",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "7d15358aa663481b3d7fac773a5a46dfa6dafb42",
+      "title": "Progestin is an essential factor for the initiation of the meiosis in spermatogenetic cells of the eel.",
+      "url": "https://www.semanticscholar.org/paper/7d15358aa663481b3d7fac773a5a46dfa6dafb42",
+      "venue": "Proceedings of the National Academy of Sciences of the United States of America",
+      "year": 2006
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "39650431",
+          "name": "S. X. Chen"
+        },
+        {
+          "authorId": "4761708",
+          "name": "J. Bogerd"
+        },
+        {
+          "authorId": "1396155694",
+          "name": "Natasja E Schoonen"
+        },
+        {
+          "authorId": "50381816",
+          "name": "J. Martijn"
+        },
+        {
+          "authorId": "114936104",
+          "name": "Paul P de Waal"
+        },
+        {
+          "authorId": "31069226",
+          "name": "R. Schulz"
+        }
+      ],
+      "doi": "10.1016/j.ygcen.2013.01.005",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": true,
+      "paperId": "4fef2f8c2b6e258add7cffc77f8c2c794ede0e83",
+      "title": "A progestin (17α,20β-dihydroxy-4-pregnen-3-one) stimulates early stages of spermatogenesis in zebrafish.",
+      "url": "https://www.semanticscholar.org/paper/4fef2f8c2b6e258add7cffc77f8c2c794ede0e83",
+      "venue": "General and comparative endocrinology",
+      "year": 2013
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "4592141",
+          "name": "F. Chauvigné"
+        },
+        {
+          "authorId": "4396247",
+          "name": "C. Zapater"
+        },
+        {
+          "authorId": "5262671",
+          "name": "J. M. Gasol"
+        },
+        {
+          "authorId": "144449517",
+          "name": "J. Cerdà"
+        }
+      ],
+      "doi": "10.1073/pnas.1317838111",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "c565908f010921936b69b8ec67ea8c264ed2868f",
+      "title": "Germ-line activation of the luteinizing hormone receptor directly drives spermiogenesis in a nonmammalian vertebrate",
+      "url": "https://www.semanticscholar.org/paper/c565908f010921936b69b8ec67ea8c264ed2868f",
+      "venue": "Proceedings of the National Academy of Sciences",
+      "year": 2014
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "48311063",
+          "name": "B. Huang"
+        },
+        {
+          "authorId": "144068301",
+          "name": "N. Wang"
+        },
+        {
+          "authorId": "48170009",
+          "name": "L. Wang"
+        },
+        {
+          "authorId": "4841608",
+          "name": "Yu-dong Jia"
+        },
+        {
+          "authorId": "48567714",
+          "name": "L. Bin"
+        },
+        {
+          "authorId": "8245828",
+          "name": "Xiao-Qiang Gao"
+        },
+        {
+          "authorId": "90836435",
+          "name": "B. Liu"
+        },
+        {
+          "authorId": "2023243000",
+          "name": "Wang Weifang"
+        }
+      ],
+      "doi": "10.1016/J.AQUACULTURE.2019.05.023",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "07025c390167265e1c1ccdb275a8509ae14667df",
+      "title": "Vitamin E stimulates the expression of gonadotropin hormones in primary pituitary cells of turbot (Scophthalmus maximus)",
+      "url": "https://www.semanticscholar.org/paper/07025c390167265e1c1ccdb275a8509ae14667df",
+      "venue": "",
+      "year": 2019
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "5770307",
+          "name": "V. Luine"
+        },
+        {
+          "authorId": "2775256",
+          "name": "J. Rhodes"
+        }
+      ],
+      "doi": "10.1159/000123461",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "52501b30679cc81c7e3201bc125deebddea3ec2e",
+      "title": "Gonadal hormone regulation of MAO and other enzymes in hypothalamic areas.",
+      "url": "https://www.semanticscholar.org/paper/52501b30679cc81c7e3201bc125deebddea3ec2e",
+      "venue": "Neuroendocrinology",
+      "year": 1983
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "123453771",
+          "name": "M. Kroll"
+        },
+        {
+          "authorId": "5737290",
+          "name": "M. Peck"
+        },
+        {
+          "authorId": "145570020",
+          "name": "Ian A.E. Butts"
+        },
+        {
+          "authorId": "5021080",
+          "name": "E. Trippel"
+        }
+      ],
+      "doi": "10.1111/JAI.12161",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "60055e8c126d1d02a5e78feb6966e529a1af9d26",
+      "title": "Paternal effects on early life history traits in Northwest Atlantic cod, Gadus morhua",
+      "url": "https://www.semanticscholar.org/paper/60055e8c126d1d02a5e78feb6966e529a1af9d26",
+      "venue": "",
+      "year": 2013
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "4592141",
+          "name": "F. Chauvigné"
+        },
+        {
+          "authorId": "4396247",
+          "name": "C. Zapater"
+        },
+        {
+          "authorId": "37819904",
+          "name": "D. Crespo"
+        },
+        {
+          "authorId": "47836449",
+          "name": "J. Planas"
+        },
+        {
+          "authorId": "144449517",
+          "name": "J. Cerdà"
+        }
+      ],
+      "doi": "10.1530/JME-14-0087",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "cf10cb2b9fbcfbe48572a51f2607f9e2aea289c2",
+      "title": "Fsh and Lh direct conserved and specific pathways during flatfish semicystic spermatogenesis.",
+      "url": "https://www.semanticscholar.org/paper/cf10cb2b9fbcfbe48572a51f2607f9e2aea289c2",
+      "venue": "Journal of molecular endocrinology",
+      "year": 2014
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "144670961",
+          "name": "R. Maran"
+        },
+        {
+          "authorId": "4182844",
+          "name": "J. Arunakaran"
+        },
+        {
+          "authorId": "4402771",
+          "name": "M. M. Aruldhas"
+        }
+      ],
+      "doi": "10.1507/ENDOCRJ.47.417",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "c8ee9a9799cf42181ca0e69f104afb7d6950ac19",
+      "title": "T3 directly stimulates basal and modulates LH induced testosterone and oestradiol production by rat Leydig cells in vitro.",
+      "url": "https://www.semanticscholar.org/paper/c8ee9a9799cf42181ca0e69f104afb7d6950ac19",
+      "venue": "Endocrine journal",
+      "year": 2000
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "152481445",
+          "name": "Hee-Woong Kang"
+        },
+        {
+          "authorId": "40383609",
+          "name": "S. Kim"
+        },
+        {
+          "authorId": "4320260",
+          "name": "J. S. Chung"
+        }
+      ],
+      "doi": "10.12717/DR.2016.20.1.011",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "a4af616f8f1b72af858bd1f9486a3f30a246d787",
+      "title": "Ultrastructural Studies of Germ Cell Development and the Functions of Leydig Cells and Sertoli Cells associated with Spermatogenesis in Kareius bicoloratus (Teleostei, Pleuronectiformes, Pleuronectidae)",
+      "url": "https://www.semanticscholar.org/paper/a4af616f8f1b72af858bd1f9486a3f30a246d787",
+      "venue": "Development & reproduction",
+      "year": 2016
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "46993479",
+          "name": "C. Zhao"
+        },
+        {
+          "authorId": "47411408",
+          "name": "Shihong Xu"
+        },
+        {
+          "authorId": "46398473",
+          "name": "Yifan Liu"
+        },
+        {
+          "authorId": "47905021",
+          "name": "Y. Wang"
+        },
+        {
+          "authorId": "47362470",
+          "name": "Q. Liu"
+        },
+        {
+          "authorId": "49299028",
+          "name": "J. Li"
+        }
+      ],
+      "doi": "10.1007/s10695-016-0284-5",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "7cd2ab163540329135a3f5093e72ca7bc8c9a4ad",
+      "title": "Gonadogenesis analysis and sex differentiation in cultured turbot (Scophthalmus maximus)",
+      "url": "https://www.semanticscholar.org/paper/7cd2ab163540329135a3f5093e72ca7bc8c9a4ad",
+      "venue": "Fish Physiology and Biochemistry",
+      "year": 2016
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "5741106",
+          "name": "M. R. Safarinejad"
+        }
+      ],
+      "doi": "10.1016/j.juro.2008.07.034",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": true,
+      "paperId": "8b1755ab2b8fe7db1c2bd6be65a8b8d5c27d1127",
+      "title": "Sperm DNA damage and semen quality impairment after treatment with selective serotonin reuptake inhibitors detected using semen analysis and sperm chromatin structure assay.",
+      "url": "https://www.semanticscholar.org/paper/8b1755ab2b8fe7db1c2bd6be65a8b8d5c27d1127",
+      "venue": "The Journal of urology",
+      "year": 2008
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "7607145",
+          "name": "N. Kreke"
+        },
+        {
+          "authorId": "2291906",
+          "name": "D. Dietrich"
+        }
+      ],
+      "doi": "10.1080/10408440801891057",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "d21cc81aafbffbcc06a48ab6b69194cd09d3502d",
+      "title": "Physiological Endpoints for Potential SSRI Interactions in Fish",
+      "url": "https://www.semanticscholar.org/paper/d21cc81aafbffbcc06a48ab6b69194cd09d3502d",
+      "venue": "Critical reviews in toxicology",
+      "year": 2008
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "3184289",
+          "name": "K. Walters"
+        },
+        {
+          "authorId": "3800858",
+          "name": "U. Simanainen"
+        },
+        {
+          "authorId": "5535903",
+          "name": "D. Handelsman"
+        }
+      ],
+      "doi": "10.1093/humupd/dmq003",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "1473f1b19ba1eeb12dcc50fe4391ba4d4762c54e",
+      "title": "Molecular insights into androgen actions in male and female reproductive function from androgen receptor knockout models.",
+      "url": "https://www.semanticscholar.org/paper/1473f1b19ba1eeb12dcc50fe4391ba4d4762c54e",
+      "venue": "Human reproduction update",
+      "year": 2010
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "6229196",
+          "name": "M. B. Frungieri"
+        },
+        {
+          "authorId": "3607920",
+          "name": "K. Zitta"
+        },
+        {
+          "authorId": "152658077",
+          "name": "O. Pignataro"
+        },
+        {
+          "authorId": "1402124760",
+          "name": "S. I. Gonzalez-Calvar"
+        },
+        {
+          "authorId": "3257483",
+          "name": "R. Calandra"
+        }
+      ],
+      "doi": "10.1159/000063682",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "8328cbae02da7636cd240e50455609bc75a79dab",
+      "title": "Interactions between Testicular Serotoninergic, Catecholaminergic, and Corticotropin-Releasing Hormone Systems Modulating cAMP and Testosterone Production in the Golden Hamster",
+      "url": "https://www.semanticscholar.org/paper/8328cbae02da7636cd240e50455609bc75a79dab",
+      "venue": "Neuroendocrinology",
+      "year": 2002
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "1399188985",
+          "name": "I. Hachero-Cruzado"
+        },
+        {
+          "authorId": "6715127",
+          "name": "A. Forniés"
+        },
+        {
+          "authorId": "145865811",
+          "name": "M. Herrera"
+        },
+        {
+          "authorId": "3712020",
+          "name": "J. M. Mancera"
+        },
+        {
+          "authorId": "5100128",
+          "name": "G. Martínez-Rodríguez"
+        }
+      ],
+      "doi": "10.1007/s10695-012-9692-3",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "0950487aa8d3944e7fc02f1fefd8ae7163ca1df8",
+      "title": "Sperm production and quality in brill Scophthalmus rhombusL.: relation to circulating sex steroid levels",
+      "url": "https://www.semanticscholar.org/paper/0950487aa8d3944e7fc02f1fefd8ae7163ca1df8",
+      "venue": "Fish Physiology and Biochemistry",
+      "year": 2012
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "46993479",
+          "name": "C. Zhao"
+        },
+        {
+          "authorId": "47411408",
+          "name": "Shihong Xu"
+        },
+        {
+          "authorId": "40530954",
+          "name": "Chengcheng Feng"
+        },
+        {
+          "authorId": "46399356",
+          "name": "Yifan Liu"
+        },
+        {
+          "authorId": "39683644",
+          "name": "Y. Yang"
+        },
+        {
+          "authorId": "47905021",
+          "name": "Y. Wang"
+        },
+        {
+          "authorId": "5135844",
+          "name": "Y. Xiao"
+        },
+        {
+          "authorId": "34528882",
+          "name": "Z. Song"
+        },
+        {
+          "authorId": "5835708",
+          "name": "Q. Liu"
+        },
+        {
+          "authorId": "145866322",
+          "name": "Jun Li"
+        }
+      ],
+      "doi": "10.1007/s00343-018-7068-y",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "72fb7325a7318bd2b2db049d05ff2967e3f03726",
+      "title": "Characterization and differential expression of three GnRH forms during reproductive development in cultured turbot Schophthalmus maximus",
+      "url": "https://www.semanticscholar.org/paper/72fb7325a7318bd2b2db049d05ff2967e3f03726",
+      "venue": "Journal of Oceanology and Limnology",
+      "year": 2018
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "152478642",
+          "name": "G. Taranger"
+        },
+        {
+          "authorId": "145605480",
+          "name": "M. Carrillo"
+        },
+        {
+          "authorId": "31069226",
+          "name": "R. Schulz"
+        },
+        {
+          "authorId": "2154177",
+          "name": "P. Fontaine"
+        },
+        {
+          "authorId": "3978560",
+          "name": "S. Zanuy"
+        },
+        {
+          "authorId": "145697962",
+          "name": "A. Felip"
+        },
+        {
+          "authorId": "116005320",
+          "name": "Finn-Arne Weltzien"
+        },
+        {
+          "authorId": "144851832",
+          "name": "S. Dufour"
+        },
+        {
+          "authorId": "37680484",
+          "name": "O. Karlsen"
+        },
+        {
+          "authorId": "32347638",
+          "name": "B. Norberg"
+        },
+        {
+          "authorId": "5103252",
+          "name": "E. Andersson"
+        },
+        {
+          "authorId": "3453456",
+          "name": "T. Hansen"
+        }
+      ],
+      "doi": "10.1016/j.ygcen.2009.05.004",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "256982ab3ea2e30f3873879c0fc4da2475ffd4de",
+      "title": "Control of puberty in farmed fish.",
+      "url": "https://www.semanticscholar.org/paper/256982ab3ea2e30f3873879c0fc4da2475ffd4de",
+      "venue": "General and comparative endocrinology",
+      "year": 2010
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "3694182",
+          "name": "Finn-Arne Weltzien"
+        },
+        {
+          "authorId": "5103252",
+          "name": "E. Andersson"
+        },
+        {
+          "authorId": "4749494",
+          "name": "Ø. Andersen"
+        },
+        {
+          "authorId": "1401595612",
+          "name": "K. Shalchian-Tabrizi"
+        },
+        {
+          "authorId": "32347638",
+          "name": "B. Norberg"
+        }
+      ],
+      "doi": "10.1016/J.CBPB.2003.11.007",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "a7b28d5677997546f47eab113d57b40383683e87",
+      "title": "The brain-pituitary-gonad axis in male teleosts, with special emphasis on flatfish (Pleuronectiformes).",
+      "url": "https://www.semanticscholar.org/paper/a7b28d5677997546f47eab113d57b40383683e87",
+      "venue": "Comparative biochemistry and physiology. Part A, Molecular & integrative physiology",
+      "year": 2004
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "4592141",
+          "name": "F. Chauvigné"
+        },
+        {
+          "authorId": "8172580",
+          "name": "E. Fatsini"
+        },
+        {
+          "authorId": "33916957",
+          "name": "N. Duncan"
+        },
+        {
+          "authorId": "49648482",
+          "name": "J. Ollé"
+        },
+        {
+          "authorId": "3978560",
+          "name": "S. Zanuy"
+        },
+        {
+          "authorId": "144867670",
+          "name": "A. Gómez"
+        },
+        {
+          "authorId": "144449517",
+          "name": "J. Cerdà"
+        }
+      ],
+      "doi": "10.1016/j.cbpa.2015.09.015",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "b88e07a87fd735dd73a7fc7589950aef3dcef7e5",
+      "title": "Plasma levels of follicle-stimulating and luteinizing hormones during the reproductive cycle of wild and cultured Senegalese sole (Solea senegalensis).",
+      "url": "https://www.semanticscholar.org/paper/b88e07a87fd735dd73a7fc7589950aef3dcef7e5",
+      "venue": "Comparative biochemistry and physiology. Part A, Molecular & integrative physiology",
+      "year": 2016
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "6488447",
+          "name": "W. Rupik"
+        },
+        {
+          "authorId": "4716060",
+          "name": "J. Huszno"
+        },
+        {
+          "authorId": "4165875",
+          "name": "J. Klag"
+        }
+      ],
+      "doi": "10.1016/j.micron.2011.05.006",
+      "intent": [
+        "background"
+      ],
+      "isInfluential": false,
+      "paperId": "a04be2860c576c8741b0d95894c77d066b930745",
+      "title": "Cellular organisation of the mature testes and stages of spermiogenesis in Danio rerio (Cyprinidae; Teleostei)--structural and ultrastructural studies.",
+      "url": "https://www.semanticscholar.org/paper/a04be2860c576c8741b0d95894c77d066b930745",
+      "venue": "Micron",
+      "year": 2011
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "40530954",
+          "name": "Chengcheng Feng"
+        },
+        {
+          "authorId": "1892177",
+          "name": "Shihong Xu"
+        },
+        {
+          "authorId": "46398473",
+          "name": "Yifan Liu"
+        },
+        {
+          "authorId": "1706354",
+          "name": "Y. Wang"
+        },
+        {
+          "authorId": "49337016",
+          "name": "Wenqi Wang"
+        },
+        {
+          "authorId": "4155072",
+          "name": "Jingkun Yang"
+        },
+        {
+          "authorId": "48504713",
+          "name": "Chunyan Zhao"
+        },
+        {
+          "authorId": "48873718",
+          "name": "Q. Liu"
+        },
+        {
+          "authorId": "49299028",
+          "name": "J. Li"
+        }
+      ],
+      "doi": "10.1007/s10695-017-0411-y",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "2053d963716cee9e708a5837c61ef44b752f5eaf",
+      "title": "Progestin is important for testicular development of male turbot (Scophthalmus maximus) during the annual reproductive cycle through functionally distinct progestin receptors",
+      "url": "https://www.semanticscholar.org/paper/2053d963716cee9e708a5837c61ef44b752f5eaf",
+      "venue": "Fish Physiology and Biochemistry",
+      "year": 2017
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "40618634",
+          "name": "G. Grandi"
+        },
+        {
+          "authorId": "3410363",
+          "name": "G. Astolfi"
+        },
+        {
+          "authorId": "2058979",
+          "name": "M. Chicca"
+        },
+        {
+          "authorId": "6279994",
+          "name": "M. Pezzi"
+        }
+      ],
+      "doi": "10.1002/jmor.20847",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "5121f4cc2c3e38fbc5b2e13a8888152bad006c6b",
+      "title": "Ultrastructural investigations on spermatogenesis and spermatozoan morphology in the endangered Adriatic sturgeon, Acipenser naccarii (Chondrostei, Acipenseriformes)",
+      "url": "https://www.semanticscholar.org/paper/5121f4cc2c3e38fbc5b2e13a8888152bad006c6b",
+      "venue": "Journal of morphology",
+      "year": 2018
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "2012429",
+          "name": "M. D. McDonald"
+        }
+      ],
+      "doi": "10.1016/j.cbpc.2017.03.007",
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "54b99775f1416923dae33723776345f860153573",
+      "title": "An AOP analysis of selective serotonin reuptake inhibitors (SSRIs) for fish.",
+      "url": "https://www.semanticscholar.org/paper/54b99775f1416923dae33723776345f860153573",
+      "venue": "Comparative biochemistry and physiology. Toxicology & pharmacology : CBP",
+      "year": 2017
+    },
+    {
+      "arxivId": null,
+      "authors": [
+        {
+          "authorId": "5626315",
+          "name": "D. R. Holsberger"
+        },
+        {
+          "authorId": "6460565",
+          "name": "S. Kiesewetter"
+        },
+        {
+          "authorId": "31719938",
+          "name": "P. Cooke"
+        }
+      ],
+      "doi": null,
+      "intent": [],
+      "isInfluential": false,
+      "paperId": "1987580621e481dc3ac21face975b1ba427976ec",
+      "title": "Regulation of neonatal Sertoli cell development by thyroid hormone receptor alpha1.",
+      "url": "https://www.semanticscholar.org/paper/1987580621e481dc3ac21face975b1ba427976ec",
+      "venue": "Biology of reproduction",
+      "year": 2005
+    }
+  ],
+  "title": "A Deep Insight of Spermatogenesis and Hormone Levels of Aqua-Cultured Turbot (Scophthalmus maximus)",
+  "topics": [],
+  "url": "https://www.semanticscholar.org/paper/28036d3e027f650fde7795021f2621719c7ad1b2",
+  "venue": "Frontiers in Marine Science",
+  "year": 2020
+}

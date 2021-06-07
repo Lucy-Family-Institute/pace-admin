@@ -7,6 +7,7 @@ import NormedPerson from '../normedPerson'
 import { randomWait } from '../../units/randomWait'
 import { getDateObject } from '../../units/dateRange'
 import { escapeForRegEx } from '../../units/normalizer'
+import DataSourceConfig from '../dataSourceConfig'
 
 import dotenv from 'dotenv'
 const fs = require('fs');

@@ -10,7 +10,7 @@ import { PossibleFragmentSpreadsRule } from 'graphql'
 import { wait } from '../units/randomWait'
 import pMap from 'p-map'
 import { getDateObject } from '../units/dateRange'
-
+import { command as loadCsv} from '../units/loadCsv'
 export class SemanticScholarDataSource implements DataSource {
 
   private dsConfig: DataSourceConfig 
@@ -22,7 +22,7 @@ export class SemanticScholarDataSource implements DataSource {
   // return object with query request params
   getAuthorQuery(person: NormedPerson, startDate?: Date, endDate?: Date){
     if (person.sourceIds) {
-      return `authorId:${person.sourceIds.scopusAffiliationId}`
+      return `authorId:${person.sourceIds.semanticScholarId}`
     } else {
       return undefined
     }
@@ -34,7 +34,7 @@ export class SemanticScholarDataSource implements DataSource {
 
   // assumes that if only one of startDate or endDate provided it would always be startDate first and then have endDate undefined
   async getPublicationsByAuthorId(person: NormedPerson, sessionState: {}, offset: Number, startDate: Date, endDate?: Date): Promise<HarvestSet> {
-    let totalResults: Number
+    let finalTotalResults: Number
     let publications = []
 
     let skippedPublications = 0
@@ -51,7 +51,9 @@ export class SemanticScholarDataSource implements DataSource {
     const results = await this.fetchSemanticScholarAuthorData(this.dsConfig.pageSize, offset, authorId)
     // console.log (`semantic scholar results are: ${_.keys(results['papers'])}`)
     if (results && results['papers']){
-      totalResults = Number.parseInt(results['papers'].length)
+      
+      const totalResults = Number.parseInt(results['papers'].length)
+      finalTotalResults = totalResults
       if (totalResults > 0){
         // fetch metadata for each paper 
         await wait(this.dsConfig.requestInterval)
@@ -78,21 +80,15 @@ export class SemanticScholarDataSource implements DataSource {
           } else {
             console.log(`Skipping paper metadata (${(index + 1)} of ${totalResults}) for author: ${person.familyName}, ${person.givenName} with publication year: ${paperYear}`)
             skippedPublications += 1
+            finalTotalResults = finalTotalResults.valueOf() - 1
           }
         }, { concurrency: 1 })
       }
     } else {
-      totalResults = 0
+      finalTotalResults = 0
     }
-    console.log(`Fetched ${(totalResults.valueOf() - skippedPublications)} publications and Skipped ${skippedPublications} publications outside of publication target range for author: ${person.familyName}, ${person.givenName}`)
-    // console.log(`Semantic scholar results are: ${JSON.stringify(publications, null, 2)}`)
-
-    // console.log(`CrossRef results are: ${JSON.stringify(_.keys(results['message']), null, 2)}`)
-    // console.log(`CrossRef results facets are: ${JSON.stringify(results['message']['facets'], null, 2)}`)
-    // console.log(`CrossRef results total-results are: ${JSON.stringify(results['message']['total-results'], null, 2)}`)
-    // console.log(`CrossRef results items-per-page are: ${JSON.stringify(results['message']['items-per-page'], null, 2)}`)
-    // console.log(`CrossRef results query is: ${JSON.stringify(results['message']['query'], null, 2)}`)
-
+    console.log(`Fetched ${(finalTotalResults)} publications and Skipped ${skippedPublications} publications outside of publication target range for author: ${person.familyName}, ${person.givenName}`)
+    
 
     const result: HarvestSet = {
         sourceName: this.getSourceName(),
@@ -101,7 +97,7 @@ export class SemanticScholarDataSource implements DataSource {
         sourcePublications: publications,
         offset: offset,
         pageSize: Number.parseInt(this.dsConfig.pageSize),
-        totalResults: totalResults
+        totalResults: finalTotalResults
     }
 
     return result
@@ -165,33 +161,11 @@ export class SemanticScholarDataSource implements DataSource {
         title: pub['title'],
         doi: pub['doi'],
         journalTitle: pub['venue'],
-        publicationDate: pub['year'],
+        publicationDate: `${pub['year']}`,  // force to be string
         datasourceName: this.getSourceName(),
         sourceId: pub['paperId'],
         sourceMetadata: pub
       }
-      // let publicationDate = ''
-      // if (pub['issued'] && pub['issued']['date-parts'] && pub['issued']['date-parts'][0] && pub['issued']['date-parts'][0][0]) {
-      //   const dateParts = pub['issued']['date-parts'][0]
-      //   let first = true
-      //   _.each (dateParts, (datePart) => {
-      //     if (!first) {
-      //       publicationDate = `${publicationDate}-`
-      //     }
-      //     publicationDate = `${publicationDate}${datePart}`
-      //     first = false
-      //   })
-      // }
-      // let normedPub: NormedPublication = {
-      //     title: pub['title'][0],
-      //     journalTitle: pub['container-title'] ? pub['container-title'][0] : (pub['short-container-title'] ? pub['short-containter-title'] : ''),
-      //     publicationDate: publicationDate,
-      //     datasourceName: this.dsConfig.sourceName,
-      //     doi: pub['DOI'] ? pub['DOI'] : '',
-      //     sourceId: pub['DOI'] ? pub['DOI'] : '',
-      //     sourceMetadata: pub
-      // }
-      // // console.log(`Setting search person for normed pubs: ${JSON.stringify(searchPerson, null, 2)}`)
       // add optional properties
       if (searchPerson) _.set(normedPub, 'searchPerson', searchPerson)
       if (pub['abstract']) _.set(normedPub, 'abstract', pub['abstract'])
@@ -231,5 +205,48 @@ export class SemanticScholarDataSource implements DataSource {
   getDataSourceConfig() {
     return this.dsConfig
   }
+
+  // returns set of coauthors for a given publication metadata harvested from semantic scholar with attributes like names and ids
+  getCoauthors(sourceMetadata) {
+    if (sourceMetadata && sourceMetadata['authors']) {
+      return sourceMetadata['authors']
+    } else {
+      return []
+    }
+  }
+
+  // returns map of person id to author ids
+  async loadPossibleAuthorIdsFromCSV(filePath, personIdKey, authorIdKey){
+    const authorIdRows: any = await loadCsv({
+      path: filePath,
+      lowerCaseColumns: true
+    })
+
+    
+    let authorIdsByPersonId = {}
+    _.each(authorIdRows, (authorIdRow) => {
+      const personId = _.toLower(authorIdRow[personIdKey])
+      const authorId = _.toLower(authorIdRow[authorIdKey])
+      console.log(`Getting personId: ${personId} author id: ${authorId} Author Id Row: ${JSON.stringify(authorIdRow)}`)
+      if (personId && authorId){
+        if (!authorIdsByPersonId[personId]) {
+          authorIdsByPersonId[personId] = []
+        }
+        if (!_.includes(authorIdsByPersonId[personId], authorId)){
+          authorIdsByPersonId[personId].push(authorId)
+        }
+      }
+    })
+    console.log(`AuthorIds by person: ${JSON.stringify(authorIdsByPersonId, null, 2)}`)
+    return authorIdsByPersonId
+  }
+
+  // getAuthorIdsByConfidence(publication, minConfidence) {
+
+  // }
+  // matchPeopleToCoauthors(coAuthorList, personMap) {
+  //   const conf: CalculateConfidence = new CalculateConfidence()
+  //   conf.calculateConfidence()
+  // }
   
 }

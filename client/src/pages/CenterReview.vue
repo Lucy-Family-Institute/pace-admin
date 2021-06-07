@@ -739,6 +739,8 @@ export default {
           return 'purple'
         } else if (sourceName.toLowerCase() === 'webofscience') {
           return 'teal'
+        } else if (sourceName.toLowerCase() === 'semanticscholar') {
+          return '#2e414f'
         } else {
           return 'indigo'
         }

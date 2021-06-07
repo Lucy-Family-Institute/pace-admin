@@ -358,6 +358,10 @@ async function loadConfirmedPapersByDoi(pathsByYear) {
   return confirmedPapersByDoi
 }
 
+function isString(value) {
+	return typeof value === 'string' || value instanceof String;
+}
+
 //returns a map of three arrays: 'addedDOIs','failedDOIs', 'errorMessages'
 async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : Promise<DoiStatus> {
   let count = 0
@@ -500,6 +504,13 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
             sourceMetadata = papersByDoi[doi][0]['wos_record']
             if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
             // console.log(`WebOfScience Source metadata found`)//is: ${JSON.stringify(sourceMetadata,null,2)}`)
+          } else {
+            if (papersByDoi[doi] && papersByDoi[doi][0] && papersByDoi[doi][0]['source_name']) {
+              sourceName = papersByDoi[doi][0]['source_name']
+            }
+            if (papersByDoi[doi] && papersByDoi[doi][0] && papersByDoi[doi][0]['source_metadata']) {
+              sourceMetadata = (isString(papersByDoi[doi][0]['source_metadata']) ? JSON.parse(papersByDoi[doi][0]['source_metadata']) : papersByDoi[doi][0]['source_metadata'])
+            } 
           }
           //match paper authors to people
           //console.log(`Testing for Author Matches for DOI: ${doi}`)
