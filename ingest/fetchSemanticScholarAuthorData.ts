@@ -60,7 +60,7 @@ async function main (): Promise<void> {
   const semanticScholarDS: SemanticScholarDataSource = new SemanticScholarDataSource(dsConfig)
   const semanticScholarHarvester: Harvester = new Harvester(semanticScholarDS)
 
-  const possibleAuthorIdsPath = '../data/mined_semantic_scholar_ids.20210606222156.csv'
+  const possibleAuthorIdsPath = '../data/input/new_semantic_scholar_ids.csv'
   const possibleAuthorIdsByPersonId: {} = await semanticScholarDS.loadPossibleAuthorIdsFromCSV(possibleAuthorIdsPath, 'person_id', 'matched_author_author_id')
   
   console.log(`Possible Author Ids by Person Id: ${JSON.stringify(possibleAuthorIdsByPersonId, null, 2)}`)
