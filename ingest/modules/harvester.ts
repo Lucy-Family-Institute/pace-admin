@@ -8,7 +8,7 @@ import moment from 'moment'
 import NormedPublication from './normedPublication'
 import NormedPerson from './normedPerson'
 import DataSource from './dataSource'
-import HarvestSet from './harvestSet'
+import HarvestSet from './HarvestSet'
 
 export enum HarvestOperation {
   QUERY_BY_AUTHOR_NAME,
