@@ -207,7 +207,6 @@ export class WosDataSource implements DataSource {
         name: sourceAuthor['name'],
         reduceMethod: 'majority',
       });
-      console.log(`parsed name: ${JSON.stringify(parsedName, null, 2)}`)
       author['given'] = parsedName.first
       author['family'] = parsedName.last
       cslStyleAuthors.push(author)
