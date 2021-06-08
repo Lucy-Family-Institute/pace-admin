@@ -666,20 +666,20 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
     // }, {concurrency: 5})
 
 
-    if (doiStatus.failedDOIs && doiStatus.failedDOIs.length > 0){
+    // if (doiStatus.failedDOIs && doiStatus.failedDOIs.length > 0){
 
-      pMap(_.keys(failedRecords), async (sourceName) => {
-        const failedCSVFile = `../data/${sourceName}_failed.${moment().format('YYYYMMDDHHmmss')}.csv`
+    //   pMap(_.keys(failedRecords), async (sourceName) => {
+    //     const failedCSVFile = `../data/${sourceName}_failed.${moment().format('YYYYMMDDHHmmss')}.csv`
 
-        console.log(`Write failed doi's to csv file: ${failedCSVFile}`)
-        // console.log(`Failed records are: ${JSON.stringify(failedRecords[sourceName], null, 2)}`)
-        //write data out to csv
-        await writeCsv({
-          path: failedCSVFile,
-          data: failedRecords[sourceName],
-        })
-      }, { concurrency: 1 })
-    }
+    //     console.log(`Write failed doi's to csv file: ${failedCSVFile}`)
+    //     // console.log(`Failed records are: ${JSON.stringify(failedRecords[sourceName], null, 2)}`)
+    //     //write data out to csv
+    //     await writeCsv({
+    //       path: failedCSVFile,
+    //       data: failedRecords[sourceName],
+    //     })
+    //   }, { concurrency: 1 })
+    // }
    
     return doiStatus
   } catch (error){
@@ -732,14 +732,15 @@ const pathsByYear = await getIngestFilePaths('../config/ingestFilePaths.json')
   await pMap(_.keys(pathsByYear), async (year) => {
      // write combined failure results limited to 1 per doi
      if (combinedFailed && _.keys(combinedFailed).length > 0){
-      const failedCSVFile = `../data/combined_failed.${moment().format('YYYYMMDDHHmmss')}.csv`
+      const combinedFailedValues = _.values(combinedFailed)
+      const failedCSVFile = `../data/${combinedFailedValues[0]['source_name']}_combined_failed.${moment().format('YYYYMMDDHHmmss')}.csv`
 
       console.log(`Write failed doi's to csv file: ${failedCSVFile}`)
       // console.log(`Failed records are: ${JSON.stringify(failedRecords[sourceName], null, 2)}`)
       //write data out to csv
       await writeCsv({
         path: failedCSVFile,
-        data: _.values(combinedFailed),
+        data: combinedFailedValues,
       })
 
     }
