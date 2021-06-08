@@ -47,12 +47,12 @@ function nameMatchElasticLunr(last, first, index) {
 
 async function returnNihIds() {
 
-  console.log('here')
+  console.log(`here ${process.cwd()}`)
 
   // Load names from the Center/Institute
   try {
     const centerMembers = await loadCsv({
-      path: '../data/researchers_2017-2020_load_name_variances.csv',
+      path: '../data/input/researchers_2017-2020_attributes.csv',
     });
 
     console.log('here2')
@@ -69,7 +69,7 @@ async function returnNihIds() {
 
     // Load award data
     const awards = await loadCsv({
-      path: '../data/Awards_for_2009Jan01-thru-2021Feb02.csv',
+      path: '../data/input/Awards_for_2009Jan01-thru-2021Feb02.csv',
     });
 
     // For every award in the award data
