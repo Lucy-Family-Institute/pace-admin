@@ -8,7 +8,9 @@ import DataSource from './dataSource'
 import { getDateString, getDateObject } from '../units/dateRange'
 import { wait } from '../units/randomWait';
 import DataSourceConfig from './dataSourceConfig'
+import pMap from 'p-map'
 
+const nameParser = require('../units/nameParser').command;
 export class WosDataSource implements DataSource {
 
   private dsConfig: DataSourceConfig
@@ -184,6 +186,33 @@ export class WosDataSource implements DataSource {
       transformedProperties[property['label']['_text']] = property['value']
     })
     return transformedProperties
+  }
+
+  getAuthors(sourceMetadata) {
+    let authors = []
+    if (sourceMetadata && sourceMetadata['authors'] && sourceMetadata['authors'].length > 0 && sourceMetadata['authors'][0]['value']){
+      _.each(sourceMetadata['authors'][0]['value'], (author) => {
+        authors.push({name: author['_text']})
+      })
+    }
+    return authors
+  }
+
+  async getCSLStyleAuthorList(sourceMetadata) {
+    const sourceAuthors = this.getAuthors(sourceMetadata)
+    const cslStyleAuthors = []
+    await pMap(sourceAuthors, async (sourceAuthor, index) => {
+      let author = {}
+      const parsedName = await nameParser({
+        name: sourceAuthor['name'],
+        reduceMethod: 'majority',
+      });
+      console.log(`parsed name: ${JSON.stringify(parsedName, null, 2)}`)
+      author['given'] = parsedName.first
+      author['family'] = parsedName.last
+      cslStyleAuthors.push(author)
+    }, { concurrency: 1 })
+    return cslStyleAuthors
   }
 
   // returns an array of normalized publication objects given ones retrieved fron this datasource
