@@ -110,46 +110,54 @@ async function main() {
     let totalSetItems = 0
     let totalSetItemsInserted = 0
 
-    console.log(`Exporting results to csv...`)
-    const outputFailed = _.map(confidenceTests['failed'], test => {
-      test['author'] = JSON.stringify(test['author'])
-      test['confirmedAuthors'] = JSON.stringify(test['confirmedAuthors'])
-      test['confidenceItems'] = JSON.stringify(test['confidenceItems'])
-      return test
-    })
+    console.log(`Exporting results to csv if any warnings or failures...`)
+    if (confidenceTests['failed'] && confidenceTests['failed'].length>0){
+      const outputFailed = _.map(confidenceTests['failed'], test => {
+        test['author'] = JSON.stringify(test['author'])
+        test['confirmedAuthors'] = JSON.stringify(test['confirmedAuthors'])
+        test['confidenceItems'] = JSON.stringify(test['confidenceItems'])
+        return test
+      })
 
-    //write data out to csv
-    await writeCsv({
-      path: `../data/failed_confidence.${moment().format('YYYYMMDDHHmmss')}.csv`,
-      data: outputFailed,
-    });
+      //write data out to csv
+      await writeCsv({
+        path: `../data/failed_confidence.${moment().format('YYYYMMDDHHmmss')}.csv`,
+        data: outputFailed,
+      });
+    } else {
+      console.log('No failures to output.')
+    }
 
-    const outputWarning = _.map(confidenceTests['warning'], test => {
-      test['author'] = JSON.stringify(test['author'])
-      test['confirmedAuthors'] = JSON.stringify(test['confirmedAuthors'])
-      test['confidenceItems'] = JSON.stringify(test['confidenceItems'])
-      return test
-    })
+    if (confidenceTests['warning'] && confidenceTests['warning'].length>0){
+      const outputWarning = _.map(confidenceTests['warning'], test => {
+        test['author'] = JSON.stringify(test['author'])
+        test['confirmedAuthors'] = JSON.stringify(test['confirmedAuthors'])
+        test['confidenceItems'] = JSON.stringify(test['confidenceItems'])
+        return test
+      })
 
-    await writeCsv({
-      path: `../data/warning_confidence.${moment().format('YYYYMMDDHHmmss')}.csv`,
-      data: outputWarning,
-    });
+      await writeCsv({
+        path: `../data/warning_confidence.${moment().format('YYYYMMDDHHmmss')}.csv`,
+        data: outputWarning,
+      });
+    } else {
+      console.log('No warnings to output.')
+    }
 
-    const outputPassed = _.map(confidenceTests['passed'], test => {
-      let obj = {}
-      obj['author'] = JSON.stringify(test['author'])
-      obj['author_id'] = test['author']['id']
-      obj['author_names'] = test['author']['names']
-      obj['confirmedAuthors'] = JSON.stringify(test['confirmedAuthors'])
-      obj['confidenceItems'] = JSON.stringify(test['confidenceItems'])
-      return obj
-    })
+    // const outputPassed = _.map(confidenceTests['passed'], test => {
+    //   let obj = {}
+    //   obj['author'] = JSON.stringify(test['author'])
+    //   obj['author_id'] = test['author']['id']
+    //   obj['author_names'] = test['author']['names']
+    //   obj['confirmedAuthors'] = JSON.stringify(test['confirmedAuthors'])
+    //   obj['confidenceItems'] = JSON.stringify(test['confidenceItems'])
+    //   return obj
+    // })
 
-    await writeCsv({
-      path: `../data/passed_confidence.${moment().format('YYYYMMDDHHmmss')}.csv`,
-      data: outputPassed,
-    });
+    // await writeCsv({
+    //   path: `../data/passed_confidence.${moment().format('YYYYMMDDHHmmss')}.csv`,
+    //   data: outputPassed,
+    // });
 
     console.log('Beginning insert of confidence sets...')
     console.log(`Inserting Author Confidence Sets Batch (${(index + 1)} of ${testAuthorGroups.length})...`)
