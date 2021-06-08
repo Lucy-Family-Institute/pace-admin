@@ -3,7 +3,7 @@ import _ from 'lodash'
 const xmlToJson = require('xml-js');
 import NormedPublication from './normedPublication'
 import NormedPerson from './normedPerson'
-import HarvestSet from './harvestSet'
+import HarvestSet from './HarvestSet'
 import DataSource from './dataSource'
 import { getDateString, getDateObject } from '../units/dateRange'
 import { wait } from '../units/randomWait';

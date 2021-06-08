@@ -1,6 +1,6 @@
 import NormedPublication from './normedPublication'
 import NormedPerson from './normedPerson'
-import HarvestSet from './harvestSet'
+import HarvestSet from './HarvestSet'
 import DataSourceConfig from './dataSourceConfig'
 export default interface DataSource {
 
