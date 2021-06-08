@@ -21,6 +21,10 @@ import readPublicationsByDoi from './gql/readPublicationsByDoi'
 
 import { getAllSimplifiedPersons } from './modules/queryNormalizedPeople'
 import { CalculateConfidence } from './modules/calculateConfidence'
+import { SemanticScholarDataSource } from './modules/semanticScholarDataSource'
+import { WosDataSource } from './modules/wosDataSource'
+
+import DataSourceConfig from './modules/dataSourceConfig'
 // import insertReview from '../client/src/gql/insertReview'
 
 dotenv.config({
@@ -46,6 +50,29 @@ const client = new ApolloClient({
     },
   },
 })
+
+const semanticScholarConfig : DataSourceConfig = {
+  baseUrl: process.env.SEMANTIC_SCHOLAR_BASE_URL,
+  authorUrl: process.env.SEMANTIC_SCHOLAR_AUTHOR_URL,
+  queryUrl: process.env.SEMANTIC_SCHOLAR_QUERY_URL,
+  sourceName: process.env.SEMANTIC_SCHOLAR_SOURCE_NAME,
+  publicationUrl: process.env.SEMANTIC_SCHOLAR_PUBLICATION_URL,
+  pageSize: process.env.SEMANTIC_SCHOLAR_PAGE_SIZE,
+  requestInterval: Number.parseInt(process.env.SEMANTIC_SCHOLAR_REQUEST_INTERVAL)
+}
+const semanticScholarDS : SemanticScholarDataSource = new SemanticScholarDataSource(semanticScholarConfig)
+
+const wosConfig : DataSourceConfig = {
+  baseUrl: process.env.WOS_BASE_URL,
+  queryUrl: process.env.WOS_QUERY_URL,
+  sourceName: process.env.WOS_SOURCE_NAME,
+  userName: process.env.WOS_USERNAME,
+  password: process.env.WOS_PASSWORD,
+  pageSize: process.env.WOS_PAGE_SIZE,
+  requestInterval: Number.parseInt(process.env.WOS_REQUEST_INTERVAL)
+}
+const wosDS : WosDataSource = new WosDataSource(wosConfig)
+
 
 function getPublicationYear (csl) : Number {
   // look for both online and print dates, and make newer date win if different
@@ -100,6 +127,7 @@ async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName
       source_metadata: sourceMetadata, // put these in as JSONB,
       csl_string: JSON.stringify(csl)
     }
+    // console.log(`Writing publication: ${JSON.stringify(publication, null, 2)}`)
     const mutatePubResult = await client.mutate(
       //for now convert csl json object to a string when storing in DB
       insertPublication ([publication])
@@ -127,7 +155,7 @@ async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName
     }
     return publicationId
   } catch (error){
-    console.log(`Error on insert of Doi: ${doi} insert publication, csl: ${JSON.stringify}`)
+    console.log(`Error on insert of Doi: ${doi} insert publication`)
     console.log(error)
     throw error
   }
@@ -362,6 +390,16 @@ function isString(value) {
 	return typeof value === 'string' || value instanceof String;
 }
 
+async function getCSLAuthorsFromSourceMetadata(sourceName, sourceMetadata) {
+  if (sourceName === 'SemanticScholar') {
+    return semanticScholarDS.getCSLStyleAuthorList(sourceMetadata)    
+  } else if (sourceName === 'WebOfScience') {
+    return wosDS.getCSLStyleAuthorList(sourceMetadata)    
+  } else {
+    return []
+  }
+}
+
 //returns a map of three arrays: 'addedDOIs','failedDOIs', 'errorMessages'
 async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : Promise<DoiStatus> {
   let count = 0
@@ -471,6 +509,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
         let authors = await getCSLAuthors(csl)
 
         // default to the confirmed author list if no author list in the csl record
+        // console.log(`Before check csl is: ${JSON.stringify(csl, null, 2)} for doi: ${doi}`)
         // console.log(`Before check authors are: ${JSON.stringify(authors, null, 2)} for doi: ${doi}`)
         if (confirmedAuthorsByDoiAuthorList[doi] && _.keys(confirmedAuthorsByDoiAuthorList[doi]).length > 0) {
           authors = confirmedAuthorsByDoiAuthorList[doi][_.keys(confirmedAuthorsByDoiAuthorList[doi])[0]]
@@ -482,9 +521,18 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
         let sourceName = 'CrossRef'
         let sourceMetadata= csl
         let errorMessage = ''
+        const types = [
+          'manuscript',
+          'article-journal',
+          'article',
+          'paper-conference',
+          'chapter',
+          'book',
+          'peer-review'
+        ]
 
         // if at least one author, add the paper, and related personpub objects
-        if((csl['type'] === 'article-journal' || csl['type'] === 'article' || csl['type'] === 'paper-conference' || csl['type'] === 'chapter' || csl['type'] === 'book') && csl.title) {
+        if(_.includes(types, csl['type']) && csl.title) {
           //push in csl record to jsonb blob
 
           //check for SCOPUS
@@ -512,10 +560,21 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
               sourceMetadata = (isString(papersByDoi[doi][0]['source_metadata']) ? JSON.parse(papersByDoi[doi][0]['source_metadata']) : papersByDoi[doi][0]['source_metadata'])
             } 
           }
+
           //match paper authors to people
           //console.log(`Testing for Author Matches for DOI: ${doi}`)
-          const matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthorsByDoi[doi], sourceName, minConfidence)
+          let matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthorsByDoi[doi], sourceName, minConfidence)
           //console.log(`Person to Paper Matches: ${JSON.stringify(matchedPersons,null,2)}`)
+
+          if (_.keys(matchedPersons).length <= 0){
+            // try to match against authors from source if nothing found yet
+            csl.author = await getCSLAuthorsFromSourceMetadata(sourceName, sourceMetadata)
+            authors = csl.author
+            // console.log(`After check from source metadata if needed authors are: ${JSON.stringify(csl.author, null, 2)}`)
+            if (csl.author && csl.author.length > 0){
+              matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthorsByDoi[doi], sourceName, minConfidence)
+            }
+          }
 
           if (_.keys(matchedPersons).length > 0){
             const pubFound = await isPublicationAlreadyInDB(doi, sourceName)
@@ -601,8 +660,9 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
             }
           }
         } else {
-          errorMessage = `${doi} and not added to DB because not an article or no title defined in DOI csl record` //, csl is: ${JSON.stringify(csl, null, 2)}`
+          errorMessage = `${doi} and not added to DB with unknown type ${csl.type} or no title defined in DOI csl record` //, csl is: ${JSON.stringify(csl, null, 2)}`
           console.log(errorMessage)
+          // console.log(`CSL is: ${JSON.stringify(csl, null, 2)}`)
           doiStatus.errorMessages.push(errorMessage)
           if (!failedRecords[sourceName]) failedRecords[sourceName] = []
           _.each(papersByDoi[doi], (paper) => {
