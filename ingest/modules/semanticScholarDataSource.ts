@@ -11,6 +11,8 @@ import { wait } from '../units/randomWait'
 import pMap from 'p-map'
 import { getDateObject } from '../units/dateRange'
 import { command as loadCsv} from '../units/loadCsv'
+
+const nameParser = require('../units/nameParser').command;
 export class SemanticScholarDataSource implements DataSource {
 
   private dsConfig: DataSourceConfig 
@@ -213,6 +215,22 @@ export class SemanticScholarDataSource implements DataSource {
     } else {
       return []
     }
+  }
+
+  async getCSLStyleAuthorList(sourceMetadata) {
+    const sourceAuthors = this.getCoauthors(sourceMetadata)
+    const cslStyleAuthors = []
+    await pMap(sourceAuthors, async (sourceAuthor, index) => {
+      let author = _.clone(sourceAuthor)
+      const parsedName = await nameParser({
+        name: sourceAuthor['name'],
+        reduceMethod: 'majority',
+      });
+      author['given'] = parsedName.first
+      author['family'] = parsedName.last
+      cslStyleAuthors.push(author)
+    }, { concurrency: 1 })
+    return cslStyleAuthors
   }
 
   // returns map of person id to author ids
