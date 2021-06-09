@@ -282,7 +282,7 @@ interface MatchedPerson {
 // author map assumed to be doi mapped to two arrays: first authors and other authors
 // returns a map of person ids to the person object and confidence value for any persons that matched coauthor attributes
 // example: {1: {person: simplepersonObject, confidence: 0.5}, 51: {person: simplepersonObject, confidence: 0.8}}
-async function matchPeopleToPaperAuthors(publicationCSL, simplifiedPersons, personMap, authors, confirmedAuthors, sourceName, minConfidence?) : Promise<Map<number,MatchedPerson>> {
+async function matchPeopleToPaperAuthors(publicationCSL, simplifiedPersons, personMap, authors, confirmedAuthors, sourceName, sourceMetadata, minConfidence?) : Promise<Map<number,MatchedPerson>> {
 
   const calculateConfidence: CalculateConfidence = new CalculateConfidence()
   //match to last name
@@ -294,7 +294,7 @@ async function matchPeopleToPaperAuthors(publicationCSL, simplifiedPersons, pers
     
      //console.log(`Testing Author for match: ${author.family}, ${author.given}`)
 
-      const passedConfidenceTests = await calculateConfidence.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank, sourceName)
+      const passedConfidenceTests = await calculateConfidence.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank, sourceName, sourceMetadata)
       // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
       // returns a new map of rank -> confidenceTestName -> calculatedValue
       const passedConfidenceTestsWithConf = await calculateConfidence.calculateAuthorConfidence(passedConfidenceTests)
@@ -563,7 +563,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
 
           //match paper authors to people
           //console.log(`Testing for Author Matches for DOI: ${doi}`)
-          let matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthorsByDoi[doi], sourceName, minConfidence)
+          let matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthorsByDoi[doi], sourceName, sourceMetadata, minConfidence)
           //console.log(`Person to Paper Matches: ${JSON.stringify(matchedPersons,null,2)}`)
 
           if (_.keys(matchedPersons).length <= 0){
@@ -572,7 +572,7 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
             authors = csl.author
             // console.log(`After check from source metadata if needed authors are: ${JSON.stringify(csl.author, null, 2)}`)
             if (csl.author && csl.author.length > 0){
-              matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthorsByDoi[doi], sourceName, minConfidence)
+              matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthorsByDoi[doi], sourceName, sourceMetadata, minConfidence)
             }
           }
 
