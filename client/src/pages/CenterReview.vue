@@ -695,7 +695,6 @@ export default {
       return `${process.env.PUBMED_ARTICLE_URI_BASE}/pmc/articles/${pmcId}`
     },
     getSemanticScholarUri (paperId) {
-      console.log(`process keys: ${_.keys(process.env)}`)
       return `${process.env.SEMANTIC_SCHOLAR_VIEW_PUBLICATION_URL}${paperId}`
     },
     getWebOfScienceUri (wosId) {
