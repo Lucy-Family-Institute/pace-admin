@@ -138,8 +138,8 @@
                             type="a"
                             :href="getSourceUri(personPub)"
                             target="_blank"
-                            :label="getDisplaySourceLabel(personPub)"
-                          />
+                          :label="getDisplaySourceLabel(personPub)"
+                         />
                         </q-list>
                       </q-item-section>
                       <!--<q-item-section avatar side>
@@ -619,6 +619,9 @@ export default {
       if (personPublication.publication.source_name.toLowerCase() === 'scopus' &&
         personPublication.publication.scopus_eid) {
         return personPublication.publication.scopus_eid
+      } else if (personPublication.publication.source_name.toLowerCase() === 'semanticscholar' &&
+        personPublication.publication.semantic_scholar_id) {
+        return personPublication.publication.semantic_scholar_id
       } else if (personPublication.publication.source_name.toLowerCase() === 'pubmed' &&
         personPublication.publication.pubmed_resource_identifiers &&
         _.isArray(personPublication.publication.pubmed_resource_identifiers)) {
@@ -658,11 +661,12 @@ export default {
     getDisplaySourceLabel (personPublication) {
       const sourceId = this.getPublicationSourceId(personPublication)
       let sourceName = personPublication.publication.source_name
+      let display = sourceName
       if (sourceId) {
-        return `${sourceName}: ${sourceId}`
-      } else {
-        return sourceName
+        display = `${sourceName}: ${sourceId}`
       }
+      // truncate display if needed
+      return `${_.truncate(display, 16)}`
     },
     // depending on the source return source uri
     getSourceUri (personPublication) {
@@ -674,6 +678,10 @@ export default {
           return this.getPubMedUri(sourceId)
         } else if (personPublication.publication.source_name.toLowerCase() === 'crossref') {
           return this.getDoiUrl(personPublication.publication.doi)
+        } else if (personPublication.publication.source_name.toLowerCase() === 'webofscience') {
+          return this.getWebOfScienceUri(sourceId)
+        } else if (personPublication.publication.source_name.toLowerCase() === 'semanticscholar') {
+          return this.getSemanticScholarUri(sourceId)
         }
       } else {
         return undefined
@@ -685,6 +693,13 @@ export default {
     },
     getPubMedUri (pmcId) {
       return `${process.env.PUBMED_ARTICLE_URI_BASE}/pmc/articles/${pmcId}`
+    },
+    getSemanticScholarUri (paperId) {
+      console.log(`process keys: ${_.keys(process.env)}`)
+      return `${process.env.SEMANTIC_SCHOLAR_VIEW_PUBLICATION_URL}${paperId}`
+    },
+    getWebOfScienceUri (wosId) {
+      return `${process.env.WOS_PULBICATION_URL}${wosId}`
     },
     getpublicationsGroupedByDoiByOrgReviewCount (reviewType) {
       return this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType] ? this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType].length : 0
@@ -739,8 +754,6 @@ export default {
           return 'purple'
         } else if (sourceName.toLowerCase() === 'webofscience') {
           return 'teal'
-        } else if (sourceName.toLowerCase() === 'semanticscholar') {
-          return '#2e414f'
         } else {
           return 'indigo'
         }
