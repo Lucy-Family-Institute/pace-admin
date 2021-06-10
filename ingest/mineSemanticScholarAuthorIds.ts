@@ -142,27 +142,40 @@ async function matchAuthors (personPub, searchAuthorMap, sourceName, confidenceT
 
 async function main (): Promise<void> {
 
+  const skipExistingIds = true
+  const getFlatMatches = true
+  const minConfidence = 0.3
+
   const dsConfig: DataSourceConfig = {
-    baseUrl: 'https://api.semanticscholar.org/v1/',
-    authorUrl: 'https://api.semanticscholar.org/v1/author/',
-    queryUrl: 'https://api.semanticscholar.org/v1/',
-    publicationUrl: 'https://api.semanticscholar.org/v1/paper/',
-    sourceName: 'SemanticScholar',
-    pageSize: '100',  // page size must be a string for the request to work
-    requestInterval: 3500
-}
+    baseUrl: process.env.SEMANTIC_SCHOLAR_BASE_URL,
+    authorUrl: process.env.SEMANTIC_SCHOLAR_AUTHOR_URL,
+    queryUrl: process.env.SEMANTIC_SCHOLAR_QUERY_URL,
+    publicationUrl: process.env.SEMANTIC_SCHOLAR_PUBLICATION_URL,
+    sourceName: process.env.SEMANTIC_SCHOLAR_SOURCE_NAME,
+    pageSize: process.env.SEMANTIC_SCHOLAR_PAGE_SIZE,  // page size must be a string for the request to work
+    requestInterval: Number.parseInt(process.env.SEMANTIC_SCHOLAR_REQUEST_INTERVAL)
+  }
   const semanticDS = new SemanticScholarDataSource(dsConfig)
 
   const currentPersonPubConfSets = await getSemanticScholarPersonPublicationsConfSets()
   const confidenceTypesByRank = await calculateConfidence.getConfidenceTypesByRank()
 
 
+  const existingSemanticIds = {}
   // console.log(`person pub conf sets found: ${currentPersonPubConfSets.length}`)
   const personPubConfSetsByDoi = _.groupBy(currentPersonPubConfSets, (personPub) => {
+    // also populate set of known person id's too
+    if (!existingSemanticIds[personPub.person_id]){
+      existingSemanticIds[personPub.person_id] = []
+    }
+    if (personPub.person.semantic_scholar_id) {
+      existingSemanticIds[personPub.person_id].push(personPub.person.semantic_scholar_id)
+    }
+    // now return doi to group by them
     return personPub.doi
   })
 
-  const minConfidence = 0.51
+  console.log(`Existing Semantic ids are: ${JSON.stringify(existingSemanticIds, null, 2)}`)
   console.log(`Skipping author id matches of less than ${minConfidence}...`)
 
   const authorListByDoi = {}
@@ -187,6 +200,7 @@ async function main (): Promise<void> {
 
   const matchedAuthorRows = []
   const highestConfidenceAuthorIdByPersonId = {}
+  const flatMatchesByAuthorId = {}
   await pMap(currentPersonPubConfSets, async (personPub) => {
     const matchedAuthors = await matchAuthors(personPub, authorListByDoi[personPub['doi']], dsConfig.sourceName, confidenceTypesByRank, minConfidence)
     _.each(_.values(matchedAuthors), (matchedAuthorObject) => {
@@ -196,21 +210,32 @@ async function main (): Promise<void> {
         if (personPub['value'] >= minConfidence){
           const personId = personPub['person_id']
 
-          if (!highestConfidenceAuthorIdByPersonId[personId] ||
-            confidence > highestConfidenceAuthorIdByPersonId[personId]['confidence']){
-              highestConfidenceAuthorIdByPersonId[personId] = {
-                confidence: confidence,
-                matchedAuthor: matchedAuthor,
-                personPub: personPub
-              }
+          const currentAuthorId = (matchedAuthor && matchedAuthor['authorId'] ? Number.parseInt(matchedAuthor['authorId']) : undefined)
+          if (!skipExistingIds || !existingSemanticIds[personId] || !_.includes(existingSemanticIds[personId], currentAuthorId)){
+            const matchedItem = {
+              confidence: confidence,
+              matchedAuthor: matchedAuthor,
+              personPub: personPub
+            }
+            if (!highestConfidenceAuthorIdByPersonId[personId] ||
+              confidence > highestConfidenceAuthorIdByPersonId[personId]['confidence']){
+              highestConfidenceAuthorIdByPersonId[personId] = matchedItem
+            }
+            flatMatchesByAuthorId[currentAuthorId] = matchedItem
           }
         }
       })
     })
   }, { concurrency: 1})
 
+  let dataRowArray
+  if (getFlatMatches) {
+    dataRowArray = _.values(flatMatchesByAuthorId)
+  } else {
+    dataRowArray =_.values(highestConfidenceAuthorIdByPersonId)
+  }
   // push values to rows for output
-  _.each(_.values(highestConfidenceAuthorIdByPersonId), (matched) => {
+  _.each(dataRowArray, (matched) => {
     console.log(`For '${matched['personPub']['person'].family_name}, ${matched['personPub']['person'].given_name}' Adding author: ${matched['matchedAuthor']['name']} with author id: ${matched['matchedAuthor']['authorId']} with confidence: ${matched['confidence']}`)
 
     matchedAuthorRows.push({

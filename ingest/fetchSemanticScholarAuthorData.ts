@@ -48,13 +48,13 @@ const client = new ApolloClient({
 async function main (): Promise<void> {
 
   const dsConfig: DataSourceConfig = {
-    baseUrl: 'https://api.semanticscholar.org/v1/',
-    authorUrl: 'https://api.semanticscholar.org/v1/author/',
-    queryUrl: 'https://api.semanticscholar.org/v1/',
-    publicationUrl: 'https://api.semanticscholar.org/v1/paper/',
-    sourceName: 'SemanticScholar',
-    pageSize: '10000',  // page size must be a string for the request to work
-    requestInterval: 3500
+    baseUrl: process.env.SEMANTIC_SCHOLAR_BASE_URL,
+    authorUrl: process.env.SEMANTIC_SCHOLAR_AUTHOR_URL,
+    queryUrl: process.env.SEMANTIC_SCHOLAR_QUERY_URL,
+    publicationUrl: process.env.SEMANTIC_SCHOLAR_PUBLICATION_URL,
+    sourceName: process.env.SEMANTIC_SCHOLAR_SOURCE_NAME,
+    pageSize: process.env.SEMANTIC_SCHOLAR_PAGE_SIZE,  // page size must be a string for the request to work
+    requestInterval: Number.parseInt(process.env.SEMANTIC_SCHOLAR_REQUEST_INTERVAL)
   }
 
   const semanticScholarDS: SemanticScholarDataSource = new SemanticScholarDataSource(dsConfig)
@@ -104,9 +104,10 @@ async function main (): Promise<void> {
           
           if (person.sourceIds && person.sourceIds.semanticScholarId) {
             semanticScholarIds.push(person.sourceIds.semanticScholarId)
-          } else if (possibleAuthorIdsByPersonId[`${personId}`]) {
-            semanticScholarIds = _.concat(semanticScholarIds, possibleAuthorIdsByPersonId[`${personId}`])
           }
+          // } else if (possibleAuthorIdsByPersonId[`${personId}`]) {
+          //   semanticScholarIds = _.concat(semanticScholarIds, possibleAuthorIdsByPersonId[`${personId}`])
+          // }
           await pMap(semanticScholarIds, async (scholarId) => {
             let harvestPerson = _.clone(person)
             harvestPerson.sourceIds.semanticScholarId = scholarId
