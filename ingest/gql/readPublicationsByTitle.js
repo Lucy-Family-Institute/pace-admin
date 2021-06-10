@@ -1,12 +1,12 @@
 import gql from 'graphql-tag'
 
-export default function readPublicationsByDoi (doi) {
+export default function readPublicationsByTitle (title) {
   return {
     query: gql`
-      query MyQuery ($doi: String!){
+      query MyQuery ($title: String!){
         publications (
           where: {
-            doi: {_ilike: $doi}
+            title: {_ilike: $title}
           }
         ){
           id
@@ -30,7 +30,7 @@ export default function readPublicationsByDoi (doi) {
       }
     `,
     variables: {
-      doi
+      title
     }
   }
 }
