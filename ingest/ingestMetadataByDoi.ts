@@ -18,6 +18,7 @@ import moment from 'moment'
 
 import dotenv from 'dotenv'
 import readPublicationsByDoi from './gql/readPublicationsByDoi'
+import readPublicationsByTitle from './gql/readPublicationsByTitle'
 
 import { getAllSimplifiedPersons } from './modules/queryNormalizedPeople'
 import { CalculateConfidence } from './modules/calculateConfidence'
@@ -25,11 +26,15 @@ import { SemanticScholarDataSource } from './modules/semanticScholarDataSource'
 import { WosDataSource } from './modules/wosDataSource'
 
 import DataSourceConfig from './modules/dataSourceConfig'
+
+import { Mutex } from './units/mutex'
 // import insertReview from '../client/src/gql/insertReview'
 
 dotenv.config({
   path: '../.env'
 })
+
+const mutex = new Mutex()
 
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
@@ -324,14 +329,28 @@ async function matchPeopleToPaperAuthors(publicationCSL, simplifiedPersons, pers
   return matchedPersonMap
 }
 
-async function isPublicationAlreadyInDB (doi, sourceName) : Promise<boolean> {
+async function isPublicationAlreadyInDB (doi, csl, sourceName) : Promise<boolean> {
   const queryResult = await client.query(readPublicationsByDoi(doi))
   let foundPub = false
+  const title = csl.title
+  const publicationYear = getPublicationYear(csl)
+  const authors = await getCSLAuthors(csl)
   _.each(queryResult.data.publications, (publication) => {
     if (publication.doi === doi && _.toLower(publication.source_name) === _.toLower(sourceName)) {
       foundPub = true
     }
   })
+  if (!foundPub) {
+    const titleQueryResult = await client.query(readPublicationsByTitle(title))
+    _.each(titleQueryResult.data.publications, (publication) => {
+      // console.log(`Checking existing publication title: '${publication.title}' year: '${JSON.stringify(publication.year)}' against title: '${title}' year: '${JSON.stringify(publicationYear)}' foundPub before is: ${foundPub}`)
+      // check for something with same title and publication year as well
+      if (publication.title === title && publication.year === publicationYear) { //} && authors.length === publication.publications_authors.length) {
+        foundPub = true
+      }
+      // console.log(`Checking existing publication title: '${publication.title}' year: '${JSON.stringify(publication.year)}' against title: '${title}' year: '${JSON.stringify(publicationYear)}' foundPub after is: ${foundPub}`)
+    })
+  }
   return foundPub
 }
 
@@ -577,68 +596,61 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
           }
 
           if (_.keys(matchedPersons).length > 0){
-            const pubFound = await isPublicationAlreadyInDB(doi, sourceName)
             const publicationYear = getPublicationYear (csl)
             if (minPublicationYear != undefined && publicationYear < minPublicationYear) {
               console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${sourceName} from year: ${publicationYear}`)
               doiStatus.skippedDOIs.push(doi)
-            } else if (!pubFound) {
-              // console.log(`Inserting Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${sourceName}`)
-              const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authors, sourceName, sourceMetadata)
-              // console.log('Finished Running Insert and starting next thread')
-              //console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
-
-              //console.log(`Publication Id: ${publicationId} Matched Persons count: ${_.keys(matchedPersons).length}`)
-              // now insert a person publication record for each matched Person
-              let loopCounter2 = 0
-              await pMap(_.keys(matchedPersons), async function (personId){
-                try {
-                  const person = matchedPersons[personId]
-                  loopCounter2 += 1
-                  //have each wait a pseudo-random amount of time between 1-5 seconds
-                  await randomWait(loopCounter2)
-                  const mutateResult = await client.mutate(
-                    insertPersonPublication(personId, publicationId, person['confidence'])
-                  )
-
-                  const newPersonPubId = await mutateResult.data.insert_persons_publications.returning[0]['id']
-                  // if (!newPersonPublicationsByDoi[doi]) {
-                  //   newPersonPublicationsByDoi[doi] = []
-                  // }
-                  // const obj = {
-                  //   id: newPersonPubId,
-                  //   person_id: personId
-                  // }
-                  // // console.log(`Capturing added person pub: ${JSON.stringify(obj, null, 2)}`)
-                  // newPersonPublicationsByDoi[doi].push(obj)
-
-                //console.log(`added person publication id: ${ mutateResult.data.insert_persons_publications.returning[0].id }`)
-                } catch (error) {
-                  const errorMessage = `Error on add person id ${JSON.stringify(personId,null,2)} to publication id: ${publicationId}`
-                  if (!failedRecords[sourceName]) failedRecords[sourceName] = []
-                  _.each(papersByDoi[doi], (paper) => {
-                    if (lessThanMinPublicationYear(paper, doi, minPublicationYear)) {
-                      console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${(doi ? doi: 'undefined')} from source: ${sourceName}`)
-                      doiStatus.skippedDOIs.push(doi)
-                    } else {
-                      doiStatus.failedDOIs.push(doi)
-                      doiStatus.combinedFailedRecords[doi] = paper
-                      console.log(errorMessage)
-                      doiStatus.errorMessages.push(errorMessage)
-                      paper = _.set(paper, 'error', errorMessage)
-                      failedRecords[sourceName].push(paper)
-                    }
-                  }) 
-                }
-              }, { concurrency: 1 })
-              //if we make it this far succeeded
-              doiStatus.addedDOIs.push(doi)
-              // console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
-              // console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs.length,null,2)}`)
-              // console.log(`Skipped DOIs: ${JSON.stringify(doiStatus.skippedDOIs.length,null,2)}`)
             } else {
-              doiStatus.skippedDOIs.push(doi)
-              console.log(`Skipping doi already in DB #${processedCount} of total ${count}: ${doi} for source: ${sourceName}`)
+              await mutex.dispatch( async () => {
+                const pubFound = await isPublicationAlreadyInDB(doi, csl, sourceName)
+                if (!pubFound) {
+                  // console.log(`Inserting Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${sourceName}`)
+                  const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authors, sourceName, sourceMetadata)
+                  // console.log('Finished Running Insert and starting next thread')
+                  //console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
+
+                  //console.log(`Publication Id: ${publicationId} Matched Persons count: ${_.keys(matchedPersons).length}`)
+                  // now insert a person publication record for each matched Person
+                  let loopCounter2 = 0
+                  await pMap(_.keys(matchedPersons), async function (personId){
+                    try {
+                      const person = matchedPersons[personId]
+                      loopCounter2 += 1
+                      //have each wait a pseudo-random amount of time between 1-5 seconds
+                      await randomWait(loopCounter2)
+                      const mutateResult = await client.mutate(
+                        insertPersonPublication(personId, publicationId, person['confidence'])
+                      )
+
+                      const newPersonPubId = await mutateResult.data.insert_persons_publications.returning[0]['id']
+                    } catch (error) {
+                      const errorMessage = `Error on add person id ${JSON.stringify(personId,null,2)} to publication id: ${publicationId}`
+                      if (!failedRecords[sourceName]) failedRecords[sourceName] = []
+                      _.each(papersByDoi[doi], (paper) => {
+                        if (lessThanMinPublicationYear(paper, doi, minPublicationYear)) {
+                          console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${(doi ? doi: 'undefined')} from source: ${sourceName}`)
+                          doiStatus.skippedDOIs.push(doi)
+                        } else {
+                          doiStatus.failedDOIs.push(doi)
+                          doiStatus.combinedFailedRecords[doi] = paper
+                          console.log(errorMessage)
+                          doiStatus.errorMessages.push(errorMessage)
+                          paper = _.set(paper, 'error', errorMessage)
+                          failedRecords[sourceName].push(paper)
+                        }
+                      }) 
+                    }
+                  }, { concurrency: 1 })
+                  //if we make it this far succeeded
+                  doiStatus.addedDOIs.push(doi)
+                  // console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
+                  // console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs.length,null,2)}`)
+                  // console.log(`Skipped DOIs: ${JSON.stringify(doiStatus.skippedDOIs.length,null,2)}`)
+                } else {
+                  doiStatus.skippedDOIs.push(doi)
+                  console.log(`Skipping doi already in DB #${processedCount} of total ${count}: ${doi} for source: ${sourceName}`)
+                }
+              })
             }
           } else {
             if (_.keys(matchedPersons).length <= 0){
