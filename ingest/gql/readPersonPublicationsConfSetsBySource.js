@@ -25,6 +25,7 @@ export default function readPersonPublicationsConfSetsBySource (sourceName) {
               given_name
               family_name
             }
+            semantic_scholar_id
           }
           publication {
             id
