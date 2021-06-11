@@ -547,7 +547,9 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
           'paper-conference',
           'chapter',
           'book',
-          'peer-review'
+          'peer-review',
+          'report',
+          'report-series'
         ]
 
         // if at least one author, add the paper, and related personpub objects
