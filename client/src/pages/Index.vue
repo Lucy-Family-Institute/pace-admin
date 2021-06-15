@@ -239,8 +239,8 @@
                     <q-card-section>
                       <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
                     </q-card-section>
-                    <q-card-section v-if="publication.journal" class="text-left">
-                      <q-item-label><b>Journal Title:&nbsp;</b>{{ publication.journal.title }}</q-item-label>
+                    <q-card-section v-if="publication.journal_title" class="text-left">
+                      <q-item-label><b>Journal Title:&nbsp;</b>{{ publication.journal_title }}</q-item-label>
                     </q-card-section>
                     <q-card-section v-if="publication.journal" class="text-left">
                       <q-item-label><b>Journal Subjects:</b></q-item-label>
@@ -1179,7 +1179,8 @@ export default {
       // const result = await this.$apollo.query(readPublication(publicationId))
       this.publication = result.data.publications[0]
       _.set(this.publication, 'doi', _.toLower(this.publication.doi))
-      console.log(`Loaded Publication: ${JSON.stringify(this.publication)}`)
+      // console.log(`Loaded Publication: ${JSON.stringify(this.publication)}`)
+      console.log(`Publication journal is: ${JSON.stringify(this.publication.journal_title, null, 2)}`)
       this.publicationCitation = this.getCitationApa(this.publication.csl_string)
       this.publicationJournalClassifications = _.map(this.publication.journal.journals_classifications_aggregate.nodes, (node) => {
         return node.classification

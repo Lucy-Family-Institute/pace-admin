@@ -215,8 +215,8 @@
                     <q-card-section>
                       <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
                     </q-card-section>
-                    <q-card-section v-if="publication&&publication.journal!==undefined&&publication.journal!==null" class="text-left">
-                      <q-item-label><b>Journal Title:&nbsp;</b>{{ publication.journal.title }}</q-item-label>
+                    <q-card-section v-if="publication&&publication.journal_title" class="text-left">
+                      <q-item-label><b>Journal Title:&nbsp;</b>{{ publication.journal_title }}</q-item-label>
                     </q-card-section>
                     <q-card-section v-if="publication&&publication.awards!==undefined&&publication.awards.length>0" class="text-left">
                       <q-item-label><b>Funding Awards:</b></q-item-label>
@@ -1104,17 +1104,24 @@ export default {
       this.showCurrentSelectedPublication(true)
     },
     getPublicationsCSVResult (personPublications) {
+      // let rows = []
+      // await pMap(personPublications, async (personPub) => {
       return _.map(personPublications, (personPub) => {
         return this.getPubCSVResultObject(personPub)
       })
+      // }, { concurrency: 1})
+      // return rows
     },
     getPubCSVResultObject (personPublication) {
+      // const fullPublication = await this.loadPublicationById(personPublication.publication.id)
+      // console.log(`Getting citation from ${_.keys(personPublication.publication)}`)
       return {
         authors: this.sortAuthorsByDoi[this.selectedInstitutionReviewState.toLowerCase()][personPublication.publication.doi],
         title: personPublication.publication.title.replace(/\n/g, ' '),
         doi: this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi)),
-        journal: (personPublication.publication.journal) ? personPublication.publication.journal.title : '',
+        journal: (personPublication.publication.journal_title) ? personPublication.publication.journal_title : '',
         year: personPublication.publication.year,
+        // citation: this.getCitationApa(fullPublication.csl_string),
         source_names: JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.publicationsGroupedByDoi[personPublication.publication.doi]), (pub) => { return pub.publication.source_name })),
         sources: this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.publicationsGroupedByDoi[personPublication.publication.doi])),
         abstract: personPublication.publication.abstract
@@ -1570,6 +1577,15 @@ export default {
         console.log(`Warning no confidence set found for person pubication: ${personPublication.id}`)
       }
       return obj
+    },
+    async loadPublicationById (publicationId) {
+      const result = await this.$apollo.query({
+        query: readPublication,
+        variables: {
+          publicationId: publicationId
+        }
+      })
+      return result.data.publications[0]
     },
     async loadPublication (personPublication) {
       this.clearPublication()
