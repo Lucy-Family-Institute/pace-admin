@@ -10,6 +10,7 @@ query MyQuery ($publicationId: Int!) {
     year
     csl_string
     csl
+    journal_title: csl(path:"container-title")
     source_name
     source_metadata
     scopus_eid: source_metadata(path: "eid")
