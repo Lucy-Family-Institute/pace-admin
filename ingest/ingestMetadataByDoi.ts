@@ -481,13 +481,13 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
 
     // let newPersonPublicationsByDoi = {}
 
-    let processedCount = 0
+    // let processedCount = 0
     
     let failedRecords = {}
 
-    await pMap(_.keys(papersByDoi), async (doi) => {
+    await pMap(_.keys(papersByDoi), async (doi, index) => {
+      const processedCount = index + 1
       try {
-        processedCount += 1
         loopCounter += 1
 
         if (processedCount % 100 === 0){
