@@ -17,6 +17,7 @@ export default function readPublicationsByTitle (title) {
           csl
           source_name
           source_metadata
+          wos_id: source_metadata(path: "uid")
           scopus_eid: source_metadata(path: "eid")
           scopus_pii: source_metadata(path: "pii")
           pubmed_resource_identifiers: source_metadata(path: "resourceIdentifiers")

@@ -12,6 +12,7 @@ export default function readPublicationsAwards () {
           pubmed_funders: source_metadata(path: "funderIdentifiers")
           crossref_funders: csl(path:"funder")
           scopus_eid: source_metadata(path: "eid")
+          wos_id: source_metadata(path: "uid")
           pubmed_resource_identifiers: source_metadata(path: "resourceIdentifiers")
           abstract
           year
