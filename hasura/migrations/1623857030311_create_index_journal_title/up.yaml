@@ -1,0 +1,5 @@
+- args:
+    cascade: false
+    sql: |
+      CREATE INDEX ON publications((csl->>'container-title'));
+  type: run_sql

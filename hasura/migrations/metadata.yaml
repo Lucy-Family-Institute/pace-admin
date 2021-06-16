@@ -1575,10 +1575,6 @@ tables:
     name: persons_publication
     comment: null
   - using:
-      foreign_key_constraint_on: review_organization_value
-    name: review_organization
-    comment: null
-  - using:
       foreign_key_constraint_on: review_type
     name: type_review
     comment: null
