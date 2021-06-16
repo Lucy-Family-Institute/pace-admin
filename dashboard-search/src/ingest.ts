@@ -94,6 +94,7 @@ async function main() {
             doi
             title
             year
+            journal_title: csl(path:"container-title")
             journal {
               title
               journal_type
@@ -170,7 +171,7 @@ async function main() {
         title: _.get(doc.publication, 'title'),
         year: _(_.get(doc.publication, 'year')).toString(),
         abstract: _.get(doc.publication, 'abstract', null),
-        journal: _.get(doc.publication, 'journal.title', null),
+        journal: _.get(doc.publication, 'journal_title', null),
         journal_type: _.get(doc.publication, 'journal.journal_type', null),
         classificationsTopLevel: _.uniq(_.map(
           _.get(doc.publication, 'journal.journals_classifications', []),
