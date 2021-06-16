@@ -622,6 +622,8 @@ export default {
       } else if (personPublication.publication.source_name.toLowerCase() === 'semanticscholar' &&
         personPublication.publication.semantic_scholar_id) {
         return personPublication.publication.semantic_scholar_id
+      } else if (personPublication.publication.source_name.toLowerCase() === 'webofscience') {
+        return (personPublication.publication.wos_id && personPublication.publication.wos_id['_text'] ? personPublication.publication.wos_id['_text'] : undefined)
       } else if (personPublication.publication.source_name.toLowerCase() === 'pubmed' &&
         personPublication.publication.pubmed_resource_identifiers &&
         _.isArray(personPublication.publication.pubmed_resource_identifiers)) {
@@ -698,7 +700,7 @@ export default {
       return `${process.env.SEMANTIC_SCHOLAR_VIEW_PUBLICATION_URL}${paperId}`
     },
     getWebOfScienceUri (wosId) {
-      return `${process.env.WOS_PULBICATION_URL}${wosId}`
+      return `${process.env.WOS_PUBLICATION_URL}${wosId}`
     },
     getpublicationsGroupedByDoiByOrgReviewCount (reviewType) {
       return this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType] ? this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType].length : 0
@@ -1074,6 +1076,9 @@ export default {
     //   }
     // },
     async fetchData () {
+      if (!this.selectedCenter || !this.selectedCenter.value) {
+        this.selectedCenter = this.preferredSelectedCenter
+      }
       await this.loadReviewStates()
       await this.loadPublications()
     },
@@ -1669,7 +1674,7 @@ export default {
         await _.each(personPubs, async (personPub) => {
           // const personPub = personPubs[0]
           console.log(`Adding Review for person publication: ${personPub.id}`)
-          let selectedCenterValue = this.selectedCenter
+          let selectedCenterValue = this.selectedCenter.value
           if (!selectedCenterValue) {
             selectedCenterValue = this.preferredSelectedCenter.value
           }
