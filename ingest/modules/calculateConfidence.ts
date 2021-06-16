@@ -535,6 +535,8 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
       return matchedAuthors
     } else if (confidenceType.name === 'given_name_initial') {
       return this.testAuthorGivenNameInitial(author, publicationAuthorMap)
+    // } else if (confidenceType.name === 'given_name_mismatch') {
+    //  return this.testAuthorGivenNameMismatch(author, publicationAuthorMap)
     } else if (confidenceType.name === 'given_name') {
       return this.testAuthorGivenName(author, publicationAuthorMap)
     } else if (confidenceType.name === 'university_affiliation') {
@@ -620,6 +622,11 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
       base: 0.25,
       additiveCoefficient: 2.0
     },
+    given_name_mismatch: {
+      // in this case lower confidence if given name not a match but initial was a match
+      base: -0.10,
+      additiveCoefficient: 1.0
+    },
     given_name_initial: {
       base: 0.20,
       additiveCoefficient: 1.0
@@ -687,7 +694,7 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
     await pMap(testAuthors, async (testAuthor) => {
       console.log(`Confidence Test Author is: ${testAuthor['names'][0]['lastName']}, ${testAuthor['names'][0]['firstName']}`)
       // if most recent person pub id is defined, it will not recalculate past confidence sets
-      const personPubCount = await this.getPersonPublicationsCount(testAuthor['id'], mostRecentPersonPubId, minConfidence)
+      const personPubCount = await this.getPersonPublicationsCount(testAuthor['id'], mostRecentPersonPubId, minConfidence, publicationYear)
       console.log(`Found '${personPubCount}' new possible pub matches for Test Author: ${testAuthor['names'][0]['lastName']}, ${testAuthor['names'][0]['firstName']}`)
 
       const resultLimit = 1000

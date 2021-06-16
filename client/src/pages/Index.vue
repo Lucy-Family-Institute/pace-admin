@@ -595,6 +595,8 @@ export default {
         }
       } else if (personPublication.publication.source_name.toLowerCase() === 'crossref') {
         return personPublication.publication.doi
+      } else if (personPublication.publication.source_name.toLowerCase() === 'webofscience') {
+        return personPublication.publication.wos_id['_text']
       } else {
         return undefined
       }
@@ -618,6 +620,7 @@ export default {
     // depending on the source return source uri
     getSourceUri (personPublication) {
       console.log(`Getting source uri for personPublication pub`)
+      console.log(`Process env wos url: ${process.env.WOS_PUBLICATION_URL}`)
       const sourceId = this.getPublicationSourceId(personPublication)
       if (sourceId) {
         if (personPublication.publication.source_name.toLowerCase() === 'scopus') {
@@ -647,7 +650,7 @@ export default {
       return `${process.env.SEMANTIC_SCHOLAR_VIEW_PUBLICATION_URL}${paperId}`
     },
     getWebOfScienceUri (wosId) {
-      return `${process.env.WOS_PULBICATION_URL}${wosId}`
+      return `${process.env.WOS_PUBLICATION_URL}${wosId}`
     },
     getPublicationsGroupedByDoiByReviewCount (reviewType) {
       return this.filteredPersonPublicationsCombinedMatchesByReview[reviewType] ? this.filteredPersonPublicationsCombinedMatchesByReview[reviewType].length : 0
