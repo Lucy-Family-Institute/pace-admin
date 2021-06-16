@@ -1,0 +1,4 @@
+- args:
+    cascade: false
+    sql: CREATE INDEX ON publications((source_metadata->>'funderIdentifiers'));
+  type: run_sql

@@ -1,0 +1,5 @@
+- args:
+    cascade: false
+    sql: |
+      CREATE INDEX ON publications((source_metadata->>'uid'));
+  type: run_sql

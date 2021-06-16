@@ -1,0 +1,5 @@
+- args:
+    cascade: false
+    sql: |
+      CREATE INDEX ON publications((csl->>'funderIdentifiers'));
+  type: run_sql
