@@ -79,9 +79,17 @@
               <q-item v-if="publicationsLoadedError">
                 <q-item-label>Error on Publication Data Load</q-item-label>
               </q-item>
+              <q-item v-if="!publicationsCslLoaded && !publicationsLoadedError && publicationsLoaded">
+                <q-item-label>Prepping Data for Download...
+                  <q-spinner-ios
+                    color="primary"
+                    size="2em"
+                    />
+                </q-item-label>
+              </q-item>
               <q-separator/>
               <download-csv
-                v-if="publicationsLoaded && !publicationsLoadedError"
+                v-if="publicationsLoaded && !publicationsLoadedError && publicationsCslLoaded"
                 class="cursor-pointer"
                 :name="`${reviewTypeFilter}_center_institute_review_${getSimpleFormatAuthorName(selectedCenterAuthor)}.csv`"
                 :data="getPublicationsCSVResult(personPublicationsCombinedMatches)">
@@ -415,6 +423,7 @@ import readPersons from '../gql/readPersons'
 // import readPublicationsByPerson from '../gql/readPublicationsByPerson'
 // import readPublicationsByPersonByReview from '../gql/readPublicationsByPersonByReview'
 import readAuthorsByPublication from '../gql/readAuthorsByPublication'
+import readPublicationsCSL from '../gql/readPublicationsCSL'
 // import readConfidenceSetItems from '../gql/readConfidenceSetItems'
 import insertReview from '../gql/insertReview'
 // import readUser from '../gql/readUser'
@@ -466,6 +475,7 @@ export default {
     secondModel: 500,
     people: [],
     publications: [],
+    citationsByDoi: {},
     publicationsGroupedByInstitutionReview: {},
     personPublicationsCombinedMatches: [],
     personPublicationsCombinedMatchesByReview: {},
@@ -513,6 +523,7 @@ export default {
     progress: 0,
     buffer: 0,
     publicationsLoaded: false,
+    publicationsCslLoaded: false,
     publicationsLoadedError: false,
     showProgressBar: false,
     reviewedAuthorColumns: [
@@ -1084,6 +1095,7 @@ export default {
     },
     async clearPublications () {
       this.publications = []
+      this.citationsByDoi = {}
       this.personPublicationsCombinedMatches = []
       this.personPublicationsCombinedMatchesByReview = {}
       this.personPublicationsCombinedMatchesByOrgReview = {}
@@ -1109,27 +1121,22 @@ export default {
       this.showCurrentSelectedPublication(true)
     },
     getPublicationsCSVResult (personPublications) {
-      // let rows = []
-      // await pMap(personPublications, async (personPub) => {
       return _.map(personPublications, (personPub) => {
         return this.getPubCSVResultObject(personPub)
       })
-      // }, { concurrency: 1})
-      // return rows
     },
     getPubCSVResultObject (personPublication) {
-      // const fullPublication = await this.loadPublicationById(personPublication.publication.id)
-      // console.log(`Getting citation from ${_.keys(personPublication.publication)}`)
+      const citation = (this.citationsByDoi[_.toLower(personPublication.publication.doi)] ? this.citationsByDoi[_.toLower(personPublication.publication.doi)] : undefined)
       return {
         authors: this.sortAuthorsByDoi[this.selectedInstitutionReviewState.toLowerCase()][personPublication.publication.doi],
         title: personPublication.publication.title.replace(/\n/g, ' '),
         doi: this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi)),
         journal: (personPublication.publication.journal_title) ? personPublication.publication.journal_title : '',
         year: personPublication.publication.year,
-        // citation: this.getCitationApa(fullPublication.csl_string),
         source_names: JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.publicationsGroupedByDoi[personPublication.publication.doi]), (pub) => { return pub.publication.source_name })),
         sources: this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.publicationsGroupedByDoi[personPublication.publication.doi])),
-        abstract: personPublication.publication.abstract
+        abstract: personPublication.publication.abstract,
+        citation: citation
       }
     },
     getCSVHyperLinkString (showText, url) {
@@ -1483,6 +1490,7 @@ export default {
       this.startProgressBar()
       this.publicationsLoaded = false
       this.publicationsLoadedError = false
+      this.publicationsCslLoaded = false
       // clear any previous publications in list
       this.clearPublications()
       // const result = await this.$apollo.query(readPublicationsByPerson(item.id))
@@ -1565,13 +1573,33 @@ export default {
         this.authorsByDoi = _.mapValues(pubsWithAuthorsByDoi, (publication) => {
           return (publication[0].authors) ? publication[0].authors : []
         })
-        this.loadPersonPublicationsCombinedMatches()
+        await this.loadPersonPublicationsCombinedMatches()
+        this.publicationsLoaded = true
+
+        console.log(`Start query publications csl ${moment().format('HH:mm:ss:SSS')}`)
+        await this.loadPublicationsCSLData(publicationIds)
+        console.log(`Finished query publications csl ${moment().format('HH:mm:ss:SSS')}`)
+        this.publicationsCslLoaded = true
       } catch (error) {
         this.publicationsLoaded = true
         this.publicationsLoadedError = true
+        this.publicationsCslLoaded = true
         throw error
       }
       this.publicationsLoaded = true
+    },
+    async loadPublicationsCSLData (publicationIds) {
+      const pubsCSLResult = await this.$apollo.query({
+        query: readPublicationsCSL(publicationIds),
+        fetchPolicy: 'network-only'
+      })
+      const publicationsCSLByDoi = _.groupBy(pubsCSLResult.data.publications, (publication) => {
+        return _.toLower(publication.doi)
+      })
+
+      this.citationsByDoi = _.mapValues(publicationsCSLByDoi, (publications) => {
+        return this.getCitationApa(publications[0].csl_string)
+      })
     },
     getReviewedAuthor (personPublication) {
       const obj = _.clone(personPublication.person)
@@ -1823,8 +1851,10 @@ export default {
       const apaCitation = citeObj.format('bibliography', {
         template: 'apa'
       })
-      console.log(`Converted to citation: ${apaCitation}`)
-      return this.decode(apaCitation)
+      // console.log(`Converted to citation: ${apaCitation}`)
+      const decodedCitation = this.decode(apaCitation)
+      // trim trailing whitespace and remove any newlines in the citation
+      return _.trim(decodedCitation.replace(/(\r\n|\n|\r)/gm, ' '))
     },
     resetFilters () {
       this.selectedPersonPubSort = this.preferredPersonPubSort
