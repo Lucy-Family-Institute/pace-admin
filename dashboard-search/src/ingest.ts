@@ -6,6 +6,7 @@ import fetch from 'node-fetch'
 import gql from 'graphql-tag'
 import MeiliSearch from 'meilisearch'
 import util from 'util'
+import Cite from 'citation-js'
 
 import dotenv from 'dotenv'
 
@@ -61,6 +62,50 @@ function getImpactFactorRange (impactFactor) {
   return impactFactorLevel
 }
 
+function getUpdatedPublicationYear (csl) {
+  // look for both online and print dates, and make newer date win if different
+  // put in array sorted by date
+
+  let years = []
+  years.push(_.get(csl, 'journal-issue.published-print.date-parts[0][0]', null))
+  years.push(_.get(csl, 'journal-issue.published-online.date-parts[0][0]', null))
+  years.push(_.get(csl, 'issued.date-parts[0][0]', null))
+  years.push(_.get(csl, 'published-print.date-parts[0][0]', null))
+  years.push(_.get(csl, 'published-online.date-parts[0][0]', null))
+
+  years = _.sortBy(years, (year) => { return year === null ? 0 : Number.parseInt(year) }).reverse()
+  if (years.length > 0 && years[0] > 0) {
+    // return the most recent year
+    return years[0]
+  } else {
+    return null
+  }
+}
+
+function getCitationApa (cslString) {
+  const csl = JSON.parse(cslString)
+
+  try {
+    // update publication year to be current if can, otherwise leave as is
+    const publicationYear = getUpdatedPublicationYear(csl)
+    if (publicationYear !== null && publicationYear > 0) {
+      csl['issued']['date-parts'][0][0] = publicationYear
+    }
+  } catch (error) {
+    console.log(`Warning: Was unable to update publication year for citation with error: ${error}`)
+  }
+
+  const citeObj = new Cite(csl)
+  // create formatted citation as test
+  const apaCitation = citeObj.format('bibliography', {
+    template: 'apa'
+  })
+  // console.log(`Converted to citation: ${apaCitation}`)
+  // const decodedCitation = this.decode(apaCitation)
+  // trim trailing whitespace and remove any newlines in the citation
+  return _.trim(apaCitation.replace(/(\r\n|\n|\r)/gm, ' '))
+}
+
 async function main() {
   console.log(await searchClient.getKeys())
   try {
@@ -94,6 +139,7 @@ async function main() {
             doi
             title
             year
+            csl_string
             journal_title: csl(path:"container-title")
             journal {
               title
@@ -191,6 +237,7 @@ async function main() {
             return award.funder_name
           }
         )),
+        citation: getCitationApa(doc.publication.csl_string),
         wildcard: "*" // required for empty search (i.e., return all)
       }
     })
