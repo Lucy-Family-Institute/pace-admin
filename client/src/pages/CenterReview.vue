@@ -79,6 +79,14 @@
               <q-item v-if="publicationsLoadedError">
                 <q-item-label>Error on Publication Data Load</q-item-label>
               </q-item>
+              <q-item v-if="!publicationsCslLoaded && !publicationsLoadedError && publicationsLoaded">
+                <q-item-label>Prepping Data for Download...
+                  <q-spinner-ios
+                    color="primary"
+                    size="2em"
+                    />
+                </q-item-label>
+              </q-item>
               <q-separator/>
               <download-csv
                 v-if="publicationsLoaded && !publicationsLoadedError && publicationsCslLoaded"
@@ -467,7 +475,7 @@ export default {
     secondModel: 500,
     people: [],
     publications: [],
-    publicationsCSLByDoi: {},
+    citationsByDoi: {},
     publicationsGroupedByInstitutionReview: {},
     personPublicationsCombinedMatches: [],
     personPublicationsCombinedMatchesByReview: {},
@@ -1087,7 +1095,7 @@ export default {
     },
     async clearPublications () {
       this.publications = []
-      this.publicationsCSLByDoi = {}
+      this.citationsByDoi = {}
       this.personPublicationsCombinedMatches = []
       this.personPublicationsCombinedMatchesByReview = {}
       this.personPublicationsCombinedMatchesByOrgReview = {}
@@ -1118,7 +1126,7 @@ export default {
       })
     },
     getPubCSVResultObject (personPublication) {
-      const citation = (this.publicationsCSLByDoi[_.toLower(personPublication.publication.doi)] ? this.getCitationApa(this.publicationsCSLByDoi[_.toLower(personPublication.publication.doi)][0].csl_string) : undefined)
+      const citation = (this.citationsByDoi[_.toLower(personPublication.publication.doi)] ? this.citationsByDoi[_.toLower(personPublication.publication.doi)] : undefined)
       return {
         authors: this.sortAuthorsByDoi[this.selectedInstitutionReviewState.toLowerCase()][personPublication.publication.doi],
         title: personPublication.publication.title.replace(/\n/g, ' '),
@@ -1128,7 +1136,7 @@ export default {
         source_names: JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.publicationsGroupedByDoi[personPublication.publication.doi]), (pub) => { return pub.publication.source_name })),
         sources: this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.publicationsGroupedByDoi[personPublication.publication.doi])),
         abstract: personPublication.publication.abstract,
-        citation: _.trim(citation)
+        citation: citation
       }
     },
     getCSVHyperLinkString (showText, url) {
@@ -1585,8 +1593,12 @@ export default {
         query: readPublicationsCSL(publicationIds),
         fetchPolicy: 'network-only'
       })
-      this.publicationsCSLByDoi = _.groupBy(pubsCSLResult.data.publications, (publication) => {
+      const publicationsCSLByDoi = _.groupBy(pubsCSLResult.data.publications, (publication) => {
         return _.toLower(publication.doi)
+      })
+
+      this.citationsByDoi = _.mapValues(publicationsCSLByDoi, (publications) => {
+        return this.getCitationApa(publications[0].csl_string)
       })
     },
     getReviewedAuthor (personPublication) {
@@ -1839,8 +1851,10 @@ export default {
       const apaCitation = citeObj.format('bibliography', {
         template: 'apa'
       })
-      console.log(`Converted to citation: ${apaCitation}`)
-      return this.decode(apaCitation)
+      // console.log(`Converted to citation: ${apaCitation}`)
+      const decodedCitation = this.decode(apaCitation)
+      // trim trailing whitespace and remove any newlines in the citation
+      return _.trim(decodedCitation.replace(/(\r\n|\n|\r)/gm, ' '))
     },
     resetFilters () {
       this.selectedPersonPubSort = this.preferredPersonPubSort
