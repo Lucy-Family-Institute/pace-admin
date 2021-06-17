@@ -347,7 +347,8 @@ export default {
         year: result.year,
         journal_impact_factor: (result.impact_factor) ? result.impact_factor : '',
         classification: (result.classifications) ? result.classifications : '',
-        abstract: (result.abstract) ? result.abstract : ''
+        abstract: (result.abstract) ? result.abstract : '',
+        citation: (result.citation) ? result.citation : ''
       }
     },
     getCSVHyperLinkString (showText, url) {
