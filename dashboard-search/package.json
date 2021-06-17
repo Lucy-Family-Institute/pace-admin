@@ -8,6 +8,7 @@
     "apollo-client": "^2.6.10",
     "apollo-link-http": "^1.5.17",
     "axios": "^0.19.2",
+    "citation-js": "^0.5.1",
     "dotenv": "^8.2.0",
     "got": "^11.3.0",
     "graphql": "^15.1.0",
