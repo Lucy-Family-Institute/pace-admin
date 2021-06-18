@@ -1,9 +1,13 @@
 import _ from 'lodash'
 import fs from 'fs'
+import pMap from 'p-map'
+import path from 'path'
 import { getDateObject } from '../units/dateRange'
 import { command as loadCsv } from '../units/loadCsv'
 import { command as writeCsv} from '../units/writeCsv'
 import NormedPerson from './normedPerson'
+import writeToJSONFile from '../units/writeToJSONFile'
+import { loadJSONFromFile } from '../units/loadJSONFromFile'
 
 export default class NormedPublication {
   // ------ begin declare properties used when using NormedPublication like an interface
@@ -29,10 +33,10 @@ export default class NormedPublication {
    * @param csvPath the path the csv file containing the publications to be loaded
    * 
    * @param columnNameMap a map of column names in the csv to harvestset property names, if not defined uses default path from configuration
-   * 
+   * @param dataDirPath path to dir containing JSON files for sourceMetadata
    * @returns object with array of raw publication set as well as hash of doi to index of corresponding publication in array
    */
-  public static async loadFromCSV (csvPath: string): Promise<NormedPublication[]> {
+  public static async loadFromCSV (csvPath: string, dataDirPath?: string): Promise<NormedPublication[]> {
     console.log(`Loading Papers from path: ${csvPath}`)
     // ingest list of DOI's from CSV and relevant center author name
     try {
@@ -50,7 +54,17 @@ export default class NormedPublication {
       }
 
       return _.map(authorPapers, (paper) => {
-        return NormedPublication.getNormedPublicationObjectFromCSVRow(paper, objectToCSVMap)
+        let pub: NormedPublication = NormedPublication.getNormedPublicationObjectFromCSVRow(paper, objectToCSVMap)
+        if (dataDirPath) {
+          const sourceFileName = NormedPublication.getSourceMetadataFileName(pub)
+          const sourceFilePath = path.join(process.cwd(), NormedPublication.getSourceMetadataDirPath(dataDirPath), sourceFileName)
+          try {
+            pub.sourceMetadata = NormedPublication.loadNormedPublicationSourceMetadata(sourceFilePath)
+          } catch (error) {
+            console.log(`Warning failed to load source metadata from JSON for filePath: ${sourceFilePath} with error: ${error}`)
+          }
+        }
+        return pub
       })
     } catch (error){
       console.log(`Error on paper load for path ${csvPath}, error: ${error}`)
@@ -76,6 +90,28 @@ export default class NormedPublication {
       path: filePath,
       data: output
     });
+  }
+
+  public static getSourceMetadataDirPath(parentDir: string) {
+    return path.join(parentDir, 'source_metadata')
+  }
+
+  public static getSourceMetadataFileName(pub: NormedPublication): string {
+    return `${pub.datasourceName}_${pub.sourceId.replace(/\//g, '_')}.json`
+  }
+
+  public static async writeSourceMetadataToJSON(pubs: NormedPublication[], dataDir) {
+    await pMap(pubs, async (pub) => { 
+      const jsonFileDir = path.join(process.cwd(), NormedPublication.getSourceMetadataDirPath(dataDir))
+      if (!fs.existsSync(jsonFileDir)){
+        fs.mkdirSync(jsonFileDir);
+      }
+      const filePath = path.join(jsonFileDir, NormedPublication.getSourceMetadataFileName(pub))
+      const sourceMetadata = pub.sourceMetadata
+      if (sourceMetadata) {
+        await writeToJSONFile(sourceMetadata, filePath)
+      }
+    }, { concurrency: 1})
   }
 
   public static getCSVRow(pub: NormedPublication, objectToCSVMap): {} {
@@ -109,10 +145,10 @@ export default class NormedPublication {
     if (pub.sourceId) {
       row[objectToCSVMap['sourceId']] = pub.sourceId
     }
-    if (pub.sourceMetadata) {
-      // parse and get rid of any escaped quote characters
-      row[objectToCSVMap['sourceMetadata']] = JSON.stringify(pub.sourceMetadata)
-    }
+    // if (pub.sourceMetadata) {
+    //   // parse and get rid of any escaped quote characters
+    //   row[objectToCSVMap['sourceMetadata']] = JSON.stringify(pub.sourceMetadata)
+    // }
 
     return row
   }
@@ -130,6 +166,15 @@ export default class NormedPublication {
   }
   */
   public static loadNormedPublicationObjectToCSVMap(filePath = "./modules/normedPublicationObjectToCSVMap.json", filesystem = fs) {
+    if (!filesystem.existsSync(filePath)) {
+      throw `Invalid path on load json from: ${filePath}`
+    }
+    let raw = filesystem.readFileSync(filePath, 'utf8')
+    let json = JSON.parse(raw);
+    return json
+  }
+
+  public static loadNormedPublicationSourceMetadata(filePath, filesystem = fs) {
     if (!filesystem.existsSync(filePath)) {
       throw `Invalid path on load json from: ${filePath}`
     }

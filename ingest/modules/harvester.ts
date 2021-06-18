@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import pMap from 'p-map'
 import pTimes from 'p-times'
+import path from 'path'
 import { command as writeCsv } from '../units/writeCsv'
 import { dateRangesOverlapping } from '../units/dateRange'
 import { wait, randomWait } from '../units/randomWait'
@@ -195,7 +196,6 @@ export class Harvester {
     return harvestSet
   }
 
-
   /**
    * Runs a harvest against the search persons provided and writes results to a source file of path: 
    *    sourcename.startdateyear.currenttimestamp.csv
@@ -207,7 +207,7 @@ export class Harvester {
    * @returns the filepath of the output csv file
    */
   async harvestToCsv(resultsFileDir: string, searchPersons: NormedPerson[], harvestBy: HarvestOperation, searchStartDate: Date, searchEndDate?: Date, filePrefix?: string): Promise<string> {
-    const harvestSets: HarvestSet[] = await this.harvest(searchPersons, harvestBy, searchStartDate, searchEndDate, 1)
+    const harvestSets: HarvestSet[] = await this.harvest(searchPersons, harvestBy, searchStartDate, searchEndDate, 1, this.ds.getDataSourceConfig().requestInterval.valueOf())
 
     // _.each (harvestSets, (harvestSet: HarvestSet) => {
     //   _.each (harvestSet.normedPublications, (pub: NormedPublication) => {
@@ -237,6 +237,7 @@ export class Harvester {
     })
     try {
       await NormedPublication.writeToCSV(normedPubs, filePath)
+      await NormedPublication.writeSourceMetadataToJSON(normedPubs, resultsFileDir)
     } catch (error) {
       console.log(`Error on normed pubs: ${JSON.stringify(normedPubs, null, 2)}`)
       throw error
