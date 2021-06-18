@@ -126,7 +126,7 @@ update_semantic_scholar_data:
 	cd ingest && ts-node fetchSemanticScholarAuthorData.ts && cd ..
 
 update_wos_data:
-	cd ingest && ts-node fetchWoSAuthorData.ts && cd ..
+	cd ingest && ts-node fetchWoSAuthorDataNewModel.ts && cd ..
 
 update_pubmed_data:
 	cd ingest && ts-node fetchPubmedData.js && cd ..
