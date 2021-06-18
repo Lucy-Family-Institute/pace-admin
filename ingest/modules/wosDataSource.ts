@@ -108,6 +108,8 @@ export class WosDataSource implements DataSource {
     let totalResults: Number
     let publications = []
 
+    await wait(this.dsConfig.requestInterval)
+
     if (!this.getSessionId()){
       await this.initialize()
     }
@@ -117,6 +119,7 @@ export class WosDataSource implements DataSource {
     // on first call do query and get query id and total results
     if (!queryId || !totalResults){
       const soapQueryString = this.getWoSQuerySOAPString(authorQuery, startDate, endDate)
+      await wait(this.dsConfig.requestInterval)
       const results = await this.fetchQuery(this.getSessionId(), soapQueryString)
       queryId = results['soap:Envelope']['soap:Body']['ns2:searchResponse'].return.queryId._text
       totalResults = Number.parseInt(results['soap:Envelope']['soap:Body']['ns2:searchResponse'].return.recordsFound._text)
