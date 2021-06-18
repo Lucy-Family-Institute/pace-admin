@@ -10,10 +10,11 @@ import insertPubAuthor from './gql/insertPubAuthor'
 import { command as loadCsv } from './units/loadCsv'
 import Cite from 'citation-js'
 import pMap from 'p-map'
+import path from 'path'
 import humanparser from 'humanparser'
 import { randomWait } from './units/randomWait'
 import { command as writeCsv } from './units/writeCsv'
-import { isDir, loadDirList } from './units/loadJSONFromFile'
+import { isDir, loadDirList, loadJSONFromFile } from './units/loadJSONFromFile'
 import moment from 'moment'
 
 import dotenv from 'dotenv'
@@ -28,6 +29,7 @@ import { WosDataSource } from './modules/wosDataSource'
 import DataSourceConfig from './modules/dataSourceConfig'
 
 import { Mutex } from './units/mutex'
+import NormedPublication from './modules/normedPublication'
 // import insertReview from '../client/src/gql/insertReview'
 
 dotenv.config({
@@ -166,26 +168,27 @@ async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName
   }
 }
 
-async function getPapersByDoi (csvPath: string) {
+async function getPapersByDoi (csvPath: string, dataDirPath?: string) {
   console.log(`Loading Papers from path: ${csvPath}`)
   // ingest list of DOI's from CSV and relevant center author name
   try {
-    const authorPapers: any = await loadCsv({
-     path: csvPath
-    })
+    const authorPapers: NormedPublication[] = await NormedPublication.loadFromCSV(csvPath, dataDirPath)
+    // const authorPapers: any = await loadCsv({
+    //  path: csvPath
+    // })
 
     //normalize column names to all lowercase
-    const authorLowerPapers = _.mapValues(authorPapers, function (paper) {
-      return _.mapKeys(paper, function (value, key) {
-        return key.toLowerCase()
-      })
-    })
+    // const authorLowerPapers = _.mapValues(authorPapers, function (paper) {
+    //   return _.mapKeys(paper, function (value, key) {
+    //     return key.toLowerCase()
+    //   })
+    // })
 
     // console.log(`After lowercase ${_.keys(authorLowerPapers[0])}`)
 
-    const papersByDoi = _.groupBy(authorLowerPapers, function(paper) {
+    const papersByDoi = _.groupBy(authorPapers, function(paper: NormedPublication) {
       //strip off 'doi:' if present
-      return _.replace(paper['doi'], 'doi:', '')
+      return paper.doi
     })
     //console.log('Finished load')
     return papersByDoi
@@ -383,7 +386,7 @@ function lessThanMinPublicationYear(paper, doi, minPublicationYear) {
   return false    
 }
 
-async function loadConfirmedAuthorPapersFromCSV(path) {
+async function loadConfirmedAuthorPapersFromCSV(path, dataDirPath) {
   try {
     const papersByDoi = await getPapersByDoi(path)
     return papersByDoi
@@ -398,8 +401,12 @@ async function loadConfirmedPapersByDoi(pathsByYear) {
   await pMap(_.keys(pathsByYear), async (year) => {
     console.log(`Loading ${year} Confirmed Authors`)
     //load data
-    await pMap(pathsByYear[year], async (path: string) => {
-      confirmedPapersByDoi = _.merge(confirmedPapersByDoi, await getPapersByDoi(path))
+    await pMap(pathsByYear[year], async (yearPath: string) => {
+      let dataDir = yearPath
+      if (!isDir(yearPath)) {
+        dataDir = path.dirname(yearPath)
+      }
+      confirmedPapersByDoi = _.merge(confirmedPapersByDoi, await getPapersByDoi(yearPath))
     }, { concurrency: 1})
   }, { concurrency: 1 })
   return confirmedPapersByDoi
@@ -420,7 +427,7 @@ async function getCSLAuthorsFromSourceMetadata(sourceName, sourceMetadata) {
 }
 
 //returns a map of three arrays: 'addedDOIs','failedDOIs', 'errorMessages'
-async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : Promise<DoiStatus> {
+async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear?) : Promise<DoiStatus> {
   let count = 0
   let doiStatus: DoiStatus = {
     addedDOIs: [],
@@ -441,7 +448,11 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
         (result[name['lastName']] || (result[name['lastName']] = [])).push(value)
       })
     }, {})
-    const papersByDoi = await getPapersByDoi(path)
+    let dataDir = paperPath
+    if (!isDir(paperPath)) {
+      dataDir = path.dirname(paperPath)
+    }
+    const papersByDoi = await getPapersByDoi(paperPath, dataDir)
     const dois = _.keys(papersByDoi)
     count = dois.length
     console.log(`Papers by DOI Count: ${JSON.stringify(dois.length,null,2)}`)
@@ -556,9 +567,12 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
         if(_.includes(types, csl['type']) && csl.title) {
           //push in csl record to jsonb blob
 
+          const firstPaper: NormedPublication = papersByDoi[doi][0]
           //check for SCOPUS
           //there may be more than one author match with same paper, and just grab first one
-          if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['scopus_record']){
+          if (firstPaper.datasourceName){
+            sourceName = papersByDoi[doi][0].datasourceName
+          } else if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['scopus_record']){
             sourceName = 'Scopus'
             sourceMetadata = papersByDoi[doi][0]['scopus_record']
             if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
@@ -582,6 +596,9 @@ async function loadPersonPapersFromCSV (personMap, path, minPublicationYear?) : 
             } 
           }
 
+          if (papersByDoi[doi][0].sourceMetadata) {
+            sourceMetadata = papersByDoi[doi][0].sourceMetadata
+          }
           //match paper authors to people
           //console.log(`Testing for Author Matches for DOI: ${doi}`)
           let matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthorsByDoi[doi], sourceName, sourceMetadata, minConfidence)
@@ -787,18 +804,21 @@ const pathsByYear = await getIngestFilePaths('../config/ingestFilePaths.json')
 
     console.log(`Loading ${year} Publication Data`)
     //load data
-    await pMap(pathsByYear[year], async (path) => {
+    await pMap(pathsByYear[year], async (yearPath) => {
       let loadPaths = []
-      if (isDir(path)) {
-        loadPaths = loadDirList(path)
+      if (isDir(yearPath)) {
+        loadPaths = loadDirList(yearPath)
       } else {
-        loadPaths.push(path)
+        loadPaths.push(yearPath)
       }
       await pMap(loadPaths, async (filePath) => {
-        const doiStatusByYear = await loadPersonPapersFromCSV(personMap, filePath, year)
-        doiStatus[year] = doiStatusByYear
-        combinedFailed = _.merge(combinedFailed, doiStatusByYear.combinedFailedRecords)
-      }, { concurrency: 1 })
+        // skip any subdirectories
+        if (!isDir(filePath)){
+          const doiStatusByYear = await loadPersonPapersFromCSV(personMap, filePath, year)
+          doiStatus[year] = doiStatusByYear
+          combinedFailed = _.merge(combinedFailed, doiStatusByYear.combinedFailedRecords)
+        }
+        }, { concurrency: 1 })
     }, { concurrency: 1})
   }, { concurrency: 1 }) // these all need to be 1 thread so no collisions on checking if pub already exists if present in multiple files
 
