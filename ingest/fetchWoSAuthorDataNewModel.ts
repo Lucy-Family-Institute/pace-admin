@@ -8,7 +8,7 @@ import moment from 'moment'
 import dotenv from 'dotenv'
 import { randomWait, wait } from './units/randomWait'
 import { Harvester, HarvestOperation } from './modules/harvester'
-import { CrossRefDataSource } from './modules/crossrefDataSource'
+import { WosDataSource } from './modules/wosDataSource'
 import { getAllNormedPersonsByYear } from '../ingest/modules/queryNormalizedPeople'
 import NormedPerson from './modules/normedPerson'
 import { getDateObject } from './units/dateRange'
@@ -46,16 +46,18 @@ const client = new ApolloClient({
 
 async function main (): Promise<void> {
 
-  const crossrefConfig: DataSourceConfig = {
-    baseUrl: 'https://api.crossref.org',
-    queryUrl: 'https://api.crossref.org/works',
-    sourceName: 'CrossRef',
-    pageSize: '100',  // page size must be a string for the request to work
-    requestInterval: 1000
+  const dsConfig: DataSourceConfig = {
+    baseUrl: process.env.WOS_BASE_URL,
+    queryUrl: process.env.WOS_QUERY_URL,
+    userName: process.env.WOS_USERNAME,
+    password: process.env.WOS_PASSWORD,
+    sourceName: process.env.WOS_SOURCE_NAME,
+    pageSize: process.env.WOS_PAGE_SIZE,  // page size must be a string for the request to work
+    requestInterval: Number.parseInt(process.env.WOS_REQUEST_INTERVAL)
   }
 
-  const crossrefDS: CrossRefDataSource = new CrossRefDataSource(crossrefConfig)
-  const crossrefHarvester: Harvester = new Harvester(crossrefDS)
+  const ds: WosDataSource = new WosDataSource(dsConfig)
+  const harvester: Harvester = new Harvester(ds)
   
   const years = [ 2020 ]
   let succeededPapers = []
@@ -65,7 +67,7 @@ async function main (): Promise<void> {
   await pMap(years, async (year) => {
     const normedPersons: NormedPerson[] = await getAllNormedPersonsByYear(year, client)
 
-    const resultsDir = `../data/${crossrefConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`
+    const resultsDir = `../data/${dsConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`
 
     // console.log(`Person with harvest errors for ${year} are: ${JSON.stringify(personWithHarvestErrors,null,2)}`)
     // console.log(`Normed persons for ${year} are: ${JSON.stringify(normedPersons,null,2)}`)
@@ -84,7 +86,8 @@ async function main (): Promise<void> {
         // run for each name plus name variance, put name variance second in case undefined
         // let searchNames = _.concat([{given_name: person.firstName, family_name: person.lastName }], person.nameVariances)
         // if (person.id === 2052) {
-        await crossrefHarvester.harvestToCsv(resultsDir, persons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject(`${year}-01-01`), getDateObject(`${year}-12-31`), `${person.familyName}_${person.givenName}`)
+        await wait(dsConfig.requestInterval)
+        await harvester.harvestToCsv(resultsDir, persons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject(`${year}-01-01`), getDateObject(`${year}-12-31`), `${person.familyName}_${person.givenName}`)
           // await pMap(searchNames, async (searchName) => {
         await wait(1500)
           
@@ -94,12 +97,12 @@ async function main (): Promise<void> {
         //   console.log(`Skipping author ${person.familyName}, ${person.givenName} persons`)
         // }
       } catch (error) {
-        const errorMessage = `Error on get CrossRef papers for authors: ${JSON.stringify(persons, null, 2)}: ${error}`
+        const errorMessage = `Error on get Web Of Science papers for authors: ${JSON.stringify(persons, null, 2)}: ${error}`
         failedPapers.push(errorMessage)
         _.concat(failedAuthors, persons)
         console.log(errorMessage)
       }
-    }, {concurrency: 5})
+    }, {concurrency: 1})
   }, { concurrency: 1 })
 }
 
