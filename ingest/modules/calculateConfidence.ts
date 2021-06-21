@@ -47,7 +47,12 @@ const client = new ApolloClient({
     },
     fetch: fetch as any
   }),
-  cache: new InMemoryCache()
+  cache: new InMemoryCache(),
+  defaultOptions: {
+    query: {
+      fetchPolicy: 'network-only',
+    },
+  },
 })
 interface MatchedPerson {
   person: any; // TODO: What is this creature?
@@ -414,7 +419,7 @@ export class CalculateConfidence {
   }
 
   // only call this method if last name matched
-  testAuthorGivenNamePart (author, publicationAuthorMap, initialOnly) {
+  testAuthorGivenNamePart (author, publicationAuthorMap, initialOnly, failIfOnlyInitialInGivenName?) {
     // really check for last name and given name intial match for one of the name variations
     // group name variations by last name
     const nameVariations = _.groupBy(author['names'], 'lastName')
@@ -441,14 +446,21 @@ export class CalculateConfidence {
                 console.log(`splitting given parts pubAuthor is: ${JSON.stringify(pubAuthor, null, 2)}`)
               }
               if (part && this.nameMatchFuzzy(pubLastName, 'lastName', part.toLowerCase(), firstKey, nameVariations[nameLastName])) {
-                (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
-                matched = true
+                const testPart = part.replace(/./g,'')
+                if (!failIfOnlyInitialInGivenName || testPart.length > 1){
+                  (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
+                  matched = true
+                }
               }
             })
             // if not matched try matching without breaking it into parts
             if (!matched && givenParts.length > 1) {
               if (this.nameMatchFuzzy(pubLastName, 'lastName', pubAuthor['given'], firstKey, nameVariations[nameLastName])) {
-                (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
+                const testPart = pubAuthor['given'].replace(/./g,'')
+                // only set to true if not failing for 1 character names (i.e., initial)
+                if (!failIfOnlyInitialInGivenName || testPart.length > 1){
+                  (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
+                }
               }
             }
           })
@@ -464,8 +476,8 @@ export class CalculateConfidence {
   }
 
   // only call this method if last name matched
-  testAuthorGivenName (author, publicationAuthorMap) {
-    return this.testAuthorGivenNamePart(author, publicationAuthorMap, false)
+  testAuthorGivenName (author, publicationAuthorMap, failIfOnlyInitialInGivenName?) {
+    return this.testAuthorGivenNamePart(author, publicationAuthorMap, false, failIfOnlyInitialInGivenName)
   }
 
   getAuthorsFromSourceMetadata(sourceName, sourceMetadata) {
@@ -538,7 +550,7 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
     // } else if (confidenceType.name === 'given_name_mismatch') {
     //  return this.testAuthorGivenNameMismatch(author, publicationAuthorMap)
     } else if (confidenceType.name === 'given_name') {
-      return this.testAuthorGivenName(author, publicationAuthorMap)
+      return this.testAuthorGivenName(author, publicationAuthorMap, true)
     } else if (confidenceType.name === 'university_affiliation') {
       return this.testAuthorAffiliation(author, publicationAuthorMap, sourceName, sourceMetadata)
     } else if (confidenceType.name === 'common_coauthor') {
@@ -796,10 +808,14 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
         // insert confidence set items
         let confidenceSetItems = []
         let loopCounter = 0
-        await pMap(_.keys(confidenceTest['confidenceItems']), async (rank) => {
+        let confidenceItems = confidenceTest['confidenceItems']
+        if (_.isString(confidenceItems)) {
+          confidenceItems = JSON.parse(confidenceTest['confidenceItems'])
+        }
+        await pMap(_.keys(confidenceItems), async (rank) => {
           await randomWait(loopCounter)
           loopCounter += 1
-          _.each(confidenceTest['confidenceItems'][rank], (confidenceType) => {
+          _.each(confidenceItems[rank], (confidenceType) => {
             const obj = {
               'confidenceset_id': confidenceSetId,
               'confidence_type_id': confidenceType['confidenceTypeId'],
@@ -810,6 +826,10 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
             confidenceSetItems.push(obj)
           })
         }, {concurrency: 3})
+
+        // console.log(`Confidence set items are: ${JSON.stringify(confidenceSetItems, null, 2)}`)
+        // console.log(`Confidence tests are: ${JSON.stringify(confidenceTest, null, 2)}`)
+        // console.log(`Inserting confidence set item: ${JSON.stringify(confidenceSetItems, null, 2)}`)
         const resultInsertConfidenceSetItems = await client.mutate(insertConfidenceSetItems(confidenceSetItems))
         return resultInsertConfidenceSetItems.data.insert_confidencesets_items.returning
       } else {

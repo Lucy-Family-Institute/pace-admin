@@ -181,7 +181,7 @@ interface MatchedPerson {
 // author map assumed to be doi mapped to two arrays: first authors and other authors
 // returns a map of person ids to the person object and confidence value for any persons that matched coauthor attributes
 // example: {1: {person: simplepersonObject, confidence: 0.5}, 51: {person: simplepersonObject, confidence: 0.8}}
-async function matchPeopleToPaperAuthors(publicationCSL, simplifiedPersons, personMap, authors, confirmedAuthors) : Promise<Map<number,MatchedPerson>> {
+async function matchPeopleToPaperAuthors(publicationCSL, simplifiedPersons, personMap, authors, confirmedAuthors, sourceName, minConfidence) : Promise<Map<number,MatchedPerson>> {
 
   const calculateConfidence: CalculateConfidence = new CalculateConfidence()
   //match to last name
@@ -193,7 +193,7 @@ async function matchPeopleToPaperAuthors(publicationCSL, simplifiedPersons, pers
     
      //console.log(`Testing Author for match: ${author.family}, ${author.given}`)
 
-      const passedConfidenceTests = await calculateConfidence.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank)
+      const passedConfidenceTests = await calculateConfidence.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank, sourceName)
       // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
       // returns a new map of rank -> confidenceTestName -> calculatedValue
       const passedConfidenceTestsWithConf = await calculateConfidence.calculateAuthorConfidence(passedConfidenceTests)
@@ -211,7 +211,7 @@ async function matchPeopleToPaperAuthors(publicationCSL, simplifiedPersons, pers
       // console.log(`passed confidence tests are: ${JSON.stringify(passedConfidenceTestsWithConf, null, 2)}`)
       //check if persons last name in author list, if so mark a match
           //add person to map with confidence value > 0
-        if (confidenceTotal > 0) {
+        if (confidenceTotal > 0 && confidenceTotal >= minConfidence) {
           // console.log(`Match found for Author: ${author.family}, ${author.given}`)
           let matchedPerson: MatchedPerson = { 'person': person, 'confidence': confidenceTotal }
           matchedPersonMap[person['id']] = matchedPerson
@@ -282,7 +282,7 @@ function getBibTexByDoi(bibTexByDoi, doi) {
 }
 
 //returns an array of author matches for the given doi, test authors, and confirmed authors
-async function findAuthorMatches(testAuthors, confirmedAuthors, doi, csl, bibTex?) {
+async function findAuthorMatches(testAuthors, confirmedAuthors, doi, csl, sourceName, minConfidence, bibTex?) {
   
   // populate with array of person id's mapped person object
   let authorMatchesFound = {}
@@ -305,7 +305,7 @@ async function findAuthorMatches(testAuthors, confirmedAuthors, doi, csl, bibTex
 
     //match paper authors to people
     //console.log(`Testing for Author Matches for DOI: ${doi}`)
-    const matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthors)
+    const matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthors, sourceName, minConfidence)
     //console.log(`Person to Paper Matches: ${JSON.stringify(matchedPersons,null,2)}`)
     return matchedPersons
   } catch (error){
@@ -332,6 +332,7 @@ const getIngestFilePaths = require('./getIngestFilePaths');
 
 //returns status map of what was done
 async function main() {
+  const minConfidence = 0.45
   //just get all simplified persons as will filter later
   const calculateConfidence: CalculateConfidence = new CalculateConfidence()
   console.log('Starting load person list...')
@@ -377,7 +378,7 @@ async function main() {
   console.log('Starting check publications for new author matches...')
 
   // put new person pub matches into map of person_id to array of publication_id's
-  const insertPersonPubs = []
+  const insertPersonPubs = {}
   const totalDois = _.keys(pubsByDoi).length
 
   // const subset = _.chunk(_.keys(pubsByDoi), 20)
@@ -385,7 +386,8 @@ async function main() {
   await pMap(_.keys(pubsByDoi), async (doi, index) => {
     const bibTex = getBibTexByDoi(bibTexByDois, doi)
     const csl = pubsByDoi[doi][0]['csl']
-    authorsMatchedByDoi[doi] = await findAuthorMatches(simplifiedPersons, confirmedAuthorsByDoi[doi], doi, csl, bibTex)
+    const sourceName = pubsByDoi[doi][0].source_name
+    authorsMatchedByDoi[doi] = await findAuthorMatches(simplifiedPersons, confirmedAuthorsByDoi[doi], doi, csl, sourceName, minConfidence, bibTex)
     // console.log(`#${index+1} of ${totalDois} - Checking doi: ${doi} for author matches. ${authorsMatchedByDoi[doi].length} matches found`)
     // check for new author matches
     let newAuthorsMatched = 0
@@ -401,7 +403,8 @@ async function main() {
             publication_id: pub['id'],
             confidence: authorsMatchedByDoi[doi][personId]['confidence']
           }
-          insertPersonPubs.push(newPersonPub)
+          // set to key value pair so no duplicates added
+          insertPersonPubs[`${personId}_${pub['id']}`] = newPersonPub
           matchedAuthor = true
         }
       }, { concurrency: 1 })
@@ -415,10 +418,10 @@ async function main() {
   
   console.log('Finished check publications for new author matches.')
   // console.log(`Insert Person Pubs to add: ${JSON.stringify(insertPersonPubs, null, 2)}`)
-  console.log(`Insert Person Pubs to add: ${JSON.stringify(insertPersonPubs.length, null, 2)}`)
+  console.log(`Insert Person Pubs to add: ${JSON.stringify(_.keys(insertPersonPubs).length, null, 2)}`)
 
   const mutateResult = await client.mutate(
-    insertPersonPublications(insertPersonPubs)
+    insertPersonPublications(_.values(insertPersonPubs))
   )
 
   console.log(`Inserted ${mutateResult.data.insert_persons_publications.returning.length} person publication matches.`)
