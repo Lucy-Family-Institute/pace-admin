@@ -603,8 +603,11 @@ export default {
     },
     // sort person pubs by source so chips in screen always in same order
     getSortedPersonPublicationsBySourceName (personPublications) {
-      return _.sortBy(personPublications, (personPublication) => {
+      const sortedPubs = _.sortBy(personPublications, (personPublication) => {
         return personPublication.publication.source_name
+      })
+      return _.uniqBy(sortedPubs, (personPub) => {
+        return personPub.publication.source_name
       })
     },
     getDisplaySourceLabel (personPublication) {
@@ -856,6 +859,8 @@ export default {
         const peopleByCounts = await _.groupBy(this.people, (person) => {
           return this.getPersonPublicationCount(person)
         })
+
+        console.log(`People by counts are: ${JSON.stringify(peopleByCounts, null, 2)}`)
 
         // sort each person array by name for each count
         const peopleByCountsByName = await _.mapValues(peopleByCounts, (persons) => {
