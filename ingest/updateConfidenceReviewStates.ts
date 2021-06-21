@@ -82,7 +82,7 @@ async function main() {
   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===78}))
   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===48}))
   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===61}))
-  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===49}))
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===197}))
   // console.log(`Test authors: ${JSON.stringify(testAuthors2, null, 2)}`)
 
   // get where last confidence test left off
@@ -164,6 +164,7 @@ async function main() {
     await pMap (_.keys(confidenceTests), async (testStatus) => {
       // console.log(`trying to insert confidence values ${testStatus}`)
       let loopCounter = 1
+      // console.log(`Inserting Author Confidence Sets ${testStatus} ${confidenceTests[testStatus].length}...`)
       await pMap (confidenceTests[testStatus], async (confidenceTest) => {
         // console.log('trying to insert confidence values')
         await randomWait(loopCounter)
@@ -176,6 +177,7 @@ async function main() {
               totalSetItems += 1
             })
           })
+          // console.log(`Starting to insert confidence set ${JSON.stringify(confidenceTest, null, 2)}`)
           const insertedConfidenceSetItems = await calculateConfidence.insertConfidenceTestToDB(confidenceTest, confidenceAlgorithmVersion)
           passedInsert.push(confidenceTest)
           totalSetItemsInserted += insertedConfidenceSetItems.length
