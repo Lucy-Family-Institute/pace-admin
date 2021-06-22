@@ -10,6 +10,7 @@ const writeCsv = require('./units/writeCsv').command;
 const loadCsv = require('./units/loadCsv').command;
 const fuzzyMatchName = require('./units/fuzzyMatchName').command;
 const nameParser = require('./units/nameParser').command;
+const { default: NormedPublication } = require('./modules/normedPublication');
 
 // return map of identifier type to id
 function getResourceIdentifiers (resourceIdentifiers) {
@@ -37,13 +38,13 @@ async function mapAuthorFiles (filename) {
     // console.log(`Processing Pub: ${JSON.stringify(pub, null, 2)}`)
     // console.log(`Found Resource Identifiers for Title: ${title} ids: ${JSON.stringify(identifiers, null, 2)}`)
     let creators = ''
-    const mappedData = await pMap(pub.creators, async (creator, index) => {
+    // const mappedData = await pMap(pub.creators, async (creator, index) => {
 
-      if (index > 0) {
-        creators = `${creators};`
-      }
-      creators = `${creators}${creator.familyName}, ${creator.givenName}`
-    }, { concurrency: 1 });
+    //   if (index > 0) {
+    //     creators = `${creators};`
+    //   }
+    //   creators = `${creators}${creator.familyName}, ${creator.givenName}`
+    // }, { concurrency: 1 });
 
     const parsedName = await nameParser({
       name: `${pub.creators[0].givenName} ${pub.creators[0].familyName}`,
@@ -52,24 +53,29 @@ async function mapAuthorFiles (filename) {
     
     let doi = identifiers.doi ? identifiers.doi.resourceIdentifier : ''
     let pubmedId = identifiers.pubmed ? identifiers.pubmed.resourceIdentifier: ''
-    return {
-      searchName: author,
-      pubTitle: title,
-      pubYear: pub.publicationYear,
-      nihGivenName: pub.creators[0].givenName,
-      nihFamilyName: pub.creators[0].familyName,
+    console.log(`Creating normed pub for doi: ${doi} pubmed id: ${pubmedId}`)
+    // update to be part of NormedPublication
+    let normedPub = {
+      title: title,
+      journalTitle: '',
       doi: doi,
-      pubmed_id: pubmedId,
-      pubmed_record: JSON.stringify(pub),
-      first: parsedName.first,
-      last: parsedName.last,
-      fullName: `${parsedName.first} ${parsedName.last}`,
-      nihAffiliation: pub.creators[0].affiliation,
-      authorPosition: 1, // index + 1,
-      isFirstAuthor: true, //index === 0,
-      isLastAuthor: (pub.creators.length - 1) === 1, // index
-    };
-    return mappedData;
+      publicationDate: pub.publicationYear,
+      datasourceName: 'PubMed',
+      sourceId: pubmedId,
+      sourceMetadata: pub
+    }
+    const objectToCSVMap = NormedPublication.loadNormedPublicationObjectToCSVMap()
+    let normedPubCSV = NormedPublication.getCSVRow(normedPub, objectToCSVMap)
+    // normedPubCSV = _.set(normedPubCSV, 'source_metadata', JSON.stringify(pub))
+    normedPubCSV = _.set(normedPubCSV, 'first', parsedName.first)
+    normedPubCSV = _.set(normedPubCSV, 'last', parsedName.last)
+    normedPubCSV = _.set(normedPubCSV, 'fullName', `${parsedName.first} ${parsedName.last}`)
+    normedPubCSV = _.set(normedPubCSV, 'nihAffiliation', pub.creators[0].affiliation)
+    normedPubCSV = _.set(normedPubCSV, 'authorPosition', 1)
+    normedPubCSV = _.set(normedPubCSV, 'isFirstAuthor', true)
+    normedPubCSV = _.set(normedPubCSV, 'isLastAuthor', (pub.creators.length - 1) === 1)
+    return normedPubCSV
+    // return mappedData;
   }, { concurrency: 1 });
   return _.flatten(mappedOverObject);
 }
@@ -100,11 +106,23 @@ async function go() {
   // const data = leftOuterJoin(authors, 'grantId', nih, 'grantId');
 
   console.log('Writing Author data to disk')
+  const pubmedDataDir = '../data/PubMed/'
+  if (!fs.existsSync(pubmedDataDir)){
+    fs.mkdirSync(pubmedDataDir);
+  }
+
   await pMap(batches, async (batch, index) => {
     await writeCsv({
-      path: `../data/pubmedPubsByAuthor.${moment().format('YYYYMMDDHHmmss')}_${index}.csv`,
+      path: `${pubmedDataDir}pubmedPubsByAuthor.${moment().format('YYYYMMDDHHmmss')}_${index}.csv`,
       data: batch
     });
+
+    const objectToCSVMap = NormedPublication.loadNormedPublicationObjectToCSVMap()
+
+    // write source metadata to disk
+    await pMap(batch, async (pub) => {
+      NormedPublication.writeSourceMetadataToJSON([NormedPublication.getNormedPublicationObjectFromCSVRow(pub, objectToCSVMap)], pubmedDataDir)
+    })
   }, {concurrency: 1})
 }
 

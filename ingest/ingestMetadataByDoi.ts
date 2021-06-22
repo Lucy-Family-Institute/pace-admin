@@ -358,6 +358,7 @@ async function isPublicationAlreadyInDB (doi, csl, sourceName) : Promise<boolean
 }
 
 interface DoiStatus {
+  sourceName: string;
   addedDOIs: Array<string>;
   skippedDOIs: Array<string>;
   failedDOIs: Array<string>;
@@ -430,6 +431,7 @@ async function getCSLAuthorsFromSourceMetadata(sourceName, sourceMetadata) {
 async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear?) : Promise<DoiStatus> {
   let count = 0
   let doiStatus: DoiStatus = {
+    sourceName: 'CrossRef',
     addedDOIs: [],
     skippedDOIs: [],
     failedDOIs: [],
@@ -548,7 +550,7 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
         // console.log(`Authors found: ${JSON.stringify(authors,null,2)}`)
 
         //for now default source is crossref
-        let sourceName = 'CrossRef'
+        doiStatus.sourceName = 'CrossRef'
         let sourceMetadata= csl
         let errorMessage = ''
         const types = [
@@ -571,60 +573,59 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
           //check for SCOPUS
           //there may be more than one author match with same paper, and just grab first one
           if (firstPaper.datasourceName){
-            sourceName = papersByDoi[doi][0].datasourceName
+            doiStatus.sourceName = papersByDoi[doi][0].datasourceName
           } else if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['scopus_record']){
-            sourceName = 'Scopus'
+            doiStatus.sourceName = 'Scopus'
             sourceMetadata = papersByDoi[doi][0]['scopus_record']
             if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
             // console.log(`Scopus Source metadata is: ${JSON.stringify(sourceMetadata,null,2)}`)
           } else if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['pubmed_record']){
-            sourceName = 'PubMed'
+            doiStatus.sourceName = 'PubMed'
             sourceMetadata = papersByDoi[doi][0]['pubmed_record']
             if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
             // console.log(`Pubmed Source metadata found`)//is: ${JSON.stringify(sourceMetadata,null,2)}`)
           } else if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['wos_record']){
-            sourceName = 'WebOfScience'
+            doiStatus.sourceName = 'WebOfScience'
             sourceMetadata = papersByDoi[doi][0]['wos_record']
             if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
             // console.log(`WebOfScience Source metadata found`)//is: ${JSON.stringify(sourceMetadata,null,2)}`)
           } else {
             if (papersByDoi[doi] && papersByDoi[doi][0] && papersByDoi[doi][0]['source_name']) {
-              sourceName = papersByDoi[doi][0]['source_name']
+              doiStatus.sourceName = papersByDoi[doi][0]['source_name']
             }
-            if (papersByDoi[doi] && papersByDoi[doi][0] && papersByDoi[doi][0]['source_metadata']) {
-              sourceMetadata = (isString(papersByDoi[doi][0]['source_metadata']) ? JSON.parse(papersByDoi[doi][0]['source_metadata']) : papersByDoi[doi][0]['source_metadata'])
-            } 
           }
 
           if (papersByDoi[doi][0].sourceMetadata) {
             sourceMetadata = papersByDoi[doi][0].sourceMetadata
-          }
+          } else if (papersByDoi[doi] && papersByDoi[doi][0] && papersByDoi[doi][0]['source_metadata']) {
+            sourceMetadata = (isString(papersByDoi[doi][0]['source_metadata']) ? JSON.parse(papersByDoi[doi][0]['source_metadata']) : papersByDoi[doi][0]['source_metadata'])
+          } 
           //match paper authors to people
           //console.log(`Testing for Author Matches for DOI: ${doi}`)
-          let matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthorsByDoi[doi], sourceName, sourceMetadata, minConfidence)
+          let matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthorsByDoi[doi], doiStatus.sourceName, sourceMetadata, minConfidence)
           //console.log(`Person to Paper Matches: ${JSON.stringify(matchedPersons,null,2)}`)
 
           if (_.keys(matchedPersons).length <= 0){
             // try to match against authors from source if nothing found yet
-            csl.author = await getCSLAuthorsFromSourceMetadata(sourceName, sourceMetadata)
+            csl.author = await getCSLAuthorsFromSourceMetadata(doiStatus.sourceName, sourceMetadata)
             authors = csl.author
             // console.log(`After check from source metadata if needed authors are: ${JSON.stringify(csl.author, null, 2)}`)
             if (csl.author && csl.author.length > 0){
-              matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthorsByDoi[doi], sourceName, sourceMetadata, minConfidence)
+              matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthorsByDoi[doi], doiStatus.sourceName, sourceMetadata, minConfidence)
             }
           }
 
           if (_.keys(matchedPersons).length > 0){
             const publicationYear = getPublicationYear (csl)
             if (minPublicationYear != undefined && publicationYear < minPublicationYear) {
-              console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${sourceName} from year: ${publicationYear}`)
+              console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${doiStatus.sourceName} from year: ${publicationYear}`)
               doiStatus.skippedDOIs.push(doi)
             } else {
               await mutex.dispatch( async () => {
-                const pubFound = await isPublicationAlreadyInDB(doi, csl, sourceName)
+                const pubFound = await isPublicationAlreadyInDB(doi, csl, doiStatus.sourceName)
                 if (!pubFound) {
-                  // console.log(`Inserting Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${sourceName}`)
-                  const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authors, sourceName, sourceMetadata)
+                  // console.log(`Inserting Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${doiStatus.sourceName}`)
+                  const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authors, doiStatus.sourceName, sourceMetadata)
                   // console.log('Finished Running Insert and starting next thread')
                   //console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
 
@@ -644,10 +645,10 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
                       const newPersonPubId = await mutateResult.data.insert_persons_publications.returning[0]['id']
                     } catch (error) {
                       const errorMessage = `Error on add person id ${JSON.stringify(personId,null,2)} to publication id: ${publicationId}`
-                      if (!failedRecords[sourceName]) failedRecords[sourceName] = []
+                      if (!failedRecords[doiStatus.sourceName]) failedRecords[doiStatus.sourceName] = []
                       _.each(papersByDoi[doi], (paper) => {
                         if (lessThanMinPublicationYear(paper, doi, minPublicationYear)) {
-                          console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${(doi ? doi: 'undefined')} from source: ${sourceName}`)
+                          console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${(doi ? doi: 'undefined')} from source: ${doiStatus.sourceName}`)
                           doiStatus.skippedDOIs.push(doi)
                         } else {
                           doiStatus.failedDOIs.push(doi)
@@ -655,7 +656,7 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
                           console.log(errorMessage)
                           doiStatus.errorMessages.push(errorMessage)
                           paper = _.set(paper, 'error', errorMessage)
-                          failedRecords[sourceName].push(paper)
+                          failedRecords[doiStatus.sourceName].push(paper)
                         }
                       }) 
                     }
@@ -667,17 +668,17 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
                   // console.log(`Skipped DOIs: ${JSON.stringify(doiStatus.skippedDOIs.length,null,2)}`)
                 } else {
                   doiStatus.skippedDOIs.push(doi)
-                  console.log(`Skipping doi already in DB #${processedCount} of total ${count}: ${doi} for source: ${sourceName}`)
+                  console.log(`Skipping doi already in DB #${processedCount} of total ${count}: ${doi} for source: ${doiStatus.sourceName}`)
                 }
               })
             }
           } else {
             if (_.keys(matchedPersons).length <= 0){
               errorMessage = `No author match found for ${doi} and not added to DB`
-              if (!failedRecords[sourceName]) failedRecords[sourceName] = []
+              if (!failedRecords[doiStatus.sourceName]) failedRecords[doiStatus.sourceName] = []
               _.each(papersByDoi[doi], (paper) => {
                 if (lessThanMinPublicationYear(paper, doi, minPublicationYear)) {
-                  console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${(doi ? doi: 'undefined')} from source: ${sourceName}`)
+                  console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${(doi ? doi: 'undefined')} from source: ${doiStatus.sourceName}`)
                   doiStatus.skippedDOIs.push(doi)
                 } else {
                   doiStatus.failedDOIs.push(doi)
@@ -685,7 +686,7 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
                   console.log(errorMessage)
                   doiStatus.errorMessages.push(errorMessage)
                   paper = _.set(paper, 'error', errorMessage)
-                  failedRecords[sourceName].push(paper)
+                  failedRecords[doiStatus.sourceName].push(paper)
                 }
               }) 
             }
@@ -695,10 +696,10 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
           console.log(errorMessage)
           // console.log(`CSL is: ${JSON.stringify(csl, null, 2)}`)
           doiStatus.errorMessages.push(errorMessage)
-          if (!failedRecords[sourceName]) failedRecords[sourceName] = []
+          if (!failedRecords[doiStatus.sourceName]) failedRecords[doiStatus.sourceName] = []
           _.each(papersByDoi[doi], (paper) => {
             if (lessThanMinPublicationYear(paper, doi, minPublicationYear)) {
-              console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${(doi ? doi: 'undefined')} from source: ${sourceName}`)
+              console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${(doi ? doi: 'undefined')} from source: ${doiStatus.sourceName}`)
               doiStatus.skippedDOIs.push(doi)
             } else {
               doiStatus.failedDOIs.push(doi)
@@ -706,28 +707,28 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
               console.log(errorMessage)
               doiStatus.errorMessages.push(errorMessage)
               paper = _.set(paper, 'error', errorMessage)
-              failedRecords[sourceName].push(paper)
+              failedRecords[doiStatus.sourceName].push(paper)
             }
           }) 
         }
         // console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
         // console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)
       } catch (error) {
-        let sourceName = 'CrossRef'
+        doiStatus.sourceName = 'CrossRef'
         if (papersByDoi[doi].length >= 1){
           if (papersByDoi[doi][0]['scopus_record']){
-            sourceName = 'Scopus'
+            doiStatus.sourceName = 'Scopus'
           } else if (papersByDoi[doi][0]['pubmed_record']){
-            sourceName = 'PubMed'
+            doiStatus.sourceName = 'PubMed'
           } else if (papersByDoi[doi][0]['wos_record']){
-            sourceName = 'WebOfScience'
+            doiStatus.sourceName = 'WebOfScience'
           }
         }
-        if (!failedRecords[sourceName]) failedRecords[sourceName] = []
+        if (!failedRecords[doiStatus.sourceName]) failedRecords[doiStatus.sourceName] = []
         const errorMessage = `Error on add DOI: ${doi} error: ${error}`
         _.each(papersByDoi[doi], (paper) => {
           if (lessThanMinPublicationYear(paper, doi, minPublicationYear)) {
-            console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${(doi ? doi: 'undefined')} from source: ${sourceName}`)
+            console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${(doi ? doi: 'undefined')} from source: ${doiStatus.sourceName}`)
             doiStatus.skippedDOIs.push(doi)
           } else {
             doiStatus.failedDOIs.push(doi)
@@ -735,7 +736,7 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
             console.log(errorMessage)
             doiStatus.errorMessages.push(errorMessage)
             paper = _.set(paper, 'error', errorMessage)
-            failedRecords[sourceName].push(paper)
+            failedRecords[doiStatus.sourceName].push(paper)
           }
         }) 
         // console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
@@ -759,15 +760,15 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
 
     // if (doiStatus.failedDOIs && doiStatus.failedDOIs.length > 0){
 
-    //   pMap(_.keys(failedRecords), async (sourceName) => {
-    //     const failedCSVFile = `../data/${sourceName}_failed.${moment().format('YYYYMMDDHHmmss')}.csv`
+    //   pMap(_.keys(failedRecords), async (doiStatus.sourceName) => {
+    //     const failedCSVFile = `../data/${doiStatus.sourceName}_failed.${moment().format('YYYYMMDDHHmmss')}.csv`
 
     //     console.log(`Write failed doi's to csv file: ${failedCSVFile}`)
-    //     // console.log(`Failed records are: ${JSON.stringify(failedRecords[sourceName], null, 2)}`)
+    //     // console.log(`Failed records are: ${JSON.stringify(failedRecords[doiStatus.sourceName], null, 2)}`)
     //     //write data out to csv
     //     await writeCsv({
     //       path: failedCSVFile,
-    //       data: failedRecords[sourceName],
+    //       data: failedRecords[doiStatus.sourceName],
     //     })
     //   }, { concurrency: 1 })
     // }
@@ -794,6 +795,8 @@ const pathsByYear = await getIngestFilePaths('../config/ingestFilePaths.json')
   let doiFailed = new Map()
   let combinedFailed = {}
 
+  let sourceName = undefined
+
   await pMap(_.keys(pathsByYear), async (year) => {
     console.log(`Simplified persons for ${year} are: ${JSON.stringify(simplifiedPersons,null,2)}`)
 
@@ -816,6 +819,7 @@ const pathsByYear = await getIngestFilePaths('../config/ingestFilePaths.json')
         if (!isDir(filePath)){
           const doiStatusByYear = await loadPersonPapersFromCSV(personMap, filePath, year)
           doiStatus[year] = doiStatusByYear
+          sourceName = doiStatusByYear.sourceName
           combinedFailed = _.merge(combinedFailed, doiStatusByYear.combinedFailedRecords)
         }
         }, { concurrency: 1 })
@@ -827,7 +831,7 @@ const pathsByYear = await getIngestFilePaths('../config/ingestFilePaths.json')
      // write combined failure results limited to 1 per doi
      if (combinedFailed && _.keys(combinedFailed).length > 0){
       const combinedFailedValues = _.values(combinedFailed)
-      const failedCSVFile = `../data/${combinedFailedValues[0]['source_name']}_combined_failed.${moment().format('YYYYMMDDHHmmss')}.csv`
+      const failedCSVFile = `../data/${sourceName}_combined_failed.${moment().format('YYYYMMDDHHmmss')}.csv`
 
       console.log(`Write failed doi's to csv file: ${failedCSVFile}`)
       // console.log(`Failed records are: ${JSON.stringify(failedRecords[sourceName], null, 2)}`)
