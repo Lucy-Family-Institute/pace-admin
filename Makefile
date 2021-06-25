@@ -1,31 +1,50 @@
+##############################################################################
+# Includes
+##############################################################################
 include .env
 
-# TODO differentiate WSL Linux and Linux see:
-# https://stackoverflow.com/questions/38086185/how-to-check-if-a-program-is-run-in-bash-on-ubuntu-on-windows-and-not-just-plain
+##############################################################################
+# Prologue
+##############################################################################
+MAKEFLAGS += --warn-undefined-variables
+
+ifndef ENV
+ENV := dev
+ifndef HIDE_INFO
+$(info ENV has been set to default 'dev'; run ENV=prod make for production commands)
+$(info )
+endif
+endif
+
+ifndef CONFIRM
+CONFIRM := 0
+endif
+
+WSL := $(if $(shell command -v bash.exe 2> /dev/null),1,0)
 UNAME := $(shell uname -s)
-SYSTEM = Linux
-
+DOCKER_HOST_IP := host.docker.internal
 ifeq ($(UNAME),Linux)
-	ifeq ($(WSL),1)
-		SYSTEM = 'WSL'
-	endif
-	else
-	ifeq ($(UNAME),Darwin)
-		SYSTEM = 'Mac'
-	else
-		SYSTEM = 'Windows'
+	ifneq ($(WSL),1)
+		DOCKER_HOST_IP := $(shell ip -4 addr show docker0 | grep -Po 'inet \K[\d.]+')
 	endif
 endif
 
-DOCKER_HOST_IP = host.docker.internal
-ifeq ($(SYSTEM),Linux)
-	DOCKER_HOST_IP=$(shell ip -4 addr show docker0 | grep -Po 'inet \K[\d.]+')
-endif
+RUN_MAKE := HIDE_INFO=1 ENV=$(ENV) CONFIRM=$(CONFIRM) $(MAKE)
 
-.PHONY: install client dashboard-client server
+##############################################################################
+# Docs - Self documenting help feature
+##############################################################################
+.PHONY: help
+help: # Source: https://stackoverflow.com/a/59087509
+	@grep -B1 -E "^[a-zA-Z0-9_-]+\:([^\=]|$$)" Makefile \
+     | grep -v -- -- \
+     | sed 'N;s/\n/###/' \
+     | sed -n 's/^#: \(.*\)###\(.*\):.*/\2###\1/p' \
+     | column -t  -s '###'
 
-info:
-	@echo $(UNAME), $(WSL), $(SYSTEM), $(DOCKER_HOST_IP)
+##############################################################################
+# Install
+##############################################################################
 
 install_hasura_cli:
 ifeq (,$(shell which hasura))
@@ -54,8 +73,13 @@ ifeq (,$(shell which tsc))
 	npm -g install tsc
 endif
 
-install_js:
-	cd client && yarn && cd ..
+client/node_modules: client/package.json
+	cd client && yarn && touch -m node_modules
+
+install-client-packages: client/node_modules
+
+.PHONY: install-js
+install-js: install-client-packages
 	cd server && yarn && cd ..
 	cd ingest && yarn && cd ..
 	cd dashboard-search && yarn && cd ..
@@ -65,6 +89,14 @@ install_ts_node:
 ifeq (,$(shell which ts-node))
 	npm -g install ts-node
 endif
+
+.PHONY: install
+install: install_docker_compose install_hasura_cli install_yarn install_quasar install-js install_ts_node install_typescript
+	echo 'Installing'
+
+##############################################################################
+# Primary Commands
+##############################################################################
 
 load_authors:
 	cd ingest && ts-node loadAuthors.ts && cd ..
@@ -93,10 +125,9 @@ update_pub_journals:
 recheck_author_matches:
 	cd ingest && ts-node updatePersonPublicationsMatches.ts && cd ..
 
-cleardb:
-	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose down -v
 migrate:
 	cd hasura && hasura migrate apply && cd ..
+
 newdb:
 	cd ingest && ts-node loadAuthors.ts && cd ..
 	cd ingest && ts-node loadAuthorAttributes.ts && cd ..
@@ -163,31 +194,99 @@ dashboard-ingest:
 mine_semantic_scholar_ids:
 	cd ingest && ts-node mineSemanticScholarAuthorIds.ts && cd ..
 
-install: install_docker_compose install_hasura_cli install_yarn install_quasar install_js install_ts_node install_typescript
-	echo 'Installing'
-
-start_docker:
+.PHONY: start-docker
+start-docker:
 	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose up -d
-stop_docker:
+
+.PHONY: stop-docker
+stop-docker:
 	docker-compose down
 
-client:
+.PHONY: client
+#: Start the client dev server
+client: install-client-packages
 	cd client && quasar dev && cd ..
+
+.PHONY: server
+#: Start the express server
 server:
 	cd server && ts-node src/index.ts && cd ..
 
+.PHONY: dashboard-client
 dashboard-client:
 	cd dashboard-client && quasar dev && cd ..
 
+.PHONY: docker
+#: Run docker containers in docker-compose in the background
 docker:
-	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose up
+	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose up -d
 
-update_pdfs:
+.PHONY: logs
+#: Tail docker logs
+logs:
+	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose logs -f
+
+.PHONY: update-pdfs
+update-pdfs:
 	cd ingest && ts-node downloadFile.ts && cd ..
 
-clear_pdfs:
+.PHONY: migration-console
+#: Start the Hasura migration console
+migration-console:
+	cd hasura && hasura console && cd ..
+
+##############################################################################
+# Clean-up tasks
+##############################################################################
+.PHONY: clear-pdfs
+#: Remove pdfs and thumbnails
+clear-pdfs:
 	rm data/pdfs/*
 	rm data/thumbnails/*
 
-migration_console:
-	cd hasura && hasura console && cd ..
+.PHONY: cleardb
+#: Clear the database by destroying the docker volumes
+cleardb:
+ifeq ($(ENV),prod)
+ifneq ($(CONFIRM),true)
+	@echo "You can only clear the database in ENV=prod mode when CONFIRM=true."
+	@echo
+	@exit 1;
+else
+	@echo "Clearing the production database..."
+	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose \
+		-f docker-compose.yml \
+		down -v --remove-orphans
+endif
+else
+	@echo "Clearing the database..."
+	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose \
+		-f docker-compose.yml \
+		down -v --remove-orphans
+endif
+
+##############################################################################
+# Aliases
+##############################################################################
+.PHONY: install_js
+install_js: install-js
+
+.PHONY: start_docker
+start_docker: start-docker
+
+.PHONY: stop_docker
+stop_docker: stop-docker
+
+.PHONY: update_pdfs
+update_pdfs: update-pdfs
+
+.PHONY: clear_pdfs
+clear_pdfs: clear-pdfs
+
+.PHONY: migration_console
+migration_console: migration-console
+
+##############################################################################
+# Epilogue
+##############################################################################
+.DEFAULT_GOAL := help
