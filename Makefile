@@ -43,92 +43,98 @@ help: # Source: https://stackoverflow.com/a/59087509
      | column -t  -s '###'
 
 ##############################################################################
-# Install
+# Install/Update Dependencies
 ##############################################################################
 
-install_hasura_cli:
+install-hasura-cli:
 ifeq (,$(shell which hasura))
 	curl -L https://github.com/hasura/graphql-engine/raw/master/cli/get.sh | bash
 endif
 
-install_docker_compose:
+install-docker-compose:
 ifeq (,$(shell which docker-compose))
 	sudo curl -L "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 	sudo chmod +x /usr/local/bin/docker-compose
 endif
 
-install_yarn:
+install-yarn:
 ifeq (,$(shell which yarn))
 	npm -g install yarn
 endif
 
-install_quasar:
+install-quasar:
 ifeq (,$(shell which quasar))
 	npm -g install quasar
 	npm install -g @quasar/cli
 endif
 
-install_typescript:
+install-typescript:
 ifeq (,$(shell which tsc))
 	npm -g install tsc
 endif
 
-client/node_modules: client/package.json
-	cd client && yarn && touch -m node_modules
-
-install-client-packages: client/node_modules
-
-.PHONY: install-js
-install-js: install-client-packages
-	cd server && yarn && cd ..
-	cd ingest && yarn && cd ..
-	cd dashboard-search && yarn && cd ..
-	cd dashboard-client && yarn && cd ..
-
-install_ts_node:
+install-ts-node:
 ifeq (,$(shell which ts-node))
 	npm -g install ts-node
 endif
 
+%/node_modules: %/package.json
+	cd client && yarn && touch -m node_modules
+
+.PHONY: update-js
+update-js: \
+	client/node_modules \
+	server/node_modules \
+	ingest/node_modules \
+	dashboard-search/node_modules \
+	dashboard-client/node_modules
+
 .PHONY: install
-install: install_docker_compose install_hasura_cli install_yarn install_quasar install-js install_ts_node install_typescript
-	echo 'Installing'
+install: \
+	install-docker-compose \
+	install-hasura-cli \
+	install-yarn \
+	install-quasar \
+	install-ts-node \
+	install-typescript \
+	update-js 
+	@echo 'Installing...'
 
 ##############################################################################
 # Primary Commands
 ##############################################################################
 
-load_authors:
+######################################
+### Ingest
+
+load_authors: ingest/node_modules
 	cd ingest && ts-node loadAuthors.ts && cd ..
 
-load_author_attributes:
+load_author_attributes: ingest/node_modules
 	cd ingest && ts-node loadAuthorAttributes.ts && cd ..
 
-ingest_metadata:
+ingest_metadata: ingest/node_modules
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
 
-load_new_confidence_sets:
+load_new_confidence_sets: ingest/node_modules
 	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
 
-synchronize_reviews:
+synchronize_reviews: ingest/node_modules
 	cd ingest && ts-node synchronizeReviewStates.ts && cd ..
 
-load_abstracts:
+load_abstracts: ingest/node_modules
 	cd ingest && ts-node loadAbstracts.ts && cd ..
 
-load_awards:
+load_awards: ingest/node_modules
 	cd ingest && ts-node loadAwards.ts && cd ..
 
-update_pub_journals:
+update_pub_journals: ingest/node_modules
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
 
-recheck_author_matches:
+recheck_author_matches: ingest/node_modules
 	cd ingest && ts-node updatePersonPublicationsMatches.ts && cd ..
 
-migrate:
-	cd hasura && hasura migrate apply && cd ..
-
-newdb:
+newdb: ingest/node_modules
 	cd ingest && ts-node loadAuthors.ts && cd ..
 	cd ingest && ts-node loadAuthorAttributes.ts && cd ..
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
@@ -140,7 +146,7 @@ newdb:
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
 	cd ingest && ts-node loadJournalsImpactFactors.ts && cd ..
 
-reharvest:
+reharvest: ingest/node_modules
 	cd ingest && ts-node loadAuthors.ts && cd ..
 	cd ingest && ts-node loadAuthorAttributes.ts && cd ..
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
@@ -150,71 +156,65 @@ reharvest:
 	cd ingest && ts-node loadAbstracts.ts && cd ..
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
 
-update_crossref_data:
+update_crossref_data: ingest/node_modules
 	cd ingest && ts-node fetchCrossRefAuthorData.ts && cd ..
 
-update_semantic_scholar_data:
+update_semantic_scholar_data: ingest/node_modules
 	cd ingest && ts-node fetchSemanticScholarAuthorData.ts && cd ..
 
-update_wos_data:
+update_wos_data: ingest/node_modules
 	cd ingest && ts-node fetchWoSAuthorDataNewModel.ts && cd ..
 
-update_pubmed_data:
+update_pubmed_data: ingest/node_modules
 	cd ingest && ts-node fetchPubmedData.js && cd ..
 	cd ingest && ts-node joinAuthorAwards.js && cd ..
 	cd ingest && ts-node fetchPubmedDataByAuthor.ts && cd ..
 	cd ingest && ts-node joinAuthorPubmedPubs.js && cd ..
 
-update_scopus_data:
+update_scopus_data: ingest/node_modules
 	cd ingest && ts-node fetchScopusAuthorData.ts && cd ..
 
-update_scopus_full_text_data:
+update_scopus_full_text_data: ingest/node_modules
 	cd ingest && ts-node fetchScopusFullTextData.ts && cd ..
 
-load_journals:
+load_journals: ingest/node_modules
 	cd ingest && ts-node loadJournals.ts && cd ..
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
 	cd ingest && ts-node loadJournalsImpactFactors.ts && cd ..
 
-load_impact_factors:
+load_impact_factors: ingest/node_modules
 	cd ingest && ts-node loadJournalsImpactFactors.ts && cd ..
 
-load_funders:
+load_funders: ingest/node_modules
 	cd ingest && ts-node loadFunders.ts && cd ..
 
-update_awards_funders:
+update_awards_funders: ingest/node_modules
 	cd ingest && ts-node updateAwardsFunders.ts && cd ..
 
-scopus_author_data:
+scopus_author_data: ingest/node_modules
 	cd ingest && ts-node fetchScopusAuthorObjects.ts && cd ..
 
-dashboard-ingest:
-	cd dashboard-search && ts-node src/ingest.ts && cd ..
-
-mine_semantic_scholar_ids:
+mine_semantic_scholar_ids: ingest/node_modules
 	cd ingest && ts-node mineSemanticScholarAuthorIds.ts && cd ..
 
-.PHONY: start-docker
-start-docker:
-	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose up -d
+.PHONY: update-pdfs
+update-pdfs: ingest/node_modules
+	cd ingest && ts-node downloadFile.ts && cd ..
 
-.PHONY: stop-docker
-stop-docker:
-	docker-compose down
+######################################
+### Hasura
 
-.PHONY: client
-#: Start the client dev server
-client: install-client-packages
-	cd client && quasar dev && cd ..
+.PHONY: migrate
+migrate:
+	cd hasura && hasura migrate apply && cd ..
 
-.PHONY: server
-#: Start the express server
-server:
-	cd server && ts-node src/index.ts && cd ..
+.PHONY: migration-console
+#: Start the Hasura migration console
+migration-console:
+	cd hasura && hasura console && cd ..
 
-.PHONY: dashboard-client
-dashboard-client:
-	cd dashboard-client && quasar dev && cd ..
+######################################
+### Docker
 
 .PHONY: docker
 #: Run docker containers in docker-compose in the background
@@ -226,14 +226,35 @@ docker:
 logs:
 	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose logs -f
 
-.PHONY: update-pdfs
-update-pdfs:
-	cd ingest && ts-node downloadFile.ts && cd ..
+.PHONY: stop-docker
+stop-docker:
+	docker-compose down
 
-.PHONY: migration-console
-#: Start the Hasura migration console
-migration-console:
-	cd hasura && hasura console && cd ..
+######################################
+### Clients
+
+.PHONY: client
+#: Start the client dev server
+client: client/node_modules
+	cd client && quasar dev && cd ..
+
+.PHONY: dashboard-client
+dashboard-client: dashboard-client/node_modules
+	cd dashboard-client && quasar dev && cd ..
+
+######################################
+### Server
+	
+.PHONY: server
+#: Start the express server
+server: server/node_modules
+	cd server && ts-node src/index.ts && cd ..
+
+######################################
+### Search
+
+dashboard-ingest:
+	cd dashboard-search && ts-node src/ingest.ts && cd ..
 
 ##############################################################################
 # Clean-up tasks
@@ -268,11 +289,17 @@ endif
 ##############################################################################
 # Aliases
 ##############################################################################
+.PHONY: install-js
+install-js: update-js
+
 .PHONY: install_js
-install_js: install-js
+install_js: update-js
 
 .PHONY: start_docker
-start_docker: start-docker
+start_docker: docker
+
+.PHONY: start-docker
+start-docker: docker
 
 .PHONY: stop_docker
 stop_docker: stop-docker

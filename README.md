@@ -10,7 +10,7 @@ This pilot project will prototype a new process that automates data collection f
     cp .env.template .env
     make install
     make cleardb
-    make start_docker
+    make docker
     make migrate
     make newdb
 
@@ -23,15 +23,12 @@ Note: When running `make migrate`, you may get the following error:
 
     If you get the above error, give a few minutes then try again.
 
-## Open some terminals
+## Open several terminals
 
-    make docker
+    make docker && make logs
     make client
     make -B server
-    make migration_console
-
-It's worth running ``make install_js`` every now and then to make sure your packages are up-to-date.
-
+    make migration-console
 ## User Management
 
 Create your Auth Front End Credentials:
