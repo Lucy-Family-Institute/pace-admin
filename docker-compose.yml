@@ -64,6 +64,17 @@ services:
     restart: always
     volumes:
       - ./dashboard-search/data.ms:/data.ms
+  
+  nginx:
+    image: nginx
+    volumes:
+      - ./build/nginx/:/etc/nginx/templates
+    ports:
+      - ${PROXY_PORT}:${PROXY_PORT}
+    environment:
+      - DOCKER_HOST_IP=${DOCKER_HOST_IP}
+      - NGINX_PORT=${PROXY_PORT}
+      - KEYCLOAK_PORT=${KEYCLOAK_PORT}
     
 volumes:
   postgres_data:

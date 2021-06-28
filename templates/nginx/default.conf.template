@@ -1,0 +1,53 @@
+upstream keybcloak {
+  server ${DOCKER_HOST_IP}:${KEYCLOAK_PORT};
+  keepalive 64;
+}
+
+server {
+  listen ${NGINX_PORT};
+
+  location = /keycloak {
+    return 301 /auth/;
+  }
+
+  location ~ /keycloak/(?<ndpath>.*) {
+    proxy_redirect off;
+    proxy_set_header Host $host;
+
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Server $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_http_version 1.1;
+    proxy_pass_request_headers on;
+    proxy_set_header Connection "keep-alive";
+    proxy_store off;
+    proxy_pass http://keycloak/$ndpath$is_args$args;
+
+    gzip on;
+    gzip_proxied any;
+    gzip_types *;
+  }
+
+  location ~ /console {
+    proxy_pass http://${DOCKER_HOST_IP}:${HASURA_PORT};
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+  }
+
+  location ~ /(v1|healthz) {
+    proxy_pass http://${DOCKER_HOST_IP}:${HASURA_PORT};
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+  }
+
+  location / {
+  {{ if eq (getenv "ENV") "prod" }}
+    root /www;
+  {{ else }}
+    proxy_pass http://${DOCKER_HOST_IP}:${CLIENT_DEV_PORT};
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+  {{ end }}
+  }
+}

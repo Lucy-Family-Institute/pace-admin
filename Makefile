@@ -20,6 +20,14 @@ ifndef CONFIRM
 CONFIRM := 0
 endif
 
+UID := $(shell id -u)
+GID := $(shell id -g)
+
+ENV_PATH := $(PWD)/.env
+
+TEMPLATES_DIR := templates
+BUILD_DIR := build
+
 WSL := $(if $(shell command -v bash.exe 2> /dev/null),1,0)
 UNAME := $(shell uname -s)
 DOCKER_HOST_IP := host.docker.internal
@@ -216,10 +224,26 @@ migration-console:
 ######################################
 ### Docker
 
+.PHONY: build-templates
+build-templates:
+	@echo Running gomplate...
+	@docker run \
+		--user $(UID):$(GID) \
+		--env-file $(ENV_PATH) \
+		--env ENV=$(ENV) \
+		-v $(PWD)/$(TEMPLATES_DIR):/input \
+		-v $(PWD)/$(BUILD_DIR):/output \
+		hairyhenderson/gomplate \
+		--input-dir /input \
+		--output-dir /output
+
 .PHONY: docker
 #: Run docker containers in docker-compose in the background
-docker:
-	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose up -d
+docker: build-templates
+	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) ENV=$(ENV) UID=$(UID) GID=$(GID) \
+		docker-compose \
+		-f docker-compose.yml \
+		up -d
 
 .PHONY: logs
 #: Tail docker logs
