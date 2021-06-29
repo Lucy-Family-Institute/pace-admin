@@ -25,6 +25,7 @@ import { getAllSimplifiedPersons } from './modules/queryNormalizedPeople'
 import { CalculateConfidence } from './modules/calculateConfidence'
 import { SemanticScholarDataSource } from './modules/semanticScholarDataSource'
 import { WosDataSource } from './modules/wosDataSource'
+import { PubMedDataSource } from './modules/pubmedDataSource'
 
 import DataSourceConfig from './modules/dataSourceConfig'
 
@@ -57,6 +58,16 @@ const client = new ApolloClient({
     },
   },
 })
+
+const pubmedConfig : DataSourceConfig = {
+  baseUrl: process.env.PUBMED_BASE_URL,
+  queryUrl: process.env.PUBMED_QUERY_URL,
+  sourceName: process.env.PUBMED_SOURCE_NAME,
+  publicationUrl: process.env.PUBMED_PUBLICATION_URL,
+  pageSize: process.env.PUBMED_PAGE_SIZE,
+  requestInterval: Number.parseInt(process.env.PUBMED_REQUEST_INTERVAL)
+}
+const pubmedDS : PubMedDataSource = new PubMedDataSource(pubmedConfig)
 
 const semanticScholarConfig : DataSourceConfig = {
   baseUrl: process.env.SEMANTIC_SCHOLAR_BASE_URL,
@@ -172,6 +183,7 @@ async function getPapersByDoi (csvPath: string, dataDirPath?: string) {
   console.log(`Loading Papers from path: ${csvPath}`)
   // ingest list of DOI's from CSV and relevant center author name
   try {
+    const prefix = path.basename(csvPath).split('.')[0]
     const authorPapers: NormedPublication[] = await NormedPublication.loadFromCSV(csvPath, dataDirPath)
     // const authorPapers: any = await loadCsv({
     //  path: csvPath
@@ -186,9 +198,16 @@ async function getPapersByDoi (csvPath: string, dataDirPath?: string) {
 
     // console.log(`After lowercase ${_.keys(authorLowerPapers[0])}`)
 
+    // console.log(`Author papers are: ${JSON.stringify(authorPapers, null, 2)}`)
+    let counter = 0
     const papersByDoi = _.groupBy(authorPapers, function(paper: NormedPublication) {
+      counter += 1
       //strip off 'doi:' if present
-      return paper.doi
+      if (!paper.doi || paper.doi.length <= 0){
+        return `${prefix}_undefined_${counter}`
+      } else {
+        return paper.doi
+      }
     })
     //console.log('Finished load')
     return papersByDoi
@@ -422,6 +441,8 @@ async function getCSLAuthorsFromSourceMetadata(sourceName, sourceMetadata) {
     return semanticScholarDS.getCSLStyleAuthorList(sourceMetadata)    
   } else if (sourceName === 'WebOfScience') {
     return wosDS.getCSLStyleAuthorList(sourceMetadata)    
+  } else if (sourceName === 'PubMed'){
+    return pubmedDS.getCSLStyleAuthorList(sourceMetadata)
   } else {
     return []
   }
@@ -454,11 +475,7 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
     if (!isDir(paperPath)) {
       dataDir = path.dirname(paperPath)
     }
-    const papersByDoi = await getPapersByDoi(paperPath, dataDir)
-    const dois = _.keys(papersByDoi)
-    count = dois.length
-    console.log(`Papers by DOI Count: ${JSON.stringify(dois.length,null,2)}`)
-
+  
     //check if confirmed column exists first, if not ignore this step
     let confirmedAuthorsByDoi = {}
     let confirmedAuthorsByDoiAuthorList = {}
@@ -486,6 +503,11 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
       // console.log(`Confirmed Authors BibText By Doi is: ${JSON.stringify(bibTexByDoi,null,2)}`)
     }
 
+    const papersByDoi = await getPapersByDoi(paperPath, dataDir)
+    const dois = _.keys(papersByDoi)
+    count = dois.length
+    console.log(`Papers by DOI Count: ${JSON.stringify(dois.length,null,2)}`)
+
     //initalize the doi query and citation engine
     Cite.async()
 
@@ -497,6 +519,7 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
     // let processedCount = 0
     
     let failedRecords = {}
+    let undefinedDoiIndex = 0
 
     await pMap(_.keys(papersByDoi), async (doi, index) => {
       const processedCount = index + 1
@@ -538,12 +561,15 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
         }
         
         //retrieve the authors from the record and put in a map, returned above in array, but really just one element
-        let authors = await getCSLAuthors(csl)
-
+        let authors = []
+      
+        if (csl) {
+          authors = await getCSLAuthors(csl)
+        }
         // default to the confirmed author list if no author list in the csl record
         // console.log(`Before check csl is: ${JSON.stringify(csl, null, 2)} for doi: ${doi}`)
         // console.log(`Before check authors are: ${JSON.stringify(authors, null, 2)} for doi: ${doi}`)
-        if (confirmedAuthorsByDoiAuthorList[doi] && _.keys(confirmedAuthorsByDoiAuthorList[doi]).length > 0) {
+        if (csl && confirmedAuthorsByDoiAuthorList[doi] && _.keys(confirmedAuthorsByDoiAuthorList[doi]).length > 0) {
           authors = confirmedAuthorsByDoiAuthorList[doi][_.keys(confirmedAuthorsByDoiAuthorList[doi])[0]]
           csl.author = authors
         }
@@ -565,41 +591,50 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
           'report-series'
         ]
 
+        const firstPaper: NormedPublication = papersByDoi[doi][0]
+        //check for SCOPUS
+        //there may be more than one author match with same paper, and just grab first one
+        if (firstPaper.datasourceName){
+          doiStatus.sourceName = papersByDoi[doi][0].datasourceName
+        } else if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['scopus_record']){
+          doiStatus.sourceName = 'Scopus'
+          sourceMetadata = papersByDoi[doi][0]['scopus_record']
+          if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
+          // console.log(`Scopus Source metadata is: ${JSON.stringify(sourceMetadata,null,2)}`)
+        } else if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['pubmed_record']){
+          doiStatus.sourceName = 'PubMed'
+          sourceMetadata = papersByDoi[doi][0]['pubmed_record']
+          if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
+          // console.log(`Pubmed Source metadata found`)//is: ${JSON.stringify(sourceMetadata,null,2)}`)
+        } else if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['wos_record']){
+          doiStatus.sourceName = 'WebOfScience'
+          sourceMetadata = papersByDoi[doi][0]['wos_record']
+          if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
+          // console.log(`WebOfScience Source metadata found`)//is: ${JSON.stringify(sourceMetadata,null,2)}`)
+        } else {
+          if (papersByDoi[doi] && papersByDoi[doi][0] && papersByDoi[doi][0]['source_name']) {
+            doiStatus.sourceName = papersByDoi[doi][0]['source_name']
+          }
+        }
+
+        if (papersByDoi[doi][0]['sourceMetadata']) {
+          sourceMetadata = papersByDoi[doi][0].sourceMetadata
+        } else if (papersByDoi[doi] && papersByDoi[doi][0] && papersByDoi[doi][0]['source_metadata']) {
+          sourceMetadata = (isString(papersByDoi[doi][0]['source_metadata']) ? JSON.parse(papersByDoi[doi][0]['source_metadata']) : papersByDoi[doi][0]['source_metadata'])
+        } 
+
+        let publicationYear = undefined
+        if (csl) {
+          publicationYear = getPublicationYear (csl)
+        } 
+
+        if (publicationYear != undefined && minPublicationYear != undefined && publicationYear < minPublicationYear) {
+          console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${doiStatus.sourceName} from year: ${publicationYear}`)
+          doiStatus.skippedDOIs.push(doi)
         // if at least one author, add the paper, and related personpub objects
-        if(_.includes(types, csl['type']) && csl.title) {
+        } else if(csl && _.includes(types, csl['type']) && csl.title) {
           //push in csl record to jsonb blob
 
-          const firstPaper: NormedPublication = papersByDoi[doi][0]
-          //check for SCOPUS
-          //there may be more than one author match with same paper, and just grab first one
-          if (firstPaper.datasourceName){
-            doiStatus.sourceName = papersByDoi[doi][0].datasourceName
-          } else if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['scopus_record']){
-            doiStatus.sourceName = 'Scopus'
-            sourceMetadata = papersByDoi[doi][0]['scopus_record']
-            if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
-            // console.log(`Scopus Source metadata is: ${JSON.stringify(sourceMetadata,null,2)}`)
-          } else if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['pubmed_record']){
-            doiStatus.sourceName = 'PubMed'
-            sourceMetadata = papersByDoi[doi][0]['pubmed_record']
-            if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
-            // console.log(`Pubmed Source metadata found`)//is: ${JSON.stringify(sourceMetadata,null,2)}`)
-          } else if (papersByDoi[doi].length >= 1 && papersByDoi[doi][0]['wos_record']){
-            doiStatus.sourceName = 'WebOfScience'
-            sourceMetadata = papersByDoi[doi][0]['wos_record']
-            if (_.isString(sourceMetadata)) sourceMetadata = JSON.parse(sourceMetadata)
-            // console.log(`WebOfScience Source metadata found`)//is: ${JSON.stringify(sourceMetadata,null,2)}`)
-          } else {
-            if (papersByDoi[doi] && papersByDoi[doi][0] && papersByDoi[doi][0]['source_name']) {
-              doiStatus.sourceName = papersByDoi[doi][0]['source_name']
-            }
-          }
-
-          if (papersByDoi[doi][0].sourceMetadata) {
-            sourceMetadata = papersByDoi[doi][0].sourceMetadata
-          } else if (papersByDoi[doi] && papersByDoi[doi][0] && papersByDoi[doi][0]['source_metadata']) {
-            sourceMetadata = (isString(papersByDoi[doi][0]['source_metadata']) ? JSON.parse(papersByDoi[doi][0]['source_metadata']) : papersByDoi[doi][0]['source_metadata'])
-          } 
           //match paper authors to people
           //console.log(`Testing for Author Matches for DOI: ${doi}`)
           let matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthorsByDoi[doi], doiStatus.sourceName, sourceMetadata, minConfidence)
@@ -725,7 +760,7 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
           }
         }
         if (!failedRecords[doiStatus.sourceName]) failedRecords[doiStatus.sourceName] = []
-        const errorMessage = `Error on add DOI: ${doi} error: ${error}`
+        const errorMessage = `Error on add DOI: '${doi}' error: ${error}`
         _.each(papersByDoi[doi], (paper) => {
           if (lessThanMinPublicationYear(paper, doi, minPublicationYear)) {
             console.log(`Skipping add Publication #${processedCount} of total ${count} DOI: ${(doi ? doi: 'undefined')} from source: ${doiStatus.sourceName}`)

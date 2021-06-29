@@ -193,7 +193,7 @@ export default class NormedPublication {
     const searchPersonFamilyNameColumn = objectToCSVMap['searchPerson']['familyName']
     let pub: NormedPublication = {
 
-      title: row[_.toLower(objectToCSVMap['title'])],
+      title: (row[_.toLower(objectToCSVMap['title'])] ? row[_.toLower(objectToCSVMap['title'])] : row[_.keys(row)[0]]),
       journalTitle: row[_.toLower(objectToCSVMap['journalTitle'])],
       doi: row[_.toLower(objectToCSVMap['doi'])],
       publicationDate: row[_.toLower(objectToCSVMap['publicationDate'])],
