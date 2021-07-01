@@ -2,383 +2,411 @@
   <div>
     <div class="q-pa-md">
       <!-- TODO calculate exact height below -->
-      <q-drawer
-        v-model="drawer"
-        @click.capture="drawerClick"
-        show-if-above
+        <!--div class="page-sidebar"-->
+          <q-drawer
+            v-model="drawer"
+            @click.capture="drawerClick"
+            show-if-above
 
-        :width="250"
-        :breakpoint="500"
-        bordered
-        content-class="bg-grey-3"
-      >
-        <div class="absolute" style="top: 70px">
-          <q-btn flat
-            @click="resetFilters()"
-            class="text-grey-8"
-            style="align:left;width:100%"
-          >
-            <q-item-section class="q-pl-lg" align="right" avatar>
-              <q-icon name="replay"/>
-            </q-item-section>
-            <q-item-section header align="left">Clear All</q-item-section>
-          </q-btn>
-          <q-item-label header>Publication Filter</q-item-label>
-          <YearFilter />
-          <q-item-label header>Person Filter</q-item-label>
-          <MemberYearFilter />
-          <PeopleFilter />
-          <div class="q-mini-drawer-hide absolute" style="top: 70px; right: -17px">
-            <q-btn
-              v-if="drawer"
-              dense
-              round
-              unelevated
-              color="teal"
-              icon="chevron_left"
-              @click="drawer = false"
-            />
-          </div>
-        </div>
-      </q-drawer>
-      <q-splitter
-        v-model="firstModel"
-        unit="px"
-        :style="{height: ($q.screen.height-56-16)+'px'}"
-      >
-        <template v-slot:before>
-          <q-btn flat
-            @click="drawer = !drawer"
-            class="text-grey-8"
-            style="align:left;width:100%"
-          >
-            <q-item-section avatar>
-              <q-icon name="tune"/>
-            </q-item-section>
-            <q-item-section header align="left">Filter ({{ (people ? people.length : 0) }} Authors Shown)</q-item-section>
-          </q-btn>
-          <q-item-label header>Notre Dame Author Review</q-item-label>
-          <!-- TODO calculate exact height below -->
-          <q-virtual-scroll
-            :style="{'max-height': ($q.screen.height-170)+'px'}"
-            :items="people"
+            :width="250"
+            :breakpoint="500"
             bordered
-            separator
-            :key="peopleScrollKey"
-            :ref="`personScroll`"
+            content-class="bg-grey-3"
           >
-            <template v-slot="{ item, index }">
-              <q-expansion-item
-                  :key="index"
-                  :active="person!==undefined && item.id === person.id"
-                  clickable
-                  group="expansion_group_person"
-                  @click="resetReviewTypeFilter();startProgressBar();loadPublications(item); setNameVariants(item)"
-                  active-class="bg-teal-1 text-grey-8"
-                  expand-icon="keyboard_arrow_rights"
-                  :ref="`person${index}`"
-                >
-                  <template v-slot:header>
-                    <q-item-section avatar top>
-                      <q-avatar icon="person" color="primary" text-color="white" />
-                    </q-item-section>
-
-                    <q-item-section>
-                      <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.person_publication_count }})</q-item-label>
-                      <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
-                    </q-item-section>
-
-                    <q-item-section side>
-                      <!-- <q-icon name="keyboard_arrow_right" color="green" /> -->
-                    </q-item-section>
-                  </template>
-                  <q-card side>
-                      <q-card-section>
-                        <p>Institution: {{ item.institution ? item.institution.name : 'undefined'}}</p>
-                        <p>Name Variants:</p>
-                        <p>
-                          <ul>
-                            <li v-bind:key="name" v-for="name in nameVariants">{{ name }}</li>
-                          </ul>
-                        </p>
-                        <!--<p>Common Co-authors (expandable list): {{ getCommonCoauthors(item) }}</p>-->
-                      </q-card-section>
-                  </q-card>
-                </q-expansion-item>
-            </template>
-          </q-virtual-scroll>
-        </template>
-        <template v-slot:after v-if="person">
-          <q-splitter
-            v-model="secondModel"
-            unit="px"
-            :style="{height: ($q.screen.height-56-16)+'px'}"
-          >
-            <template v-slot:before>
-              <PublicationFilter />
-              <q-tabs
-                v-model="reviewTypeFilter"
-                dense
+            <div class="absolute" style="top: 70px">
+              <q-btn flat
+                @click="resetFilters()"
+                class="text-grey-8"
+                style="align:left;width:100%"
               >
-                <q-tab name="pending" :label="`Pending (${getPublicationsGroupedByDoiByReviewCount('pending')})`" />
-                <q-tab name="accepted" :label="`Accepted (${getPublicationsGroupedByDoiByReviewCount('accepted')})`" />
-                <q-tab name="rejected" :label="`Rejected (${getPublicationsGroupedByDoiByReviewCount('rejected')})`" />
-                <q-tab name="unsure" :label="`Unsure (${getPublicationsGroupedByDoiByReviewCount('unsure')})`" />
-              </q-tabs>
-              <q-linear-progress
-                v-if="!publicationsLoaded && !publicationsLoadedError"
-                stripe
-                size="10px"
-                :value="progress"
-                :buffer="buffer"
-                :color="publicationsLoadedError ? 'red' : 'secondary'"/>
-              <q-item v-if="publicationsLoadedError">
-                <q-item-label>Error on Publication Data Load</q-item-label>
-              </q-item>
-              <q-virtual-scroll
-                :items="personPublicationsCombinedMatches"
-                separator
-                bordered
-                :style="{'max-height': ($q.screen.height-50-88-36-8)+'px'}"
-                :ref="`pubScroll`"
-              >
-                <template v-slot="{ item, index }">
-                  <q-expansion-item
-                    :key="item.id"
-                    clickable
-                    @click="loadPublication(item);scrollToPublication(index)"
-                    group="expansion_group"
-                    :active="personPublication !== undefined && item.id === personPublication.id"
-                    active-class="bg-teal-1 text-grey-8"
-                    :ref="`personPub${index}`"
-                    :header-inset-level="0"
-                    :content-inset-level="0"
-                  >
-                    <template
-                      v-if="item.publication !== undefined"
-                      v-slot:header
-                    >
-                      <q-item-section avatar>
-                        <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.id" />
-                        <q-avatar icon="description" color="primary" text-color="white" v-else />
-                      </q-item-section>
-                      <q-item-section top class="q-pa-xs">
-                        <q-item-label style="width:100%" class="text-grey-9" lines="1"><strong>Title:</strong> {{ decode(item.publication.title) }}</q-item-label>
-                        <q-list class="q-pt-sm">
-                          <q-btn
-                            @click.capture.stop
-                            rounded
-                            dense
-                            size="sm"
-                            v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByDoiByReview[reviewTypeFilter][item.publication.doi])"
-                            :key="index"
-                            :color="getSourceNameChipColor(personPub.publication.source_name)"
-                            text-color="white"
-                            type="a"
-                            :href="getSourceUri(personPub)"
-                            target="_blank"
-                            :label="getDisplaySourceLabel(personPub)"
-                          />
-                        </q-list>
-                      </q-item-section>
-                      <q-item-section avatar side>
-                        <q-badge
-                          :label="getPublicationConfidence(item)*100+'%'"
-                          :color="getPublicationConfidence(item)*100 < 50 ? 'amber-10' : 'green'"
-                        />
-                      </q-item-section>
-                    </template>
-                    <q-card v-if="item.publication !== undefined">
-                      <q-card-section dense class="text-center">
-                        <q-item-label align="left">Move To:</q-item-label>
-                        <q-btn dense v-if="reviewTypeFilter!=='pending'" color="purple" label="Pending" class="on-left" @click="clickReviewPending(index, person, personPublication);" />
-                        <q-btn dense v-if="reviewTypeFilter!=='accepted'" color="blue" label="Accepted" class="on-left" @click="clickReviewAccepted(index, person, personPublication);" />
-                        <q-btn dense v-if="reviewTypeFilter!=='rejected'" color="red" label="Rejected" class="on-left" @click="clickReviewRejected(index, person, personPublication);" />
-                        <q-btn dense v-if="reviewTypeFilter!=='unsure'" color="grey" label="Unsure" class="on-left" @click="clickReviewUnsure(index, person, personPublication);" />
-                      </q-card-section>
-                    </q-card>
-                  </q-expansion-item>
-                </template>
-              </q-virtual-scroll>
-            </template>
-            <template v-slot:after v-if="personPublication">
-              <div
-                v-if="personPublication"
+                <q-item-section class="q-pl-lg" align="right" avatar>
+                  <q-icon name="replay"/>
+                </q-item-section>
+                <q-item-section header align="left">Clear All</q-item-section>
+              </q-btn>
+              <q-item-label header>Publication Filter</q-item-label>
+              <YearFilter />
+              <q-item-label header>Person Filter</q-item-label>
+              <MemberYearFilter />
+              <PeopleFilter />
+              <div class="q-mini-drawer-hide absolute" style="top: 70px; right: -17px">
+                <q-btn
+                  v-if="drawer"
+                  dense
+                  round
+                  unelevated
+                  color="teal"
+                  icon="chevron_left"
+                  @click="drawer = false"
+                />
+              </div>
+            </div>
+          </q-drawer>
+        <!--/div-->
+      <!-- Site Content -->
+      <!--<div id="content" class="site-content">
+        <div class="page-header"></div>
+        <main class="page-main" role="main">
+          <ol class="breadcrumbs">
+            <li><a href="/">Home</a> › </li>
+            <li><a href="#">Parent</a> › </li>
+            <li>Page Title</li>
+          </ol>
+          <h1 class="page-title">Notre Dame Author Review</h1>
+          <div class="grid grid-md-3">
+            <div class="page-primary span-md-2">-->
+              <!-- Page Content -->
+              <q-splitter
+                v-model="firstModel"
+                unit="px"
                 :style="{height: ($q.screen.height-56-16)+'px'}"
               >
-                <div class="q-pa-md row items-start q-gutter-md">
-                  <q-card>
-                    <q-card-section v-if="personPublication.publication.doi">
-                      <q-item-label align="left"><strong>View Article:</strong></q-item-label>
-                      <q-list class="q-pt-sm q-pb-sm">
-                        <q-btn
-                          rounded
-                          dense
-                          no-wrap
-                          size="md"
-                          v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByDoiByReview[reviewTypeFilter][personPublication.publication.doi])"
+                <template v-slot:before>
+                  <q-btn flat
+                    @click="drawer = !drawer"
+                    class="text-grey-8"
+                    style="align:left;width:100%"
+                  >
+                    <q-item-section avatar>
+                      <q-icon name="tune"/>
+                    </q-item-section>
+                    <q-item-section header align="left">Filter ({{ (people ? people.length : 0) }} Authors Shown)</q-item-section>
+                  </q-btn>
+                  <q-item-label header>Notre Dame Author Review</q-item-label>
+                  <q-item>
+                    <q-select
+                    v-model="selectedCenter"
+                    :options="centerOptions"
+                    class="white"
+                    v-if="isLoggedIn"
+                    map-options
+                  />
+                  </q-item>
+                  <!-- TODO calculate exact height below -->
+                  <q-virtual-scroll
+                    :style="{'max-height': ($q.screen.height-170)+'px'}"
+                    :items="people"
+                    bordered
+                    separator
+                    :key="peopleScrollKey"
+                    :ref="`personScroll`"
+                  >
+                    <template v-slot="{ item, index }">
+                      <q-expansion-item
                           :key="index"
-                          :color="getSourceNameChipColor(personPub.publication.source_name)"
-                          text-color="white"
-                          type="a"
-                          :href="getSourceUri(personPub)"
-                          target="_blank"
-                          :label="getDisplaySourceLabel(personPub)"
-                        />
-                      </q-list>
-                      <q-btn
-                        v-if="personPublication"
+                          :active="person!==undefined && item.id === person.id"
+                          clickable
+                          group="expansion_group_person"
+                          @click="resetReviewTypeFilter();startProgressBar();loadPublications(item); setNameVariants(item)"
+                          active-class="bg-teal-1 text-grey-8"
+                          expand-icon="keyboard_arrow_rights"
+                          :ref="`person${index}`"
+                        >
+                          <template v-slot:header>
+                            <q-item-section avatar top>
+                              <q-avatar icon="person" color="primary" text-color="white" />
+                            </q-item-section>
+
+                            <q-item-section>
+                              <q-item-label lines="1">{{ item.family_name }}, {{ item.given_name }} ({{ item.person_publication_count }})</q-item-label>
+                              <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
+                            </q-item-section>
+
+                            <q-item-section side>
+                              <!-- <q-icon name="keyboard_arrow_right" color="green" /> -->
+                            </q-item-section>
+                          </template>
+                          <q-card side>
+                              <q-card-section>
+                                <p>Institution: {{ item.institution ? item.institution.name : 'undefined'}}</p>
+                                <p>Name Variants:</p>
+                                <p>
+                                  <ul>
+                                    <li v-bind:key="name" v-for="name in nameVariants">{{ name }}</li>
+                                  </ul>
+                                </p>
+                                <!--<p>Common Co-authors (expandable list): {{ getCommonCoauthors(item) }}</p>-->
+                              </q-card-section>
+                          </q-card>
+                        </q-expansion-item>
+                    </template>
+                  </q-virtual-scroll>
+                </template>
+                <template v-slot:after v-if="person">
+                  <q-splitter
+                    v-model="secondModel"
+                    unit="px"
+                    :style="{height: ($q.screen.height-56-16)+'px'}"
+                  >
+                    <template v-slot:before>
+                      <PublicationFilter />
+                      <q-tabs
+                        v-model="reviewTypeFilter"
                         dense
-                        label="View via DOI"
-                        color="cyan"
-                        type="a"
-                        :href="getDoiUrl(personPublication.publication.doi)"
-                        target="_blank"
-                      />
-                    </q-card-section>
-                    <q-card-section>
-                      <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
-                    </q-card-section>
-                    <q-card-section v-if="publication.journal_title" class="text-left">
-                      <q-item-label><b>Journal Title:&nbsp;</b>{{ publication.journal_title }}</q-item-label>
-                    </q-card-section>
-                    <q-card-section v-if="publication.journal" class="text-left">
-                      <q-item-label><b>Journal Subjects:</b></q-item-label>
-                      <q-item-label :key="index" v-for="(classification, index) in publicationJournalClassifications" lines="1">{{classification.name}}</q-item-label>
-                    </q-card-section>
-                    <q-card-section v-if="personPublication.publication.abstract && personPublication.publication.abstract.length > 0" dense class="text-left">
-                      <q-item-label><b>Abstract:</b></q-item-label>
-                      <q-item>{{personPublication.publication.abstract}}</q-item>
-                    </q-card-section>
-                    <q-card-section v-else dense class="text-left">
-                      <q-item-label><b>Abstract:</b> Unavailable</q-item-label>
-                    </q-card-section>
-                  </q-card>
-                  <q-card v-if="unpaywall" class="col-xs-5" style="min-width:200px; max-height:300px" @click="pdf()">
-                      <q-card style="min-width:200px" class="justify-center">
-                        <q-card-actions align="around">
-                          <q-btn flat @click="pdf()">
-                            <img
-                              :src="unpaywallThumbnail"
-                              style="align:center;width:190px; max-height:230px">
-                          </q-btn>
-                        </q-card-actions>
-                      </q-card>
-                      <q-card style="min-width:200px">
-                        <q-card-actions align="around">
-                          <q-btn dense flat round color="primary" icon="link" @click="pdf()"/>
-                          <q-btn dense flat round color="primary" icon="cloud_download" />
-                        </q-card-actions>
-                      </q-card>
-                  </q-card>
-                  <q-card :class="unpaywall ? 'col-xs-6' : 'col-xs-11'" style="min-width:200px; min-height:300px">
-                    <img src="~assets/google_logo.svg" class="q-pa-md" style="max-height:100px;padding-top:20px;padding-bottom:0px;">
-
-                    <q-item dense style="font-size:25px;padding-top:0px;padding-bottom:20px;">
-                        <q-item-section align="center">
-                          <q-item-label >Search</q-item-label>
-                        </q-item-section>
-                      </q-item>
-                    <q-list>
-                      <q-item clickable>
-                        <q-item-section avatar>
-                          <q-icon color="primary" name="account_box" />
-                        </q-item-section>
-
-                        <q-item-section @click="google1()">
-                          <q-item-label>Title + Author</q-item-label>
-                        </q-item-section>
-                      </q-item>
-                      <q-item clickable>
-                        <q-item-section avatar>
-                          <q-icon color="primary" name="account_balance" />
-                        </q-item-section>
-
-                        <q-item-section @click="google2()">
-                          <q-item-label>+ Notre Dame</q-item-label>
-                        </q-item-section>
-                      </q-item>
-                      <q-item clickable>
-                        <q-item-section avatar>
-                          <q-icon color="primary" name="account_balance" />
-                        </q-item-section>
-
-                        <q-item-section @click="google3()">
-                          <q-item-label>+ nd.edu</q-item-label>
-                        </q-item-section>
-                      </q-item>
-                    </q-list>
-                  </q-card>
-                  <q-card class="col-xs-11">
-                    <q-card-section>
-                      <q-table
-                        dense
-                        title="Confidence Breakdown"
-                        :data="confidenceSetItems"
-                        :columns="confidenceColumns"
-                        row-key="id"
                       >
-                        <q-tr slot="bottom-row">
-                          <q-td colspan="100%">
-                            <strong>Total: {{ confidenceSet.value }}</strong>
-                          </q-td>
-                        </q-tr>
-                      </q-table>
-                    </q-card-section>
-                    <q-card-section>
-                      <q-table
-                        title="Possible Author Matches"
-                        :data="matchedPublicationAuthors"
-                        :columns="authorColumns"
-                        row-key="position"
-                        :rows-per-page-options="[0]"
-                        :pagination.sync="pagination"
-                        hide-bottom
-                      />
-                    </q-card-section>
-                    <q-card-section>
-                      <q-table
-                        title="Full Author List"
-                        :data="publicationAuthors"
-                        :columns="authorColumns"
-                        row-key="position"
-                      />
-                    </q-card-section>
-                  </q-card>
-                </div>
-                <q-dialog
-                  v-model="dialog"
-                  persistent
-                  :maximized="maximizedToggle"
-                  transition-show="slide-up"
-                  transition-hide="slide-down"
-                >
-                  <q-card class="bg-primary text-white">
-                    <q-bar>
-                      <q-space />
+                        <q-tab name="pending" :label="`Pending (${getPublicationsGroupedByDoiByReviewCount('pending')})`" />
+                        <q-tab name="accepted" :label="`Accepted (${getPublicationsGroupedByDoiByReviewCount('accepted')})`" />
+                        <q-tab name="rejected" :label="`Rejected (${getPublicationsGroupedByDoiByReviewCount('rejected')})`" />
+                        <q-tab name="unsure" :label="`Unsure (${getPublicationsGroupedByDoiByReviewCount('unsure')})`" />
+                      </q-tabs>
+                      <q-linear-progress
+                        v-if="!publicationsLoaded && !publicationsLoadedError"
+                        stripe
+                        size="10px"
+                        :value="progress"
+                        :buffer="buffer"
+                        :color="publicationsLoadedError ? 'red' : 'secondary'"/>
+                      <q-item v-if="publicationsLoadedError">
+                        <q-item-label>Error on Publication Data Load</q-item-label>
+                      </q-item>
+                      <q-virtual-scroll
+                        :items="personPublicationsCombinedMatches"
+                        separator
+                        bordered
+                        :style="{'max-height': ($q.screen.height-50-88-36-8)+'px'}"
+                        :ref="`pubScroll`"
+                      >
+                        <template v-slot="{ item, index }">
+                          <q-expansion-item
+                            :key="item.id"
+                            clickable
+                            @click="loadPublication(item);scrollToPublication(index)"
+                            group="expansion_group"
+                            :active="personPublication !== undefined && item.id === personPublication.id"
+                            active-class="bg-teal-1 text-grey-8"
+                            :ref="`personPub${index}`"
+                            :header-inset-level="0"
+                            :content-inset-level="0"
+                          >
+                            <template
+                              v-if="item.publication !== undefined"
+                              v-slot:header
+                            >
+                              <q-item-section avatar>
+                                <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.id" />
+                                <q-avatar icon="description" color="primary" text-color="white" v-else />
+                              </q-item-section>
+                              <q-item-section top class="q-pa-xs">
+                                <q-item-label style="width:100%" class="text-grey-9" lines="1"><strong>Title:</strong> {{ decode(item.publication.title) }}</q-item-label>
+                                <q-list class="q-pt-sm">
+                                  <q-btn
+                                    @click.capture.stop
+                                    rounded
+                                    dense
+                                    size="sm"
+                                    v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByDoiByReview[reviewTypeFilter][item.publication.doi])"
+                                    :key="index"
+                                    :color="getSourceNameChipColor(personPub.publication.source_name)"
+                                    text-color="white"
+                                    type="a"
+                                    :href="getSourceUri(personPub)"
+                                    target="_blank"
+                                    :label="getDisplaySourceLabel(personPub)"
+                                  />
+                                </q-list>
+                              </q-item-section>
+                              <q-item-section avatar side>
+                                <q-badge
+                                  :label="getPublicationConfidence(item)*100+'%'"
+                                  :color="getPublicationConfidence(item)*100 < 50 ? 'amber-10' : 'green'"
+                                />
+                              </q-item-section>
+                            </template>
+                            <q-card v-if="item.publication !== undefined">
+                              <q-card-section dense class="text-center">
+                                <q-item-label align="left">Move To:</q-item-label>
+                                <q-btn dense v-if="reviewTypeFilter!=='pending'" color="purple" label="Pending" class="on-left" @click="clickReviewPending(index, person, personPublication);" />
+                                <q-btn dense v-if="reviewTypeFilter!=='accepted'" color="blue" label="Accepted" class="on-left" @click="clickReviewAccepted(index, person, personPublication);" />
+                                <q-btn dense v-if="reviewTypeFilter!=='rejected'" color="red" label="Rejected" class="on-left" @click="clickReviewRejected(index, person, personPublication);" />
+                                <q-btn dense v-if="reviewTypeFilter!=='unsure'" color="grey" label="Unsure" class="on-left" @click="clickReviewUnsure(index, person, personPublication);" />
+                              </q-card-section>
+                            </q-card>
+                          </q-expansion-item>
+                        </template>
+                      </q-virtual-scroll>
+                    </template>
+                    <template v-slot:after v-if="personPublication">
+                      <div
+                        v-if="personPublication"
+                        :style="{height: ($q.screen.height-56-16)+'px'}"
+                      >
+                        <div class="q-pa-md row items-start q-gutter-md">
+                          <q-card>
+                            <q-card-section v-if="personPublication.publication.doi">
+                              <q-item-label align="left"><strong>View Article:</strong></q-item-label>
+                              <q-list class="q-pt-sm q-pb-sm">
+                                <q-btn
+                                  rounded
+                                  dense
+                                  no-wrap
+                                  size="md"
+                                  v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByDoiByReview[reviewTypeFilter][personPublication.publication.doi])"
+                                  :key="index"
+                                  :color="getSourceNameChipColor(personPub.publication.source_name)"
+                                  text-color="white"
+                                  type="a"
+                                  :href="getSourceUri(personPub)"
+                                  target="_blank"
+                                  :label="getDisplaySourceLabel(personPub)"
+                                />
+                              </q-list>
+                              <q-btn
+                                v-if="personPublication"
+                                dense
+                                label="View via DOI"
+                                color="cyan"
+                                type="a"
+                                :href="getDoiUrl(personPublication.publication.doi)"
+                                target="_blank"
+                              />
+                            </q-card-section>
+                            <q-card-section>
+                              <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
+                            </q-card-section>
+                            <q-card-section v-if="publication.journal_title" class="text-left">
+                              <q-item-label><b>Journal Title:&nbsp;</b>{{ publication.journal_title }}</q-item-label>
+                            </q-card-section>
+                            <q-card-section v-if="publication.journal" class="text-left">
+                              <q-item-label><b>Journal Subjects:</b></q-item-label>
+                              <q-item-label :key="index" v-for="(classification, index) in publicationJournalClassifications" lines="1">{{classification.name}}</q-item-label>
+                            </q-card-section>
+                            <q-card-section v-if="personPublication.publication.abstract && personPublication.publication.abstract.length > 0" dense class="text-left">
+                              <q-item-label><b>Abstract:</b></q-item-label>
+                              <q-item>{{personPublication.publication.abstract}}</q-item>
+                            </q-card-section>
+                            <q-card-section v-else dense class="text-left">
+                              <q-item-label><b>Abstract:</b> Unavailable</q-item-label>
+                            </q-card-section>
+                          </q-card>
+                          <q-card v-if="unpaywall" class="col-xs-5" style="min-width:200px; max-height:300px" @click="pdf()">
+                              <q-card style="min-width:200px" class="justify-center">
+                                <q-card-actions align="around">
+                                  <q-btn flat @click="pdf()">
+                                    <img
+                                      :src="unpaywallThumbnail"
+                                      style="align:center;width:190px; max-height:230px">
+                                  </q-btn>
+                                </q-card-actions>
+                              </q-card>
+                              <q-card style="min-width:200px">
+                                <q-card-actions align="around">
+                                  <q-btn dense flat round color="primary" icon="link" @click="pdf()"/>
+                                  <q-btn dense flat round color="primary" icon="cloud_download" />
+                                </q-card-actions>
+                              </q-card>
+                          </q-card>
+                          <q-card :class="unpaywall ? 'col-xs-6' : 'col-xs-11'" style="min-width:200px; min-height:300px">
+                            <img src="~assets/google_logo.svg" class="q-pa-md" style="max-height:100px;padding-top:20px;padding-bottom:0px;">
 
-                      <q-btn dense flat icon="minimize" @click="maximizedToggle = false" :disable="!maximizedToggle">
-                        <q-tooltip v-if="maximizedToggle" content-class="bg-white text-primary">Minimize</q-tooltip>
-                      </q-btn>
-                      <q-btn dense flat icon="crop_square" @click="maximizedToggle = true" :disable="maximizedToggle">
-                        <q-tooltip v-if="!maximizedToggle" content-class="bg-white text-primary">Maximize</q-tooltip>
-                      </q-btn>
-                      <q-btn dense flat icon="close" v-close-popup>
-                        <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
-                      </q-btn>
-                    </q-bar>
-                    <q-card-section style="padding:0; margin:0">
-                      <vue-friendly-iframe :src="url" :style="{'--height': ($q.screen.height-33)+'px'}"></vue-friendly-iframe>
-                    </q-card-section>
-                  </q-card>
-                </q-dialog>
-              </div>
-            </template>
-          </q-splitter>
-        </template>
-      </q-splitter>
+                            <q-item dense style="font-size:25px;padding-top:0px;padding-bottom:20px;">
+                              <q-item-section align="center">
+                                <q-item-label >Search</q-item-label>
+                              </q-item-section>
+                            </q-item>
+                            <q-list>
+                              <q-item clickable>
+                                <q-item-section avatar>
+                                  <q-icon color="primary" name="account_box" />
+                                </q-item-section>
+
+                                <q-item-section @click="google1()">
+                                  <q-item-label>Title + Author</q-item-label>
+                                </q-item-section>
+                              </q-item>
+                              <q-item clickable>
+                                <q-item-section avatar>
+                                  <q-icon color="primary" name="account_balance" />
+                                </q-item-section>
+
+                                <q-item-section @click="google2()">
+                                  <q-item-label>+ Notre Dame</q-item-label>
+                                </q-item-section>
+                              </q-item>
+                              <q-item clickable>
+                                <q-item-section avatar>
+                                  <q-icon color="primary" name="account_balance" />
+                                </q-item-section>
+
+                                <q-item-section @click="google3()">
+                                  <q-item-label>+ nd.edu</q-item-label>
+                                </q-item-section>
+                              </q-item>
+                            </q-list>
+                          </q-card>
+                          <q-card class="col-xs-11">
+                            <q-card-section>
+                              <q-table
+                                dense
+                                title="Confidence Breakdown"
+                                :data="confidenceSetItems"
+                                :columns="confidenceColumns"
+                                row-key="id"
+                              >
+                                <q-tr slot="bottom-row">
+                                  <q-td colspan="100%">
+                                    <strong>Total: {{ confidenceSet.value }}</strong>
+                                  </q-td>
+                                </q-tr>
+                              </q-table>
+                            </q-card-section>
+                            <q-card-section>
+                              <q-table
+                                title="Possible Author Matches"
+                                :data="matchedPublicationAuthors"
+                                :columns="authorColumns"
+                                row-key="position"
+                                :rows-per-page-options="[0]"
+                                :pagination.sync="pagination"
+                                hide-bottom
+                              />
+                            </q-card-section>
+                            <q-card-section>
+                              <q-table
+                                title="Full Author List"
+                                :data="publicationAuthors"
+                                :columns="authorColumns"
+                                row-key="position"
+                              />
+                            </q-card-section>
+                          </q-card>
+                        </div>
+                        <q-dialog
+                          v-model="dialog"
+                          persistent
+                          :maximized="maximizedToggle"
+                          transition-show="slide-up"
+                          transition-hide="slide-down"
+                        >
+                          <q-card class="bg-primary text-white">
+                            <q-bar>
+                              <q-space />
+
+                              <q-btn dense flat icon="minimize" @click="maximizedToggle = false" :disable="!maximizedToggle">
+                                <q-tooltip v-if="maximizedToggle" content-class="bg-white text-primary">Minimize</q-tooltip>
+                              </q-btn>
+                              <q-btn dense flat icon="crop_square" @click="maximizedToggle = true" :disable="maximizedToggle">
+                                <q-tooltip v-if="!maximizedToggle" content-class="bg-white text-primary">Maximize</q-tooltip>
+                              </q-btn>
+                              <q-btn dense flat icon="close" v-close-popup>
+                                <q-tooltip content-class="bg-white text-primary">Close</q-tooltip>
+                              </q-btn>
+                            </q-bar>
+                            <q-card-section style="padding:0; margin:0">
+                              <vue-friendly-iframe :src="url" :style="{'--height': ($q.screen.height-33)+'px'}"></vue-friendly-iframe>
+                            </q-card-section>
+                          </q-card>
+                        </q-dialog>
+                      </div>
+                    </template>
+                  </q-splitter>
+                </template>
+              </q-splitter>
+            </div>
+          </div>
+        <!--</main>
+      </div>
     </div>
-  </div>
+  </div>-->
 </template>
 
 <style>
@@ -418,7 +446,7 @@ import readPersonPublications from '../../../gql/readPersonPublications.gql'
 // import readPublicationsByReviewState from '../../../gql/readPublicationsByReviewState.gql'
 import readPublication from '../../../gql/readPublication.gql'
 // import * as service from '@porter/osf.io';
-
+import readOrganizations from '../../../gql/readOrganizations.gql'
 import PublicationFilter from '../components/PublicationFilter.vue'
 import PeopleFilter from '../components/PeopleFilter.vue'
 import YearFilter from '../components/YearFilter.vue'
@@ -927,6 +955,20 @@ export default {
       }
     },
     async fetchData () {
+      const results = await this.$apollo.query({
+        query: readOrganizations
+      })
+
+      this.centerOptions = _.map(results.data.review_organization, (reviewOrg) => {
+        return {
+          label: reviewOrg.comment,
+          value: reviewOrg.value
+        }
+      })
+
+      if (!this.selectedCenter) {
+        this.selectedCenter = this.preferredSelectedCenter
+      }
       await this.loadReviewStates()
       await this.loadPersonsWithFilter()
     },

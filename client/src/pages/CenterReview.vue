@@ -59,6 +59,13 @@
             <q-item header>
               <q-item-label header>{{ selectedCenter.label }} Review</q-item-label>
             </q-item>
+            <q-item>
+            <q-select
+                v-model="selectedCenter"
+                :options="centerOptions"
+                map-options
+              />
+              </q-item>
               <CenterReviewPubFilter />
               <q-tabs
                 v-model="reviewTypeFilter"
@@ -443,6 +450,7 @@ import sanitize from 'sanitize-filename'
 import moment from 'moment'
 import pMap from 'p-map'
 import readPersonsByInstitutionByYearByOrganization from '../gql/readPersonsByInstitutionByYearByOrganization'
+import readOrganizations from '../../../gql/readOrganizations.gql'
 // import VueFuse from 'vue-fuse'
 
 // Vue.use(VueFuse)
@@ -1076,6 +1084,17 @@ export default {
     //   }
     // },
     async fetchData () {
+      const results = await this.$apollo.query({
+        query: readOrganizations
+      })
+
+      this.centerOptions = _.map(results.data.review_organization, (reviewOrg) => {
+        return {
+          label: reviewOrg.comment,
+          value: reviewOrg.value
+        }
+      })
+
       if (!this.selectedCenter || !this.selectedCenter.value) {
         this.selectedCenter = this.preferredSelectedCenter
       }

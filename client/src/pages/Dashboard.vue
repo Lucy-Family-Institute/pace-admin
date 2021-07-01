@@ -75,7 +75,7 @@
 <script>
 import Vue from 'vue'
 import { get, sync } from 'vuex-pathify'
-import { dom, date } from 'quasar'
+import { dom, date, openURL } from 'quasar'
 // const { getScrollPosition, setScrollPosition } = scroll
 import readPersons from '../gql/readPersons'
 // import readPersonsByInstitution from '../gql/readPersonsByInstitution'
@@ -180,6 +180,7 @@ export default {
     clearInterval(this.bufferInterval)
   },
   async created () {
+    openURL(process.env.DASHBOARD_BASE_URL)
     await this.fetchData()
   },
   watch: {
