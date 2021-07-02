@@ -284,6 +284,9 @@ export default {
 </script>
 
 <style>
+  .row {
+    width: revert;
+  }
   .white {
     color: white;
   }
