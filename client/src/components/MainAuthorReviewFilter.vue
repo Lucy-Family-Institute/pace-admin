@@ -1,7 +1,8 @@
 <template>
-  <q-list bordered class="rounded-borders">
+  <q-list class="rounded-borders">
     <q-expansion-item
       expand-separator
+      v-model="filterView"
       icon="tune"
       label="FILTER"
       class="text-grey-8"
@@ -9,7 +10,10 @@
     >
       <div>
         <q-item header>
-          <q-btn flat
+        </q-item>
+        <div class="row">
+          <div>
+            <q-btn flat
                 @click="resetFilters()"
                 class="text-grey-8"
                 style="align:left;width:100%"
@@ -19,8 +23,7 @@
                 </q-item-section>
                 <q-item-section header align="left">Clear All</q-item-section>
               </q-btn>
-        </q-item>
-        <div class="row">
+          </div>
           <div>
             <MemberYearFilter />
           </div>
@@ -35,6 +38,26 @@
         </div>
       </div>
     </q-expansion-item>
+    <div align="center" style="position:relative; bottom:20px">
+      <q-btn
+        v-if="filterView"
+        dense
+        round
+        unelevated
+        color="teal"
+        icon="expand_less"
+        @click="filterView = false"
+      />
+      <q-btn
+        v-if="!filterView"
+        dense
+        round
+        unelevated
+        color="teal"
+        icon="expand_more"
+        @click="filterView = true"
+      />
+  </div>
   </q-list>
 </template>
 
@@ -64,7 +87,8 @@ export default {
         'Rejected',
         'Unsure'
       ],
-      reviewStates: undefined
+      reviewStates: undefined,
+      filterView: true
     }
   },
   computed: {

@@ -1,45 +1,6 @@
 <template>
   <div>
     <div class="q-pa-md">
-      <q-drawer
-        v-model="drawer"
-        @click.capture="drawerClick"
-        show-if-above
-
-        :width="250"
-        :breakpoint="500"
-        bordered
-        content-class="bg-grey-3"
-      >
-        <div class="absolute" style="top: 70px">
-          <q-btn flat
-            @click="resetFilters()"
-            class="text-grey-8"
-            style="align:left;width:100%"
-          >
-            <q-item-section class="q-pl-lg" align="right" avatar>
-              <q-icon name="replay"/>
-            </q-item-section>
-            <q-item-section header align="left">Clear All</q-item-section>
-          </q-btn>
-          <q-item-label header>Publication Filter</q-item-label>
-          <YearFilter />
-          <q-item-label header>Person Filter</q-item-label>
-          <MemberYearFilter />
-          <PeopleFilter />
-          <div class="q-mini-drawer-hide absolute" style="top: 70px; right: -17px">
-            <q-btn
-              v-if="drawer"
-              dense
-              round
-              unelevated
-              color="teal"
-              icon="chevron_left"
-              @click="drawer = false"
-            />
-          </div>
-        </div>
-      </q-drawer>
       <q-splitter
         v-model="firstModel"
         unit="px"
@@ -99,18 +60,18 @@ import readPersonPublicationsAll from '../gql/readPersonPublicationsAll'
 import readPublication from '../../../gql/readPublication.gql'
 // import * as service from '@porter/osf.io';
 
-import PeopleFilter from '../components/PeopleFilter.vue'
-import YearFilter from '../components/YearFilter.vue'
-import MemberYearFilter from '../components/MemberYearFilter.vue'
+// import PeopleFilter from '../components/PeopleFilter.vue'
+// import YearFilter from '../components/YearFilter.vue'
+// import MemberYearFilter from '../components/MemberYearFilter.vue'
 import sanitize from 'sanitize-filename'
 import moment from 'moment'
 
 export default {
   name: 'PageIndex',
   components: {
-    PeopleFilter,
-    YearFilter,
-    MemberYearFilter
+    // PeopleFilter,
+    // YearFilter,
+    // MemberYearFilter
   },
   data: () => ({
     reviewStates: undefined,
