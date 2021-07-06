@@ -1,6 +1,7 @@
 <template>
-  <q-list bordered class="rounded-borders">
+  <q-list class="rounded-borders">
     <q-expansion-item
+      v-model="filterView"
       expand-separator
       icon="tune"
       label="FILTER"
@@ -35,6 +36,26 @@
         </div>
       </div>
     </q-expansion-item>
+    <div align="center" style="position:relative; bottom:20px">
+      <q-btn
+        v-if="filterView"
+        dense
+        round
+        unelevated
+        color="teal"
+        icon="expand_less"
+        @click="filterView = false"
+      />
+      <q-btn
+        v-if="!filterView"
+        dense
+        round
+        unelevated
+        color="teal"
+        icon="expand_more"
+        @click="filterView = true"
+      />
+  </div>
   </q-list>
 </template>
 
@@ -64,7 +85,8 @@ export default {
         'Rejected',
         'Unsure'
       ],
-      reviewStates: undefined
+      reviewStates: undefined,
+      filterView: true
     }
   },
   computed: {
