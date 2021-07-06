@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pa-md yearFilter">
+  <div class="q-pa-md yearFilter" style="min-width:300px">
     <q-range
       v-model="selectedPubYears"
       :step="1"

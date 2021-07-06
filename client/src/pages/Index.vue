@@ -3,45 +3,7 @@
     <div class="q-pa-md">
       <!-- TODO calculate exact height below -->
         <!--div class="page-sidebar"-->
-          <q-drawer
-            v-model="drawer"
-            @click.capture="drawerClick"
-            show-if-above
-
-            :width="250"
-            :breakpoint="500"
-            bordered
-            content-class="bg-grey-3"
-          >
-            <div class="absolute" style="top: 70px">
-              <q-btn flat
-                @click="resetFilters()"
-                class="text-grey-8"
-                style="align:left;width:100%"
-              >
-                <q-item-section class="q-pl-lg" align="right" avatar>
-                  <q-icon name="replay"/>
-                </q-item-section>
-                <q-item-section header align="left">Clear All</q-item-section>
-              </q-btn>
-              <q-item-label header>Publication Filter</q-item-label>
-              <YearFilter />
-              <q-item-label header>Person Filter</q-item-label>
-              <MemberYearFilter />
-              <PeopleFilter />
-              <div class="q-mini-drawer-hide absolute" style="top: 70px; right: -17px">
-                <q-btn
-                  v-if="drawer"
-                  dense
-                  round
-                  unelevated
-                  color="teal"
-                  icon="chevron_left"
-                  @click="drawer = false"
-                />
-              </div>
-            </div>
-          </q-drawer>
+        <MainAuthorReviewFilter />
         <!--/div-->
       <!-- Site Content -->
       <!--<div id="content" class="site-content">
@@ -62,26 +24,19 @@
                 :style="{height: ($q.screen.height-56-16)+'px'}"
               >
                 <template v-slot:before>
-                  <q-btn flat
-                    @click="drawer = !drawer"
-                    class="text-grey-8"
-                    style="align:left;width:100%"
-                  >
-                    <q-item-section avatar>
-                      <q-icon name="tune"/>
-                    </q-item-section>
-                    <q-item-section header align="left">Filter ({{ (people ? people.length : 0) }} Authors Shown)</q-item-section>
-                  </q-btn>
-                  <q-item-label header>Notre Dame Author Review</q-item-label>
-                  <q-item>
+                  <q-item-label header>Notre Dame Author Review ({{ (people ? people.length : 0) }} Authors Shown)</q-item-label>
+                  <q-list bordered class="rounded-borders">
+                  <q-item bordered class="rounded-borders">
                     <q-select
                     v-model="selectedCenter"
                     :options="centerOptions"
                     class="white"
+                    label="Review By:"
                     v-if="isLoggedIn"
                     map-options
                   />
                   </q-item>
+                  </q-list>
                   <!-- TODO calculate exact height below -->
                   <q-virtual-scroll
                     :style="{'max-height': ($q.screen.height-170)+'px'}"
@@ -448,9 +403,7 @@ import readPublication from '../../../gql/readPublication.gql'
 // import * as service from '@porter/osf.io';
 import readOrganizations from '../../../gql/readOrganizations.gql'
 import PublicationFilter from '../components/PublicationFilter.vue'
-import PeopleFilter from '../components/PeopleFilter.vue'
-import YearFilter from '../components/YearFilter.vue'
-import MemberYearFilter from '../components/MemberYearFilter.vue'
+import MainAuthorReviewFilter from '../components/MainAuthorReviewFilter.vue'
 import sanitize from 'sanitize-filename'
 import moment from 'moment'
 
@@ -458,9 +411,7 @@ export default {
   name: 'PageIndex',
   components: {
     PublicationFilter,
-    PeopleFilter,
-    YearFilter,
-    MemberYearFilter
+    MainAuthorReviewFilter
   },
   data: () => ({
     reviewStates: undefined,
