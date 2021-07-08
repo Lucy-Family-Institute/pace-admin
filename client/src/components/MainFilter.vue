@@ -6,7 +6,7 @@
       icon="tune"
       label="FILTER"
       class="text-grey-8"
-      style="align:left;width:100%"
+      style="align:left;width:100%;border:solid;border-width:thin;border-color:#E0E0E0;"
     >
       <div>
         <q-item header>

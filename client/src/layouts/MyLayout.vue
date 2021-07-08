@@ -120,39 +120,25 @@
     </q-header>
 
     <q-page-container>
+          <div class="wrapper" id="wrapper">
+
       <router-view v-if="isLoggedIn" />
-      <div class="wrapper" id="wrapper">
     <!-- Site Content -->
     <!-- <div id="content" class="site-content"> -->
-
-    <!-- Page Header -->
-    <div class="page-header has-title has-image">
-      <p class="page-title" aria-hidden="true">Default Home Page</p>
-      <p class="page-lede" aria-hidden="true">A default home page with news and events.</p>
-      <p class="page-image">
-          <img src="//placehold.it/800x450/?text=FPO" width="800" height="450"
-               srcset="//placehold.it/800x450/?text=FPO 800w,
-                       //placehold.it/1200x675/?text=FPO 1200w,
-                       //placehold.it/1600x900/?text=FPO 1600w"
-               sizes="(min-width:768px) 75vw, 100vw"
-               alt="Header image">
-      </p>
-    </div>
-
-    <!-- Site Footer -->
+       <!-- Site Footer -->
     <footer id="footer" class="site-footer" role="contentinfo">
       <div class="footer-org" typeof="Organization" resource="#siteorg">
         <meta property="parentOrganization" resource="#parentorg" content="University of Notre Dame">
         <!-- Organizational Breadcrumbs -->
         <ul class="footer-breadcrumbs">
-          <li><a href="#">Parent Unit</a></li>
+          <li><a href="#">Hesburgh Libraries</a></li>
         </ul>
         <p><a href="/" class="site-link" property="url"><span property="name">PACE</span></a></p>
         <div class="footer-contacts">
           <p class="contact-info">
             <span class="address" property="address" typeof="PostalAddress">
-              <span property="streetAddress">Building Address</span><br>
-              <span property="addressLocality">Notre Dame</span>, <span property="addressRegion">IN</span> <span property="postalCode">46556</span> <span property="addressCountry">USA</span>
+              <span property="streetAddress">284 Hesburgh Library</span><br>
+              <span property="addressLocality">Notre Dame</span>, <span property="addressRegion"> IN</span> <span property="postalCode"> 46556</span> <span property="addressCountry"> USA</span>
             </span>
             <span class="footer-phone" property="telephone" content="+1 (574) 555-1234">Phone <a href="tel:(574)555-1234">(574) 555-1234</a></span>
             <span class="footer-email" property="email"><a href="mailto:example@nd.edu">example@nd.edu</a></span>
@@ -169,7 +155,7 @@
         <div property="logo" typeof="ImageObject">
           <meta property="url" content="https://static.nd.edu/images/webclips/default/webclip-60.png">
         </div>
-        <p class="copyright"><a href="https://www.nd.edu/copyright/">&copy; CURRENT YEAR</a> <a href="https://www.nd.edu">University of Notre Dame</a></p>
+        <p class="copyright"><a href="https://www.nd.edu/copyright/">&copy; 2021 </a> <a href="https://www.nd.edu">University of Notre Dame</a></p>
       </div>
       <div class="footer-parent" property="parentOrganization" typeof="CollegeOrUniversity" resource="#parentorg">
         <meta property="name" content="University of Notre Dame">
