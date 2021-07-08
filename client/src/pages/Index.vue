@@ -5,7 +5,7 @@
         <!--div class="page-sidebar"-->
         <div class="q-pa-md row" style="width:100%">
           <div>
-            <q-item-label header>Notre Dame Author Review ({{ (people ? people.length : 0) }} Authors Shown)                  </q-item-label>
+            <q-item-label class="text-h6" header>Notre Dame Author Review ({{ (people ? people.length : 0) }} Authors Shown)                  </q-item-label>
           </div>
           <div>
             <q-item>

@@ -9,7 +9,7 @@
         <template v-slot:before>
       <div class="q-pa-md row" style="width:100%">
         <div style="width:50%">
-          <q-item-label header>{{ selectedCenter.label }} Review</q-item-label>
+          <q-item-label class="text-h6" header>Center/Institute Review</q-item-label>
         </div>
         <div style="width:50%;align:right">
           <q-item>
