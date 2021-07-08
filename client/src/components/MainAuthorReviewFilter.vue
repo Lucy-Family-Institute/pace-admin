@@ -88,7 +88,7 @@ export default {
         'Unsure'
       ],
       reviewStates: undefined,
-      filterView: true
+      filterView: false
     }
   },
   computed: {
