@@ -3,6 +3,23 @@
     <div class="q-pa-md">
       <!-- TODO calculate exact height below -->
         <!--div class="page-sidebar"-->
+        <div class="q-pa-md row" style="width:100%">
+          <div>
+            <q-item-label header>Notre Dame Author Review ({{ (people ? people.length : 0) }} Authors Shown)                  </q-item-label>
+          </div>
+          <div>
+            <q-item>
+              <q-select
+                v-model="selectedCenter"
+                :options="centerOptions"
+                class="white"
+                label="Review For:"
+                v-if="isLoggedIn"
+                map-options
+              />
+            </q-item>
+          </div>
+        </div>
         <MainAuthorReviewFilter />
         <!--/div-->
       <!-- Site Content -->
@@ -21,25 +38,12 @@
               <q-splitter
                 v-model="firstModel"
                 unit="px"
-                :style="{height: ($q.screen.height-56-16)+'px'}"
+                :style="{height: ($q.screen.height-56-16-2)+'px'}"
               >
                 <template v-slot:before>
-                  <q-item-label header>Notre Dame Author Review ({{ (people ? people.length : 0) }} Authors Shown)</q-item-label>
-                  <q-list bordered class="rounded-borders">
-                  <q-item bordered class="rounded-borders">
-                    <q-select
-                    v-model="selectedCenter"
-                    :options="centerOptions"
-                    class="white"
-                    label="Review By:"
-                    v-if="isLoggedIn"
-                    map-options
-                  />
-                  </q-item>
-                  </q-list>
                   <!-- TODO calculate exact height below -->
                   <q-virtual-scroll
-                    :style="{'max-height': ($q.screen.height-170)+'px'}"
+                    :style="{'max-height': ($q.screen.height-74)+'px'}"
                     :items="people"
                     bordered
                     separator

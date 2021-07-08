@@ -1,23 +1,30 @@
 <template>
   <div>
     <div class="q-pa-md">
-      <MainFilter />
       <q-splitter
         v-model="firstModel"
         unit="px"
         :style="{height: ($q.screen.height-56-16)+'px'}"
       >
         <template v-slot:before>
-            <q-item header>
-              <q-item-label header>{{ selectedCenter.label }} Review</q-item-label>
-            </q-item>
-            <q-item>
+      <div class="q-pa-md row" style="width:100%">
+        <div style="width:50%">
+          <q-item-label header>{{ selectedCenter.label }} Review</q-item-label>
+        </div>
+        <div style="width:50%;align:right">
+          <q-item>
             <q-select
-                v-model="selectedCenter"
-                :options="centerOptions"
-                map-options
-              />
-              </q-item>
+              v-model="selectedCenter"
+              :options="centerOptions"
+              class="white"
+              label="Review For:"
+              v-if="isLoggedIn"
+              map-options
+            />
+          </q-item>
+        </div>
+      </div>
+          <MainFilter />
               <CenterReviewPubFilter />
               <q-tabs
                 v-model="reviewTypeFilter"
@@ -418,7 +425,7 @@ export default {
     institutionReviewState: undefined,
     dom,
     date,
-    firstModel: 600,
+    firstModel: 750,
     secondModel: 500,
     people: [],
     publications: [],
@@ -1814,6 +1821,7 @@ export default {
   },
   computed: {
     userId: sync('auth/userId'),
+    isLoggedIn: sync('auth/isLoggedIn'),
     selectedCenter: sync('filter/selectedCenter'),
     preferredSelectedCenter: sync('filter/preferredSelectedCenter'),
     preferredPersonSort: get('filter/preferredPersonSort'),
