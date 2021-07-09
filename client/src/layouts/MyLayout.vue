@@ -89,15 +89,15 @@
               <span property="streetAddress">284 Hesburgh Library</span><br>
               <span property="addressLocality">Notre Dame</span>, <span property="addressRegion"> IN</span> <span property="postalCode"> 46556</span> <span property="addressCountry"> USA</span>
             </span>
-            <span class="footer-phone" property="telephone" content="+1 (574) 555-1234">Phone <a href="tel:(574)555-1234">(574) 555-1234</a></span>
-            <span class="footer-email" property="email"><a href="mailto:example@nd.edu">example@nd.edu</a></span>
+            <span class="footer-phone" property="telephone" content="+1 (574) 631-6679">Phone <a href="tel:(574)631-6679">(574) 631-6679</a></span>
+            <span class="footer-email" property="email"><a href="mailto:strategic-innovation-lib-list@nd.edu">strategic-innovation-lib-list@nd.edu</a></span>
           </p>
           <nav class="social" aria-label="Social media navigation" vocab="">
             <ul>
               <!-- Site-specific Social Media -->
-              <li><a class="soc-facebook" href="#" rel="noopener" aria-label="Site Name on Facebook"><svg class="icon" width="16" height="16" aria-hidden="true"> <use xlink:href="#icon-facebook"></use> </svg> Facebook</a></li>
-              <li><a class="soc-twitter" href="#" rel="noopener" aria-label="Site Name on Twitter"><svg class="icon" width="16" height="16" aria-hidden="true"> <use xlink:href="#icon-twitter"></use> </svg> Twitter</a></li>
-              <li><a class="soc-instagram" href="#" rel="noopener" aria-label="Site Name on Instagram"><svg class="icon" width="16" height="16" aria-hidden="true"> <use xlink:href="#icon-instagram"></use> </svg> Instagram</a></li>
+              <li><a class="soc-facebook" href="https://www.facebook.com/NDLibraries/" rel="noopener" aria-label="NDLibraries"><svg class="icon" width="16" height="16" aria-hidden="true"> <use xlink:href="#icon-facebook"></use> </svg> Facebook</a></li>
+              <li><a class="soc-twitter" href="https://twitter.com/ndlibraries" rel="noopener" aria-label="NDLibraries"><svg class="icon" width="16" height="16" aria-hidden="true"> <use xlink:href="#icon-twitter"></use> </svg> Twitter</a></li>
+              <!--<li><a class="soc-instagram" href="#" rel="noopener" aria-label="Site Name on Instagram"><svg class="icon" width="16" height="16" aria-hidden="true"> <use xlink:href="#icon-instagram"></use> </svg> Instagram</a></li>-->
             </ul>
           </nav>
         </div>
