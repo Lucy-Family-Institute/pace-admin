@@ -42,11 +42,22 @@
               >
                 <template v-slot:before>
                   <!-- TODO calculate exact height below -->
+                  <q-linear-progress
+                v-if="!personsLoaded && !personsLoadedError"
+                stripe
+                size="10px"
+                :value="progress"
+                :buffer="buffer"
+                :color="personsLoadedError ? 'red' : 'secondary'"/>
+              <q-item v-if="personsLoadedError">
+                <q-item-label>Error on Person Data Load</q-item-label>
+              </q-item>
                   <q-virtual-scroll
                     :style="{'max-height': ($q.screen.height-74)+'px'}"
                     :items="people"
                     bordered
                     separator
+                    :visible="visibleScroll"
                     :key="peopleScrollKey"
                     :ref="`personScroll`"
                   >
@@ -427,6 +438,8 @@ export default {
     secondModel: 500,
     people: [],
     publications: [],
+    personsLoaded: false,
+    personsLoadedError: false,
     publicationsGroupedByReview: {},
     personPublicationsCombinedMatches: [],
     personReviewedPubCounts: {},
@@ -463,7 +476,9 @@ export default {
     buffer: 0,
     publicationsLoaded: false,
     publicationsLoadedError: false,
+    showPersonProgressBar: false,
     showProgressBar: false,
+    visibleScroll: true,
     authorColumns: [
       { name: 'position', align: 'left', label: 'Position', field: 'position', sortable: true },
       { name: 'family_name', align: 'left', label: 'Family Name', field: 'family_name', sortable: true },
@@ -540,6 +555,44 @@ export default {
     }
   },
   methods: {
+    async startProgressBar () {
+      this.publicationsLoaded = false
+      this.publicationsLoadedError = false
+      this.resetProgressBar()
+      await this.runProgressBar()
+    },
+    async resetProgressBar () {
+      this.buffer = 0
+      this.progress = 0
+      this.showProgressBar = true
+      clearInterval(this.interval)
+      clearInterval(this.bufferInterval)
+    },
+    async runProgressBar () {
+      this.interval = setInterval(() => {
+        if (this.publicationsLoaded && this.progress > 0) {
+          if (this.progress === 1) {
+            // set show progress bar to false the second time called so bar completes before hiding
+            this.showProgressBar = false
+          } else {
+            this.progress = 1
+          }
+          return
+        } else if (this.progress >= 1) {
+          this.progress = 0.01
+          this.buffer = 0.01
+          return
+        }
+
+        this.progress = Math.min(1, this.buffer, this.progress + 0.1)
+      }, 700 + Math.random() * 1000)
+
+      this.bufferInterval = setInterval(() => {
+        if (this.buffer < 1) {
+          this.buffer = Math.min(1, this.buffer + Math.random() * 0.2)
+        }
+      }, 700)
+    },
     changedPendingCounts: function (personIndex) {
       // this.personSortKey += 1
       // this.peopleScrollKey += 1
@@ -678,25 +731,25 @@ export default {
     async resetReviewTypeFilter () {
       this.reviewTypeFilter = 'pending'
     },
-    async startProgressBar () {
-      this.publicationsLoaded = false
-      this.publicationsLoadedError = false
-      this.resetProgressBar()
-      await this.runProgressBar()
+    async startPersonProgressBar () {
+      this.personsLoaded = false
+      this.personsLoadedError = false
+      this.resetPersonProgressBar()
+      await this.runPersonProgressBar()
     },
-    async resetProgressBar () {
+    async resetPersonProgressBar () {
       this.buffer = 0
       this.progress = 0
-      this.showProgressBar = true
+      this.showPersonProgressBar = true
       clearInterval(this.interval)
       clearInterval(this.bufferInterval)
     },
-    async runProgressBar () {
+    async runPersonProgressBar () {
       this.interval = setInterval(() => {
-        if (this.publicationsLoaded && this.progress > 0) {
+        if (this.personsLoaded && this.progress > 0) {
           if (this.progress === 1) {
             // set show progress bar to false the second time called so bar completes before hiding
-            this.showProgressBar = false
+            this.showPersonProgressBar = false
           } else {
             this.progress = 1
           }
@@ -785,6 +838,9 @@ export default {
       }
     },
     async loadPersonsWithFilter () {
+      this.startPersonProgressBar()
+      this.personsLoaded = false
+      this.personsLoadedError = false
       console.log('filtering', this.selectedInstitutions)
       this.people = []
       // console.log(`Applying year filter to person search year min: ${this.selectedPubYears.min} max: ${this.selectedPubYears.max}`)
@@ -860,6 +916,7 @@ export default {
       if (this.person) {
         this.showCurrentSelectedPerson()
       }
+      this.personsLoaded = true
     },
     async loadReviewStates () {
       console.log('loading review states')
