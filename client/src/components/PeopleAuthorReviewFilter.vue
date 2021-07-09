@@ -9,11 +9,28 @@
       use-chips
       stack-label
       label="Institutions"
-      class="fullSelect"
       />
-    </div>
-    <div class="q-pa-md"  style="min-width:250px">
-      <q-select
+    <q-select
+      name="sort_person"
+      :key="personSortKey"
+      v-model="selectedPersonSort"
+      :options="sortPersonOptions"
+      color="primary"
+      filled
+      label="Sort Person By:"
+    />
+  </div>
+  <div class="q-pa-md"  style="min-width:250px">
+    <q-select
+      name="person_total"
+      v-model="selectedPersonTotal"
+      :options="personTotalOptions"
+      color="primary"
+      filled
+      label="Show Total Counts:"
+      class="fullSelect"
+    />
+    <q-select
       name="person_confidence"
       v-model="selectedPersonConfidence"
       :options="personConfidenceOptions"
