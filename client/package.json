@@ -1,7 +1,7 @@
 {
   "name": "client",
   "version": "0.0.1",
-  "description": "A Quasar Framework app",
+  "description": "PACE (Publication Activity Collection Environment)",
   "productName": "PACE",
   "cordovaId": "org.cordova.quasar.app",
   "capacitorId": "",
