@@ -1,44 +1,42 @@
-upstream keybcloak {
+upstream keycloak {
   server ${DOCKER_HOST_IP}:${KEYCLOAK_PORT};
+}
+
+upstream hasura {
+  server ${DOCKER_HOST_IP}:${HASURA_PORT};
   keepalive 64;
 }
 
 server {
   listen ${NGINX_PORT};
 
-  location = /keycloak {
-    return 301 /auth/;
-  }
-
-  location ~ /keycloak/(?<ndpath>.*) {
-    proxy_redirect off;
-    proxy_set_header Host $host;
-
-    proxy_set_header X-Forwarded-Host $host;
-    proxy_set_header X-Forwarded-Server $host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_http_version 1.1;
-    proxy_pass_request_headers on;
-    proxy_set_header Connection "keep-alive";
-    proxy_store off;
-    proxy_pass http://keycloak/$ndpath$is_args$args;
-
-    gzip on;
-    gzip_proxied any;
-    gzip_types *;
+  location /auth {
+    proxy_pass http://keycloak;
   }
 
   location ~ /console {
-    proxy_pass http://${DOCKER_HOST_IP}:${HASURA_PORT};
+    proxy_pass http://hasura;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
   }
 
   location ~ /(v1|healthz) {
-    proxy_pass http://${DOCKER_HOST_IP}:${HASURA_PORT};
+    proxy_pass http://hasura;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
+  }
+
+  location ~ /(keycloak|session|login|logout|webhooks) {
+    proxy_pass http://${DOCKER_HOST_IP}:${EXPRESS_PORT};
+  }
+
+  location /pdfs {
+    root /pdfs;
+  }
+
+  location /thumbnails {
+    root /thumbnails;
   }
 
   location / {

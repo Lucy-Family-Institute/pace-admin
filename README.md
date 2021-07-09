@@ -7,7 +7,7 @@ This pilot project will prototype a new process that automates data collection f
 
 ## Starting from scratch
 
-    cp .env.template .env
+    cp .env.example .env
     make install
     make cleardb
     make docker

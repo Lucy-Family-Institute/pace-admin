@@ -44,13 +44,9 @@ async function main () {
       secret: process.env.HASURA_SECRET
     })
 
-    app.use('/pdfs', express.static('../data/pdfs'))
-    app.use('/thumbnails', express.static('../data/thumbnails'))
-
-    app.use('/', proxy(process.env.APP_URL_PROXY))
-
-    app.listen({ port: process.env.APP_PORT }, () =>
-      console.log(`Server ready at ${process.env.APP_BASE_URL}`)
+    const port:number = parseInt(process.env.EXPRESS_PORT)
+    app.listen(port, '0.0.0.0', () =>
+      console.log(`Open the proxy at ${process.env.NGINX_PORT}`)
     )
   } catch (err) {
     console.log(err)

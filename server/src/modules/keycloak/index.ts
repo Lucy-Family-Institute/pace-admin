@@ -84,9 +84,9 @@ async function init (options) {
     }
   ))
 
-  app.get('/auth/keycloak', passport.authenticate('keycloak')) //{ scope: ['profile'] }))
+  app.get('/keycloak', passport.authenticate('keycloak')) //{ scope: ['profile'] }))
   app.get(
-    '/auth/keycloak/callback',
+    '/keycloak/callback',
     passport.authenticate('keycloak', { failureRedirect: '/login' }),
     (req: Request, res:Response) => {
       // console.log(req.user)
@@ -95,7 +95,7 @@ async function init (options) {
   )
   app.get('/login', (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.redirect('/auth/keycloak')
+      return res.redirect('/keycloak')
     }
     res.redirect('/')
   })
@@ -105,6 +105,7 @@ async function init (options) {
     res.redirect(url)
   })
   app.get('/session', (req: Request, res: Response) => {
+    console.log('here')
     const response = {}
     if (req.user) {
       response['databaseId'] = _.get(req.user, 'databaseId')
