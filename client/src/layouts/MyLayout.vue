@@ -15,108 +15,57 @@
         <p id="site-title" class="site-title"><a href="/" accesskey="1" title="Homepage shortcut key = 1">PACE</a></p>
       </div>
       <!-- Header Search/Nav  -->
-      <div class="nav-header">
-        <nav id="nav-top" class="nav-top" role="navigation" aria-label="Primary navigation">
-          <div id="primary">
-            <q-tabs>
-          <q-route-tab name="/"
-            icon="home"
-            to="/"
-            exact
-          />
-          <q-route-tab name="person"
-            v-if="isLoggedIn"
-            icon="group"
-            to="/"
-            exact
-          />
-          <q-route-tab name="center"
-            v-if="isLoggedIn"
-            icon="account_balance"
-            to="/center_review"
-            exact
-          />
-          <q-route-tab name="dashboard"
-            icon="poll"
-            to="/dashboard"
-            exact
-          />
-          <q-tab>
-          <q-btn-group unelevated spread>
-          <q-separator class="gt-sm" vertical inset/>
-          <q-btn
-            dense
-            flat
-            label="Logout"
-            type="a" href="/logout"
-            v-if="isLoggedIn"
-          />
-          <q-btn
-            dense
-            flat
-            label="Login"
-            type="a" href="/login"
-            v-else
-          />
-        </q-btn-group>
-          </q-tab>
-        </q-tabs>
-            <ul>
-              <li class="nav-search"><button class="btn-search search-toggle" aria-label="Toggle search"><svg class="icon" width="16" height="16"><use xlink:href="#icon-search"></use></svg></button></li>
-            </ul>
-          </div>
-        </nav>
-      </div>
       <!-- Mobile Navbar -->
       <div class="nav-mobile-util" align="right">
-          <div id="primary" >
-            <q-tabs>
-          <q-route-tab name="/"
-            icon="home"
-            to="/"
-            exact
-          />
-          <q-route-tab name="person"
-            v-if="isLoggedIn"
-            icon="group"
-            to="/"
-            exact
-          />
-          <q-route-tab name="center"
-            v-if="isLoggedIn"
-            icon="account_balance"
-            to="/center_review"
-            exact
-          />
-          <q-route-tab name="dashboard"
-            icon="poll"
-            to="/dashboard"
-            exact
-          />
-          <q-tab>
-          <q-btn-group unelevated spread>
-          <q-separator class="gt-sm" vertical inset/>
-          <q-btn
-            dense
-            flat
-            label="Logout"
-            type="a" href="/logout"
-            v-if="isLoggedIn"
-          />
-          <q-btn
-            dense
-            flat
-            label="Login"
-            type="a" href="/login"
-            v-else
-          />
-        </q-btn-group>
-          </q-tab>
-        </q-tabs>
-          </div>
       </div>
     </header>
     </div>
+    <div id="primary" style="background-color:#fff">
+      <q-tabs align="justify">
+          <q-route-tab name="/"
+            icon="home"
+            style="font-size: 10rem;"
+            to="/"
+            exact
+          />
+          <q-route-tab name="person"
+            v-if="isLoggedIn"
+            icon="group"
+            to="/"
+            exact
+          />
+          <q-route-tab name="center"
+            v-if="isLoggedIn"
+            icon="account_balance"
+            to="/center_review"
+            exact
+          />
+          <q-route-tab name="dashboard"
+            icon="poll"
+            to="/dashboard"
+            exact
+          />
+          <q-tab>
+          <q-btn-group unelevated spread>
+          <q-separator class="gt-sm" vertical inset/>
+          <q-btn
+            dense
+            flat
+            label="Logout"
+            type="a" href="/logout"
+            v-if="isLoggedIn"
+          />
+          <q-btn
+            dense
+            flat
+            label="Login"
+            type="a" href="/login"
+            v-else
+          />
+        </q-btn-group>
+          </q-tab>
+        </q-tabs>
+      </div>
     </q-header>
 
     <q-page-container>
