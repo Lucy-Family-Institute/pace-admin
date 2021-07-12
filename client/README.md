@@ -1,7 +1,6 @@
 # PACE (client)
 
-A Quasar Framework app
-
+PACE (Publication Activity Collection Environment)
 ## Install the dependencies
 ```bash
 yarn
