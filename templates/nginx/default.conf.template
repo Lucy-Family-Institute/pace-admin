@@ -10,10 +10,6 @@ upstream hasura {
 server {
   listen ${NGINX_PORT};
 
-  location /auth {
-    proxy_pass http://keycloak;
-  }
-
   location ~ /console {
     proxy_pass http://hasura;
     proxy_set_header Host $host;
