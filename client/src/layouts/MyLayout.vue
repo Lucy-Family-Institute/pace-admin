@@ -42,6 +42,7 @@
           />
           <q-route-tab name="dashboard"
             icon="poll"
+            style="font-size: 10rem;"
             to="/dashboard"
             exact
           />
@@ -199,16 +200,18 @@ export default {
         this.userId = null
       }
 
-      const results = await this.$apollo.query({
-        query: readOrganizations
-      })
+      if (this.isLoggedIn) {
+        const results = await this.$apollo.query({
+          query: readOrganizations
+        })
 
-      this.centerOptions = _.map(results.data.review_organization, (reviewOrg) => {
-        return {
-          label: reviewOrg.comment,
-          value: reviewOrg.value
-        }
-      })
+        this.centerOptions = _.map(results.data.review_organization, (reviewOrg) => {
+          return {
+            label: reviewOrg.comment,
+            value: reviewOrg.value
+          }
+        })
+      }
 
       if (!this.selectedCenter) {
         this.selectedCenter = this.preferredSelectedCenter
