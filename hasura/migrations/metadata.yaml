@@ -1540,7 +1540,7 @@ tables:
   - role: user
     comment: null
     permission:
-      allow_aggregations: false
+      allow_aggregations: true
       computed_fields: []
       columns:
       - comment
