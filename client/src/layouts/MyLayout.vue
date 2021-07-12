@@ -20,11 +20,12 @@
       </div>
     </header>
     </div>
-    <div id="primary" style="background-color:#fff">
+    <div style="background-color:#fff">
       <q-tabs align="justify">
           <q-route-tab name="/"
             icon="home"
             style="font-size: 10rem;"
+            class="tab"
             to="/"
             exact
           />
@@ -32,17 +33,19 @@
             v-if="isLoggedIn"
             icon="group"
             to="/"
+            class="tab"
             exact
           />
           <q-route-tab name="center"
             v-if="isLoggedIn"
             icon="account_balance"
             to="/center_review"
+            class="tab"
             exact
           />
           <q-route-tab name="dashboard"
             icon="poll"
-            style="font-size: 10rem;"
+            class="tab"
             to="/dashboard"
             exact
           />
@@ -54,12 +57,14 @@
             flat
             label="Logout"
             type="a" href="/logout"
+            class="tab"
             v-if="isLoggedIn"
           />
           <q-btn
             dense
             flat
             label="Login"
+            class="tab"
             type="a" href="/login"
             v-else
           />
@@ -227,5 +232,8 @@ export default {
   }
   .white {
     color: white;
+  }
+  .tab {
+    color: var(--brand-blue);
   }
 </style>
