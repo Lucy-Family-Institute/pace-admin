@@ -1,6 +1,8 @@
 // Configuration for your app
 // https://quasar.dev/quasar-cli/quasar-conf-js
 
+var path = require('path')
+
 module.exports = function (ctx) {
   return {
     // app boot file (/src/boot)
@@ -56,6 +58,12 @@ module.exports = function (ctx) {
 
     // https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-build
     build: {
+      // env: {
+      //   ...require('dotenv').config({
+      //     path: path.resolve(__dirname, '../.env')
+      //   }).parsed,
+      //   ...process.env
+      // },
       scopeHoisting: true,
       // vueRouterMode: 'history',
       // showProgress: false,
@@ -66,6 +74,11 @@ module.exports = function (ctx) {
 
       // https://quasar.dev/quasar-cli/cli-documentation/handling-webpack
       extendWebpack (cfg) {
+        cfg.resolve.alias = {
+          ...cfg.resolve.alias,
+          '@': path.resolve(__dirname, './src'),
+          '@gql': path.resolve(__dirname, '../gql')
+        }
         cfg.module.rules.push({
           enforce: 'pre',
           test: /\.(js|vue)$/,
