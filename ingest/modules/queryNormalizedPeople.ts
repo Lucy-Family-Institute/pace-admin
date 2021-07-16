@@ -1,5 +1,5 @@
 import readPersons from '../../client/src/gql/readPersons'
-import readPersonsByYear from '../../client/src/gql/readPersonsByYear'
+import readPersonsByYearAllCenters from '../../client/src/gql/readPersonsByYearAllCenters'
 import readCenterMembers from '../../client/src/gql/readCenterMembers'
 import _ from 'lodash'
 import { ApolloClient } from 'apollo-client'
@@ -98,7 +98,7 @@ export async function getAllSimplifiedPersons (client: ApolloClient<NormalizedCa
 }
 
 export async function getSimplifiedPersonsByYear(year: number, client: ApolloClient<NormalizedCacheObject>) : Promise<Array<SimplifiedPerson>> {
-  const queryResult = await client.query(readPersonsByYear(year))
+  const queryResult = await client.query(readPersonsByYearAllCenters(year))
   return mapToSimplifiedPeople(queryResult.data.persons)
 }
 
@@ -108,6 +108,6 @@ export async function getAllCenterMembers(client: ApolloClient<NormalizedCacheOb
 }
 
 export async function getAllNormedPersonsByYear (year: number, client: ApolloClient<NormalizedCacheObject>) : Promise<Array<NormedPerson>> {
-  const queryResult = await client.query(readPersonsByYear(year))
+  const queryResult = await client.query(readPersonsByYearAllCenters(year))
   return mapToNormedPersons(queryResult.data.persons)
 }

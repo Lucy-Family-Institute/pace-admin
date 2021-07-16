@@ -42,90 +42,90 @@ export class Harvester {
         // await randomWait(0, waitInterval)
         
         // check that person start date and end date has some overlap with search date range
-        if (dateRangesOverlapping(person.startDate, person.endDate, searchStartDate, searchEndDate)) {
-          // harvest for each name variance
-          const nameVariances = (person.nameVariances ? person.nameVariances : [])
-          let normedNameVariances = [{ givenName: person.givenName, familyName: person.familyName}]
-          if (harvestBy === HarvestOperation.QUERY_BY_AUTHOR_NAME){
-            normedNameVariances = _.concat(normedNameVariances, _.map(nameVariances, (variance) => {
-              return {
-                givenName: variance.given_name,
-                familyName: variance.family_name
+        // RPJ Commented out to have this logic happen before this method: if (dateRangesOverlapping(person.startDate, person.endDate, searchStartDate, searchEndDate)) {
+        // harvest for each name variance
+        const nameVariances = (person.nameVariances ? person.nameVariances : [])
+        let normedNameVariances = [{ givenName: person.givenName, familyName: person.familyName}]
+        if (harvestBy === HarvestOperation.QUERY_BY_AUTHOR_NAME){
+          normedNameVariances = _.concat(normedNameVariances, _.map(nameVariances, (variance) => {
+            return {
+              givenName: variance.given_name,
+              familyName: variance.family_name
+            }
+          }))
+        }          
+        await pMap (normedNameVariances, async (name) => {
+          const currentHarvestSets: HarvestSet[] = []
+          let searchPerson = _.cloneDeep(person)
+          try {
+            searchPerson = _.set(searchPerson, 'familyName', name.familyName)
+            searchPerson = _.set(searchPerson, 'givenName', name.givenName)
+            searchPerson = _.set(searchPerson, 'givenNameInitial', name.givenName[0])
+          } catch (error) {
+            console.log(`Error on name variance: ${JSON.stringify(name, null, 2)}`)
+            throw error
+          }
+          let offset = 0
+          // have to alias this because nested this call below makes this undefined
+          let thisHarvester = this
+
+          let sessionState = {}
+          await wait(thisHarvester.ds.getDataSourceConfig().requestInterval)
+          harvestSet = await this.fetchPublications(searchPerson, harvestBy, sessionState, offset, searchStartDate, searchEndDate)
+          if (harvestSet) {
+            currentHarvestSets.push(harvestSet)
+          }
+          const pageSize = this.ds.getRequestPageSize().valueOf()
+          const totalResults = harvestSet.totalResults.valueOf()
+
+          sessionState = harvestSet.sessionState
+
+          if (totalResults > pageSize){
+            let numberOfRequests = parseInt(`${totalResults / pageSize}`) //convert to an integer to drop any decimal
+            //if no remainder subtract one since already did one call
+            if ((totalResults % pageSize) <= 0) {
+              numberOfRequests -= 1
+            }
+
+            // make variable since 'this' reference scope gets confused inside loops below
+            const currentDS = this.ds
+
+            //loop to get the result of the results
+            console.log(`Making ${numberOfRequests} requests for name variation ${searchPerson.familyName}, ${searchPerson.givenNameInitial}`)
+            await pTimes (numberOfRequests, async function (index) {
+              await wait(currentDS.getDataSourceConfig().requestInterval)
+              if (offset + pageSize < totalResults){
+                offset += pageSize
+              } else {
+                offset += totalResults - offset
               }
-            }))
-          }          
-          await pMap (normedNameVariances, async (name) => {
-            const currentHarvestSets: HarvestSet[] = []
-            let searchPerson = _.cloneDeep(person)
-            try {
-              searchPerson = _.set(searchPerson, 'familyName', name.familyName)
-              searchPerson = _.set(searchPerson, 'givenName', name.givenName)
-              searchPerson = _.set(searchPerson, 'givenNameInitial', name.givenName[0])
-            } catch (error) {
-              console.log(`Error on name variance: ${JSON.stringify(name, null, 2)}`)
-              throw error
-            }
-            let offset = 0
-            // have to alias this because nested this call below makes this undefined
-            let thisHarvester = this
-
-            let sessionState = {}
-            await wait(thisHarvester.ds.getDataSourceConfig().requestInterval)
-            harvestSet = await this.fetchPublications(searchPerson, harvestBy, sessionState, offset, searchStartDate, searchEndDate)
-            if (harvestSet) {
-              currentHarvestSets.push(harvestSet)
-            }
-            const pageSize = this.ds.getRequestPageSize().valueOf()
-            const totalResults = harvestSet.totalResults.valueOf()
-
-            sessionState = harvestSet.sessionState
-
-            if (totalResults > pageSize){
-              let numberOfRequests = parseInt(`${totalResults / pageSize}`) //convert to an integer to drop any decimal
-              //if no remainder subtract one since already did one call
-              if ((totalResults % pageSize) <= 0) {
-                numberOfRequests -= 1
+              harvestSet = await thisHarvester.fetchPublications(searchPerson, harvestBy, sessionState, offset, searchStartDate, searchEndDate)
+              if (harvestSet) {
+                currentHarvestSets.push(harvestSet)
               }
-
-              // make variable since 'this' reference scope gets confused inside loops below
-              const currentDS = this.ds
-
-              //loop to get the result of the results
-              console.log(`Making ${numberOfRequests} requests for name variation ${searchPerson.familyName}, ${searchPerson.givenNameInitial}`)
-              await pTimes (numberOfRequests, async function (index) {
-                await wait(currentDS.getDataSourceConfig().requestInterval)
-                if (offset + pageSize < totalResults){
-                  offset += pageSize
-                } else {
-                  offset += totalResults - offset
-                }
-                harvestSet = await thisHarvester.fetchPublications(searchPerson, harvestBy, sessionState, offset, searchStartDate, searchEndDate)
-                if (harvestSet) {
-                  currentHarvestSets.push(harvestSet)
-                }
-              }, { concurrency: 1})
-            }
-            // check total retrieved result matches what was returned
-            let totalRetrieved = 0
-            _.each (currentHarvestSets, (harvestSet) => {
-              totalRetrieved += harvestSet.sourcePublications.length
-            })
-            if (totalRetrieved < totalResults) {
-              throw `All expected results not returned for ${searchPerson.familyName}, ${searchPerson.givenName}, expected: ${totalResults} actual: ${totalRetrieved} start date: ${searchPerson.startDate} and end date ${searchPerson.endDate}`
-            } else {
-              console.log(`Retrieved (${totalRetrieved} of ${totalResults}) expected results for ${searchPerson.familyName}, ${searchPerson.givenName} start date: ${searchPerson.startDate} and end date ${searchPerson.endDate}`)
-              // _.each (currentHarvestSets, (harvestSet: HarvestSet) => {
-              //   _.each (harvestSet.normedPublications, (pub: NormedPublication) => {
-              //     console.log(`doi:${pub.doi} Normed Pub search person: ${JSON.stringify(pub.searchPerson, null, 2)}`)
-              //   })
-              // })
-              // console.log(`Normed pubs`)
-            }
-            harvestSets = _.concat(harvestSets, currentHarvestSets)
-          }, { concurrency: 1 })
-        } else {
-          console.log(`Warning: Skipping harvest of '${person.familyName}, ${person.givenName}' because person start date: ${person.startDate} and end date ${person.endDate} not within search start date ${searchStartDate} and end date ${searchEndDate}.)`)
-        }
+            }, { concurrency: 1})
+          }
+          // check total retrieved result matches what was returned
+          let totalRetrieved = 0
+          _.each (currentHarvestSets, (harvestSet) => {
+            totalRetrieved += harvestSet.sourcePublications.length
+          })
+          if (totalRetrieved < totalResults) {
+            throw `All expected results not returned for ${searchPerson.familyName}, ${searchPerson.givenName}, expected: ${totalResults} actual: ${totalRetrieved} start date: ${searchPerson.startDate} and end date ${searchPerson.endDate}`
+          } else {
+            console.log(`Retrieved (${totalRetrieved} of ${totalResults}) expected results for ${searchPerson.familyName}, ${searchPerson.givenName} start date: ${searchPerson.startDate} and end date ${searchPerson.endDate}`)
+            // _.each (currentHarvestSets, (harvestSet: HarvestSet) => {
+            //   _.each (harvestSet.normedPublications, (pub: NormedPublication) => {
+            //     console.log(`doi:${pub.doi} Normed Pub search person: ${JSON.stringify(pub.searchPerson, null, 2)}`)
+            //   })
+            // })
+            // console.log(`Normed pubs`)
+          }
+          harvestSets = _.concat(harvestSets, currentHarvestSets)
+        }, { concurrency: 1 })
+        // } else {
+        //   console.log(`Warning: Skipping harvest of '${person.familyName}, ${person.givenName}' because person start date: ${person.startDate} and end date ${person.endDate} not within search start date ${searchStartDate} and end date ${searchEndDate}.)`)
+        // }
       } catch (error) {
         console.log(error)
         const errorMessage = `Error on get papers for author: ${person.familyName}, ${person.givenName}: ${error}`
