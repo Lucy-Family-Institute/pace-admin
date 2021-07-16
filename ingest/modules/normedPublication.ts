@@ -97,7 +97,8 @@ export default class NormedPublication {
   }
 
   public static getSourceMetadataFileName(pub: NormedPublication): string {
-    return `${pub.datasourceName}_${pub.sourceId.replace(/\//g, '_')}.json`
+    const fileName = `${pub.datasourceName}_${pub.sourceId.replace(/\//g, '_')}.json`
+    return fileName
   }
 
   public static async writeSourceMetadataToJSON(pubs: NormedPublication[], dataDir) {
@@ -109,6 +110,7 @@ export default class NormedPublication {
       const filePath = path.join(jsonFileDir, NormedPublication.getSourceMetadataFileName(pub))
       const sourceMetadata = pub.sourceMetadata
       if (sourceMetadata) {
+        console.log(`Writing source metadata file: ${filePath}`)
         await writeToJSONFile(sourceMetadata, filePath)
       }
     }, { concurrency: 1})
