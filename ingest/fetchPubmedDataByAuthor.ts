@@ -19,7 +19,7 @@ import moment from 'moment'
 import dotenv from 'dotenv'
 import resolve from 'path'
 import fetch from 'node-fetch'
-import readPersonsByYear from '../client/src/gql/readPersonsByYear'
+import readPersonsByYearAllCenters from '../client/src/gql/readPersonsByYearAllCenters'
 import { randomWait, wait } from './units/randomWait'
 
 dotenv.config({
@@ -187,7 +187,7 @@ async function getFileData(filePath){
 }
 
 async function getSimplifiedPersons(year) {
-  const queryResult = await client.query(readPersonsByYear(year))
+  const queryResult = await client.query(readPersonsByYearAllCenters(year))
 
   const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
     return {
