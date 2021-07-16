@@ -74,6 +74,7 @@ async function mapAuthorFiles (filename) {
     normedPubCSV = _.set(normedPubCSV, 'authorPosition', 1)
     normedPubCSV = _.set(normedPubCSV, 'isFirstAuthor', true)
     normedPubCSV = _.set(normedPubCSV, 'isLastAuthor', (pub.creators.length - 1) === 1)
+    normedPubCSV = _.set(normedPubCSV, 'source_metadata', normedPub.sourceMetadata)
     return normedPubCSV
     // return mappedData;
   }, { concurrency: 1 });
@@ -112,17 +113,31 @@ async function go() {
   }
 
   await pMap(batches, async (batch, index) => {
-    await writeCsv({
-      path: `${pubmedDataDir}pubmedPubsByAuthor.${moment().format('YYYYMMDDHHmmss')}_${index}.csv`,
-      data: batch
-    });
 
     const objectToCSVMap = NormedPublication.loadNormedPublicationObjectToCSVMap()
 
     // write source metadata to disk
-    await pMap(batch, async (pub) => {
-      NormedPublication.writeSourceMetadataToJSON([NormedPublication.getNormedPublicationObjectFromCSVRow(pub, objectToCSVMap)], pubmedDataDir)
+    await pMap(batch, async (pub, index) => {
+      const normedPub = {
+        datasourceName: 'PubMed',
+        sourceId: pub.source_id,
+        sourceMetadata: pub.source_metadata
+      }
+      await NormedPublication.writeSourceMetadataToJSON([normedPub], pubmedDataDir)
     })
+
+    // remove sourceMetadata from what is written to csv
+    let csvBatch = []
+    _.each(batch, (pub) => {
+      csvBatch.push(_.omit(pub, 'source_metadata'))
+    })
+
+    const csvFilePath = `${pubmedDataDir}pubmedPubsByAuthor.${moment().format('YYYYMMDDHHmmss')}_${index}.csv`
+    console.log(`Writing csv of pub list to: ${csvFilePath}`)
+    await writeCsv({
+      path: csvFilePath,
+      data: csvBatch
+    });
   }, {concurrency: 1})
 }
 
