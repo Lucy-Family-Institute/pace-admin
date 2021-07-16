@@ -54,10 +54,53 @@ export class PubMedDataSource implements DataSource {
     return cslStyleAuthors
   }
 
+  // return map of identifier type to id
+  getResourceIdentifiers (resourceIdentifiers) {
+    console.log(`Keying resource identifiers by type: ${JSON.stringify(resourceIdentifiers, null,2)}`)
+    return _.keyBy(resourceIdentifiers, 'resourceIdentifierType')
+  }
+
   // returns an array of normalized publication objects given ones retrieved fron this datasource
   getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): NormedPublication[]{
-    // TODO
-    return []
+    let normedPubs = []
+    const mappedOverObject = _.each(sourcePublications, (pub) => {
+      const title = pub.title;
+      // console.log(`Pubmed pub is: ${JSON.stringify(jsonObj, null, 2)}`)
+      // console.log(`Before ubmed pub is: ${JSON.stringify(beforeJsonObj, null, 2)}`)
+
+      const identifiers = this.getResourceIdentifiers(pub.resourceIdentifiers)
+      // console.log(`Processing Pub: ${JSON.stringify(pub, null, 2)}`)
+      // console.log(`Found Resource Identifiers for Title: ${title} ids: ${JSON.stringify(identifiers, null, 2)}`)
+      // let creators = ''
+      // // const mappedData = await pMap(pub.creators, async (creator, index) => {
+
+      // //   if (index > 0) {
+      // //     creators = `${creators};`
+      // //   }
+      // //   creators = `${creators}${creator.familyName}, ${creator.givenName}`
+      // // }, { concurrency: 1 });
+
+      // const parsedName = await nameParser({
+      //   name: `${pub.creators[0].givenName} ${pub.creators[0].familyName}`,
+      //   reduceMethod: 'majority',
+      // });
+      
+      let doi = identifiers.doi ? identifiers.doi.resourceIdentifier : ''
+      let pubmedId = identifiers.pubmed ? identifiers.pubmed.resourceIdentifier: ''
+      console.log(`Creating normed pub for doi: ${doi} pubmed id: ${pubmedId}`)
+      // update to be part of NormedPublication
+      let normedPub = {
+        title: title,
+        journalTitle: '',
+        doi: doi,
+        publicationDate: pub.publicationYear,
+        datasourceName: 'PubMed',
+        sourceId: pubmedId,
+        sourceMetadata: pub
+      }
+      normedPubs.push(normedPub)
+    })
+    return normedPubs
   }
 
   //returns a machine readable string version of this source
