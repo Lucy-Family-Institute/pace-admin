@@ -9,25 +9,18 @@ export default function readPersonsByYearAllCenters (year) {
         persons (
           distinct_on: id,
           where: {
-            _and: [
+            _or: [
               {
                 persons_organizations: {
-                  start_date: {_lt: "${startDateLT}"}
+                  start_date: {_lt: "${startDateLT}"},
+                  end_date: {_gt: "${endDateGT}"}
                 }
               }, 
               {
-                _or: [
-                  {
-                    persons_organizations: {
-                      end_date: {_gt: "${endDateGT}"}
-                    }
-                  }, 
-                  {
-                    persons_organizations: {
-                      end_date: {_is_null: true}
-                    }
-                  }
-                ]
+                persons_organizations: {
+                  start_date: {_lt: "${startDateLT}"},
+                  end_date: {_is_null: true}
+                }
               }
             ]
           }, 
