@@ -1,0 +1,23 @@
+- args:
+    role: user
+    table:
+      name: confidence_type
+      schema: public
+  type: drop_insert_permission
+- args:
+    permission:
+      check: {}
+      columns:
+      - id
+      - name
+      - description
+      - rank
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: confidence_type
+      schema: public
+  type: create_insert_permission

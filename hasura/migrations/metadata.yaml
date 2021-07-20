@@ -355,10 +355,11 @@ tables:
       set: {}
       check: {}
       columns:
+      - description
       - id
       - name
-      - description
       - rank
+      - stop_testing_if_passed
   select_permissions:
   - role: user
     comment: null
@@ -366,10 +367,11 @@ tables:
       allow_aggregations: true
       computed_fields: []
       columns:
-      - id
-      - rank
       - description
+      - id
       - name
+      - rank
+      - stop_testing_if_passed
       filter: {}
   update_permissions:
   - role: user
@@ -377,10 +379,11 @@ tables:
     permission:
       set: {}
       columns:
-      - id
-      - rank
       - description
+      - id
       - name
+      - rank
+      - stop_testing_if_passed
       filter: {}
   delete_permissions: []
   event_triggers: []
