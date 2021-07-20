@@ -4,7 +4,7 @@ export default function readPublicationsCSL () {
   return {
     query: gql`
       query MyQuery {
-        publications (order_by: {id: desc}){
+        publications{
           id
           csl
           doi
