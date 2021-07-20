@@ -9,6 +9,7 @@ export default function readConfidenceTypes () {
           id
           name
           rank
+          stop_testing_if_passed
         }
       }
     `
