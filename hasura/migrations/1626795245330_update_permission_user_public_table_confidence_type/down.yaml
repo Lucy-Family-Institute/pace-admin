@@ -1,0 +1,21 @@
+- args:
+    role: user
+    table:
+      name: confidence_type
+      schema: public
+  type: drop_select_permission
+- args:
+    permission:
+      allow_aggregations: true
+      columns:
+      - id
+      - rank
+      - description
+      - name
+      computed_fields: []
+      filter: {}
+    role: user
+    table:
+      name: confidence_type
+      schema: public
+  type: create_select_permission

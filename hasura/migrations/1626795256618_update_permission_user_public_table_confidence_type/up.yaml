@@ -1,0 +1,24 @@
+- args:
+    role: user
+    table:
+      name: confidence_type
+      schema: public
+  type: drop_update_permission
+- args:
+    permission:
+      columns:
+      - description
+      - id
+      - name
+      - rank
+      - stop_testing_if_passed
+      filter: {}
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: confidence_type
+      schema: public
+  type: create_update_permission
