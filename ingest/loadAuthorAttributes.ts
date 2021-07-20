@@ -7,7 +7,7 @@ import pMap from 'p-map'
 import _, { update } from 'lodash'
 import { command as loadCsv } from './units/loadCsv'
 import readPersons from '../client/src/gql/readPersons'
-import updatePersonSemanticScholarId from './gql/updatePersonSemanticScholarId'
+import updatePersonSemanticScholarIds from './gql/updatePersonSemanticScholarIds'
 import { __EnumValue } from 'graphql'
 import { getAllSimplifiedPersons, getNameKey } from './modules/queryNormalizedPeople'
 
@@ -61,14 +61,19 @@ async function main (): Promise<void> {
     })   
     const nameKey = getNameKey(author[_.keys(author)[familyNameIndex]], author['given_name'])
     // console.log(`Person map is: ${JSON.stringify(_.keys(personMap).length, null, 2)}`)
-    // console.log(`Name key is: ${nameKey}`)
+    console.log(`Name key is: ${nameKey}`)
     const personId = personMap[nameKey][0].id
     if (personMap[nameKey]) {
       if (author['semantic_scholar_id']){
         if (!updateSourceIds[personId]){
           updateSourceIds[personId] = {}
         }
-        updateSourceIds[personId]['semanticScholarId'] = author['semantic_scholar_id']
+        // add multiples as array delimited by ';'
+        let semanticScholarIds = _.split(author['semantic_scholar_id'], ';')
+        semanticScholarIds = _.map(semanticScholarIds, (id) => {
+          return _.trim(id)
+        })
+        updateSourceIds[personId]['semanticScholarIds'] = semanticScholarIds
       }
       if (author['name_variances']) {
         const existingNameVariances = personMap[nameKey][0].nameVariances
@@ -130,8 +135,8 @@ async function main (): Promise<void> {
   let updatedSourceIds = 0
   await pMap(_.keys(updateSourceIds), async (updatePersonId) => {
     const sourceIds = updateSourceIds[updatePersonId]
-    if (sourceIds['semanticScholarId']){
-      const resultUpdateScholarId = await client.mutate(updatePersonSemanticScholarId(updatePersonId, sourceIds['semanticScholarId']))
+    if (sourceIds['semanticScholarIds']){
+      const resultUpdateScholarId = await client.mutate(updatePersonSemanticScholarIds(updatePersonId, sourceIds['semanticScholarIds']))
       updatedSourceIds += resultUpdateScholarId.data.update_persons.returning.length
     }
   }, { concurrency: 1 })
