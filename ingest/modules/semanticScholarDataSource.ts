@@ -24,7 +24,7 @@ export class SemanticScholarDataSource implements DataSource {
   // return object with query request params
   getAuthorQuery(person: NormedPerson, startDate?: Date, endDate?: Date){
     if (person.sourceIds) {
-      return `authorId:${person.sourceIds.semanticScholarId}`
+      return `authorId:${person.sourceIds.semanticScholarIds}`
     } else {
       return undefined
     }
@@ -36,7 +36,7 @@ export class SemanticScholarDataSource implements DataSource {
 
   // assumes that if only one of startDate or endDate provided it would always be startDate first and then have endDate undefined
   async getPublicationsByAuthorId(person: NormedPerson, sessionState: {}, offset: Number, startDate: Date, endDate?: Date): Promise<HarvestSet> {
-    let finalTotalResults: Number
+    let finalTotalResults = 0
     let publications = []
 
     let skippedPublications = 0
@@ -44,58 +44,62 @@ export class SemanticScholarDataSource implements DataSource {
     const minPublicationYear = (startDate ? startDate.getFullYear() : undefined)
     const maxPublicationYear = (endDate ? endDate.getFullYear() : undefined)
 
-    if (!person.sourceIds || !person.sourceIds.semanticScholarId) {
+    if (!person.sourceIds || !person.sourceIds.semanticScholarIds) {
       throw (`Semantic Scholar Id not defined for Person: ${JSON.stringify(person)}`)
     }
-    const authorId = person.sourceIds.semanticScholarId  
+    const authorIds = person.sourceIds.semanticScholarIds
 
     // need to make sure date string in correct format
-    const results = await this.fetchSemanticScholarAuthorData(this.dsConfig.pageSize, offset, authorId)
-    // console.log (`semantic scholar results are: ${_.keys(results['papers'])}`)
-    if (results && results['papers']){
-      
-      const totalResults = Number.parseInt(results['papers'].length)
-      finalTotalResults = totalResults
-      if (totalResults > 0){
-        // fetch metadata for each paper 
-        await wait(this.dsConfig.requestInterval)
-        const papers = results['papers']
-        await pMap (papers, async (paper, index) => {
-          const paperId = paper['paperId']
-          let paperYear = paper['year']
-          let skipPublication = false
-          if (paperYear) {
-            paperYear = Number.parseInt(paperYear)              
-            if (minPublicationYear) {
-              if (paperYear < minPublicationYear) {
-                skipPublication = true
-              } else if (maxPublicationYear && paperYear > maxPublicationYear) {
-                skipPublication = true
+    // fetch for each possible id expecting there could be more than one
+    await pMap(authorIds, async (authorId) => {
+      await wait(this.dsConfig.requestInterval)
+      const results = await this.fetchSemanticScholarAuthorData(this.dsConfig.pageSize, offset, authorId)
+      // console.log (`semantic scholar results are: ${_.keys(results['papers'])}`)
+      if (results && results['papers']){
+        
+        const totalResults = Number.parseInt(results['papers'].length)
+        finalTotalResults += totalResults
+        if (totalResults > 0){
+          // fetch metadata for each paper 
+          await wait(this.dsConfig.requestInterval)
+          const papers = results['papers']
+          await pMap (papers, async (paper, index) => {
+            const paperId = paper['paperId']
+            let paperYear = paper['year']
+            let skipPublication = false
+            if (paperYear) {
+              paperYear = Number.parseInt(paperYear)              
+              if (minPublicationYear) {
+                if (paperYear < minPublicationYear) {
+                  skipPublication = true
+                } else if (maxPublicationYear && paperYear > maxPublicationYear) {
+                  skipPublication = true
+                }
               }
             }
-          }
-          if (!skipPublication) {
-            await wait(this.dsConfig.requestInterval)
-            console.log(`Fetching paper metadata (${(index + 1)} of ${totalResults}) for author: ${person.familyName}, ${person.givenName}`)
-            const paperMetadata = await this.fetchSemanticScholarPaperData(paperId)        
-            publications.push(paperMetadata)
-          } else {
-            console.log(`Skipping paper metadata (${(index + 1)} of ${totalResults}) for author: ${person.familyName}, ${person.givenName} with publication year: ${paperYear}`)
-            skippedPublications += 1
-            finalTotalResults = finalTotalResults.valueOf() - 1
-          }
-        }, { concurrency: 1 })
+            if (!skipPublication) {
+              await wait(this.dsConfig.requestInterval)
+              console.log(`Fetching paper metadata (${(index + 1)} of ${totalResults}) for author: ${person.familyName}, ${person.givenName}`)
+              const paperMetadata = await this.fetchSemanticScholarPaperData(paperId)        
+              publications.push(paperMetadata)
+            } else {
+              console.log(`Skipping paper metadata (${(index + 1)} of ${totalResults}) for author: ${person.familyName}, ${person.givenName} with publication year: ${paperYear}`)
+              skippedPublications += 1
+              finalTotalResults = finalTotalResults.valueOf() - 1
+            }
+          }, { concurrency: 1 })
+        }
+      } else {
+        finalTotalResults += 0
       }
-    } else {
-      finalTotalResults = 0
-    }
+    }, { concurrency: 1})
     console.log(`Fetched ${(finalTotalResults)} publications and Skipped ${skippedPublications} publications outside of publication target range for author: ${person.familyName}, ${person.givenName}`)
     
 
     const result: HarvestSet = {
         sourceName: this.getSourceName(),
         searchPerson: person,
-        query: `authorId:${authorId}`,
+        query: `authorIds:${authorIds}`,
         sourcePublications: publications,
         offset: offset,
         pageSize: Number.parseInt(this.dsConfig.pageSize),

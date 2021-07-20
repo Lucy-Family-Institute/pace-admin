@@ -30,7 +30,7 @@ export default function readPersonsByYearAllCenters (year) {
           family_name
           start_date
           end_date
-          semantic_scholar_id
+          semantic_scholar_ids
           institution {
             name
           }
