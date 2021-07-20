@@ -168,8 +168,8 @@ async function main (): Promise<void> {
     if (!existingSemanticIds[personPub.person_id]){
       existingSemanticIds[personPub.person_id] = []
     }
-    if (personPub.person.semantic_scholar_id) {
-      existingSemanticIds[personPub.person_id].push(personPub.person.semantic_scholar_id)
+    if (personPub.person.semantic_scholar_ids) {
+      existingSemanticIds[personPub.person_id] = _.concat(existingSemanticIds[personPub.person_id], JSON.parse(personPub.person.semantic_scholar_id))
     }
     // now return doi to group by them
     return personPub.doi
