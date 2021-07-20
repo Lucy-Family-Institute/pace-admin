@@ -1,0 +1,6 @@
+- args:
+    sql: ALTER TABLE "public"."persons" ALTER COLUMN "semantic_scholar_ids" TYPE text;
+  type: run_sql
+- args:
+    sql: COMMENT ON COLUMN "public"."persons"."semantic_scholar_ids" IS E''
+  type: run_sql
