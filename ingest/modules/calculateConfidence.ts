@@ -428,7 +428,7 @@ export class CalculateConfidence {
       _.each(_.keys(publicationAuthorMap), (pubLastName) => {
         // check for a fuzzy match of name variant last names to lastname in pub author list
         if (this.lastNameMatchFuzzy(pubLastName, 'lastName', nameVariations[nameLastName]) || this.lastNameMatchFuzzy(pubLastName, 'family', nameVariations[nameLastName])){
-          //console.log(`Found lastname match pub: ${pubLastName} and variation: ${nameLastName}`)
+          // console.log(`Found lastname match pub: ${pubLastName} and variation: ${nameLastName}`)
           // now check for first initial or given name match
           // split the given name based on spaces
 
@@ -446,7 +446,9 @@ export class CalculateConfidence {
                 console.log(`splitting given parts pubAuthor is: ${JSON.stringify(pubAuthor, null, 2)}`)
               }
               if (part && this.nameMatchFuzzy(pubLastName, 'lastName', part.toLowerCase(), firstKey, nameVariations[nameLastName])) {
-                const testPart = part.replace(/./g,'')
+                // console.log(`found match for author: ${JSON.stringify(pubAuthor, null, 2)}`)
+                const testPart = part.replace(/\./g,'')
+                // console.log(`part is '${part}' Test part is: '${testPart}' failIfOnlyInitialInGivenName is: ${failIfOnlyInitialInGivenName}`)
                 if (!failIfOnlyInitialInGivenName || testPart.length > 1){
                   (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
                   matched = true
@@ -456,7 +458,7 @@ export class CalculateConfidence {
             // if not matched try matching without breaking it into parts
             if (!matched && givenParts.length > 1) {
               if (this.nameMatchFuzzy(pubLastName, 'lastName', pubAuthor['given'], firstKey, nameVariations[nameLastName])) {
-                const testPart = pubAuthor['given'].replace(/./g,'')
+                const testPart = pubAuthor['given'].replace(/\./g,'')
                 // only set to true if not failing for 1 character names (i.e., initial)
                 if (!failIfOnlyInitialInGivenName || testPart.length > 1){
                   (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
@@ -475,9 +477,35 @@ export class CalculateConfidence {
     return this.testAuthorGivenNamePart(author, publicationAuthorMap, true)
   }
 
-  // only call this method if last name matched
+  // only call this method if last name and initials matched
   testAuthorGivenName (author, publicationAuthorMap, failIfOnlyInitialInGivenName?) {
     return this.testAuthorGivenNamePart(author, publicationAuthorMap, false, failIfOnlyInitialInGivenName)
+  }
+
+  // only call this method if last name and initials matched
+  testAuthorGivenNameMismatch (author, publicationAuthorMap) {
+    // check if initials passed, if initials do not pass then say it is a mismatch
+    //  -- if initials passed then check given name. 
+    //  -- if given name length 1 char only or moret than not a match say there is a mismatch
+    
+    const testInitialsMatchedAuthors = this.testAuthorGivenNameInitial (author, publicationAuthorMap)
+    const testInitialsMatch = (testInitialsMatchedAuthors && _.keys(testInitialsMatchedAuthors).length > 0)
+    if (testInitialsMatch) {
+      // check if passes with failIfOnlyInitialInGivenName to false so it allows matches if length = 1
+      const testInitialsAllowedMatchedAuthors = this.testAuthorGivenNamePart (author, publicationAuthorMap, false, false)
+      const testInitialsAllowed = (testInitialsAllowedMatchedAuthors && _.keys(testInitialsAllowedMatchedAuthors).length > 0)
+      // const testInitialsNotAllowed = (testInitialsNotAllowedMatchedAuthors && _.keys(testInitialsNotAllowedMatchedAuthors).length > 0)
+      if (testInitialsAllowed) {
+        // console.log(`No given Name mismatch both with initials and without`)
+        return {}
+      } else {
+        console.log(`Given Name mismatch detected initials match, but not other match test author: ${JSON.stringify(author, null, 2)} pub authors: ${JSON.stringify(publicationAuthorMap, null, 2)}`)
+        return testInitialsMatchedAuthors
+      }
+    } else {
+      // console.log(`Given Name mismatch no initials match, so just returning empty set to ignore this test as only applies when initial match found`)
+      return {}
+    }
   }
 
   getAuthorsFromSourceMetadata(sourceName, sourceMetadata) {
@@ -547,8 +575,10 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
       return matchedAuthors
     } else if (confidenceType.name === 'given_name_initial') {
       return this.testAuthorGivenNameInitial(author, publicationAuthorMap)
-    // } else if (confidenceType.name === 'given_name_mismatch') {
-    //  return this.testAuthorGivenNameMismatch(author, publicationAuthorMap)
+    } else if (confidenceType.name === 'given_name_mismatch') {
+      // this one opposite other tests where a set is returned if mismatches are found, setting it true
+      // console.log('Checking if given name mismatch...')
+      return this.testAuthorGivenNameMismatch(author, publicationAuthorMap)
     } else if (confidenceType.name === 'given_name') {
       return this.testAuthorGivenName(author, publicationAuthorMap, true)
     } else if (confidenceType.name === 'university_affiliation') {
@@ -606,9 +636,12 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
                 matchedAuthors[matchedLastName] = currentMatchedAuthors[matchedLastName]
               }
             })
+            if (confidenceType['stop_testing_if_passed']){
+              stopTesting = true
+            }
           }
         }, {concurrency: 3})
-        if (_.keys(matchedAuthors).length <= 0){
+        if (_.keys(matchedAuthors).length <= 0 || stopTesting){
           // stop processing and skip next set of tests
           stopTesting = true
         } else {
