@@ -13,7 +13,7 @@ export default class NormedPerson {
   nameVariances?: []
   sourceIds: {
     scopusAffiliationId?: string,
-    semanticScholarId?: string
+    semanticScholarIds?: string[]
   }
   // ------ end declare properties used when using NormedPerson like an interface
 

@@ -123,7 +123,7 @@ beforeAll(async () => {
         givenName: 'Jun',
         startDate: getDateObject('2019-01-01'),
         sourceIds: {
-            semanticScholarId: '46276642'
+            semanticScholarIds: ['46276642']
         },
         endDate: undefined
     }
@@ -173,7 +173,7 @@ test('test Semantic Scholar harvester.fetchPublications by Author Id', async () 
 test('test Semantic Scholar getAuthorQuery', () => {
     expect.hasAssertions()
     const authorQuery = semanticScholarDS.getAuthorQuery(defaultNormedPerson)
-    expect(authorQuery).toEqual(`authorId:${defaultNormedPerson.sourceIds.semanticScholarId}`)
+    expect(authorQuery).toEqual(`authorId:${defaultNormedPerson.sourceIds.semanticScholarIds}`)
 })
 
 test('test Semantic Scholar semanticScholarDataSource.getCoauthors', async () => {

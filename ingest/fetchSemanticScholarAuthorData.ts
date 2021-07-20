@@ -91,7 +91,7 @@ async function main (): Promise<void> {
         personCounter += 1
         const person = persons[0]
         const personId = person['id']
-        if (person.sourceIds && person.sourceIds.semanticScholarId || possibleAuthorIdsByPersonId[`${personId}`]) {
+        if (person.sourceIds && person.sourceIds.semanticScholarIds || possibleAuthorIdsByPersonId[`${personId}`]) {
           console.log(`Getting papers for ${person.familyName}, ${person.givenName}`)
           // run for each name plus name variance, put name variance second in case undefined
           // let searchNames = _.concat([{given_name: person.firstName, family_name: person.lastName }], person.nameVariances)
@@ -102,20 +102,18 @@ async function main (): Promise<void> {
             person.sourceIds = {}
           }
           
-          if (person.sourceIds && person.sourceIds.semanticScholarId) {
-            semanticScholarIds.push(person.sourceIds.semanticScholarId)
+          if (person.sourceIds && person.sourceIds.semanticScholarIds) {
+            semanticScholarIds = person.sourceIds.semanticScholarIds
           }
           // } else if (possibleAuthorIdsByPersonId[`${personId}`]) {
           //   semanticScholarIds = _.concat(semanticScholarIds, possibleAuthorIdsByPersonId[`${personId}`])
           // }
-          await pMap(semanticScholarIds, async (scholarId) => {
-            let harvestPerson = _.clone(person)
-            harvestPerson.sourceIds.semanticScholarId = scholarId
-            const harvestPersons = [harvestPerson]
-            await semanticScholarHarvester.harvestToCsv(resultsDir, persons, HarvestOperation.QUERY_BY_AUTHOR_ID, getDateObject(`${year}-01-01`), getDateObject(`${year}-12-31`), `${person.familyName}_${person.givenName}`)
-              // await pMap(searchNames, async (searchName) => {
-            await wait(1500)
-          }, { concurrency: 1})
+          let harvestPerson = _.clone(person)
+          harvestPerson.sourceIds.semanticScholarIds = semanticScholarIds
+          const harvestPersons = [harvestPerson]
+          await semanticScholarHarvester.harvestToCsv(resultsDir, persons, HarvestOperation.QUERY_BY_AUTHOR_ID, getDateObject(`${year}-01-01`), getDateObject(`${year}-12-31`), `${person.familyName}_${person.givenName}`)
+            // await pMap(searchNames, async (searchName) => {
+          await wait(1500)
             
           // }, { concurrency: 1})
           succeededAuthors = _.concat(succeededAuthors, persons)
