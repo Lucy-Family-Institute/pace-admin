@@ -287,6 +287,9 @@ async function findAuthorMatches(testAuthors, confirmedAuthors, doi, csl, source
   // populate with array of person id's mapped person object
   let authorMatchesFound = {}
 
+  let testAuthors2 = []
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===1698}))
+
   try {
     //create map of last name to array of related persons with same last name
     const personMap = _.transform(testAuthors, function (result, value) {
