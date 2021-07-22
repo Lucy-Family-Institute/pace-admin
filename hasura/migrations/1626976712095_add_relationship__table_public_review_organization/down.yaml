@@ -1,0 +1,6 @@
+- args:
+    relationship: review_organization_levels
+    table:
+      name: review_organization
+      schema: public
+  type: drop_relationship
