@@ -51,22 +51,36 @@ export class CrossRefDataSource implements DataSource {
 
     let totalResults: Number
     let publications = []
+    let itemsPerPage = undefined
 
-    // need to make sure date string in correct format
-    const results = await this.fetchCrossRefQuery(this.dsConfig.pageSize, offset, query['query.author'], query['query.affiliation'], query['filter'])
-    if (results && results['message']['total-results']){
-        totalResults = Number.parseInt(results['message']['total-results'])
-        if (totalResults > 0 && results['message']['items']){
-            publications = results['message']['items']
-        }
+    const recordLimit = 300
+    //first trying running without affiliation and see what results are returned
+    //if below limit than run without filter, otherwise apply
+    let affiliation = undefined
+    let results = await this.fetchCrossRefResults(this.dsConfig.pageSize, offset, query['query.author'], affiliation, query['filter'])
+    console.log(`CrossRef records found w/out affiliation filter, totalResults: ${results.totalResults} offset: ${offset}`)
+    if (results.totalResults <= recordLimit) {
+      console.log(`CrossRef getting records w/out affiliation filter, totalResults: ${results.totalResults} offset: ${offset}`)
+      totalResults = results.totalResults
+      publications = results.publications
+      itemsPerPage = results.itemsPerPage
     } else {
-      totalResults = 0
+      // need to make sure date string in correct format
+      console.log(`CrossRef getting records w/ affiliation filter, offset: ${offset}`)
+      results = await this.fetchCrossRefResults(this.dsConfig.pageSize, offset, query['query.author'], query['query.affiliation'], query['filter'])
+      if (results.totalResults) {
+        totalResults = results.totalResults
+        publications = results.publications
+        itemsPerPage = results.itemsPerPage
+      } else {
+        totalResults = 0
+      }
     }
     // console.log(`CrossRef results are: ${JSON.stringify(results['message']['items'][0], null, 2)}`)
     // console.log(`CrossRef results are: ${JSON.stringify(_.keys(results['message']), null, 2)}`)
     // console.log(`CrossRef results facets are: ${JSON.stringify(results['message']['facets'], null, 2)}`)
-    console.log(`CrossRef results total-results are: ${JSON.stringify(results['message']['total-results'], null, 2)}`)
-    console.log(`CrossRef results items-per-page are: ${JSON.stringify(results['message']['items-per-page'], null, 2)}`)
+    console.log(`CrossRef results total-results are: ${JSON.stringify(totalResults, null, 2)}`)
+    console.log(`CrossRef results items-per-page are: ${JSON.stringify(itemsPerPage, null, 2)}`)
     // console.log(`CrossRef results query is: ${JSON.stringify(results['message']['query'], null, 2)}`)
 
 
@@ -81,6 +95,26 @@ export class CrossRefDataSource implements DataSource {
     }
 
     return result
+  }
+
+  async fetchCrossRefResults(pageSize, offset, queryAuthor, affiliation?, filter?) : Promise<any>{
+    // need to make sure date string in correct format
+    let totalResults
+    let publications
+    let itemsPerPage
+    const results = await this.fetchCrossRefQuery(this.dsConfig.pageSize, offset, queryAuthor, affiliation, filter)
+    if (results && results['message'] && results['message']['total-results']){
+      totalResults = Number.parseInt(results['message']['total-results'])
+      itemsPerPage = results['message']['items-per-page']
+      if (totalResults > 0 && results['message']['items']){
+        publications = results['message']['items']
+      }
+    }
+    return {
+      totalResults: totalResults,
+      publications: publications,
+      itemsPerPage: itemsPerPage
+    } 
   }
 
   async fetchCrossRefQuery(pageSize, offset, queryAuthor, affiliation?, filter?) : Promise<any>{
