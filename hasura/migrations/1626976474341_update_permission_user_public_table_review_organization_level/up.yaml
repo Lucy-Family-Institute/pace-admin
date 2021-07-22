@@ -1,0 +1,16 @@
+- args:
+    permission:
+      allow_upsert: true
+      check: {}
+      columns:
+      - organization_value
+      - level
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: review_organization_level
+      schema: public
+  type: create_insert_permission

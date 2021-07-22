@@ -131,21 +131,6 @@
                         <q-btn dense v-if="reviewTypeFilter!=='rejected'" color="red" label="Rejected" class="on-left" @click="clickReviewRejected(index, person, personPublication);" />
                         <q-btn dense v-if="reviewTypeFilter!=='unsure'" color="grey" label="Unsure" class="on-left" @click="clickReviewUnsure(index, person, personPublication);" />
                       </q-card-section>
-                      <q-card-section>
-                        <q-table
-                         :title="`ND Author Review ${selectedInstitutionReviewState}`"
-                         :data="getInstitutionReviewedAuthors(item.publication.doi, selectedInstitutionReviewState.toLowerCase())"
-                         :columns="reviewedAuthorColumns"
-                         row-key="id"
-                         dense
-                        >
-                         <q-tr v-if="(selectedInstitutionReviewState.toLowerCase()==='accepted' && acceptedAuthors.length <= 0 || selectedInstitutionReviewState.toLowerCase()==='rejected' && rejectedAuthors.length <= 0 || selectedInstitutionReviewState.toLowerCase()==='unsure' && unsureAuthors.length <= 0)" slot="bottom-row">
-                          <q-td align="left" colspan="100%">
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>None</i>
-                          </q-td>
-                         </q-tr>
-                        </q-table>
-                      </q-card-section>
                     </q-card>
                   </q-expansion-item>
                 </template>
@@ -186,7 +171,7 @@
                         target="_blank"
                       />
                     </q-card-section>
-                    <q-card-section v-if="publication.title" class="text-left">
+                    <q-card-section v-if="publication&&publication.title" class="text-left">
                       <q-item-label><b>Title:&nbsp;</b>{{ publication.title }}</q-item-label>
                     </q-card-section>
                     <q-card-section>

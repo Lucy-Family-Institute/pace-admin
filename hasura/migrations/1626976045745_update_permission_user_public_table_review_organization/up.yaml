@@ -1,0 +1,13 @@
+- args:
+    permission:
+      allow_aggregations: true
+      columns:
+      - comment
+      - value
+      filter: {}
+      limit: null
+    role: user
+    table:
+      name: review_organization
+      schema: public
+  type: create_select_permission

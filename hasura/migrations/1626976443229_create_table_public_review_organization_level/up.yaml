@@ -1,0 +1,10 @@
+- args:
+    sql: CREATE TABLE "public"."review_organization_level"("organization_value" text
+      NOT NULL, "level" integer NOT NULL, PRIMARY KEY ("organization_value") , FOREIGN
+      KEY ("organization_value") REFERENCES "public"."review_organization"("value")
+      ON UPDATE no action ON DELETE no action, UNIQUE ("organization_value"));
+  type: run_sql
+- args:
+    name: review_organization_level
+    schema: public
+  type: add_existing_table_or_view

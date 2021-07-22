@@ -1516,13 +1516,26 @@ tables:
       update: null
       delete: null
     custom_column_names: {}
-  object_relationships: []
+  object_relationships:
+  - using:
+      manual_configuration:
+        remote_table: review_organization_level
+        column_mapping:
+          value: organization_value
+    name: review_organization_level
+    comment: null
   array_relationships:
   - using:
       foreign_key_constraint_on:
         column: organization_value
         table: persons_organizations
     name: persons_organizations
+    comment: null
+  - using:
+      foreign_key_constraint_on:
+        column: organization_value
+        table: review_organization_level
+    name: review_organization_levels
     comment: null
   - using:
       foreign_key_constraint_on:
@@ -1538,7 +1551,6 @@ tables:
       check: {}
       columns:
       - comment
-      - level
       - value
   select_permissions:
   - role: user
@@ -1548,7 +1560,6 @@ tables:
       computed_fields: []
       columns:
       - comment
-      - level
       - value
       filter: {}
   update_permissions:
@@ -1558,8 +1569,55 @@ tables:
       set: {}
       columns:
       - comment
-      - level
       - value
+      filter: {}
+  delete_permissions: []
+  event_triggers: []
+  computed_fields: []
+- table: review_organization_level
+  is_enum: false
+  configuration:
+    custom_root_fields:
+      select: null
+      select_by_pk: null
+      select_aggregate: null
+      insert: null
+      update: null
+      delete: null
+    custom_column_names: {}
+  object_relationships:
+  - using:
+      foreign_key_constraint_on: organization_value
+    name: review_organization
+    comment: null
+  array_relationships: []
+  insert_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      check: {}
+      columns:
+      - organization_value
+      - level
+  select_permissions:
+  - role: user
+    comment: null
+    permission:
+      allow_aggregations: true
+      computed_fields: []
+      columns:
+      - level
+      - organization_value
+      filter: {}
+  update_permissions:
+  - role: user
+    comment: null
+    permission:
+      set: {}
+      columns:
+      - level
+      - organization_value
       filter: {}
   delete_permissions: []
   event_triggers: []
