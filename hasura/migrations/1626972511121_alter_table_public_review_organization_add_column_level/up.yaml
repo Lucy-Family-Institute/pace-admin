@@ -1,3 +1,0 @@
-- args:
-    sql: ALTER TABLE "public"."review_organization" ADD COLUMN "level" integer NULL;
-  type: run_sql

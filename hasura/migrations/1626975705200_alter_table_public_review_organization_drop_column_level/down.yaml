@@ -1,7 +1,0 @@
-- args:
-    sql: ALTER TABLE "public"."review_organization" ADD COLUMN "level" int4
-  type: run_sql
-- args:
-    sql: ALTER TABLE "public"."review_organization" ALTER COLUMN "level" DROP NOT
-      NULL
-  type: run_sql
