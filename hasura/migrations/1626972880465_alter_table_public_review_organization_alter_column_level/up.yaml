@@ -1,9 +1,0 @@
-- args:
-    sql: ALTER TABLE "public"."review_organization" ALTER COLUMN "level" TYPE int4;
-  type: run_sql
-- args:
-    sql: ALTER TABLE "public"."review_organization" ALTER COLUMN "level" SET NOT NULL;
-  type: run_sql
-- args:
-    sql: COMMENT ON COLUMN "public"."review_organization"."level" IS E''
-  type: run_sql
