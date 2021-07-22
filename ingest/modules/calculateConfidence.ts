@@ -734,7 +734,7 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
 
     console.log('Entering loop 1...')
 
-    const minConfidence = 0.45
+    const minConfidence = 0.40
 
     await pMap(testAuthors, async (testAuthor) => {
       console.log(`Confidence Test Author is: ${testAuthor['names'][0]['lastName']}, ${testAuthor['names'][0]['firstName']}`)
