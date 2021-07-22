@@ -1,0 +1,10 @@
+- args:
+    sql: ALTER TABLE "public"."review_organization" ALTER COLUMN "level" TYPE integer;
+  type: run_sql
+- args:
+    sql: ALTER TABLE "public"."review_organization" ALTER COLUMN "level" DROP NOT
+      NULL;
+  type: run_sql
+- args:
+    sql: COMMENT ON COLUMN "public"."review_organization"."level" IS E'null'
+  type: run_sql
