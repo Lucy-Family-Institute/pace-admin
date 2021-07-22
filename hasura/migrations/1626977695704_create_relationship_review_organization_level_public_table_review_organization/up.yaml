@@ -1,0 +1,13 @@
+- args:
+    name: review_organization_level
+    table:
+      name: review_organization
+      schema: public
+    using:
+      manual_configuration:
+        column_mapping:
+          value: organization_value
+        remote_table:
+          name: review_organization_level
+          schema: public
+  type: create_object_relationship

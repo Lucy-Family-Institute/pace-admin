@@ -1,5 +1,7 @@
 query MyQuery {
-  review_organization {
+  review_organization (
+    order_by: {review_organization_level: {level: asc}, comment: asc}
+  ){
     value
     comment
   }

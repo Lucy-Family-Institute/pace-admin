@@ -1,0 +1,6 @@
+- args:
+    relationship: persons_organizations
+    table:
+      name: review_organization
+      schema: public
+  type: drop_relationship
