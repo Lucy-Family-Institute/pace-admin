@@ -1537,8 +1537,9 @@ tables:
       set: {}
       check: {}
       columns:
-      - value
       - comment
+      - level
+      - value
   select_permissions:
   - role: user
     comment: null
@@ -1547,6 +1548,7 @@ tables:
       computed_fields: []
       columns:
       - comment
+      - level
       - value
       filter: {}
   update_permissions:
@@ -1556,6 +1558,7 @@ tables:
       set: {}
       columns:
       - comment
+      - level
       - value
       filter: {}
   delete_permissions: []

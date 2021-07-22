@@ -186,6 +186,9 @@
                         target="_blank"
                       />
                     </q-card-section>
+                    <q-card-section v-if="publication.title" class="text-left">
+                      <q-item-label><b>Title:&nbsp;</b>{{ publication.title }}</q-item-label>
+                    </q-card-section>
                     <q-card-section>
                       <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
                     </q-card-section>
@@ -416,7 +419,7 @@ import sanitize from 'sanitize-filename'
 import moment from 'moment'
 import pMap from 'p-map'
 import readPersonsByInstitutionByYearByOrganization from '../gql/readPersonsByInstitutionByYearByOrganization'
-import readOrganizations from '../../../gql/readOrganizations.gql'
+import readOrganizationsCenters from '../../../gql/readOrganizationsCenters.gql'
 // import VueFuse from 'vue-fuse'
 
 // Vue.use(VueFuse)
@@ -429,6 +432,7 @@ export default {
     'download-csv': JsonCSV
   },
   data: () => ({
+    pubLoadCount: 0,
     reviewStates: undefined,
     selectedReviewState: undefined,
     institutionReviewState: undefined,
@@ -524,15 +528,19 @@ export default {
   watch: {
     $route: 'fetchData',
     selectedInstitutions: function () {
+      console.log('Selected Institutions Change. Reloading publications...')
       this.loadPublications()
     },
     selectedCenter: function () {
+      console.log('Selected Center Change. Reloading publications...')
       this.loadPublications()
     },
     changedPubYears: async function () {
+      console.log('Selected Pub Years Change. Reloading publications...')
       await this.loadPublications()
     },
     changedMemberYears: async function () {
+      console.log('Selected Member Years Change. Reloading publications...')
       await this.loadPublications()
     },
     selectedPersonSort: function () {
@@ -560,10 +568,12 @@ export default {
       this.loadPersonsWithFilter()
     },
     publicationsGroupedByView: function () {
+      console.log('Pubs Grouped By View Change. Reloading publications...')
       this.loadPublications()
     },
     reviewTypeFilter: function () {
       if (this.publicationsReloadPending) {
+        console.log('Review Type Filter Change. Reloading publications...')
         this.loadPublications()
         this.publicationsReloadPending = false
       } else {
@@ -1051,7 +1061,7 @@ export default {
     // },
     async fetchData () {
       const results = await this.$apollo.query({
-        query: readOrganizations
+        query: readOrganizationsCenters
       })
 
       this.centerOptions = _.map(results.data.review_organization, (reviewOrg) => {
@@ -1061,10 +1071,17 @@ export default {
         }
       })
 
+      const centerValues = _.map(this.centerOptions, (option) => { return option.value })
+      if (this.selectedCenter && this.selectedCenter.value && !_.includes(centerValues, this.selectedCenter.value)) {
+        // if a value not in list change to preferred
+        this.selectedCenter = undefined
+      }
+
       if (!this.selectedCenter || !this.selectedCenter.value) {
         this.selectedCenter = this.preferredSelectedCenter
       }
       await this.loadReviewStates()
+      console.log('Fetching Data. Reloading publications...')
       await this.loadPublications()
     },
     async clearPublications () {
@@ -1461,6 +1478,10 @@ export default {
       }
     },
     async loadPublications () {
+      const currentLoadCount = this.pubLoadCount + 1
+      this.pubLoadCount += 1
+      this.clearPublication()
+      this.clearPublications()
       this.startProgressBar()
       this.publicationsLoaded = false
       this.publicationsLoadedError = false
@@ -1517,43 +1538,58 @@ export default {
         const personPubConfidenceSets = _.groupBy(pubsWithConfResult.data.confidencesets_persons_publications, (confPersonPub) => {
           return confPersonPub.persons_publications_id
         })
-        console.log(`Start query publications authors ${moment().format('HH:mm:ss:SSS')}`)
-        this.publications = _.map(pubsWithReviewResult.data.persons_publications, (personPub) => {
-          // change doi to lowercase
-          _.set(personPub.publication, 'doi', _.toLower(personPub.publication.doi))
-          _.set(personPub, 'confidencesets', _.cloneDeep(personPubConfidenceSets[personPub.id]))
-          _.set(personPub, 'reviews', _.cloneDeep(personPubNDReviews[personPub.id]))
-          _.set(personPub, 'org_reviews', _.cloneDeep(personPubCenterReviews[personPub.id]))
-          return personPub
-        })
-        const publicationIds = _.map(this.publications, (pub) => {
-          return pub.publication.id
-        })
-        // now query for authors for the publications (faster if done in second query)
-        const pubsAuthorsResult = await this.$apollo.query({
-          query: readAuthorsByPublications(publicationIds),
-          fetchPolicy: 'network-only'
-        })
-        console.log(`Finished query publications authors ${moment().format('HH:mm:ss:SSS')}`)
-        const authorsPubs = _.map(pubsAuthorsResult.data.publications, (pub) => {
-          // change doi to lowercase
-          _.set(pub, 'doi', _.toLower(pub.doi))
-          return pub
-        })
-        const pubsWithAuthorsByDoi = _.groupBy(authorsPubs, (publication) => {
-          return publication.doi
-        })
-        // now reduce to first instance by doi and authors array
-        this.authorsByDoi = _.mapValues(pubsWithAuthorsByDoi, (publication) => {
-          return (publication[0].authors) ? publication[0].authors : []
-        })
-        await this.loadPersonPublicationsCombinedMatches()
-        this.publicationsLoaded = true
+        let publicationIds
 
-        console.log(`Start query publications csl ${moment().format('HH:mm:ss:SSS')}`)
-        await this.loadPublicationsCSLData(publicationIds)
-        console.log(`Finished query publications csl ${moment().format('HH:mm:ss:SSS')}`)
-        this.publicationsCslLoaded = true
+        console.log(`Start query publications authors ${moment().format('HH:mm:ss:SSS')}`)
+        if (currentLoadCount === this.pubLoadCount) {
+          this.publications = _.map(pubsWithReviewResult.data.persons_publications, (personPub) => {
+            // change doi to lowercase
+            _.set(personPub.publication, 'doi', _.toLower(personPub.publication.doi))
+            _.set(personPub, 'confidencesets', _.cloneDeep(personPubConfidenceSets[personPub.id]))
+            _.set(personPub, 'reviews', _.cloneDeep(personPubNDReviews[personPub.id]))
+            _.set(personPub, 'org_reviews', _.cloneDeep(personPubCenterReviews[personPub.id]))
+            return personPub
+          })
+          publicationIds = _.map(this.publications, (pub) => {
+            return pub.publication.id
+          })
+        }
+
+        let pubsWithAuthorsByDoi
+        if (currentLoadCount === this.pubLoadCount) {
+          // now query for authors for the publications (faster if done in second query)
+          const pubsAuthorsResult = await this.$apollo.query({
+            query: readAuthorsByPublications(publicationIds),
+            fetchPolicy: 'network-only'
+          })
+          console.log(`Finished query publications authors ${moment().format('HH:mm:ss:SSS')}`)
+          const authorsPubs = _.map(pubsAuthorsResult.data.publications, (pub) => {
+            // change doi to lowercase
+            _.set(pub, 'doi', _.toLower(pub.doi))
+            return pub
+          })
+          pubsWithAuthorsByDoi = _.groupBy(authorsPubs, (publication) => {
+            return publication.doi
+          })
+        }
+
+        if (currentLoadCount === this.pubLoadCount) {
+          // now reduce to first instance by doi and authors array
+          this.authorsByDoi = _.mapValues(pubsWithAuthorsByDoi, (publication) => {
+            return (publication[0].authors) ? publication[0].authors : []
+          })
+          await this.loadPersonPublicationsCombinedMatches()
+          this.publicationsLoaded = true
+        }
+
+        if (currentLoadCount === this.pubLoadCount) {
+          console.log(`Start query publications csl ${moment().format('HH:mm:ss:SSS')}`)
+          await this.loadPublicationsCSLData(publicationIds)
+          console.log(`Finished query publications csl ${moment().format('HH:mm:ss:SSS')}`)
+          this.publicationsCslLoaded = true
+        } else {
+          console.log('Reload of publications detected, aborting this process')
+        }
       } catch (error) {
         this.publicationsLoaded = true
         this.publicationsLoadedError = true

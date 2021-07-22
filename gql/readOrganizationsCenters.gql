@@ -1,0 +1,10 @@
+query MyQuery {
+  review_organization (
+    where: {
+      level: {_gt: 1}
+    }
+  ){
+    value
+    comment
+  }
+}
