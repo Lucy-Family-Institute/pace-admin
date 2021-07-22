@@ -1,0 +1,21 @@
+- args:
+    role: user
+    table:
+      name: review_organization
+      schema: public
+  type: drop_update_permission
+- args:
+    permission:
+      columns:
+      - comment
+      - value
+      filter: {}
+      localPresets:
+      - key: ""
+        value: ""
+      set: {}
+    role: user
+    table:
+      name: review_organization
+      schema: public
+  type: create_update_permission
