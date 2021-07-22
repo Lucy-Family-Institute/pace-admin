@@ -1,6 +1,0 @@
-- args:
-    cascade: false
-    sql: |-
-      update review_organization set level = 1 where value = 'ND';
-      update review_organization set level = 2 where value <> 'ND';
-  type: run_sql
