@@ -191,8 +191,11 @@ export class Harvester {
       }
     }
     console.log(`Querying ${this.ds.getSourceName()} with date: ${searchStartDate}, offset: ${offset}, found pubs: ${harvestSet.sourcePublications.length} person: ${person.familyName}, ${person.givenName}`)
-    const normedPublications: NormedPublication[] = this.ds.getNormedPublications(harvestSet.sourcePublications, person)
+    // console.log(`Source pubs are: ${harvestSet.sourcePublications.length}`)
+    const normedPublications: NormedPublication[] = await this.ds.getNormedPublications(harvestSet.sourcePublications, person)
     _.set(harvestSet, 'normedPublications',normedPublications)
+    // console.log(`Normed pubs are: ${harvestSet.normedPublications.length}`)
+
     return harvestSet
   }
 
@@ -236,6 +239,8 @@ export class Harvester {
       }
     })
     try {
+      // console.log(`Harvestsets are: ${JSON.stringify(harvestSets[0].normedPublications[0], null, 2)}`)
+      // console.log(`Writing normed pubs to csv: ${JSON.stringify(normedPubs, null, 2)}`)
       await NormedPublication.writeToCSV(normedPubs, filePath)
       await NormedPublication.writeSourceMetadataToJSON(normedPubs, resultsFileDir)
     } catch (error) {

@@ -6,8 +6,10 @@ import { getDateObject } from '../units/dateRange'
 import { command as loadCsv } from '../units/loadCsv'
 import { command as writeCsv} from '../units/writeCsv'
 import NormedPerson from './normedPerson'
+import NormedAuthor from './normedAuthor'
 import writeToJSONFile from '../units/writeToJSONFile'
 import { loadJSONFromFile } from '../units/loadJSONFromFile'
+import BibTex from './bibTex'
 
 export default class NormedPublication {
   // ------ begin declare properties used when using NormedPublication like an interface
@@ -17,12 +19,18 @@ export default class NormedPublication {
   abstract?: string
   title: string
   journalTitle: string
+  authors: NormedAuthor[]
   journalIssn?: string
   journalEIssn?: string
   doi: string
   publicationDate: string
   datasourceName: string
   sourceId?: string
+  sourceUrl?: string
+  publisher?: string
+  number?: string
+  volume?: string
+  pages?: string
   sourceMetadata?: Object
   // ------- end declare properties used when using NormedPublication like an interface
 
@@ -147,6 +155,24 @@ export default class NormedPublication {
     if (pub.sourceId) {
       row[objectToCSVMap['sourceId']] = pub.sourceId
     }
+    if (pub.sourceUrl) {
+      row[objectToCSVMap['sourceUrl']] = pub.sourceUrl
+    }
+    if (pub.publisher) {
+      row[objectToCSVMap['publisher']] = pub.publisher
+    }
+    if (pub.number) {
+      row[objectToCSVMap['number']] = pub.number
+    }
+    if (pub.volume) {
+      row[objectToCSVMap['volume']] = pub.volume
+    }
+    if (pub.pages) {
+      row[objectToCSVMap['pages']] = pub.pages
+    }
+    if (pub.authors) {
+      row[objectToCSVMap['authors']] = JSON.stringify(pub.authors)      
+    }
     // if (pub.sourceMetadata) {
     //   // parse and get rid of any escaped quote characters
     //   row[objectToCSVMap['sourceMetadata']] = JSON.stringify(pub.sourceMetadata)
@@ -194,12 +220,12 @@ export default class NormedPublication {
     // assumes all column names in row passed in have been converted to lowercase
     const searchPersonFamilyNameColumn = objectToCSVMap['searchPerson']['familyName']
     let pub: NormedPublication = {
-
       title: (row[_.toLower(objectToCSVMap['title'])] ? row[_.toLower(objectToCSVMap['title'])] : row[_.keys(row)[0]]),
       journalTitle: row[_.toLower(objectToCSVMap['journalTitle'])],
       doi: row[_.toLower(objectToCSVMap['doi'])],
       publicationDate: row[_.toLower(objectToCSVMap['publicationDate'])],
-      datasourceName: row[_.toLower(objectToCSVMap['datasourceName'])]
+      datasourceName: row[_.toLower(objectToCSVMap['datasourceName'])],
+      authors: (row[_.toLower(objectToCSVMap['authors'])] ? JSON.parse(row[_.toLower(objectToCSVMap['authors'])]) : undefined)
     }
     // set optional properties, for search person first check if family name provided
     if (row[_.toLower(searchPersonFamilyNameColumn)]){
@@ -228,6 +254,21 @@ export default class NormedPublication {
     if (row[_.toLower(objectToCSVMap['sourceId'])]) {
       _.set(pub, 'sourceId', row[_.toLower(objectToCSVMap['sourceId'])])
     }
+    if (row[_.toLower(objectToCSVMap['sourceUrl'])]) {
+      _.set(pub, 'sourceUrl', row[_.toLower(objectToCSVMap['sourceUrl'])])
+    }
+    if (row[_.toLower(objectToCSVMap['publisher'])]) {
+      _.set(pub, 'publisher', row[_.toLower(objectToCSVMap['publisher'])])
+    }
+    if (row[_.toLower(objectToCSVMap['number'])]) {
+      _.set(pub, 'number', row[_.toLower(objectToCSVMap['number'])])
+    }
+    if (row[_.toLower(objectToCSVMap['volume'])]) {
+      _.set(pub, 'volume', row[_.toLower(objectToCSVMap['volume'])])
+    }
+    if (row[_.toLower(objectToCSVMap['pages'])]) {
+      _.set(pub, 'pages', row[_.toLower(objectToCSVMap['pages'])])
+    }
     if (row[_.toLower(objectToCSVMap['sourceMetadata'])]) {
       // parse and get rid of any escaped quote characters
       const sourceMetadata = JSON.parse(row[_.toLower(objectToCSVMap['sourceMetadata'])])
@@ -235,5 +276,28 @@ export default class NormedPublication {
     }
 
     return pub
+  }
+
+  public static getBibTex (normedPub: NormedPublication): BibTex {
+    const date: Date = getDateObject(normedPub.publicationDate)
+    
+    let bib: BibTex = {
+      title: normedPub.title,
+      journal: normedPub.journalTitle,
+      year: `${date.getFullYear()}`,
+      author: BibTex.getBibTexAuthors(normedPub.authors),
+    }
+    
+    // optional properties
+    if (normedPub.publisher) bib.publisher = normedPub.publisher
+    if (normedPub.sourceUrl) bib.url = normedPub.sourceUrl
+    if (normedPub.journalIssn) bib.issn = normedPub.journalIssn
+    if (normedPub.doi) bib.doi = normedPub.doi
+    if (normedPub.abstract) bib.abstract = normedPub.abstract
+    if (normedPub.number) bib.number = normedPub.number
+    if (normedPub.volume) bib.volume = normedPub.volume
+    if (normedPub.pages) bib.pages = normedPub.pages
+
+    return bib
   }
 }
