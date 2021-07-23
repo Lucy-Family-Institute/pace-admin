@@ -14,7 +14,7 @@ export default interface DataSource {
   getPublicationsByAuthorId?(person: NormedPerson, sessionState: {}, offset: Number, startDate?: Date, endDate?: Date) : Promise<HarvestSet>
   
   // returns an array of normalized publication objects given ones retrieved fron this datasource
-  getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): NormedPublication[]
+  getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): Promise<NormedPublication[]>
 
   //returns a machine readable string version of this source
   getSourceName() : string

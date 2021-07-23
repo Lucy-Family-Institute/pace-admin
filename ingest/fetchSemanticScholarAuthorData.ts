@@ -111,7 +111,7 @@ async function main (): Promise<void> {
           let harvestPerson = _.clone(person)
           harvestPerson.sourceIds.semanticScholarIds = semanticScholarIds
           const harvestPersons = [harvestPerson]
-          await semanticScholarHarvester.harvestToCsv(resultsDir, persons, HarvestOperation.QUERY_BY_AUTHOR_ID, getDateObject(`${year}-01-01`), getDateObject(`${year}-12-31`), `${person.familyName}_${person.givenName}`)
+          await semanticScholarHarvester.harvestToCsv(resultsDir, harvestPersons, HarvestOperation.QUERY_BY_AUTHOR_ID, getDateObject(`${year}-01-01`), getDateObject(`${year}-12-31`), `${person.familyName}_${person.givenName}`)
             // await pMap(searchNames, async (searchName) => {
           await wait(1500)
             
