@@ -19,6 +19,7 @@ import moment from 'moment'
 
 import dotenv from 'dotenv'
 import readPublicationsByDoi from './gql/readPublicationsByDoi'
+import readPublicationsBySourceId from './gql/readPublicationsBySourceId'
 import readPublicationsByTitle from './gql/readPublicationsByTitle'
 
 import { getAllSimplifiedPersons } from './modules/queryNormalizedPeople'
@@ -31,6 +32,7 @@ import DataSourceConfig from './modules/dataSourceConfig'
 
 import { Mutex } from './units/mutex'
 import NormedPublication from './modules/normedPublication'
+import BibTex from './modules/bibTex'
 // import insertReview from '../client/src/gql/insertReview'
 
 dotenv.config({
@@ -127,7 +129,7 @@ function getPublicationYear (csl) : Number {
 
 }
 
-async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName, sourceMetadata, minPublicationYear?) {
+async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName, sourceId, sourceMetadata, minPublicationYear?) {
   //console.log(`trying to insert pub: ${JSON.stringify(title,null,2)}, ${JSON.stringify(doi,null,2)}`)
   try  {
     const publicationYear = getPublicationYear (csl)
@@ -142,6 +144,7 @@ async function insertPublicationAndAuthors (title, doi, csl, authors, sourceName
       year: publicationYear,
       csl: csl,  // put these in as JSONB
       source_name: sourceName,
+      source_id: sourceId,
       source_metadata: sourceMetadata, // put these in as JSONB,
       csl_string: JSON.stringify(csl)
     }
@@ -204,7 +207,7 @@ async function getPapersByDoi (csvPath: string, dataDirPath?: string) {
       counter += 1
       //strip off 'doi:' if present
       if (!paper.doi || paper.doi.length <= 0){
-        return `${prefix}_undefined_${counter}`
+        return `${paper.datasourceName}_${paper.sourceId}`
       } else {
         return paper.doi
       }
@@ -351,17 +354,32 @@ async function matchPeopleToPaperAuthors(publicationCSL, simplifiedPersons, pers
   return matchedPersonMap
 }
 
-async function isPublicationAlreadyInDB (doi, csl, sourceName) : Promise<boolean> {
-  const queryResult = await client.query(readPublicationsByDoi(doi))
+async function isPublicationAlreadyInDB (doi, sourceId, csl, sourceName) : Promise<boolean> {
   let foundPub = false
   const title = csl.title
   const publicationYear = getPublicationYear(csl)
-  const authors = await getCSLAuthors(csl)
-  _.each(queryResult.data.publications, (publication) => {
-    if (publication.doi === doi && _.toLower(publication.source_name) === _.toLower(sourceName)) {
-      foundPub = true
+  if (doi !== null){
+    const queryResult = await client.query(readPublicationsByDoi(doi))
+    // console.log(`Publications found for doi: ${doi}, ${queryResult.data.publications.length}`)
+    if (queryResult.data.publications && queryResult.data.publications.length > 0){
+      _.each(queryResult.data.publications, (publication) => {
+        if (publication.doi && publication.doi !== null && _.toLower(publication.doi) === _.toLower(doi) && _.toLower(publication.source_name) === _.toLower(sourceName)) {
+          foundPub = true
+        }
+      })
     }
-  })
+  }
+  if (!foundPub) {
+    const querySourceIdResult = await client.query(readPublicationsBySourceId(sourceName, sourceId))
+    // const authors = await getCSLAuthors(csl)
+    // console.log(`Publications found for sourceId: ${sourceId}, ${querySourceIdResult.data.publications.length}`)
+    _.each(querySourceIdResult.data.publications, (publication) => {
+      // console.log(`checking publication for source id: ${sourceId}, publication: ${JSON.stringify(publication, null, 2)}`)
+      if (_.toLower(publication.source_id) === _.toLower(sourceId) && _.toLower(publication.source_name) === _.toLower(sourceName)) {
+        foundPub = true
+      }
+    })
+  }
   if (!foundPub) {
     const titleQueryResult = await client.query(readPublicationsByTitle(title))
     _.each(titleQueryResult.data.publications, (publication) => {
@@ -545,17 +563,30 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
           //console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
           csl = cslRecords[0]
         } catch (error) {
-          if (bibTexByDoi[doi] && _.keys(bibTexByDoi[doi]).length > 0){
+          const normedPub = papersByDoi[doi][0]
+          let bibTexStr = undefined
+          let normedBibTex = undefined
+          if (normedPub){
+            normedBibTex = NormedPublication.getBibTex(normedPub)
+            if (normedBibTex) bibTexStr = BibTex.toString(normedBibTex)
+          } 
+          if (!bibTexStr || bibTexByDoi[doi] && _.keys(bibTexByDoi[doi]).length > 0) {
             console.log(`Trying to get csl from bibtex for confirmed doi: ${doi}...`)
             // manually construct csl from metadata in confirmed list
-            const bibTex = bibTexByDoi[doi][_.keys(bibTexByDoi[doi])[0]]
-            if (bibTex) {
-              // console.log(`Trying to get csl from bibtex for confirmed doi: ${doi}, for bibtex found...`)
-              cslRecords = await Cite.inputAsync(bibTex)
+            bibTexStr = bibTexByDoi[doi][_.keys(bibTexByDoi[doi])[0]]
+          }            
+          if (bibTexStr) {
+            // console.log(`Trying to get csl from bibtex str doi: ${doi}, for bibtex str ${bibTexStr} found...`)
+            try {
+              cslRecords = await Cite.inputAsync(bibTexStr)
               csl = cslRecords[0]
               // console.log(`CSL constructed: ${JSON.stringify(csl, null, 2)}`)
+            } catch (error) {
+              console.log(`Error on csl from bibtex: ${bibTexStr}`)
+              throw (error)
             }
           } else {
+            console.log(`Throwing the error for doi: ${doi}`)
             throw (error)
           }
         }
@@ -564,6 +595,7 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
         let authors = []
       
         if (csl) {
+          // console.log(`Getting csl authors for doi: ${doi}`)
           authors = await getCSLAuthors(csl)
         }
         // default to the confirmed author list if no author list in the csl record
@@ -657,10 +689,16 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
               doiStatus.skippedDOIs.push(doi)
             } else {
               await mutex.dispatch( async () => {
-                const pubFound = await isPublicationAlreadyInDB(doi, csl, doiStatus.sourceName)
+                const sourceId = firstPaper.sourceId
+                // reset doi if it is a placeholder
+                let checkDoi = doi
+                if (_.toLower(doi) === _.toLower(`${doiStatus.sourceName}_${sourceId}`)){
+                  checkDoi = null
+                }
+                const pubFound = await isPublicationAlreadyInDB(checkDoi, sourceId, csl, doiStatus.sourceName)
                 if (!pubFound) {
                   // console.log(`Inserting Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${doiStatus.sourceName}`)
-                  const publicationId = await insertPublicationAndAuthors(csl.title, doi, csl, authors, doiStatus.sourceName, sourceMetadata)
+                  const publicationId = await insertPublicationAndAuthors(csl.title, checkDoi, csl, authors, doiStatus.sourceName, sourceId, sourceMetadata)
                   // console.log('Finished Running Insert and starting next thread')
                   //console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
 
@@ -744,7 +782,7 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
               paper = _.set(paper, 'error', errorMessage)
               failedRecords[doiStatus.sourceName].push(paper)
             }
-          }) 
+          })
         }
         // console.log(`DOIs Failed: ${JSON.stringify(doiStatus.failedDOIs,null,2)}`)
         // console.log(`Error Messages: ${JSON.stringify(doiStatus.errorMessages,null,2)}`)

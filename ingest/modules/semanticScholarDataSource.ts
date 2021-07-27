@@ -257,7 +257,7 @@ export class SemanticScholarDataSource implements DataSource {
         name: sourceAuthor['name'],
         reduceMethod: 'majority',
       });
-      console.log(`Parsed name found is: ${JSON.stringify(parsedName, null, 2)}`)
+      // console.log(`Parsed name found is: ${JSON.stringify(parsedName, null, 2)}`)
       let author: NormedAuthor = {
         familyName: parsedName['last'],
         givenName: parsedName['first'],
