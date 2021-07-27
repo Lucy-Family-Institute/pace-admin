@@ -1410,6 +1410,7 @@ tables:
       - year
       - abstract
       - journal_id
+      - source_id
   select_permissions:
   - role: user
     comment: null
@@ -1427,6 +1428,7 @@ tables:
       - abstract
       - csl_string
       - doi
+      - source_id
       - source_name
       - title
       filter: {}
@@ -1446,6 +1448,7 @@ tables:
       - abstract
       - csl_string
       - doi
+      - source_id
       - source_name
       - title
       filter: {}

@@ -49,9 +49,9 @@ export default function readPersonsByInstitutionByYearByOrganization (organizati
             name
           }
           confidencesets_persons_publications(
-            distinct_on: doi, 
+            distinct_on: title
             order_by: {
-              doi: asc, 
+              title: asc,
               datetime: desc
             }, 
             where: {
@@ -61,17 +61,17 @@ export default function readPersonsByInstitutionByYearByOrganization (organizati
           ) {
             doi
             value
+            title
             year
           }
           reviews_persons_publications(
-            distinct_on: doi, 
+            distinct_on: title, 
             order_by: {
-              doi: asc, 
+              title: asc, 
               datetime: desc
             }, 
             where: {
               review_organization_value: {_eq: "ND"},
-              review_type: {_neq: "pending"},
               year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}
             }
           ){
@@ -80,9 +80,9 @@ export default function readPersonsByInstitutionByYearByOrganization (organizati
             title
             review_type
           }
-          persons_publications_metadata_aggregate (distinct_on: doi, where: {year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}}) {
+          persons_publications_metadata_aggregate (distinct_on: title, where: {year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}}) {
             aggregate {
-              count(columns: doi)
+              count(columns: title)
             }
           }
           persons_namevariances {

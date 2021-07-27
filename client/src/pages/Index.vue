@@ -114,10 +114,10 @@
                         v-model="reviewTypeFilter"
                         dense
                       >
-                        <q-tab name="pending" :label="`Pending (${getPublicationsGroupedByDoiByReviewCount('pending')})`" />
-                        <q-tab name="accepted" :label="`Accepted (${getPublicationsGroupedByDoiByReviewCount('accepted')})`" />
-                        <q-tab name="rejected" :label="`Rejected (${getPublicationsGroupedByDoiByReviewCount('rejected')})`" />
-                        <q-tab name="unsure" :label="`Unsure (${getPublicationsGroupedByDoiByReviewCount('unsure')})`" />
+                        <q-tab name="pending" :label="`Pending (${getPublicationsGroupedByTitleByReviewCount('pending')})`" />
+                        <q-tab name="accepted" :label="`Accepted (${getPublicationsGroupedByTitleByReviewCount('accepted')})`" />
+                        <q-tab name="rejected" :label="`Rejected (${getPublicationsGroupedByTitleByReviewCount('rejected')})`" />
+                        <q-tab name="unsure" :label="`Unsure (${getPublicationsGroupedByTitleByReviewCount('unsure')})`" />
                       </q-tabs>
                       <q-linear-progress
                         v-if="!publicationsLoaded && !publicationsLoadedError"
@@ -164,7 +164,7 @@
                                     rounded
                                     dense
                                     size="sm"
-                                    v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByDoiByReview[reviewTypeFilter][item.publication.doi])"
+                                    v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByTitleByReview[reviewTypeFilter][item.publication.title])"
                                     :key="index"
                                     :color="getSourceNameChipColor(personPub.publication.source_name)"
                                     text-color="white"
@@ -202,7 +202,7 @@
                       >
                         <div class="q-pa-md row items-start q-gutter-md">
                           <q-card>
-                            <q-card-section v-if="personPublication.publication.doi">
+                            <q-card-section>
                               <q-item-label align="left"><strong>View Article:</strong></q-item-label>
                               <q-list class="q-pt-sm q-pb-sm">
                                 <q-btn
@@ -210,7 +210,7 @@
                                   dense
                                   no-wrap
                                   size="md"
-                                  v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByDoiByReview[reviewTypeFilter][personPublication.publication.doi])"
+                                  v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByTitleByReview[reviewTypeFilter][personPublication.publication.title])"
                                   :key="index"
                                   :color="getSourceNameChipColor(personPub.publication.source_name)"
                                   text-color="white"
@@ -221,7 +221,7 @@
                                 />
                               </q-list>
                               <q-btn
-                                v-if="personPublication"
+                                v-if="personPublication && personPublication.publication.doi"
                                 dense
                                 label="View via DOI"
                                 color="cyan"
@@ -449,7 +449,7 @@ export default {
     personReviewedPubCounts: {},
     personPublicationsCombinedMatchesByReview: {},
     filteredPersonPublicationsCombinedMatchesByReview: {},
-    publicationsGroupedByDoiByReview: {},
+    publicationsGroupedByTitleByReview: {},
     publicationJournalClassifications: [],
     institutions: [],
     institutionGroup: [],
@@ -559,6 +559,13 @@ export default {
     }
   },
   methods: {
+    getPublicationDoiKey (publication) {
+      if (!publication.doi) {
+        return `${publication.source_name}_${publication.source_id}`
+      } else {
+        return publication.doi
+      }
+    },
     async startProgressBar () {
       this.publicationsLoaded = false
       this.publicationsLoadedError = false
@@ -695,7 +702,7 @@ export default {
     getWebOfScienceUri (wosId) {
       return `${process.env.WOS_PUBLICATION_URL}${wosId}`
     },
-    getPublicationsGroupedByDoiByReviewCount (reviewType) {
+    getPublicationsGroupedByTitleByReviewCount (reviewType) {
       return this.filteredPersonPublicationsCombinedMatchesByReview[reviewType] ? this.filteredPersonPublicationsCombinedMatchesByReview[reviewType].length : 0
     },
     decode (str) {
@@ -875,23 +882,23 @@ export default {
         this.personReviewedPubCounts = {}
         console.log('Checking for reviewed pub counts...')
         _.each(this.people, (person) => {
-          const reviewedDois = {}
+          const reviewedTitles = {}
           _.each(person.reviews_persons_publications, (review) => {
             if (review.review_type && review.review_type !== 'pending') {
-              reviewedDois[review.doi] = review
+              reviewedTitles[review.title] = review
             }
           })
 
           // check for dois that are in the confidence set list and keep those, all others ignore
-          let filteredReviewedDoisCount = 0
+          let filteredReviewedTitlesCount = 0
           _.each(person.confidencesets_persons_publications, (confidenceSet) => {
-            const doi = confidenceSet.doi
-            if (reviewedDois[doi]) {
-              filteredReviewedDoisCount += 1
+            const title = confidenceSet.title
+            if (reviewedTitles[title]) {
+              filteredReviewedTitlesCount += 1
             }
           })
 
-          this.personReviewedPubCounts[person.id] = filteredReviewedDoisCount
+          this.personReviewedPubCounts[person.id] = filteredReviewedTitlesCount
         })
 
         // console.log(`Reviewed counts are: ${JSON.stringify(this.personReviewedPubCounts, null, 2)}`)
@@ -1010,8 +1017,8 @@ export default {
       this.personPublicationsCombinedMatches = []
       this.personPublicationsCombinedMatchesByReview = {}
       this.filteredPersonPublicationsCombinedMatchesByReview = {}
-      this.publicationsGroupedByDoiByReview = {}
-      this.publicationsGroupedByDoi = {}
+      this.publicationsGroupedByTitleByReview = {}
+      this.publicationsGroupedByTitle = {}
       this.confidenceSetItems = []
       this.confidenceSet = undefined
     },
@@ -1042,26 +1049,27 @@ export default {
 
       // check for any doi's with reviews out of sync,
       // if more than one review type found add doi mapped to array of reviewtype to array pub list
-      let publicationDoisByReviewType = {}
+      let publicationTitlesByReviewType = {}
       // put in pubs grouped by doi for each review status
       _.each(this.reviewStates, (reviewType) => {
         const publications = this.publicationsGroupedByReview[reviewType]
-        this.publicationsGroupedByDoiByReview[reviewType] = _.groupBy(publications, (personPub) => {
-          if (!publicationDoisByReviewType[personPub.publication.doi]) {
-            publicationDoisByReviewType[personPub.publication.doi] = {}
+        this.publicationsGroupedByTitleByReview[reviewType] = _.groupBy(publications, (personPub) => {
+          let title = personPub.publication.title
+          if (!publicationTitlesByReviewType[title]) {
+            publicationTitlesByReviewType[title] = {}
           }
-          if (!publicationDoisByReviewType[personPub.publication.doi][reviewType]) {
-            publicationDoisByReviewType[personPub.publication.doi][reviewType] = []
+          if (!publicationTitlesByReviewType[title][reviewType]) {
+            publicationTitlesByReviewType[title][reviewType] = []
           }
-          publicationDoisByReviewType[personPub.publication.doi][reviewType].push(personPub)
-          return `${personPub.publication.doi}`
+          publicationTitlesByReviewType[title][reviewType].push(personPub)
+          return `${title}`
         })
 
-        // console.log(`Person pubs grouped by DOI are: ${JSON.stringify(this.publicationsGroupedByDoiByReview, null, 2)}`)
-        // grab one with highest confidence to display and grab others via doi later when changing status
-        this.personPublicationsCombinedMatchesByReview[reviewType] = _.map(_.keys(this.publicationsGroupedByDoiByReview[reviewType]), (doi) => {
+        // console.log(`Person pubs grouped by Title are: ${JSON.stringify(this.publicationsGroupedByTitleByReview, null, 2)}`)
+        // grab one with highest confidence to display and grab others via title later when changing status
+        this.personPublicationsCombinedMatchesByReview[reviewType] = _.map(_.keys(this.publicationsGroupedByTitleByReview[reviewType]), (title) => {
           // get match with highest confidence level and use that one
-          const personPubs = this.publicationsGroupedByDoiByReview[reviewType][doi]
+          const personPubs = this.publicationsGroupedByTitleByReview[reviewType][title]
           let currentPersonPub
           _.each(personPubs, (personPub, index) => {
             if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
@@ -1072,18 +1080,20 @@ export default {
         })
       })
 
-      // check for any doi's with reviews out of sync
-      const publicationDoisOutOfSync = []
+      // console.log(`Publications grouped by title by review: ${JSON.stringify(this.publicationsGroupedByTitleByReview, null, 2)}`)
 
-      _.each(_.keys(publicationDoisByReviewType), (doi) => {
-        if (_.keys(publicationDoisByReviewType[doi]).length > 1) {
-          console.log(`Warning: Doi out of sync found: ${doi} for person id: ${this.person.id} doi record: ${JSON.stringify(publicationDoisByReviewType[doi], null, 2)}`)
-          publicationDoisOutOfSync.push(doi)
+      // check for any doi's with reviews out of sync
+      const publicationTitlesOutOfSync = []
+
+      _.each(_.keys(publicationTitlesByReviewType), (title) => {
+        if (_.keys(publicationTitlesByReviewType[title]).length > 1) {
+          console.log(`Warning: Title out of sync found: ${title} for person id: ${this.person.id} title record: ${JSON.stringify(publicationTitlesByReviewType[title], null, 2)}`)
+          publicationTitlesOutOfSync.push(title)
         }
       })
 
-      if (publicationDoisOutOfSync.length > 0) {
-        console.log(`Warning: Dois found with reviews out of sync: ${JSON.stringify(publicationDoisOutOfSync, null, 2)}`)
+      if (publicationTitlesOutOfSync.length > 0) {
+        console.log(`Warning: Titles found with reviews out of sync: ${JSON.stringify(publicationTitlesOutOfSync, null, 2)}`)
       }
 
       // initialize the list in view
@@ -1249,8 +1259,8 @@ export default {
     async loadPublication (personPublication) {
       this.clearPublication()
       this.personPublication = personPublication
-      this.loadPublicationAuthors(personPublication)
-      this.loadConfidenceSet(personPublication)
+      await this.loadPublicationAuthors(personPublication)
+      await this.loadConfidenceSet(personPublication)
       // query separately for csl because slow to get more than one
       const publicationId = personPublication.publication.id
       const result = await this.$apollo.query({
@@ -1300,8 +1310,9 @@ export default {
         return null
       }
       this.person = person
-      // add the review for personPublications with the same doi in the list
-      const personPubs = this.publicationsGroupedByDoiByReview[this.reviewTypeFilter][personPublication.publication.doi]
+      // add the review for personPublications with the same title in the list
+      let title = personPublication.publication.title
+      const personPubs = this.publicationsGroupedByTitleByReview[this.reviewTypeFilter][title]
 
       try {
         let mutateResults = []
@@ -1317,7 +1328,7 @@ export default {
             Vue.delete(this.personPublicationsCombinedMatches, index)
             // transfer from one review queue to the next primarily for counts, other sorting will shake out on reload when clicking the tab
             // remove from current lists
-            _.unset(this.publicationsGroupedByDoiByReview[this.reviewTypeFilter], personPublication.publication.doi)
+            _.unset(this.publicationsGroupedByTitleByReview[this.reviewTypeFilter], title)
             _.remove(this.personPublicationsCombinedMatchesByReview[this.reviewTypeFilter], (pub) => {
               return pub.id === personPub.id
             })
@@ -1325,7 +1336,7 @@ export default {
               return pub.id === personPub.id
             })
             // add to new lists
-            this.publicationsGroupedByDoiByReview[reviewType][personPublication.publication.doi] = personPubs
+            this.publicationsGroupedByTitleByReview[reviewType][title] = personPubs
             this.personPublicationsCombinedMatchesByReview[reviewType].push(personPub)
             this.filteredPersonPublicationsCombinedMatchesByReview[reviewType].push(personPub)
             if (this.reviewTypeFilter === 'pending' && this.selectedPersonTotal === 'Pending') {

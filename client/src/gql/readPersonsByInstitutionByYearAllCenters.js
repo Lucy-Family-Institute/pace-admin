@@ -47,9 +47,9 @@ export default function readPersonsByInstitutionByYearAllCenters (institutionNam
             name
           }
           reviews_persons_publications(
-            distinct_on: doi, 
+            distinct_on: title, 
             order_by: {
-              doi: asc, 
+              title: asc, 
               datetime: desc
             }, 
             where: {
@@ -62,9 +62,9 @@ export default function readPersonsByInstitutionByYearAllCenters (institutionNam
             review_type
           }
           confidencesets_persons_publications(
-            distinct_on: doi, 
+            distinct_on: title, 
             order_by: {
-              doi: asc, 
+              title: asc, 
               datetime: desc
             }, 
             where: {
@@ -78,14 +78,14 @@ export default function readPersonsByInstitutionByYearAllCenters (institutionNam
             value
             year
           }
-          reviews_persons_publications_aggregate(distinct_on: doi, order_by: {doi: asc, datetime: desc}) {
+          reviews_persons_publications_aggregate(distinct_on: title, order_by: {title: asc, datetime: desc}) {
             aggregate {
-              count(columns: doi)
+              count(columns: title)
             }
           }
-          persons_publications_metadata_aggregate (distinct_on: doi, where: {year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}}) {
+          persons_publications_metadata_aggregate (distinct_on: title, where: {year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}}) {
             aggregate {
-              count(columns: doi)
+              count(columns: title)
             }
           }
           persons_namevariances {
