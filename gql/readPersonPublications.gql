@@ -16,6 +16,7 @@ query MyQuery ($personId: Int!, $yearMin: Int!, $yearMax: Int!) {
       title
       doi
       source_name
+      source_id
       pubmed_funders: source_metadata(path: "funderIdentifiers")
       crossref_funders: csl(path:"funder")
       scopus_eid: source_metadata(path: "eid")

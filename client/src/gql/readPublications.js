@@ -9,6 +9,7 @@ export default function readPublications () {
           title
           doi
           source_name
+          source_id
         }
       }
     `
