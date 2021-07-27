@@ -87,13 +87,15 @@ async function synchronizeReviewsForOrganization(persons, reviewOrgValue) {
     _.each(reviewStates, (reviewType) => {
       const publications = publicationsGroupedByReview[reviewType]
       _.each(publications, (personPub) => {
-        if (!publicationDoisByReviewType[personPub['publication'].doi]) {
-          publicationDoisByReviewType[personPub['publication'].doi] = {}
+        if (personPub.doi !== null){
+          if (!publicationDoisByReviewType[personPub['publication'].doi]) {
+            publicationDoisByReviewType[personPub['publication'].doi] = {}
+          }
+          if (!publicationDoisByReviewType[personPub['publication'].doi][reviewType]) {
+            publicationDoisByReviewType[personPub['publication'].doi][reviewType] = []
+          }
+          publicationDoisByReviewType[personPub['publication'].doi][reviewType].push(personPub)
         }
-        if (!publicationDoisByReviewType[personPub['publication'].doi][reviewType]) {
-          publicationDoisByReviewType[personPub['publication'].doi][reviewType] = []
-        }
-        publicationDoisByReviewType[personPub['publication'].doi][reviewType].push(personPub)
       })
     })
 
