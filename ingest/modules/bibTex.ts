@@ -19,7 +19,7 @@ export default class BibTex {
   eprint?: string
 
   public static toString(bibTex: BibTex): string {
-    let bibStr = '@article{'
+    let bibStr = `@article{${bibTex.doi},`
     _.each(_.keys(bibTex), (key, index) => {
       if (index > 0) {
         bibStr = `${bibStr}, `

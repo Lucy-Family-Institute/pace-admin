@@ -2,6 +2,7 @@ import axios from 'axios'
 import _ from 'lodash'
 import NormedPublication from './normedPublication'
 import NormedPerson from './normedPerson'
+import NormedAuthor from './normedAuthor'
 import DataSource from './dataSource'
 import HarvestSet from './HarvestSet'
 import DataSourceConfig from './dataSourceConfig'
@@ -136,8 +137,63 @@ export class CrossRefDataSource implements DataSource {
     return response.data
   }
 
+  getCSLAuthors(paperCsl){
+
+    const authMap = {
+      firstAuthors : [],
+      otherAuthors : []
+    }
+  
+    let authorCount = 0
+    _.each(paperCsl.author, async (author) => {
+      // skip if family_name undefined
+      if (author.family != undefined){
+        authorCount += 1
+  
+        //if given name empty change to empty string instead of null, so that insert completes
+        if (author.given === undefined) author.given = ''
+  
+        if (_.lowerCase(author.sequence) === 'first' ) {
+          authMap.firstAuthors.push(author)
+        } else {
+          authMap.otherAuthors.push(author)
+        }
+      }
+    })
+  
+    //add author positions
+    authMap.firstAuthors = _.forEach(authMap.firstAuthors, function (author, index){
+      author.position = index + 1
+    })
+  
+    authMap.otherAuthors = _.forEach(authMap.otherAuthors, function (author, index){
+      author.position = index + 1 + authMap.firstAuthors.length
+    })
+  
+    //concat author arrays together
+    const authors = _.concat(authMap.firstAuthors, authMap.otherAuthors)
+  
+    return authors
+  }
+
+  getNormedAuthors(csl) {
+    const cslAuthors = this.getCSLAuthors(csl)
+    const normedAuthors: NormedAuthor[] = []
+    _.each(cslAuthors, (sourceAuthor, index) => {
+      let author: NormedAuthor = {
+        familyName: sourceAuthor.family,
+        givenName: sourceAuthor.given,
+        givenNameInitial: sourceAuthor.given[0],
+        affiliations: sourceAuthor.affiliation,
+        sourceIds: { semanticScholarIds : [sourceAuthor['authorId']]}
+      }
+      normedAuthors.push(author)
+    })
+    return normedAuthors
+  }
+
   // returns an array of normalized publication objects given ones retrieved fron this datasource
-  getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): NormedPublication[]{
+  async getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): Promise<NormedPublication[]>{
     const normedPubs =  _.map(sourcePublications, (pub) => {
       let publicationDate = ''
       if (pub['issued'] && pub['issued']['date-parts'] && pub['issued']['date-parts'][0] && pub['issued']['date-parts'][0][0]) {
@@ -158,7 +214,13 @@ export class CrossRefDataSource implements DataSource {
           datasourceName: this.dsConfig.sourceName,
           doi: pub['DOI'] ? pub['DOI'] : '',
           sourceId: pub['DOI'] ? pub['DOI'] : '',
-          sourceMetadata: pub
+          authors: this.getNormedAuthors(pub),
+          sourceUrl: pub['URL'] ? pub['URL'] : '', 
+          number: pub['issue'] ? pub['issue'] : '',
+          publisher: pub['publisher'] ? pub['publisher'] : '',
+          volume: pub['volume'] ? pub['volume'] : '',
+          sourceMetadata: pub,
+          
       }
       // console.log(`Setting search person for normed pubs: ${JSON.stringify(searchPerson, null, 2)}`)
       // add optional properties
