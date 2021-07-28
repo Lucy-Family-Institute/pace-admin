@@ -20,6 +20,7 @@ export default function readAuthorsByPublications (publicationIds) {
     ){
       id
       doi
+      title
       authors: csl(path: "author")
     }
   }
