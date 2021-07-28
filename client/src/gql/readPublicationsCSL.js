@@ -20,6 +20,7 @@ export default function readPublicationsCSL (publicationIds) {
     ){
       id
       doi
+      title
       csl_string
     }
   }

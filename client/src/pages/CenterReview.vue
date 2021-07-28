@@ -30,10 +30,10 @@
                 v-model="reviewTypeFilter"
                 dense
               >
-                <q-tab name="pending" :label="`Pending (${getpublicationsGroupedByDoiByOrgReviewCount('pending')})`" />
-                <q-tab name="accepted" :label="`Accepted (${getpublicationsGroupedByDoiByOrgReviewCount('accepted')})`" />
-                <q-tab name="rejected" :label="`Rejected (${getpublicationsGroupedByDoiByOrgReviewCount('rejected')})`" />
-                <q-tab name="unsure" :label="`Unsure (${getpublicationsGroupedByDoiByOrgReviewCount('unsure')})`" />
+                <q-tab name="pending" :label="`Pending (${getPublicationsGroupedByTitleByOrgReviewCount('pending')})`" />
+                <q-tab name="accepted" :label="`Accepted (${getPublicationsGroupedByTitleByOrgReviewCount('accepted')})`" />
+                <q-tab name="rejected" :label="`Rejected (${getPublicationsGroupedByTitleByOrgReviewCount('rejected')})`" />
+                <q-tab name="unsure" :label="`Unsure (${getPublicationsGroupedByTitleByOrgReviewCount('unsure')})`" />
               </q-tabs>
               <q-linear-progress
                 v-if="!publicationsLoaded && !publicationsLoadedError"
@@ -97,15 +97,15 @@
                       </q-item-section>
                       <q-item-section top class="q-pa-xs">
                         <q-item-label style="width:100%" class="text-grey-9" lines="1"><strong>Title:</strong> {{ decode(item.publication.title) }}</q-item-label>
-                        <q-item-label v-if="selectedInstitutionReviewState === 'Accepted'" style="width:100%" class="text-grey-9" lines="1"><strong>{{selectedInstitutionReviewState}} Authors:</strong> {{ sortAuthorsByDoi[selectedInstitutionReviewState.toLowerCase()][item.publication.doi] }}</q-item-label>
-                        <q-item-label v-else style="width:100%" class="text-grey-9" lines="1"><strong>{{selectedInstitutionReviewState}} Authors:</strong> {{ sortAuthorsByDoi[selectedInstitutionReviewState.toLowerCase()][item.publication.doi] }}</q-item-label>
+                        <q-item-label v-if="selectedInstitutionReviewState === 'Accepted'" style="width:100%" class="text-grey-9" lines="1"><strong>{{selectedInstitutionReviewState}} Authors:</strong> {{ sortAuthorsByTitle[selectedInstitutionReviewState.toLowerCase()][item.publication.title] }}</q-item-label>
+                        <q-item-label v-else style="width:100%" class="text-grey-9" lines="1"><strong>{{selectedInstitutionReviewState}} Authors:</strong> {{ sortAuthorsByTitle[selectedInstitutionReviewState.toLowerCase()][item.publication.title] }}</q-item-label>
                         <q-list class="q-pt-sm">
                           <q-btn
                             @click.capture.stop
                             rounded
                             dense
                             size="sm"
-                            v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByDoi[item.publication.doi])"
+                            v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByTitle[item.publication.title])"
                             :key="index"
                             :color="getSourceNameChipColor(personPub.publication.source_name)"
                             text-color="white"
@@ -143,7 +143,7 @@
               >
                 <div class="q-pa-md row items-start q-gutter-md">
                   <q-card>
-                    <q-card-section v-if="personPublication.publication.doi">
+                    <q-card-section>
                       <q-item-label align="left"><strong>View Article:</strong></q-item-label>
                       <q-list class="q-pt-sm q-pb-sm">
                         <q-btn
@@ -151,7 +151,7 @@
                           dense
                           no-wrap
                           size="md"
-                          v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByDoi[personPublication.publication.doi])"
+                          v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByTitle[personPublication.publication.title])"
                           :key="index"
                           :color="getSourceNameChipColor(personPub.publication.source_name)"
                           text-color="white"
@@ -162,7 +162,7 @@
                         />
                       </q-list>
                       <q-btn
-                        v-if="personPublication"
+                        v-if="personPublication && personPublication.publication.doi"
                         dense
                         label="View via DOI"
                         color="cyan"
@@ -427,16 +427,16 @@ export default {
     secondModel: 500,
     people: [],
     publications: [],
-    citationsByDoi: {},
+    citationsByTitle: {},
     publicationsGroupedByInstitutionReview: {},
     personPublicationsCombinedMatches: [],
     personPublicationsCombinedMatchesByReview: {},
     personPublicationsCombinedMatchesByOrgReview: {},
     filteredPersonPublicationsCombinedMatchesByOrgReview: {},
-    publicationsGroupedByDoiByInstitutionReview: {},
-    publicationsGroupedByDoiByOrgReview: {},
-    publicationsGroupedByDoi: {},
-    sortAuthorsByDoi: {}, // map of doi's to the matched author to sort by (i.e., the matched author with the lowest matched position)
+    publicationsGroupedByTitleByInstitutionReview: {},
+    publicationsGroupedByTitleByOrgReview: {},
+    publicationsGroupedByTitle: {},
+    sortAuthorsByTitle: {}, // map of title's to the matched author to sort by (i.e., the matched author with the lowest matched position)
     institutions: [],
     institutionGroup: [],
     personPublication: undefined,
@@ -454,14 +454,14 @@ export default {
     institutionId: undefined,
     nameVariants: [],
     publicationAuthors: [],
-    authorsByDoi: {},
+    authorsByTitle: {},
     confidenceSetitems: [],
     confidenceSet: undefined,
     acceptedAuthors: [],
     rejectedAuthors: [],
     unsureAuthors: [],
     matchedPublicationAuthors: [],
-    matchedPublicationAuthorsByDoi: {},
+    matchedPublicationAuthorsByTitle: {},
     reviewQueueKey: 0,
     publicationCitation: undefined,
     publicationJournalClassifications: [],
@@ -671,12 +671,12 @@ export default {
     getWebOfScienceUri (wosId) {
       return `${process.env.WOS_PUBLICATION_URL}${wosId}`
     },
-    getpublicationsGroupedByDoiByOrgReviewCount (reviewType) {
+    getPublicationsGroupedByTitleByOrgReviewCount (reviewType) {
       return this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType] ? this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType].length : 0
     },
-    getInstitutionReviewedAuthors (doi, reviewType) {
-      const personPubs = this.publicationsGroupedByDoiByInstitutionReview[reviewType][doi]
-      // console.log(`Person pubs on get author review: ${JSON.stringify(this.publicationsGroupedByDoiByReview, null, 2)}`)
+    getInstitutionReviewedAuthors (title, reviewType) {
+      const personPubs = this.publicationsGroupedByTitleByInstitutionReview[reviewType][title]
+      // console.log(`Person pubs on get author review: ${JSON.stringify(this.publicationsGroupedByTitleByReview, null, 2)}`)
       const reviewedAuthors = {}
       _.each(personPubs, (personPub) => {
         const reviewedAuthor = this.getReviewedAuthor(personPub)
@@ -689,11 +689,11 @@ export default {
       }
       return _.values(reviewedAuthors)
     },
-    getDoiPersonPublicationsByReview (doi) {
+    getTitlePersonPublicationsByReview (title) {
       const personPubsByReview = {}
-      _.each(_.keys(this.publicationsGroupedByDoiByInstitutionReview), (reviewType) => {
-        if (this.publicationsGroupedByDoiByInstitutionReview[reviewType][doi]) {
-          const pubsGroupedByPersonId = _.groupBy(this.publicationsGroupedByDoiByInstitutionReview[reviewType][doi], (personPub) => {
+      _.each(_.keys(this.publicationsGroupedByTitleByInstitutionReview), (reviewType) => {
+        if (this.publicationsGroupedByTitleByInstitutionReview[reviewType][title]) {
+          const pubsGroupedByPersonId = _.groupBy(this.publicationsGroupedByTitleByInstitutionReview[reviewType][title], (personPub) => {
             return personPub.person_id
           })
           personPubsByReview[reviewType] = _.map(_.keys(pubsGroupedByPersonId), (personId) => {
@@ -1071,14 +1071,14 @@ export default {
     },
     async clearPublications () {
       this.publications = []
-      this.citationsByDoi = {}
+      this.citationsByTitle = {}
       this.personPublicationsCombinedMatches = []
       this.personPublicationsCombinedMatchesByReview = {}
       this.personPublicationsCombinedMatchesByOrgReview = {}
       this.filteredPersonPublicationsCombinedMatchesByOrgReview = {}
-      this.publicationsGroupedByDoiByOrgReview = {}
-      this.publicationsGroupedByDoiByInstitutionReview = {}
-      this.publicationsGroupedByDoi = {}
+      this.publicationsGroupedByTitleByOrgReview = {}
+      this.publicationsGroupedByTitleByInstitutionReview = {}
+      this.publicationsGroupedByTitle = {}
       this.confidenceSetItems = []
       this.confidenceSet = undefined
       this.filteredPersonPubCounts = {}
@@ -1102,15 +1102,15 @@ export default {
       })
     },
     getPubCSVResultObject (personPublication) {
-      const citation = (this.citationsByDoi[_.toLower(personPublication.publication.doi)] ? this.citationsByDoi[_.toLower(personPublication.publication.doi)] : undefined)
+      const citation = (this.citationsByTitle[_.toLower(personPublication.publication.title)] ? this.citationsByTitle[_.toLower(personPublication.publication.title)] : undefined)
       return {
-        authors: this.sortAuthorsByDoi[this.selectedInstitutionReviewState.toLowerCase()][personPublication.publication.doi],
+        authors: this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][personPublication.publication.title],
         title: personPublication.publication.title.replace(/\n/g, ' '),
         doi: this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi)),
         journal: (personPublication.publication.journal_title) ? personPublication.publication.journal_title : '',
         year: personPublication.publication.year,
-        source_names: JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.publicationsGroupedByDoi[personPublication.publication.doi]), (pub) => { return pub.publication.source_name })),
-        sources: this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.publicationsGroupedByDoi[personPublication.publication.doi])),
+        source_names: JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.publicationsGroupedByTitle[personPublication.publication.title]), (pub) => { return pub.publication.source_name })),
+        sources: this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.publicationsGroupedByTitle[personPublication.publication.title])),
         abstract: personPublication.publication.abstract,
         citation: citation
       }
@@ -1120,8 +1120,8 @@ export default {
     },
     async loadPersonPublicationsCombinedMatches () {
       console.log(`Start group by publications ${moment().format('HH:mm:ss:SSS')}`)
-      this.publicationsGroupedByDoi = _.groupBy(this.publications, (personPub) => {
-        return `${personPub.publication.doi}`
+      this.publicationsGroupedByTitle = _.groupBy(this.publications, (personPub) => {
+        return `${personPub.publication.title}`
       })
 
       // this.fundersByDoi = {}
@@ -1130,58 +1130,58 @@ export default {
       // this.uniqueFunders = {}
       this.filteredPersonPubCounts = {}
       // group by institution (i.e., ND author) review and then by doi
-      let pubsByDoi = {}
+      let pubsByTitle = {}
       this.publicationsGroupedByInstitutionReview = _.groupBy(this.publications, function (personPub) {
         let reviewType = 'pending'
-        const doi = personPub.publication.doi
+        const title = personPub.publication.title
         // if (doi === '10.1101/gad.307116.117') {
         //   console.log(`Person pub for doi 10.1101/gad.307116.117 is: ${JSON.stringify(personPub, null, 2)}`)
         // }
         if (personPub.reviews && personPub.reviews.length > 0) {
           reviewType = personPub.reviews[0].review_type
         }
-        if (!pubsByDoi[reviewType]) {
-          pubsByDoi[reviewType] = {}
+        if (!pubsByTitle[reviewType]) {
+          pubsByTitle[reviewType] = {}
         }
-        if (!pubsByDoi[reviewType][doi]) {
-          pubsByDoi[reviewType][doi] = []
+        if (!pubsByTitle[reviewType][title]) {
+          pubsByTitle[reviewType][title] = []
         }
-        pubsByDoi[reviewType][doi].push(personPub)
+        pubsByTitle[reviewType][title].push(personPub)
         return reviewType
       })
 
-      // console.log(`Pubs by doi are: ${JSON.stringify(pubsByDoi, null, 2)}`)
+      // console.log(`Pubs by doi are: ${JSON.stringify(pubsByTitle, null, 2)}`)
       // put in pubs grouped by doi for each review status
-      this.publicationsGroupedByDoiByInstitutionReview = pubsByDoi
+      this.publicationsGroupedByTitleByInstitutionReview = pubsByTitle
       console.log(`Finish group by publications ${moment().format('HH:mm:ss:SSS')}`)
       // initialize the pub author matches
-      this.matchedPublicationAuthorsByDoi = _.mapValues(this.authorsByDoi, (cslAuthors, doi) => {
-        // console.log(`DOIs that are matched: ${JSON.stringify(_.keys(this.publicationsGroupedByDoiByInstitutionReview), null, 2)}`)
-        return this.getMatchedCslAuthors(cslAuthors, this.publicationsGroupedByDoiByInstitutionReview['accepted'][doi], true)
+      this.matchedPublicationAuthorsByTitle = _.mapValues(this.authorsByTitle, (cslAuthors, title) => {
+        // console.log(`DOIs that are matched: ${JSON.stringify(_.keys(this.publicationsGroupedByTitleByInstitutionReview), null, 2)}`)
+        return this.getMatchedCslAuthors(cslAuthors, this.publicationsGroupedByTitleByInstitutionReview['accepted'][title], true)
       })
-      this.sortAuthorsByDoi = {}
-      this.sortAuthorsByDoi['accepted'] = _.mapValues(this.matchedPublicationAuthorsByDoi, (matchedAuthors) => {
+      this.sortAuthorsByTitle = {}
+      this.sortAuthorsByTitle['accepted'] = _.mapValues(this.matchedPublicationAuthorsByTitle, (matchedAuthors) => {
         this.updateFilteredPersonPubCounts('accepted', matchedAuthors)
         return this.getAuthorsString(matchedAuthors)
       })
-      this.sortAuthorsByDoi['rejected'] = _.mapValues(this.publicationsGroupedByDoiByInstitutionReview['rejected'], (personPubs, doi) => {
-        return this.getAuthorsString(this.getInstitutionReviewedAuthors(doi, 'rejected'))
+      this.sortAuthorsByTitle['rejected'] = _.mapValues(this.publicationsGroupedByTitleByInstitutionReview['rejected'], (personPubs, title) => {
+        return this.getAuthorsString(this.getInstitutionReviewedAuthors(title, 'rejected'))
       })
-      this.sortAuthorsByDoi['unsure'] = _.mapValues(this.publicationsGroupedByDoiByInstitutionReview['unsure'], (personPubs, doi) => {
-        return this.getAuthorsString(this.getInstitutionReviewedAuthors(doi, 'unsure'))
+      this.sortAuthorsByTitle['unsure'] = _.mapValues(this.publicationsGroupedByTitleByInstitutionReview['unsure'], (personPubs, title) => {
+        return this.getAuthorsString(this.getInstitutionReviewedAuthors(title, 'unsure'))
       })
 
-      // console.log(`Matched pub authors by doi: ${JSON.stringify(this.matchedPublicationAuthorsByDoi, null, 2)}`)
+      // console.log(`Matched pub authors by doi: ${JSON.stringify(this.matchedPublicationAuthorsByTitle, null, 2)}`)
 
-      const doisPresent = {}
+      const titlesPresent = {}
       this.personPublicationsCombinedMatchesByReview = {}
-      // console.log(`Person pubs grouped by DOI are: ${JSON.stringify(this.publicationsGroupedByDoiByReview, null, 2)}`)
-      // grab one with highest confidence to display and grab others via doi later when changing status
+      // console.log(`Person pubs grouped by title are: ${JSON.stringify(this.publicationsGroupedByTitleByReview, null, 2)}`)
+      // grab one with highest confidence to display and grab others via title later when changing status
       // instead of random order add them sequentially to not have duplicates in rejected,
       // unsure if in accepted and then not in rejected if unsure and not in accepted
-      this.personPublicationsCombinedMatchesByReview['accepted'] = await _.map(_.keys(this.publicationsGroupedByDoiByInstitutionReview['accepted']), (doi) => {
+      this.personPublicationsCombinedMatchesByReview['accepted'] = await _.map(_.keys(this.publicationsGroupedByTitleByInstitutionReview['accepted']), (title) => {
         // get match with highest confidence level and use that one
-        const personPubs = this.publicationsGroupedByDoiByInstitutionReview['accepted'][doi]
+        const personPubs = this.publicationsGroupedByTitleByInstitutionReview['accepted'][title]
         let currentPersonPub
         _.each(personPubs, (personPub, index) => {
           if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
@@ -1227,15 +1227,15 @@ export default {
             // }
           }
         })
-        doisPresent[doi] = true
+        titlesPresent[title] = true
         return currentPersonPub
       })
 
       this.personPublicationsCombinedMatchesByReview['unsure'] = {}
-      await pMap(_.keys(this.publicationsGroupedByDoiByInstitutionReview['unsure']), (doi) => {
+      await pMap(_.keys(this.publicationsGroupedByTitleByInstitutionReview['unsure']), (title) => {
         // get match with highest confidence level and use that one
-        if (!doisPresent[doi]) {
-          const personPubs = this.publicationsGroupedByDoiByInstitutionReview['unsure'][doi]
+        if (!titlesPresent[title]) {
+          const personPubs = this.publicationsGroupedByTitleByInstitutionReview['unsure'][title]
           let currentPersonPub
           _.each(personPubs, (personPub, index) => {
             if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
@@ -1243,18 +1243,18 @@ export default {
             }
           })
 
-          const unsureAuthors = this.getInstitutionReviewedAuthors(doi, 'unsure')
+          const unsureAuthors = this.getInstitutionReviewedAuthors(title, 'unsure')
           this.updateFilteredPersonPubCounts('unsure', unsureAuthors)
-          doisPresent[doi] = true
-          this.personPublicationsCombinedMatchesByReview['unsure'][doi] = currentPersonPub
+          titlesPresent[title] = true
+          this.personPublicationsCombinedMatchesByReview['unsure'][title] = currentPersonPub
         }
       }, { concurrency: 1 })
 
       this.personPublicationsCombinedMatchesByReview['rejected'] = {}
-      await pMap(_.keys(this.publicationsGroupedByDoiByInstitutionReview['rejected']), (doi) => {
+      await pMap(_.keys(this.publicationsGroupedByTitleByInstitutionReview['rejected']), (title) => {
         // get match with highest confidence level and use that one
-        if (!doisPresent[doi]) {
-          const personPubs = this.publicationsGroupedByDoiByInstitutionReview['rejected'][doi]
+        if (!titlesPresent[title]) {
+          const personPubs = this.publicationsGroupedByTitleByInstitutionReview['rejected'][title]
           let currentPersonPub
           _.each(personPubs, (personPub, index) => {
             if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
@@ -1262,18 +1262,18 @@ export default {
             }
           })
 
-          const rejectedAuthors = this.getInstitutionReviewedAuthors(doi, 'rejected')
+          const rejectedAuthors = this.getInstitutionReviewedAuthors(title, 'rejected')
           this.updateFilteredPersonPubCounts('rejected', rejectedAuthors)
-          doisPresent[doi] = true
-          this.personPublicationsCombinedMatchesByReview['rejected'][doi] = currentPersonPub
+          titlesPresent[title] = true
+          this.personPublicationsCombinedMatchesByReview['rejected'][title] = currentPersonPub
         }
       }, { concurrency: 1 })
 
       this.personPublicationsCombinedMatchesByReview['pending'] = {}
-      await pMap(_.keys(this.publicationsGroupedByDoiByInstitutionReview['pending']), (doi) => {
+      await pMap(_.keys(this.publicationsGroupedByTitleByInstitutionReview['pending']), (title) => {
         // get match with highest confidence level and use that one
-        if (!doisPresent[doi]) {
-          const personPubs = this.publicationsGroupedByDoiByInstitutionReview['pending'][doi]
+        if (!titlesPresent[title]) {
+          const personPubs = this.publicationsGroupedByTitleByInstitutionReview['pending'][title]
           let currentPersonPub
           _.each(personPubs, (personPub, index) => {
             if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
@@ -1281,7 +1281,7 @@ export default {
             }
           })
 
-          this.personPublicationsCombinedMatchesByReview['pending'][doi] = currentPersonPub
+          this.personPublicationsCombinedMatchesByReview['pending'][title] = currentPersonPub
         }
       }, { concurrency: 1 })
 
@@ -1304,12 +1304,12 @@ export default {
         }
       })
 
-      // put in pubs grouped by doi for each review status for both ND author review and center review status
+      // put in pubs grouped by title for each review status for both ND author review and center review status
       _.each(this.reviewStates, (reviewType) => {
         const publications = this.personPublicationsCombinedMatchesByOrgReview[reviewType]
-        // first grab relevant person pubs from global list based dois in this list
-        this.publicationsGroupedByDoiByOrgReview[reviewType] = _.groupBy(publications, (personPub) => {
-          return `${personPub.publication.doi}`
+        // first grab relevant person pubs from global list based titles in this list
+        this.publicationsGroupedByTitleByOrgReview[reviewType] = _.groupBy(publications, (personPub) => {
+          return `${personPub.publication.title}`
         })
       })
 
@@ -1347,7 +1347,7 @@ export default {
         this.personPublicationsCombinedMatchesByOrgReview,
         (personPublications) => {
           return _.filter(personPublications, (item) => {
-            const authorString = (this.sortAuthorsByDoi[this.selectedInstitutionReviewState.toLowerCase()][item.publication.doi]) ? this.sortAuthorsByDoi[this.selectedInstitutionReviewState.toLowerCase()][item.publication.doi] : ''
+            const authorString = (this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][item.publication.title]) ? this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][item.publication.title] : ''
             let includedInSelectedAuthors = true
             if (this.selectedCenterAuthor !== 'All') {
               // assumes the name value in the list of the same form as the author string
@@ -1414,7 +1414,7 @@ export default {
       } else if (this.selectedCenterPubSort === 'Authors') {
         console.log('trying to sort by author')
         this.personPublicationsCombinedMatches = _.sortBy(this.personPublicationsCombinedMatches, (personPub) => {
-          return this.sortAuthorsByDoi[this.selectedInstitutionReviewState.toLowerCase()][personPub.publication.doi]
+          return this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][personPub.publication.title]
         })
       } else if (this.selectedCenterPubSort === 'Source') {
         // need to sort by confidence and then name, not guaranteed to be in order from what is returned from DB
@@ -1540,7 +1540,7 @@ export default {
           })
         }
 
-        let pubsWithAuthorsByDoi
+        let pubsWithAuthorsByTitle
         if (currentLoadCount === this.pubLoadCount) {
           // now query for authors for the publications (faster if done in second query)
           const pubsAuthorsResult = await this.$apollo.query({
@@ -1553,14 +1553,14 @@ export default {
             _.set(pub, 'doi', _.toLower(pub.doi))
             return pub
           })
-          pubsWithAuthorsByDoi = _.groupBy(authorsPubs, (publication) => {
-            return publication.doi
+          pubsWithAuthorsByTitle = _.groupBy(authorsPubs, (publication) => {
+            return publication.title
           })
         }
 
         if (currentLoadCount === this.pubLoadCount) {
-          // now reduce to first instance by doi and authors array
-          this.authorsByDoi = _.mapValues(pubsWithAuthorsByDoi, (publication) => {
+          // now reduce to first instance by title and authors array
+          this.authorsByTitle = _.mapValues(pubsWithAuthorsByTitle, (publication) => {
             return (publication[0].authors) ? publication[0].authors : []
           })
           await this.loadPersonPublicationsCombinedMatches()
@@ -1588,11 +1588,11 @@ export default {
         query: readPublicationsCSL(publicationIds),
         fetchPolicy: 'network-only'
       })
-      const publicationsCSLByDoi = _.groupBy(pubsCSLResult.data.publications, (publication) => {
-        return _.toLower(publication.doi)
+      const publicationsCSLByTitle = _.groupBy(pubsCSLResult.data.publications, (publication) => {
+        return _.toLower(publication.title)
       })
 
-      this.citationsByDoi = _.mapValues(publicationsCSLByDoi, (publications) => {
+      this.citationsByTitle = _.mapValues(publicationsCSLByTitle, (publications) => {
         return this.getCitationApa(publications[0].csl_string)
       })
     },
@@ -1618,7 +1618,7 @@ export default {
     async loadPublication (personPublication) {
       this.clearPublication()
       this.personPublication = personPublication
-      const personPublicationsByReview = await this.getDoiPersonPublicationsByReview(personPublication.publication.doi)
+      const personPublicationsByReview = await this.getTitlePersonPublicationsByReview(personPublication.publication.title)
       const reviewedAuthors = []
       this.acceptedAuthors = _.map(personPublicationsByReview['accepted'], (personPub) => {
         const reviewedAuthor = this.getReviewedAuthor(personPub)
@@ -1689,8 +1689,8 @@ export default {
         // TODO deselect buttons that are the same as the current filter
         return null
       }
-      // add the review for personPublications with the same doi in the list
-      const personPubs = this.publicationsGroupedByDoi[personPublication.publication.doi]
+      // add the review for personPublications with the same title in the list
+      const personPubs = this.publicationsGroupedByTitle[personPublication.publication.title]
 
       try {
         let mutateResults = []
@@ -1710,7 +1710,7 @@ export default {
             Vue.delete(this.personPublicationsCombinedMatches, index)
             // transfer from one review queue to the next primarily for counts, other sorting will shake out on reload when clicking the tab
             // remove from current lists
-            _.unset(this.publicationsGroupedByDoiByOrgReview[this.reviewTypeFilter], personPublication.publication.doi)
+            _.unset(this.publicationsGroupedByTitleByOrgReview[this.reviewTypeFilter], personPublication.publication.title)
             _.remove(this.personPublicationsCombinedMatchesByOrgReview[this.reviewTypeFilter], (pub) => {
               return pub.id === personPub.id
             })
@@ -1718,7 +1718,7 @@ export default {
               return pub.id === personPub.id
             })
             // add to new lists
-            this.publicationsGroupedByDoiByOrgReview[reviewType][personPublication.publication.doi] = personPubs
+            this.publicationsGroupedByTitleByOrgReview[reviewType][personPublication.publication.title] = personPubs
             this.personPublicationsCombinedMatchesByOrgReview[reviewType].push(personPub)
             this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType].push(personPub)
             if (this.reviewTypeFilter === 'pending' && this.selectedPersonTotal === 'Pending') {

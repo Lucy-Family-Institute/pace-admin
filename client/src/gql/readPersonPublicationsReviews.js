@@ -19,6 +19,7 @@ export default function readPersonPublicationsReviews (personPubIds, reviewOrgVa
           person_id
           publication_id
           doi
+          title
           review_type
           datetime
         }

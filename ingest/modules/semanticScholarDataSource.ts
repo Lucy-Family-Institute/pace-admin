@@ -2,6 +2,7 @@ import axios from 'axios'
 import _, { isInteger } from 'lodash'
 import NormedPublication from './normedPublication'
 import NormedPerson from './normedPerson'
+import NormedAuthor from './normedAuthor'
 import DataSource from './dataSource'
 import HarvestSet from './HarvestSet'
 import DataSourceConfig from './dataSourceConfig'
@@ -161,8 +162,11 @@ export class SemanticScholarDataSource implements DataSource {
   // }
 
   // returns an array of normalized publication objects given ones retrieved fron this datasource
-  getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): NormedPublication[]{
-    const normedPubs =  _.map(sourcePublications, (pub) => {
+  async getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): Promise<NormedPublication[]>{
+    let normedPubs = []
+    await pMap (sourcePublications, async (pub) => {
+      const authors = await this.getNormedAuthors(pub)
+      console.log(`Normed authors found: ${JSON.stringify(authors, null, 2)}`)
       let normedPub: NormedPublication = {
         title: pub['title'],
         doi: pub['doi'],
@@ -170,11 +174,13 @@ export class SemanticScholarDataSource implements DataSource {
         publicationDate: `${pub['year']}`,  // force to be string
         datasourceName: this.getSourceName(),
         sourceId: pub['paperId'],
+        authors: authors,
         sourceMetadata: pub
       }
       // add optional properties
       if (searchPerson) _.set(normedPub, 'searchPerson', searchPerson)
       if (pub['abstract']) _.set(normedPub, 'abstract', pub['abstract'])
+      if (pub['url']) normedPub.sourceUrl = pub['url']
       // if (pub['issn-type']) {
       //   _.each(pub['issn-type'], (issn) => {
       //     if (issn['type'] && issn['value']) {
@@ -187,8 +193,8 @@ export class SemanticScholarDataSource implements DataSource {
       //   })
       // }
       // // console.log(`Created normed pub: ${JSON.stringify(normedPub, null, 2)}`)
-      return normedPub
-    })
+      normedPubs.push(normedPub)
+    }, { concurrency: 1})
 
     return _.filter(normedPubs, (pub) => {
       return (pub !== undefined && pub !== null)
@@ -222,19 +228,46 @@ export class SemanticScholarDataSource implements DataSource {
   }
 
   async getCSLStyleAuthorList(sourceMetadata) {
+    // const sourceAuthors = this.getCoauthors(sourceMetadata)
+    // const cslStyleAuthors = []
+    // await pMap(sourceAuthors, async (sourceAuthor, index) => {
+    //   let author = _.clone(sourceAuthor)
+    //   const parsedName = await nameParser({
+    //     name: sourceAuthor['name'],
+    //     reduceMethod: 'majority',
+    //   });
+    //   author['given'] = parsedName.first
+    //   author['family'] = parsedName.last
+    //   cslStyleAuthors.push(author)
+    // }, { concurrency: 1 })
+    const normedAuthors: NormedAuthor[] = await this.getNormedAuthors(sourceMetadata)
+    return _.map(normedAuthors, (author) => {
+      return {
+        family: author.familyName,
+        given: author.givenName
+      }
+    })
+  }
+
+  async getNormedAuthors(sourceMetadata): Promise<NormedAuthor[]> {
     const sourceAuthors = this.getCoauthors(sourceMetadata)
-    const cslStyleAuthors = []
+    const normedAuthors: NormedAuthor[] = []
     await pMap(sourceAuthors, async (sourceAuthor, index) => {
-      let author = _.clone(sourceAuthor)
       const parsedName = await nameParser({
         name: sourceAuthor['name'],
         reduceMethod: 'majority',
       });
-      author['given'] = parsedName.first
-      author['family'] = parsedName.last
-      cslStyleAuthors.push(author)
+      // console.log(`Parsed name found is: ${JSON.stringify(parsedName, null, 2)}`)
+      let author: NormedAuthor = {
+        familyName: parsedName['last'],
+        givenName: parsedName['first'],
+        givenNameInitial: (parsedName['first'] ? parsedName['first'][0] : ''),
+        affiliations: [],
+        sourceIds: { semanticScholarIds : [sourceAuthor['authorId']]}
+      }
+      normedAuthors.push(author)
     }, { concurrency: 1 })
-    return cslStyleAuthors
+    return normedAuthors
   }
 
   // returns map of person id to author ids

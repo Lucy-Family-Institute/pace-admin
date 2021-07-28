@@ -3,6 +3,7 @@ import _ from 'lodash'
 const xmlToJson = require('xml-js');
 import NormedPublication from './normedPublication'
 import NormedPerson from './normedPerson'
+import NormedAuthor from './normedAuthor'
 import HarvestSet from './HarvestSet'
 import DataSource from './dataSource'
 import { getDateString, getDateObject } from '../units/dateRange'
@@ -35,6 +36,19 @@ export class PubMedDataSource implements DataSource {
     return authors
   }
 
+  getNormedAuthors(sourceMetadata): NormedAuthor[] {
+    const authors = this.getAuthors(sourceMetadata)
+    return _.map(authors, (author) => {
+      return {
+        familyName: author.familyName,
+        givenName: author.givenName,
+        givenNameInitial: (author.givenName ? author.giveName[0]: ''),
+        affiliations: author.affiliations,
+        sourceIds: {}
+      }
+    })
+  }
+
   async getCSLStyleAuthorList(sourceMetadata) {
     const sourceAuthors = this.getAuthors(sourceMetadata)
     const cslStyleAuthors = []
@@ -61,7 +75,7 @@ export class PubMedDataSource implements DataSource {
   }
 
   // returns an array of normalized publication objects given ones retrieved fron this datasource
-  getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): NormedPublication[]{
+  async getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): Promise<NormedPublication[]>{
     let normedPubs = []
     const mappedOverObject = _.each(sourcePublications, (pub) => {
       const title = pub.title;
@@ -89,15 +103,19 @@ export class PubMedDataSource implements DataSource {
       let pubmedId = identifiers.pubmed ? identifiers.pubmed.resourceIdentifier: ''
       console.log(`Creating normed pub for doi: ${doi} pubmed id: ${pubmedId}`)
       // update to be part of NormedPublication
-      let normedPub = {
+      let normedPub: NormedPublication = {
         title: title,
         journalTitle: '',
         doi: doi,
         publicationDate: pub.publicationYear,
         datasourceName: 'PubMed',
         sourceId: pubmedId,
+        authors: this.getNormedAuthors(pub),
         sourceMetadata: pub
       }
+
+      if (searchPerson) _.set(normedPub, 'searchPerson', searchPerson)
+      if (pub['description']) _.set(normedPub, 'abstract', pub['description'])
       normedPubs.push(normedPub)
     })
     return normedPubs

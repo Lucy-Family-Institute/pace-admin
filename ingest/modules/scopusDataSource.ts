@@ -79,7 +79,7 @@ export class ScopusDataSource implements DataSource {
   }
 
   // returns an array of normalized publication objects given ones retrieved fron this datasource
-  getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): NormedPublication[]{
+  async getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): Promise<NormedPublication[]>{
     return _.map(sourcePublications, (pub) => {
         let normedPub: NormedPublication = {
             title: pub['dc:title'],
@@ -88,6 +88,7 @@ export class ScopusDataSource implements DataSource {
             datasourceName: this.dsConfig.sourceName,
             doi: pub['prism:doi'] ? pub['prism:doi'] : '',
             sourceId: _.replace(pub['dc:identifier'], 'SCOPUS_ID:', ''),
+            authors: [],
             sourceMetadata: pub
         }
         // add optional properties
