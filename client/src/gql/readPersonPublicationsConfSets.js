@@ -19,6 +19,7 @@ export default function readPersonPublicationsConfSets (personPubIds) {
           person_id
           publication_id
           doi
+          title
           value
           datetime
         }
