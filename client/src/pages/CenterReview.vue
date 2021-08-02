@@ -775,12 +775,14 @@ export default {
           }
           return
         } else if (this.progress >= 1) {
-          this.progress = 0.01
-          this.buffer = 0.01
+          this.progress = 0.95
+          this.buffer = 0.95
           return
         }
 
-        this.progress = Math.min(1, this.buffer, this.progress + 0.1)
+        let increment = 0.1
+        if (this.progress > 0.6) increment = 0.01
+        this.progress = Math.min(1, this.buffer, this.progress + increment)
       }, 700 + Math.random() * 1000)
 
       this.bufferInterval = setInterval(() => {
@@ -848,32 +850,32 @@ export default {
 
       // apply any sorting applied
       console.log('filtering', this.selectedPersonSort)
-      if (this.selectedPersonSort === 'Name') {
-        this.people = await _.sortBy(this.people, ['family_name', 'given_name'])
-      } else {
-        // need to sort by total and then name, not guaranteed to be in order from what is returned from DB
-        // first group items by count
-        const peopleByCounts = await _.groupBy(this.people, (person) => {
-          return this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person)
-        })
+      // if (this.selectedPersonSort === 'Name') {
+      this.people = await _.sortBy(this.people, ['family_name', 'given_name'])
+      //   } else {
+      //     // need to sort by total and then name, not guaranteed to be in order from what is returned from DB
+      //     // first group items by count
+      //     const peopleByCounts = await _.groupBy(this.people, (person) => {
+      //       return this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person)
+      //     })
 
-        // sort each person array by name for each count
-        const peopleByCountsByName = await _.mapValues(peopleByCounts, (persons) => {
-          return _.sortBy(persons, ['family_name', 'given_name'])
-        })
+      //     // sort each person array by name for each count
+      //     const peopleByCountsByName = await _.mapValues(peopleByCounts, (persons) => {
+      //       return _.sortBy(persons, ['family_name', 'given_name'])
+      //     })
 
-        // get array of counts (i.e., keys) sorted in reverse
-        const sortedCounts = await _.sortBy(_.keys(peopleByCountsByName), (count) => { return Number.parseInt(count) }).reverse()
+      //     // get array of counts (i.e., keys) sorted in reverse
+      //     const sortedCounts = await _.sortBy(_.keys(peopleByCountsByName), (count) => { return Number.parseInt(count) }).reverse()
 
-        // now push values into array in desc order of count and flatten
-        let sortedPersons = []
-        await _.each(sortedCounts, (key) => {
-          sortedPersons.push(peopleByCountsByName[key])
-        })
+      //     // now push values into array in desc order of count and flatten
+      //     let sortedPersons = []
+      //     await _.each(sortedCounts, (key) => {
+      //       sortedPersons.push(peopleByCountsByName[key])
+      //     })
 
-        this.people = await _.flatten(sortedPersons)
-        // this.reportDuplicatePublications()
-      }
+      //     this.people = await _.flatten(sortedPersons)
+      //     // this.reportDuplicatePublications()
+      //   }
       await this.loadCenterAuthorOptions()
     },
     async loadCenterAuthorOptions () {
@@ -1072,6 +1074,9 @@ export default {
     async clearPublications () {
       this.publications = []
       this.citationsByTitle = {}
+      this.people = []
+      this.selectedCenterAuthor = 'All'
+      await this.loadCenterAuthorOptions()
       this.personPublicationsCombinedMatches = []
       this.personPublicationsCombinedMatchesByReview = {}
       this.personPublicationsCombinedMatchesByOrgReview = {}
@@ -1164,18 +1169,18 @@ export default {
         this.updateFilteredPersonPubCounts('accepted', matchedAuthors)
         return this.getAuthorsString(matchedAuthors)
       })
-      this.sortAuthorsByTitle['rejected'] = _.mapValues(this.publicationsGroupedByTitleByInstitutionReview['rejected'], (personPubs, title) => {
-        return this.getAuthorsString(this.getInstitutionReviewedAuthors(title, 'rejected'))
-      })
-      this.sortAuthorsByTitle['unsure'] = _.mapValues(this.publicationsGroupedByTitleByInstitutionReview['unsure'], (personPubs, title) => {
-        return this.getAuthorsString(this.getInstitutionReviewedAuthors(title, 'unsure'))
-      })
+      // this.sortAuthorsByTitle['rejected'] = _.mapValues(this.publicationsGroupedByTitleByInstitutionReview['rejected'], (personPubs, title) => {
+      //   return this.getAuthorsString(this.getInstitutionReviewedAuthors(title, 'rejected'))
+      // })
+      // this.sortAuthorsByTitle['unsure'] = _.mapValues(this.publicationsGroupedByTitleByInstitutionReview['unsure'], (personPubs, title) => {
+      //   return this.getAuthorsString(this.getInstitutionReviewedAuthors(title, 'unsure'))
+      // })
 
       // console.log(`Matched pub authors by doi: ${JSON.stringify(this.matchedPublicationAuthorsByTitle, null, 2)}`)
 
       const titlesPresent = {}
       this.personPublicationsCombinedMatchesByReview = {}
-      // console.log(`Person pubs grouped by title are: ${JSON.stringify(this.publicationsGroupedByTitleByReview, null, 2)}`)
+      // console.log(`Person pubs grouped by title are: ${JSON.stringify(this.publicationsGroupedByTitleByInstitutionReview, null, 2)}`)
       // grab one with highest confidence to display and grab others via title later when changing status
       // instead of random order add them sequentially to not have duplicates in rejected,
       // unsure if in accepted and then not in rejected if unsure and not in accepted
@@ -1495,10 +1500,15 @@ export default {
         })
         // console.log('***', pubsWithReviewResult)
         console.log(`Finished query publications ND reviews ${moment().format('HH:mm:ss:SSS')}`)
+        const personPubNDReviewsByType = _.groupBy(pubsWithNDReviewsResult.data.reviews_persons_publications, (reviewPersonPub) => {
+          return reviewPersonPub.review_type
+        })
+
         const personPubNDReviews = _.groupBy(pubsWithNDReviewsResult.data.reviews_persons_publications, (reviewPersonPub) => {
           return reviewPersonPub.persons_publications_id
         })
 
+        const personPubNDReviewsAccepted = personPubNDReviewsByType['accepted']
         console.log(`This selectedCenter is: ${JSON.stringify(this.selectedCenter, null, 2)}`)
         console.log(`Starting query publications ${this.selectedCenter.value} reviews ${moment().format('HH:mm:ss:SSS')}`)
 
@@ -1523,23 +1533,28 @@ export default {
         const personPubConfidenceSets = _.groupBy(pubsWithConfResult.data.confidencesets_persons_publications, (confPersonPub) => {
           return confPersonPub.persons_publications_id
         })
-        let publicationIds
+        let singlePubIdsByTitle = {}
 
         console.log(`Start query publications authors ${moment().format('HH:mm:ss:SSS')}`)
         if (currentLoadCount === this.pubLoadCount) {
-          this.publications = _.map(pubsWithReviewResult.data.persons_publications, (personPub) => {
+          this.publications = _.map(personPubNDReviewsAccepted, (personPubReview) => {
+            const personPub = personPubByIds[personPubReview.persons_publications_id]
+            // const personPub = personPubNDReviewsAccepted[personPubId]
+            // grab the publication id and push to map to eliminate any dups
+            singlePubIdsByTitle[_.toLower(personPubReview.title)] = personPubReview.publication_id
             // change doi to lowercase
-            _.set(personPub.publication, 'doi', _.toLower(personPub.publication.doi))
-            _.set(personPub, 'confidencesets', _.cloneDeep(personPubConfidenceSets[personPub.id]))
-            _.set(personPub, 'reviews', _.cloneDeep(personPubNDReviews[personPub.id]))
-            _.set(personPub, 'org_reviews', _.cloneDeep(personPubCenterReviews[personPub.id]))
+            _.set(personPub.publication, 'doi', _.toLower(personPubReview.doi))
+            _.set(personPub, 'confidencesets', _.cloneDeep(personPubConfidenceSets[personPubReview.persons_publications_id]))
+            _.set(personPub, 'reviews', _.cloneDeep(personPubNDReviews[personPubReview.persons_publications_id]))
+            _.set(personPub, 'org_reviews', _.cloneDeep(personPubCenterReviews[personPubReview.persons_publications_id]))
             return personPub
-          })
-          publicationIds = _.map(this.publications, (pub) => {
-            return pub.publication.id
           })
         }
 
+        // console.log(`Publications found are: ${JSON.stringify(this.publications, null, 2)}`)
+        console.log(`On Query Total Titles Found: ${_.keys(singlePubIdsByTitle).length}`)
+
+        const publicationIds = _.values(singlePubIdsByTitle)
         let pubsWithAuthorsByTitle
         if (currentLoadCount === this.pubLoadCount) {
           // now query for authors for the publications (faster if done in second query)
@@ -1584,17 +1599,37 @@ export default {
       this.publicationsLoaded = true
     },
     async loadPublicationsCSLData (publicationIds) {
-      const pubsCSLResult = await this.$apollo.query({
-        query: readPublicationsCSL(publicationIds),
-        fetchPolicy: 'network-only'
-      })
-      const publicationsCSLByTitle = _.groupBy(pubsCSLResult.data.publications, (publication) => {
-        return _.toLower(publication.title)
-      })
+      this.citationsByTitle = {}
+      // break publicationIds into chunks of 50
+      const batches = _.chunk(publicationIds, 2000)
+      let batchesPubsCSLByTitle = []
+      console.log(`Getting csl for ${publicationIds.length} publication ids...`)
+      await pMap(batches, async (batch, index) => {
+        console.log(`Starting query csl for citations batch ${index} ${moment().format('HH:mm:ss:SSS')}`)
+        const pubsCSLResult = await this.$apollo.query({
+          query: readPublicationsCSL(batch),
+          fetchPolicy: 'network-only'
+        })
+        console.log(`Finished query csl for citations batch ${index} ${moment().format('HH:mm:ss:SSS')}`)
 
-      this.citationsByTitle = _.mapValues(publicationsCSLByTitle, (publications) => {
-        return this.getCitationApa(publications[0].csl_string)
-      })
+        // console.log(`Starting group by title for citations batch ${index} ${moment().format('HH:mm:ss:SSS')}`)
+        batchesPubsCSLByTitle.push(_.groupBy(pubsCSLResult.data.publications, (publication) => {
+          return _.toLower(publication.title)
+        }))
+        // console.log(`Finished group by title for citations batch ${index} ${moment().format('HH:mm:ss:SSS')}`)
+      }, { concurrency: 1 })
+
+      // generate the citations themselves
+      console.log(`Starting generate citations ${moment().format('HH:mm:ss:SSS')}`)
+      await pMap(batchesPubsCSLByTitle, async (pubsCSLByTitle) => {
+        console.log(`Generating citations for ${_.keys(pubsCSLByTitle).length} publications`)
+        await pMap(_.keys(pubsCSLByTitle), async (title) => {
+          if (!this.citationsByTitle[title]) {
+            this.citationsByTitle[title] = this.getCitationApa(pubsCSLByTitle[title][0].csl_string)
+          }
+        }, { concurrency: 1 })
+      }, { concurrency: 1 })
+      console.log(`Finished generate citations ${moment().format('HH:mm:ss:SSS')}`)
     },
     getReviewedAuthor (personPublication) {
       const obj = _.clone(personPublication.person)
@@ -1858,7 +1893,7 @@ export default {
       this.selectedPersonSort = this.preferredPersonSort
       this.selectedPersonTotal = this.preferredPersonTotal
       this.selectedPersonConfidence = this.preferredPersonConfidence
-      this.selectedInstitutionReviewState = this.preferredInstitutionReviewState
+      this.selectedInstitutionReviewState = 'Accepted' // this.preferredInstitutionReviewState
       this.selectedPubYears = {
         min: this.yearPubStaticMin,
         max: this.yearPubStaticMax

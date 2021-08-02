@@ -18,7 +18,7 @@
           <q-icon name="search" />
         </template>
       </q-input>
-      <q-select
+      <!--<q-select
         name="institution_review"
         v-model="selectedInstitutionReviewState"
         :options="institutionReviewStateOptions"
@@ -27,7 +27,7 @@
         style="width:325px"
         label="ND Author Review:"
         class="fullSelect"
-      />
+      />-->
       <q-select
         name="sort_center_pub"
         v-model="selectedCenterPubSort"
@@ -61,7 +61,6 @@ export default {
   data () {
     return {
       sortCenterPubOptions: [
-        'Confidence',
         'Title',
         'Authors'
       ],
