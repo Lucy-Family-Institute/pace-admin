@@ -82,26 +82,23 @@ async function main() {
   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===78}))
   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===48}))
   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===61}))
-  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===197}))
+  testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===120}))
   // console.log(`Test authors: ${JSON.stringify(testAuthors2, null, 2)}`)
 
   // get where last confidence test left off
+  // get all person publications without a confidence set
+
   const lastConfidenceSet = await calculateConfidence.getLastPersonPubConfidenceSet()
-  let mostRecentPersonPubId = undefined
-  if (lastConfidenceSet) {
-    // mostRecentPersonPubId = 11145
-    mostRecentPersonPubId = lastConfidenceSet.persons_publications_id
-    console.log(`Last Person Pub Confidence set is: ${mostRecentPersonPubId}`)
-  } else {
-    console.log(`Last Person Pub Confidence set is undefined`)
-  }
+  const overWriteExisting = false
+
+  console.log(`Overwrite existing confidence sets: ${overWriteExisting}`)
   // const publicationYear = 2020
   const publicationYear = undefined
 
   // break up authors into groups of 20
   const testAuthorGroups = _.chunk(testAuthors, 10)
   await pMap (testAuthorGroups, async (authors, index) => {
-    const confidenceTests = await calculateConfidence.calculateConfidence (mostRecentPersonPubId, authors, (confirmedAuthorsByDoi || {}), publicationYear)
+    const confidenceTests = await calculateConfidence.calculateConfidence (authors, (confirmedAuthorsByDoi || {}), overWriteExisting, publicationYear)
 
     // next need to write checks found to DB and then calculate confidence accordingly
     let errorsInsert = []
