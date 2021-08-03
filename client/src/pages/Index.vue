@@ -855,7 +855,7 @@ export default {
         return includeCount
       } else {
         let pendingCount = includeCount - this.personReviewedPubCounts[person.id]
-        return (pendingCount >= 0 ? pendingCount : 0) 
+        return (pendingCount >= 0 ? pendingCount : 0)
       }
     },
     async loadPersonsWithFilter () {
