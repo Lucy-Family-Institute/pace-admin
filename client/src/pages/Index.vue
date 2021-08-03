@@ -844,11 +844,17 @@ export default {
       }
     },
 
-    getPersonPublicationCount (person) {
+    getPersonPublicationCount (person, minConfidence) {
+      let includeCount = 0
+      _.each(person.confidencesets_persons_publications_aggregate.nodes, (node) => {
+        if (node.value >= 0.50) {
+          includeCount += 1
+        }
+      })
       if (this.selectedPersonTotal === 'All') {
-        return person.confidencesets_persons_publications.length
+        return includeCount
       } else {
-        return person.confidencesets_persons_publications.length - this.personReviewedPubCounts[person.id]
+        return includeCount - this.personReviewedPubCounts[person.id]
       }
     },
     async loadPersonsWithFilter () {
@@ -905,7 +911,7 @@ export default {
 
         // set the pub counts for person
         this.people = _.map(this.people, (person) => {
-          return _.set(person, 'person_publication_count', this.getPersonPublicationCount(person))
+          return _.set(person, 'person_publication_count', this.getPersonPublicationCount(person, minConfidence))
         })
 
         // apply any sorting applied
@@ -916,7 +922,7 @@ export default {
           // need to sort by total and then name, not guaranteed to be in order from what is returned from DB
           // first group items by count
           const peopleByCounts = await _.groupBy(this.people, (person) => {
-            return this.getPersonPublicationCount(person)
+            return person.person_publication_count
           })
 
           console.log(`People by counts are: ${JSON.stringify(peopleByCounts, null, 2)}`)
