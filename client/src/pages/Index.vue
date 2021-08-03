@@ -854,7 +854,8 @@ export default {
       if (this.selectedPersonTotal === 'All') {
         return includeCount
       } else {
-        return includeCount - this.personReviewedPubCounts[person.id]
+        let pendingCount = includeCount - this.personReviewedPubCounts[person.id]
+        return (pendingCount >= 0 ? pendingCount : 0) 
       }
     },
     async loadPersonsWithFilter () {
