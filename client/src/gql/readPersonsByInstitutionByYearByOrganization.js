@@ -64,6 +64,17 @@ export default function readPersonsByInstitutionByYearByOrganization (organizati
             title
             year
           }
+          confidencesets_persons_publications_aggregate(distinct_on: title, order_by: {title: asc, datetime: desc}, where: {year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}}) {
+            nodes {
+              datetime
+              doi
+              id
+              publication_id
+              value
+              version
+              title
+            }
+          }
           reviews_persons_publications(
             distinct_on: title, 
             order_by: {
