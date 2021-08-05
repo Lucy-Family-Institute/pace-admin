@@ -46,7 +46,7 @@ export function normalizeString(value, options = {}) {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
       .replace(/[\u2019]/g, '\u0027') // the u0027 also normalizes the curly apostrophe to the straight one
-      .replace(/[&\/\\#,+()$~%.'":*?<>{}!]/g,'') // remove periods and other remaining special characters
+      .replace(/[&\/\\#,+()$~%.'":*?<>{}!-]/g,'') // remove periods and other remaining special characters
 
     if (!skipLower) {
       newValue = _.lowerCase(newValue)
