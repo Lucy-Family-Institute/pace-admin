@@ -7,7 +7,7 @@ import fetch from 'node-fetch'
 import dotenv from 'dotenv'
 import pMap from 'p-map'
 import { CalculateConfidence } from './modules/calculateConfidence'
-
+import { normalizeString } from './units/normalizer'
 import readReviewTypes from './gql/readReviewTypes'
 import insertReview from '../client/src/gql/insertReview'
 import readPersonPublicationsReviews from './gql/readPersonPublicationsReviews'
@@ -50,6 +50,11 @@ async function loadOrganizations () {
   return reviewOrgsResult.data.review_organization
 }
 
+function getPublicationTitleKey (title: string) {
+  // normalize the string and remove characters like dashes as well
+  return normalizeString(title)
+}
+
 async function synchronizeReviewsForOrganization(persons, reviewOrgValue) {
   const reviewStates = await loadReviewStates()
 
@@ -86,14 +91,15 @@ async function synchronizeReviewsForOrganization(persons, reviewOrgValue) {
     _.each(reviewStates, (reviewType) => {
       const publications = publicationsGroupedByReview[reviewType]
       _.each(publications, (personPub) => {
-        if (personPub.doi !== null){
-          if (!publicationTitlesByReviewType[personPub['publication'].title]) {
-            publicationTitlesByReviewType[personPub['publication'].title] = {}
+        if (personPub['publication'].title !== null){
+          const titleKey = getPublicationTitleKey(personPub['publication'].title)
+          if (!publicationTitlesByReviewType[titleKey]) {
+            publicationTitlesByReviewType[titleKey] = {}
           }
-          if (!publicationTitlesByReviewType[personPub['publication'].title][reviewType]) {
-            publicationTitlesByReviewType[personPub['publication'].title][reviewType] = []
+          if (!publicationTitlesByReviewType[titleKey][reviewType]) {
+            publicationTitlesByReviewType[titleKey][reviewType] = []
           }
-          publicationTitlesByReviewType[personPub['publication'].title][reviewType].push(personPub)
+          publicationTitlesByReviewType[titleKey][reviewType].push(personPub)
         }
       })
     })
@@ -101,17 +107,17 @@ async function synchronizeReviewsForOrganization(persons, reviewOrgValue) {
     // check for any title's with reviews out of sync
     const publicationTitlesOutOfSync = []
 
-    _.each(_.keys(publicationTitlesByReviewType), (title) => {
-      if (_.keys(publicationTitlesByReviewType[title]).length > 1) {
+    _.each(_.keys(publicationTitlesByReviewType), (titleKey) => {
+      if (_.keys(publicationTitlesByReviewType[titleKey]).length > 1) {
         // console.log(`Warning: Doi out of sync found: ${doi} for person id: ${this.person.id} doi record: ${JSON.stringify(publicationDoisByReviewType[doi], null, 2)}`)
-        publicationTitlesOutOfSync.push(title)
+        publicationTitlesOutOfSync.push(titleKey)
       }
     })
 
     if (publicationTitlesOutOfSync.length > 0) {
       console.log(`Person id '${person['id']}' Dois found with reviews out of sync: ${JSON.stringify(publicationTitlesOutOfSync, null, 2)}`)
       console.log(`Synchronizing Reviews for these personPubs out of sync for person id '${person['id']}'...`)
-      await pMap(publicationTitlesOutOfSync, async (title) => {
+      await pMap(publicationTitlesOutOfSync, async (titleKey) => {
         // console.log(`Publication title '${title}' reviews by review type: ${JSON.stringify(publicationTitlesByReviewType[title], null, 2)}`)
         // get most recent review
         let mostRecentUpdateTime = undefined
@@ -119,9 +125,9 @@ async function synchronizeReviewsForOrganization(persons, reviewOrgValue) {
         let mostRecentReview = undefined
         let newReviewStatus = undefined
         let newReviewOrgValue = undefined
-        _.each(_.keys(publicationTitlesByReviewType[title]), (reviewType) => {
+        _.each(_.keys(publicationTitlesByReviewType[titleKey]), (reviewType) => {
           // just get first one
-          const personPub = publicationTitlesByReviewType[title][reviewType][0]
+          const personPub = publicationTitlesByReviewType[titleKey][reviewType][0]
           if (personPub['reviews_aggregate'].nodes.length > 0) {
             // console.log(`Looking at reviews for doi: ${doi}, reviewType: ${reviewType}, nodes: ${JSON.stringify(personPub['reviews_aggregate'].nodes, null, 2)}`)
             const currentDateTime = new Date(personPub['reviews_aggregate'].nodes[0].datetime)
@@ -137,9 +143,9 @@ async function synchronizeReviewsForOrganization(persons, reviewOrgValue) {
         })
         if (mostRecentReview) {
           await pMap (reviewStates, async (reviewType) => {
-            if (reviewType !== mostRecentReview.reviewType && publicationTitlesByReviewType[title][reviewType]) {
-              await pMap (publicationTitlesByReviewType[title][reviewType], async (personPub) => {
-                console.log(`Inserting Review for title: ${title}, personpub: '${personPub['id']}', most recent review ${JSON.stringify(mostRecentReview, null, 2)}`)
+            if (reviewType !== mostRecentReview.reviewType && publicationTitlesByReviewType[titleKey][reviewType]) {
+              await pMap (publicationTitlesByReviewType[titleKey][reviewType], async (personPub) => {
+                console.log(`Inserting Review for title key: ${titleKey}, personpub: '${personPub['id']}', most recent review ${JSON.stringify(mostRecentReview, null, 2)}`)
                 const mutateResult = await client.mutate(
                   insertReview(mostRecentReview.userId, personPub['id'], mostRecentReview.reviewType, mostRecentReview.reviewOrgValue)
                 )
