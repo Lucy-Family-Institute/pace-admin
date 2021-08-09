@@ -114,10 +114,10 @@
                         v-model="reviewTypeFilter"
                         dense
                       >
-                        <q-tab name="pending" :label="`Pending (${getPublicationsGroupedByTitleByReviewCount('pending')})`" />
-                        <q-tab name="accepted" :label="`Accepted (${getPublicationsGroupedByTitleByReviewCount('accepted')})`" />
-                        <q-tab name="rejected" :label="`Rejected (${getPublicationsGroupedByTitleByReviewCount('rejected')})`" />
-                        <q-tab name="unsure" :label="`Unsure (${getPublicationsGroupedByTitleByReviewCount('unsure')})`" />
+                        <q-tab name="pending" :label="`Pending (${getPublicationsGroupedByReviewCount('pending')})`" />
+                        <q-tab name="accepted" :label="`Accepted (${getPublicationsGroupedByReviewCount('accepted')})`" />
+                        <q-tab name="rejected" :label="`Rejected (${getPublicationsGroupedByReviewCount('rejected')})`" />
+                        <q-tab name="unsure" :label="`Unsure (${getPublicationsGroupedByReviewCount('unsure')})`" />
                       </q-tabs>
                       <q-linear-progress
                         v-if="!publicationsLoaded && !publicationsLoadedError"
@@ -457,9 +457,9 @@ export default {
     personPubSetIdIndex: 0,
     personPublicationsById: {},
     personPubSetsByReviewType: {},
-    personPublicationsCombinedMatchesByReview: {},
     publicationsGroupedByTitleByReview: {},
     publicationsGroupedByDoiByReview: {},
+    filteredPersonPublicationsCombinedMatchesByReview: {},
     // will be a personsPublication id mapped to an object of {titleKey. doiKey}
     personPublicationsKeys: {},
     publicationJournalClassifications: [],
@@ -892,9 +892,6 @@ export default {
     getPublicationsGroupedByReviewCount (reviewType) {
       return this.filteredPersonPublicationsCombinedMatchesByReview[reviewType] ? this.filteredPersonPublicationsCombinedMatchesByReview[reviewType].length : 0
     },
-    getPublicationsGroupedByTitleByReviewCount (reviewType) {
-      return this.filteredPersonPublicationsCombinedMatchesByReview[reviewType] ? this.filteredPersonPublicationsCombinedMatchesByReview[reviewType].length : 0
-    },
     decode (str) {
       const textArea = document.createElement('textarea')
       textArea.innerHTML = str
@@ -1224,7 +1221,6 @@ export default {
     async clearPublications () {
       this.publications = []
       this.personPublicationsCombinedMatches = []
-      this.personPublicationsCombinedMatchesByReview = {}
       this.filteredPersonPublicationsCombinedMatchesByReview = {}
       this.publicationsGroupedByTitleByReview = {}
       this.publicationsGroupedByDoiByReview = {}
@@ -1233,7 +1229,6 @@ export default {
       this.personPubSetIdIndex = 0
       this.personPublicationsById = {}
       this.personPubSetsByReviewType = {}
-      this.personPublicationsCombinedMatchesByReview = {}
       this.publicationsGroupedByTitleByReview = {}
       this.publicationsGroupedByDoiByReview = {}
       this.personPublicationsKeys = {}
@@ -1589,11 +1584,13 @@ export default {
       }
       this.person = person
       // add the review for personPublications with the same title in the list
-      let title = personPublication.publication.title
-      const titleKey = this.getPublicationTitleKey(title)
-      const personPubs = this.publicationsGroupedByTitleByReview[this.reviewTypeFilter][titleKey]
+      // let title = personPublication.publication.title
+      // const titleKey = this.getPublicationTitleKey(title)
+      // const personPubs = this.publicationsGroupedByTitleByReview[this.reviewTypeFilter][titleKey]
 
       try {
+        const pubSet = this.getPersonPubSet(this.getPersonPubSetId(personPublication.id))
+        const personPubs = pubSet.personPublications
         let mutateResults = []
         await _.each(personPubs, async (personPub) => {
           // const personPub = personPubs[0]
@@ -1606,41 +1603,45 @@ export default {
             this.$refs[`personPub${index}`].hide()
             Vue.delete(this.personPublicationsCombinedMatches, index)
             // transfer from one review queue to the next primarily for counts, other sorting will shake out on reload when clicking the tab
-            // remove from current lists
-            _.unset(this.publicationsGroupedByTitleByReview[this.reviewTypeFilter], titleKey)
-            _.remove(this.personPublicationsCombinedMatchesByReview[this.reviewTypeFilter], (pub) => {
-              return pub.id === personPub.id
-            })
-            _.remove(this.filteredPersonPublicationsCombinedMatchesByReview[this.reviewTypeFilter], (pub) => {
-              return pub.id === personPub.id
-            })
-            // add to new lists
-            this.publicationsGroupedByTitleByReview[reviewType][titleKey] = personPubs
-            this.personPublicationsCombinedMatchesByReview[reviewType].push(personPub)
-            this.filteredPersonPublicationsCombinedMatchesByReview[reviewType].push(personPub)
-            if (this.reviewTypeFilter === 'pending' && this.selectedPersonTotal === 'Pending') {
-              const currentPersonIndex = _.findIndex(this.people, (person) => {
-                return person.id === this.person.id
-              })
-              this.personReviewedPubCounts[this.person.id] += 1
-              this.people[currentPersonIndex].person_publication_count -= 1
-              await this.changedPendingCounts(currentPersonIndex)
-              // this.people[currentPersonIndex].reviews_persons_publications_aggregate.aggregate.count = 1
-              this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
-            } else if (this.selectedPersonTotal === 'Pending' && reviewType === 'pending') {
-              const currentPersonIndex = _.findIndex(this.people, (person) => {
-                return person.id === this.person.id
-              })
-              this.personReviewedPubCounts[this.person.id] -= 1
-              this.people[currentPersonIndex].person_publication_count += 1
-              await this.changedPendingCounts(currentPersonIndex)
-              // this.people[currentPersonIndex].reviews_persons_publications_aggregate.aggregate.count += 1
-              this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
-            }
           }
           mutateResults.push(mutateResult)
           this.publicationsReloadPending = true
         })
+        // remove set from related lists
+        this.personPubSetsByReviewType[this.reviewTypeFilter] = _.filter(this.personPubSetsByReviewType[this.reviewTypeFilter], (curPubSet) => {
+          return pubSet.mainPersonPub.id !== curPubSet.mainPersonPub.id
+        })
+        this.filteredPersonPublicationsCombinedMatchesByReview[this.reviewTypeFilter] = _.filter(this.filteredPersonPublicationsCombinedMatchesByReview[this.reviewTypeFilter], (curPubSet) => {
+          return pubSet.mainPersonPub.id !== curPubSet.mainPersonPub.id
+        })
+        // update overall reviewType
+        _.set(pubSet, 'reviewType', reviewType)
+
+        // add to new lists
+        if (!this.personPubSetsByReviewType[reviewType]) this.personPubSetsByReviewType[reviewType] = []
+        this.personPubSetsByReviewType[reviewType] = _.concat(this.personPubSetsByReviewType[reviewType], pubSet)
+        if (!this.filteredPersonPublicationsCombinedMatchesByReview[reviewType]) this.filteredPersonPublicationsCombinedMatchesByReview[reviewType] = []
+        this.filteredPersonPublicationsCombinedMatchesByReview[reviewType] = _.concat(this.filteredPersonPublicationsCombinedMatchesByReview[reviewType], pubSet)
+        if (this.reviewTypeFilter === 'pending' && this.selectedPersonTotal === 'Pending') {
+          const currentPersonIndex = _.findIndex(this.people, (person) => {
+            return person.id === this.person.id
+          })
+          this.personReviewedPubCounts[this.person.id] += 1
+          this.people[currentPersonIndex].person_publication_count -= 1
+          await this.changedPendingCounts(currentPersonIndex)
+          // this.people[currentPersonIndex].reviews_persons_publications_aggregate.aggregate.count = 1
+          this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
+        } else if (this.selectedPersonTotal === 'Pending' && reviewType === 'pending') {
+          const currentPersonIndex = _.findIndex(this.people, (person) => {
+            return person.id === this.person.id
+          })
+          this.personReviewedPubCounts[this.person.id] -= 1
+          this.people[currentPersonIndex].person_publication_count += 1
+          await this.changedPendingCounts(currentPersonIndex)
+          // this.people[currentPersonIndex].reviews_persons_publications_aggregate.aggregate.count += 1
+          this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
+        }
+        this.publicationsReloadPending = true
         console.log(`Added reviews: ${JSON.stringify(mutateResults, null, 2)}`)
         this.clearPublication()
         return mutateResults
