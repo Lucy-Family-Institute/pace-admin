@@ -140,49 +140,50 @@
                           <q-expansion-item
                             :key="item.id"
                             clickable
-                            @click="loadPublication(item);scrollToPublication(index)"
+                            @click="loadPublication(item.mainPersonPub);scrollToPublication(index)"
                             group="expansion_group"
-                            :active="personPublication !== undefined && item.id === personPublication.id"
+                            :active="personPublication !== undefined && item.mainPersonPub.id === personPublication.id"
                             active-class="bg-teal-1 text-grey-8"
                             :ref="`personPub${index}`"
                             :header-inset-level="0"
                             :content-inset-level="0"
                           >
                             <template
-                              v-if="item.publication !== undefined"
+                              v-if="item.mainPersonPub.publication !== undefined"
                               v-slot:header
                             >
                               <q-item-section avatar>
-                                <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.id" />
+                                <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.mainPersonPub.id" />
                                 <q-avatar icon="description" color="primary" text-color="white" v-else />
                               </q-item-section>
                               <q-item-section top class="q-pa-xs">
-                                <q-item-label style="width:100%" class="text-grey-9" lines="1"><strong>Title:</strong> {{ decode(item.publication.title) }}</q-item-label>
+                                <q-item-label style="width:100%" class="text-grey-9" lines="1"><strong>Title:</strong> {{ decode(item.mainPersonPub.publication.title) }}</q-item-label>
                                 <q-list class="q-pt-sm">
                                   <q-btn
                                     @click.capture.stop
                                     rounded
                                     dense
                                     size="sm"
-                                    v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByTitleByReview[reviewTypeFilter][item.publication.title])"
+                                    v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(item.personPublications)"
                                     :key="index"
                                     :color="getSourceNameChipColor(personPub.publication.source_name)"
                                     text-color="white"
                                     type="a"
                                     :href="getSourceUri(personPub)"
                                     target="_blank"
+                                    :ref="`personPubChip${personPub.id}`"
                                     :label="getDisplaySourceLabel(personPub)"
                                   />
                                 </q-list>
                               </q-item-section>
                               <q-item-section avatar side>
                                 <q-badge
-                                  :label="getPublicationConfidence(item)*100+'%'"
-                                  :color="getPublicationConfidence(item)*100 < 50 ? 'amber-10' : 'green'"
+                                  :label="getPublicationConfidence(item.mainPersonPub)*100+'%'"
+                                  :color="getPublicationConfidence(item.mainPersonPub)*100 < 50 ? 'amber-10' : 'green'"
                                 />
                               </q-item-section>
                             </template>
-                            <q-card v-if="item.publication !== undefined">
+                            <q-card v-if="item.mainPersonPub.publication !== undefined">
                               <q-card-section dense class="text-center">
                                 <q-item-label align="left">Move To:</q-item-label>
                                 <q-btn dense v-if="reviewTypeFilter!=='pending'" color="purple" label="Pending" class="on-left" @click="clickReviewPending(index, person, personPublication);" />
@@ -210,7 +211,7 @@
                                   dense
                                   no-wrap
                                   size="md"
-                                  v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationsGroupedByTitleByReview[reviewTypeFilter][personPublication.publication.title])"
+                                  v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(getPersonPubSet(getPersonPubSetId(personPublication.id)).personPublications)"
                                   :key="index"
                                   :color="getSourceNameChipColor(personPub.publication.source_name)"
                                   text-color="white"
@@ -447,9 +448,20 @@ export default {
     publicationsGroupedByReview: {},
     personPublicationsCombinedMatches: [],
     personReviewedPubCounts: {},
+    // these are helper objects to connect personPubSets together
+    // PersonPubId -> Person Pub Set ID Pointers
+    personPubSetPointer: {},
+    // PersonPubSet Id -> Person Pub Id list (i.e., the set itself)
+    personPubSetsById: {},
+    // the current index for personPubSets, will increment whenever adding a new one
+    personPubSetIdIndex: 0,
+    personPublicationsById: {},
+    personPubSetsByReviewType: {},
     personPublicationsCombinedMatchesByReview: {},
-    filteredPersonPublicationsCombinedMatchesByReview: {},
     publicationsGroupedByTitleByReview: {},
+    publicationsGroupedByDoiByReview: {},
+    // will be a personsPublication id mapped to an object of {titleKey. doiKey}
+    personPublicationsKeys: {},
     publicationJournalClassifications: [],
     institutions: [],
     institutionGroup: [],
@@ -559,6 +571,181 @@ export default {
     }
   },
   methods: {
+    getPersonPublicationsInSet (pubSet) {
+      return _.map(pubSet.personPublicationIds, (pubId) => {
+        return this.getPersonPublicationById(pubId)
+      })
+    },
+    getMainPersonPubFromSet (pubSet) {
+      return pubSet.mainPersonPub
+    },
+    // will link all personPubs in this list together
+    linkPersonPubs (personPubList, reviewType) {
+      // link all person pubs together in this list
+      const totalPubs = personPubList.length
+      _.each(personPubList, (personPub, index) => {
+        // at last item do nothing
+        try {
+          if (index === 0 && totalPubs === 1) {
+            console.log(`Linking index: ${index},  only one pub in set, personpub: ${JSON.stringify(personPub['id'], null, 2)}`)
+            // will start a new personpub set list if not already in one
+            console.log(`Passing person pub id to start a new set: ${personPub['id']}`)
+            this.startPersonPubSet(personPub['id'], reviewType)
+          } else if (index !== (totalPubs - 1)) {
+            console.log(`Linking index: ${index} to ${index + 1} of ${totalPubs}), personpub: ${JSON.stringify(personPub['id'], null, 2)}`)
+            const nextPersonPub = _.nth(personPubList, (index + 1))
+            this.linkPersonPubPair(personPub.id, nextPersonPub.id, reviewType)
+          }
+        } catch (error) {
+          console.log(`Warning, error on linking publications: ${error}`)
+          throw error
+        }
+      })
+    },
+    // this method will link person pubs by putting them in a person pub set
+    // together.  If neither are already in a person pub set, they will be grouped together in a new set
+    // If only one has a set, the other will be added to that set
+    // If both are currently within a set, it will merge the two sets together
+    linkPersonPubPair (personPub1Id, personPub2Id, reviewType) {
+      const notInPersonPub1SetId = this.notInPersonPubSet(personPub1Id)
+      const notInPersonPub2SetId = this.notInPersonPubSet(personPub2Id)
+      const personPubSet1Id = this.getPersonPubSetId(personPub1Id)
+      const personPubSet2Id = this.getPersonPubSetId(personPub2Id)
+      console.log(`Linking person pub id 1: ${personPub1Id} to person pub id 2: ${personPub2Id}`)
+      if (notInPersonPub1SetId && notInPersonPub2SetId) {
+        // neither one is in a set yet and just add to set list
+        console.log(`Starting new set for personPubId1: ${personPub1Id}`)
+        const newSetId = this.startPersonPubSet(personPub1Id, reviewType)
+        console.log(`Created personPubset1: ${newSetId} and added person pub1: ${personPub1Id}`)
+        console.log(`Adding personPubId2: ${personPub2Id} to set1id: ${newSetId}`)
+        this.addPersonPubToSet(newSetId, personPub2Id, reviewType)
+      } else if (notInPersonPub2SetId) {
+        console.log(`Adding personPubId2: ${personPub2Id} to set1id: ${personPubSet1Id}`)
+        this.addPersonPubToSet(personPubSet1Id, personPub2Id, reviewType)
+      } else if (notInPersonPub1SetId) {
+        console.log(`Adding personPubId1: ${personPub1Id} to set2id: ${personPubSet2Id}`)
+        this.addPersonPubToSet(personPubSet2Id, personPub1Id, reviewType)
+      } else {
+        // they are both in existing sets and need to merge them
+        // do nothing if they have the same pubsetid as they are already
+        // in the same set
+        console.log(`Merging sets for personPubId1: ${personPub1Id} and personPubId2: ${personPub2Id}, set2Id->set1Id: (${personPubSet2Id}->${personPubSet1Id})`)
+        this.mergePersonPubSets(personPubSet1Id, personPubSet2Id, reviewType)
+      }
+    },
+    mergePersonPubSets (set1Id, set2Id, reviewType) {
+      // do nothing if they are the same set id
+      console.log(`Merging person pub sets set1: ${set1Id} set2: ${set2Id}`)
+      if (set1Id !== set2Id) {
+        // add items from set2 into set1 if not already there, assumes everything is up to date with pointers
+        const set1 = this.getPersonPubSet(set1Id)
+        const set2 = this.getPersonPubSet(set2Id)
+        if (set1.reviewType !== reviewType || set2.reviewType !== reviewType) {
+          const error = `Error: Mismatch in reviewType for sets to be merged.  Expected: ${reviewType}, found set 1: ${set1.reviewType} set 2: ${set2.reviewType}`
+          console.log(error)
+          throw error
+        }
+        const set2List = set2.personPublicationIds
+        _.each(set2List, (personPubId) => {
+          this.addPersonPubToSet(set1Id, personPubId, reviewType)
+        })
+        // destroy the set2List
+        this.removePersonPubSet(set2Id)
+      }
+    },
+    removePersonPubSet (setId) {
+      // only works if personPubs in this set already pointing to another one, else throw error
+      // do nothing if set already gone
+      const set = this.getPersonPubSet(setId)
+      if (set) {
+        _.each(set, (personPubId) => {
+          if (setId && this.getPersonPubSetId(personPubId) === setId) {
+            const error = `Cannot remove person Pub Set (on merge), personPubId: ${personPubId} not in any other set`
+            console.log(error)
+            throw error
+          }
+        })
+        // if we get this far no errors encountered, and all person pubs are now in another set
+        // go ahead and delete it
+        _.unset(this.personPubSetsById, setId)
+      }
+    },
+    addPersonPubToSet (setId, personPubId, reviewType) {
+      // proceed if set exists
+      const set = this.getPersonPubSet(setId)
+      if (set) {
+        // do nothing if already in the set
+        if (this.getPersonPubSetId(personPubId) !== setId) {
+          if (set.reviewType !== reviewType) {
+            const error = `Failed to add person pub to set with mismatched review types. Expected ${reviewType}, found: ${set.reviewType}`
+            console.log(error)
+            throw error
+          }
+          const addPub = this.getPersonPublicationById(personPubId)
+          this.personPubSetsById[setId].personPublicationIds = _.concat(this.personPubSetsById[setId].personPublicationIds, personPubId)
+          this.personPubSetsById[setId].personPublications = _.concat(this.personPubSetsById[setId].personPublications, addPub)
+          this.personPubSetPointer[personPubId] = setId
+          // console.log(`After add personpub: ${personPubId} to setid: ${setId} pubset pointers are: ${JSON.stringify(this.personPubSetPointer, null, 2)}`)
+          const mainPersonPub = this.getPersonPublicationById(set.mainPersonPubId)
+          if (!set.mainPersonPubId || this.getPublicationConfidence(mainPersonPub) < this.getPublicationConfidence(addPub)) {
+            _.set(set, 'mainPersonPub', addPub)
+            _.set(set, 'mainPersonPubId', addPub.id)
+          }
+        }
+      } else {
+        const error = `Failed to add personPub with id: ${personPubId} to set id: ${setId}, personPubSet does not exist`
+        console.log(error)
+        throw error
+      }
+    },
+    notInPersonPubSet (personPubId) {
+      // true if already in a set
+      return !this.personPubSetPointer[personPubId]
+    },
+    getPersonPubSet (setId) {
+      return this.personPubSetsById[setId]
+    },
+    // this method is not currently thread-safe
+    // creates a new person pub set if one does not already exist for the given
+    // person Pub Id
+    startPersonPubSet (personPubId, reviewType) {
+      if (this.notInPersonPubSet(personPubId)) {
+        console.log(`Creating person pub set for pub id: ${personPubId}`)
+        const personPubSetId = this.getNextPersonPubSetId()
+        this.personPubSetPointer[personPubId] = personPubSetId
+        const personPub = this.getPersonPublicationById(personPubId)
+        this.personPubSetsById[personPubSetId] = {
+          personPublicationIds: [personPubId],
+          personPublications: [personPub],
+          mainPersonPubId: personPubId,
+          mainPersonPub: personPub,
+          reviewType: reviewType
+        }
+        return personPubSetId
+      } else {
+        const currentSetId = this.getPersonPubSetId(personPubId)
+        const currentSet = this.getPersonPubSet(currentSetId)
+        if (currentSet.reviewType !== reviewType) {
+          const error = `Error: Mismatch on review type for person Pub set for personPub id: ${personPubId}, expected review type: ${reviewType} and found review type: ${currentSet.reviewType}`
+          console.log(error)
+          throw error
+        } else {
+          return this.getPersonPubSetId(personPubId)
+        }
+      }
+    },
+    getPersonPublicationById (personPubId) {
+      return this.personPublicationsById[personPubId]
+    },
+    // returns a person Pub set if it exists for that personPub, else returns undefined
+    getPersonPubSetId (personPubId) {
+      return this.personPubSetPointer[personPubId]
+    },
+    // this method is not currently thread-safe
+    getNextPersonPubSetId () {
+      this.personPubSetIdIndex += 1
+      return this.personPubSetIdIndex
+    },
     getPublicationDoiKey (publication) {
       if (!publication.doi) {
         return `${publication.source_name}_${publication.source_id}`
@@ -669,8 +856,8 @@ export default {
     },
     // depending on the source return source uri
     getSourceUri (personPublication) {
-      console.log(`Getting source uri for personPublication pub`)
-      console.log(`Process env wos url: ${process.env.WOS_PUBLICATION_URL}`)
+      // console.log(`Getting source uri for personPublication pub`)
+      // console.log(`Process env wos url: ${process.env.WOS_PUBLICATION_URL}`)
       const sourceId = this.getPublicationSourceId(personPublication)
       if (sourceId) {
         if (personPublication.publication.source_name.toLowerCase() === 'scopus') {
@@ -682,7 +869,7 @@ export default {
         } else if (personPublication.publication.source_name.toLowerCase() === 'webofscience') {
           return this.getWebOfScienceUri(sourceId)
         } else if (personPublication.publication.source_name.toLowerCase() === 'semanticscholar') {
-          console.log(`got semantic scholar paper uri ${this.getSemanticScholarUri(sourceId)}`)
+          // console.log(`got semantic scholar paper uri ${this.getSemanticScholarUri(sourceId)}`)
           return this.getSemanticScholarUri(sourceId)
         }
       } else {
@@ -701,6 +888,9 @@ export default {
     },
     getWebOfScienceUri (wosId) {
       return `${process.env.WOS_PUBLICATION_URL}${wosId}`
+    },
+    getPublicationsGroupedByReviewCount (reviewType) {
+      return this.filteredPersonPublicationsCombinedMatchesByReview[reviewType] ? this.filteredPersonPublicationsCombinedMatchesByReview[reviewType].length : 0
     },
     getPublicationsGroupedByTitleByReviewCount (reviewType) {
       return this.filteredPersonPublicationsCombinedMatchesByReview[reviewType] ? this.filteredPersonPublicationsCombinedMatchesByReview[reviewType].length : 0
@@ -792,7 +982,7 @@ export default {
       this.selectedReviewState = reviewState
     },
     async scrollToPublication (index) {
-      console.log(`updating scroll ${index} for ${this.selectedReviewState} ${this.$refs['pubScroll'].toString}`)
+      // console.log(`updating scroll ${index} for ${this.selectedReviewState} ${this.$refs['pubScroll'].toString}`)
       this.$refs['pubScroll'].scrollTo(index + 1)
     },
     async showCurrentSelectedPublication () {
@@ -846,9 +1036,18 @@ export default {
 
     getPersonPublicationCount (person, minConfidence) {
       let includeCount = 0
+      let titles = {}
+      let dois = {}
       _.each(person.confidencesets_persons_publications_aggregate.nodes, (node) => {
-        if (node.value >= 0.50) {
-          includeCount += 1
+        const title = node.title
+        const titleKey = this.getPublicationTitleKey(title)
+        const doi = _.toLower(node.doi)
+        if (node.value >= minConfidence) {
+          if (!titles[titleKey] && (doi === null || !dois[doi])) {
+            titles[titleKey] = 1
+            if (doi != null) dois[doi] = doi
+            includeCount += 1
+          }
         }
       })
       if (this.selectedPersonTotal === 'All') {
@@ -856,6 +1055,7 @@ export default {
       } else {
         let pendingCount = includeCount - this.personReviewedPubCounts[person.id]
         return (pendingCount >= 0 ? pendingCount : 0)
+        // return pendingCount
       }
     },
     async loadPersonsWithFilter () {
@@ -890,9 +1090,11 @@ export default {
         console.log('Checking for reviewed pub counts...')
         _.each(this.people, (person) => {
           const reviewedTitles = {}
+          const reviewedDOIs = {}
           _.each(person.reviews_persons_publications, (review) => {
             if (review.review_type && review.review_type !== 'pending') {
-              reviewedTitles[review.title] = review
+              reviewedTitles[this.getPublicationTitleKey(review.title)] = review
+              if (review.doi) reviewedDOIs[_.toLower(review.doi)] = review.doi
             }
           })
 
@@ -900,7 +1102,7 @@ export default {
           let filteredReviewedTitlesCount = 0
           _.each(person.confidencesets_persons_publications, (confidenceSet) => {
             const title = confidenceSet.title
-            if (reviewedTitles[title]) {
+            if (reviewedTitles[this.getPublicationTitleKey(title)]) { // } || reviewedDOIs[_.toLower(confidenceSet.doi)]) {
               filteredReviewedTitlesCount += 1
             }
           })
@@ -926,7 +1128,7 @@ export default {
             return person.person_publication_count
           })
 
-          console.log(`People by counts are: ${JSON.stringify(peopleByCounts, null, 2)}`)
+          // console.log(`People by counts are: ${JSON.stringify(peopleByCounts, null, 2)}`)
 
           // sort each person array by name for each count
           const peopleByCountsByName = await _.mapValues(peopleByCounts, (persons) => {
@@ -975,17 +1177,17 @@ export default {
       const publicationId = personPublication.publication.id
       const result = await this.$apollo.query(readAuthorsByPublication(publicationId))
       this.publicationAuthors = result.data.publications_authors
-      console.log(`Loaded Publication Authors: ${JSON.stringify(this.publicationAuthors)}`)
+      // console.log(`Loaded Publication Authors: ${JSON.stringify(this.publicationAuthors)}`)
       // load up author positions of possible matches
       this.matchedPublicationAuthors = _.filter(this.publicationAuthors, function (author) {
         return author.family_name.toLowerCase() === personPublication.person.family_name.toLowerCase()
       })
-      console.log(`Matched authors are: ${JSON.stringify(this.matchedPublicationAuthors, null, 2)}`)
+      // console.log(`Matched authors are: ${JSON.stringify(this.matchedPublicationAuthors, null, 2)}`)
     },
     async loadConfidenceSet (personPublication) {
       this.confidenceSetItems = []
       this.confidenceSet = undefined
-      console.log(`Trying to load confidence sets for pub: ${JSON.stringify(personPublication, null, 2)}`)
+      // console.log(`Trying to load confidence sets for pub: ${JSON.stringify(personPublication, null, 2)}`)
       if (personPublication.confidencesets_aggregate &&
         personPublication.confidencesets_aggregate.nodes.length > 0) {
         this.confidenceSet = personPublication.confidencesets_aggregate.nodes[0]
@@ -993,7 +1195,7 @@ export default {
         const result = await this.$apollo.query(readConfidenceSetItems(this.confidenceSet.id))
         this.confidenceSetItems = result.data.confidencesets_items
         this.confidenceSetItems = _.transform(this.confidenceSetItems, (result, setItem) => {
-          console.log(`Trying to set properties for confidence set item: ${JSON.stringify(setItem, null, 2)}`)
+          // console.log(`Trying to set properties for confidence set item: ${JSON.stringify(setItem, null, 2)}`)
           _.set(setItem, 'confidence_type_name', setItem.confidence_type.name)
           _.set(setItem, 'confidence_type_rank', setItem.confidence_type.rank)
           _.set(setItem, 'confidence_type_desc', setItem.confidence_type.description)
@@ -1025,7 +1227,16 @@ export default {
       this.personPublicationsCombinedMatchesByReview = {}
       this.filteredPersonPublicationsCombinedMatchesByReview = {}
       this.publicationsGroupedByTitleByReview = {}
-      this.publicationsGroupedByTitle = {}
+      this.publicationsGroupedByDoiByReview = {}
+      this.personPubSetPointer = {}
+      this.personPubSetsById = {}
+      this.personPubSetIdIndex = 0
+      this.personPublicationsById = {}
+      this.personPubSetsByReviewType = {}
+      this.personPublicationsCombinedMatchesByReview = {}
+      this.publicationsGroupedByTitleByReview = {}
+      this.publicationsGroupedByDoiByReview = {}
+      this.personPublicationsKeys = {}
       this.confidenceSetItems = []
       this.confidenceSet = undefined
     },
@@ -1045,7 +1256,10 @@ export default {
     async loadPersonPublicationsCombinedMatches () {
       // this.fundersByDoi = {}
       console.log(`Start group by publications for person id: ${this.person.id} ${moment().format('HH:mm:ss:SSS')}`)
+      const indexThis = this
       this.publicationsGroupedByReview = _.groupBy(this.publications, function (pub) {
+        if (!indexThis.personPublicationsById) indexThis.personPublicationsById = {}
+        indexThis.personPublicationsById[pub.id] = pub
         if (pub.reviews_aggregate.nodes && pub.reviews_aggregate.nodes.length > 0) {
           return pub.reviews_aggregate.nodes[0].review_type
         } else {
@@ -1056,46 +1270,91 @@ export default {
 
       // check for any doi's with reviews out of sync,
       // if more than one review type found add doi mapped to array of reviewtype to array pub list
+      // map both by shared title and by shared doi and merged lists together later
       let publicationTitlesByReviewType = {}
+      let publicationDoisByReviewType = {}
       // put in pubs grouped by doi for each review status
       _.each(this.reviewStates, (reviewType) => {
         const publications = this.publicationsGroupedByReview[reviewType]
+
+        // seed the personPublication keys
+        _.each(publications, (personPub) => {
+          this.personPublicationsKeys[personPub.id] = {
+            titleKey: this.getPublicationTitleKey(personPub.publication.title),
+            doiKey: this.getPublicationTitleKey(personPub.publication.doi)
+          }
+        })
         this.publicationsGroupedByTitleByReview[reviewType] = _.groupBy(publications, (personPub) => {
-          let title = personPub.publication.title
-          if (!publicationTitlesByReviewType[title]) {
-            publicationTitlesByReviewType[title] = {}
+          // let title = personPub.publication.title
+          const titleKey = this.personPublicationsKeys[personPub.id].titleKey
+          // console.log(`Title: '${title} title key: ${titleKey}'`)
+          if (!publicationTitlesByReviewType[titleKey]) {
+            publicationTitlesByReviewType[titleKey] = {}
           }
-          if (!publicationTitlesByReviewType[title][reviewType]) {
-            publicationTitlesByReviewType[title][reviewType] = []
+          if (!publicationTitlesByReviewType[titleKey][reviewType]) {
+            publicationTitlesByReviewType[titleKey][reviewType] = reviewType
           }
-          publicationTitlesByReviewType[title][reviewType].push(personPub)
-          return `${title}`
+          // publicationTitlesByReviewType[titleKey][reviewType].push(personPub)
+          return `${titleKey}`
+        })
+
+        this.publicationsGroupedByDoiByReview[reviewType] = _.groupBy(publications, (personPub) => {
+          // let doi = personPub.publication.doi
+          const doiKey = this.personPublicationsKeys[personPub.id].doiKey
+          // console.log(`Doi: '${doi} doi key: ${doiKey}'`)
+          if (!publicationDoisByReviewType[doiKey]) {
+            publicationDoisByReviewType[doiKey] = {}
+          }
+          if (!publicationDoisByReviewType[doiKey][reviewType]) {
+            publicationDoisByReviewType[doiKey][reviewType] = reviewType
+          }
+          // publicationDoisByReviewType[doiKey][reviewType].push(personPub)
+          return `${doiKey}`
         })
 
         // console.log(`Person pubs grouped by Title are: ${JSON.stringify(this.publicationsGroupedByTitleByReview, null, 2)}`)
         // grab one with highest confidence to display and grab others via title later when changing status
-        this.personPublicationsCombinedMatchesByReview[reviewType] = _.map(_.keys(this.publicationsGroupedByTitleByReview[reviewType]), (title) => {
-          // get match with highest confidence level and use that one
-          const personPubs = this.publicationsGroupedByTitleByReview[reviewType][title]
-          let currentPersonPub
-          _.each(personPubs, (personPub, index) => {
-            if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
-              currentPersonPub = personPub
-            }
-          })
-          return currentPersonPub
+
+        // this.personPublicationsCombinedMatchesByReview[reviewType] = {}
+
+        // keep a map of personPubId to set id in order to find the set that something should be added to if found as same pub
+        // merge personPubs together by title and then doi
+        _.each(_.keys(this.publicationsGroupedByTitleByReview[reviewType]), (titleKey) => {
+          this.linkPersonPubs(this.publicationsGroupedByTitleByReview[reviewType][titleKey], reviewType)
         })
+
+        // now link together if same doi (if already found above will add to existing set)
+        _.each(_.keys(this.publicationsGroupedByDoiByReview[reviewType]), (doiKey) => {
+          this.linkPersonPubs(this.publicationsGroupedByDoiByReview[reviewType][doiKey], reviewType)
+        })
+
+        // get match with highest confidence level and use that one
+        //     let currentPersonPub
+        //   _.each(personPubs, (personPub, index) => {
+        //     if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
+        //       currentPersonPub = personPub
+        //     }
+        //   })
+        //   return currentPersonPub
+        // })
       })
+
+      // group pub sets by review type
+      this.personPubSetsByReviewType = _.groupBy(_.values(this.personPubSetsById), (pubSet) => {
+        return pubSet.reviewType
+      })
+
+      // console.log(`PersonPublication Sets by Review Type are: ${JSON.stringify(this.personPubSetsByReviewType, null, 2)}`)
 
       // console.log(`Publications grouped by title by review: ${JSON.stringify(this.publicationsGroupedByTitleByReview, null, 2)}`)
 
       // check for any doi's with reviews out of sync
       const publicationTitlesOutOfSync = []
 
-      _.each(_.keys(publicationTitlesByReviewType), (title) => {
-        if (_.keys(publicationTitlesByReviewType[title]).length > 1) {
-          console.log(`Warning: Title out of sync found: ${title} for person id: ${this.person.id} title record: ${JSON.stringify(publicationTitlesByReviewType[title], null, 2)}`)
-          publicationTitlesOutOfSync.push(title)
+      _.each(_.keys(publicationTitlesByReviewType), (titleKey) => {
+        if (_.keys(publicationTitlesByReviewType[titleKey]).length > 1) {
+          console.log(`Warning: Title out of sync found: ${titleKey} for person id: ${this.person.id} title record: ${JSON.stringify(publicationTitlesByReviewType[titleKey], null, 2)}`)
+          publicationTitlesOutOfSync.push(titleKey)
         }
       })
 
@@ -1107,23 +1366,51 @@ export default {
       this.setCurrentPersonPublicationsCombinedMatches()
       // console.log(`Funders by Doi ${JSON.stringify(_.keys(this.fundersByDoi).length, null, 2)}`)
     },
+    removeSpaces (value) {
+      if (_.isString(value)) {
+        return _.clone(value).replace(/\s/g, '')
+      } else {
+        return value
+      }
+    },
+    normalizeString (value, options = {}) {
+      if (_.isString(value)) {
+        let newValue = _.clone(value)
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+          .replace(/[\u2019]/g, '\u0027') // the u0027 also normalizes the curly apostrophe to the straight one
+          .replace(/[&\\#,+()$~%.'":*?<>{}!-]/g, '') // remove periods and other remaining special characters
+
+        newValue = _.lowerCase(newValue)
+        const returningValue = newValue
+        return this.removeSpaces(returningValue)
+      } else {
+        return value
+      }
+    },
+    getPublicationTitleKey (title) {
+      // normalize the string and remove characters like dashes as well
+      return this.normalizeString(title)
+    },
     async filterPublications () {
       let filterOutCurrentPublication = false
       this.filteredPersonPublicationsCombinedMatchesByReview = _.mapValues(
-        this.personPublicationsCombinedMatchesByReview,
-        (personPublications) => {
-          return _.filter(personPublications, (item) => {
-            let includePublication = item.publication.title.toLowerCase().includes(this.pubSearch.toLowerCase().trim())
+        this.personPubSetsByReviewType,
+        (personPubSets) => {
+          return _.filter(personPubSets, (pubSet) => {
+            const personPub = this.getMainPersonPubFromSet(pubSet)
+            // console.log(`Person pub on filter is: ${JSON.stringify(personPub, null, 2)}, person pub sets are: ${JSON.stringify(personPubSets, null, 2)}`)
+            let includePublication = personPub.publication.title.toLowerCase().includes(this.pubSearch.toLowerCase().trim())
             if (includePublication) {
               // also check if confidence is to be filtered out
               // console.log('checking if we should include publication')
               // console.log(`confidence val is: ${this.getPublicationConfidence(item)}`)
-              if (this.selectedPersonConfidence === '50%' && this.getPublicationConfidence(item) < 0.50) {
+              if (this.selectedPersonConfidence === '50%' && this.getPublicationConfidence(personPub) < 0.50) {
                 // console.log('trying to filter out publication')
                 includePublication = false
               }
             }
-            if (!includePublication && this.personPublication && item.id === this.personPublication.id) {
+            if (!includePublication && this.personPublication && personPub.id === this.personPublication.id) {
               // clear out the publication from view if it is filtered out of the results
               filterOutCurrentPublication = true
             }
@@ -1173,41 +1460,25 @@ export default {
       // apply any sorting applied
       console.log('sorting', this.selectedPersonPubSort)
       if (this.selectedPersonPubSort === 'Title') {
-        this.personPublicationsCombinedMatches = _.sortBy(this.personPublicationsCombinedMatches, (personPub) => {
+        this.personPublicationsCombinedMatches = _.sortBy(this.personPublicationsCombinedMatches, (personPubSet) => {
+          // console.log(`Placing in sort of personPubSet: ${JSON.stringify(personPubSet, null, 2)}`)
+          const personPub = this.getMainPersonPubFromSet(personPubSet)
           return this.trimFirstArticles(personPub.publication.title)
         })
-      } else if (this.selectedPersonPubSort === 'Source') {
-        // need to sort by confidence and then name, not guaranteed to be in order from what is returned from DB
-        // first group items by count
-        const groupedPubs = _.groupBy(this.personPublicationsCombinedMatches, (pub) => {
-          return pub.publication.source_name
-        })
-
-        // sort each person array by title for each conf
-        const groupedPubsByTitle = _.mapValues(groupedPubs, (pubs) => {
-          return _.sortBy(pubs, ['title'])
-        })
-
-        // get array of pub values (i.e., keys) sorted in reverse
-        const sortedKeys = _.sortBy(_.keys(groupedPubsByTitle), (key) => { return key })
-
-        // now push values into array in desc order of count and flatten
-        let sortedPubs = []
-        _.each(sortedKeys, (key) => {
-          sortedPubs.push(groupedPubsByTitle[key])
-        })
-
-        this.personPublicationsCombinedMatches = _.flatten(sortedPubs)
       } else {
         // need to sort by confidence and then name, not guaranteed to be in order from what is returned from DB
         // first group items by count
-        const pubsByConf = _.groupBy(this.personPublicationsCombinedMatches, (pub) => {
+        const pubsByConf = _.groupBy(this.personPublicationsCombinedMatches, (pubSet) => {
+          const pub = this.getMainPersonPubFromSet(pubSet)
           return this.getPublicationConfidence(pub)
         })
 
         // sort each person array by title for each conf
-        const pubsByConfByName = _.mapValues(pubsByConf, (pubs) => {
-          return _.sortBy(pubs, ['title'])
+        const pubsByConfByName = _.mapValues(pubsByConf, (pubSets) => {
+          return _.sortBy(pubSets, (pubSet) => {
+            const mainPersonPub = this.getMainPersonPubFromSet(pubSet)
+            return mainPersonPub.publication.title
+          })
         })
 
         // get array of confidence values (i.e., keys) sorted in reverse
@@ -1280,12 +1551,12 @@ export default {
       this.publication = result.data.publications[0]
       _.set(this.publication, 'doi', _.toLower(this.publication.doi))
       // console.log(`Loaded Publication: ${JSON.stringify(this.publication)}`)
-      console.log(`Publication journal is: ${JSON.stringify(this.publication.journal_title, null, 2)}`)
+      // console.log(`Publication journal is: ${JSON.stringify(this.publication.journal_title, null, 2)}`)
       this.publicationCitation = this.getCitationApa(this.publication.csl_string)
       this.publicationJournalClassifications = _.map(this.publication.journal.journals_classifications_aggregate.nodes, (node) => {
         return node.classification
       })
-      console.log(`Found Journal Classifications: ${JSON.stringify(this.publicationJournalClassifications, null, 2)}`)
+      // console.log(`Found Journal Classifications: ${JSON.stringify(this.publicationJournalClassifications, null, 2)}`)
       try {
         const sanitizedDoi = sanitize(this.publication.doi, { replacement: '_' })
         const imageHostBase = process.env.IMAGE_HOST_URL
@@ -1319,7 +1590,8 @@ export default {
       this.person = person
       // add the review for personPublications with the same title in the list
       let title = personPublication.publication.title
-      const personPubs = this.publicationsGroupedByTitleByReview[this.reviewTypeFilter][title]
+      const titleKey = this.getPublicationTitleKey(title)
+      const personPubs = this.publicationsGroupedByTitleByReview[this.reviewTypeFilter][titleKey]
 
       try {
         let mutateResults = []
@@ -1335,7 +1607,7 @@ export default {
             Vue.delete(this.personPublicationsCombinedMatches, index)
             // transfer from one review queue to the next primarily for counts, other sorting will shake out on reload when clicking the tab
             // remove from current lists
-            _.unset(this.publicationsGroupedByTitleByReview[this.reviewTypeFilter], title)
+            _.unset(this.publicationsGroupedByTitleByReview[this.reviewTypeFilter], titleKey)
             _.remove(this.personPublicationsCombinedMatchesByReview[this.reviewTypeFilter], (pub) => {
               return pub.id === personPub.id
             })
@@ -1343,7 +1615,7 @@ export default {
               return pub.id === personPub.id
             })
             // add to new lists
-            this.publicationsGroupedByTitleByReview[reviewType][title] = personPubs
+            this.publicationsGroupedByTitleByReview[reviewType][titleKey] = personPubs
             this.personPublicationsCombinedMatchesByReview[reviewType].push(personPub)
             this.filteredPersonPublicationsCombinedMatchesByReview[reviewType].push(personPub)
             if (this.reviewTypeFilter === 'pending' && this.selectedPersonTotal === 'Pending') {
