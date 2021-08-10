@@ -140,31 +140,31 @@
                           <q-expansion-item
                             :key="item.id"
                             clickable
-                            @click="loadPublication(item.mainPersonPub);scrollToPublication(index)"
+                            @click="loadPublication(item);scrollToPublication(index)"
                             group="expansion_group"
-                            :active="personPublication !== undefined && item.mainPersonPub.id === personPublication.id"
+                            :active="personPublication !== undefined && item.id === personPublication.id"
                             active-class="bg-teal-1 text-grey-8"
                             :ref="`personPub${index}`"
                             :header-inset-level="0"
                             :content-inset-level="0"
                           >
                             <template
-                              v-if="item.mainPersonPub.publication !== undefined"
+                              v-if="item.publication !== undefined"
                               v-slot:header
                             >
                               <q-item-section avatar>
-                                <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.mainPersonPub.id" />
+                                <q-checkbox v-if="$store.getters['admin/isBulkEditing']" v-model="checkedPublications" :val="item.id" />
                                 <q-avatar icon="description" color="primary" text-color="white" v-else />
                               </q-item-section>
                               <q-item-section top class="q-pa-xs">
-                                <q-item-label style="width:100%" class="text-grey-9" lines="1"><strong>Title:</strong> {{ decode(item.mainPersonPub.publication.title) }}</q-item-label>
+                                <q-item-label style="width:100%" class="text-grey-9" lines="1"><strong>Title:</strong> {{ decode(item.publication.title) }}</q-item-label>
                                 <q-list class="q-pt-sm">
                                   <q-btn
                                     @click.capture.stop
                                     rounded
                                     dense
                                     size="sm"
-                                    v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(item.personPublications)"
+                                    v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(getPersonPubSet(getPersonPubSetId(item.id)).personPublications)"
                                     :key="index"
                                     :color="getSourceNameChipColor(personPub.publication.source_name)"
                                     text-color="white"
@@ -178,12 +178,12 @@
                               </q-item-section>
                               <q-item-section avatar side>
                                 <q-badge
-                                  :label="getPublicationConfidence(item.mainPersonPub)*100+'%'"
-                                  :color="getPublicationConfidence(item.mainPersonPub)*100 < 50 ? 'amber-10' : 'green'"
+                                  :label="getPublicationConfidence(item)*100+'%'"
+                                  :color="getPublicationConfidence(item)*100 < 50 ? 'amber-10' : 'green'"
                                 />
                               </q-item-section>
                             </template>
-                            <q-card v-if="item.mainPersonPub.publication !== undefined">
+                            <q-card v-if="item.publication !== undefined">
                               <q-card-section dense class="text-center">
                                 <q-item-label align="left">Move To:</q-item-label>
                                 <q-btn dense v-if="reviewTypeFilter!=='pending'" color="purple" label="Pending" class="on-left" @click="clickReviewPending(index, person, personPublication);" />
@@ -231,16 +231,16 @@
                                 target="_blank"
                               />
                             </q-card-section>
-                            <q-card-section v-if="publication.title" class="text-left">
-                              <q-item-label><b>Title:&nbsp;</b>{{ publication.title }}</q-item-label>
+                            <q-card-section v-if="personPublication.publication.title" class="text-left">
+                              <q-item-label><b>Title:&nbsp;</b>{{ personPublication.publication.title }}</q-item-label>
                             </q-card-section>
                             <q-card-section>
                               <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
                             </q-card-section>
-                            <q-card-section v-if="publication.journal_title" class="text-left">
+                            <q-card-section v-if="publication && publication.journal_title" class="text-left">
                               <q-item-label><b>Journal Title:&nbsp;</b>{{ publication.journal_title }}</q-item-label>
                             </q-card-section>
-                            <q-card-section v-if="publication.journal" class="text-left">
+                            <q-card-section v-if="publication && publication.journal" class="text-left">
                               <q-item-label><b>Journal Subjects:</b></q-item-label>
                               <q-item-label :key="index" v-for="(classification, index) in publicationJournalClassifications" lines="1">{{classification.name}}</q-item-label>
                             </q-card-section>
@@ -318,7 +318,7 @@
                               >
                                 <q-tr slot="bottom-row">
                                   <q-td colspan="100%">
-                                    <strong>Total: {{ confidenceSet.value }}</strong>
+                                    <strong>Total: {{ (confidenceSet ? confidenceSet.value : 'unknown') }}</strong>
                                   </q-td>
                                 </q-tr>
                               </q-table>
@@ -459,6 +459,8 @@ export default {
     personPubSetsByReviewType: {},
     publicationsGroupedByTitleByReview: {},
     publicationsGroupedByDoiByReview: {},
+    // this will contain the main publication used for display for pubsets
+    personPublicationsCombinedMatchesByReview: {},
     filteredPersonPublicationsCombinedMatchesByReview: {},
     // will be a personsPublication id mapped to an object of {titleKey. doiKey}
     personPublicationsKeys: {},
@@ -1221,6 +1223,7 @@ export default {
     async clearPublications () {
       this.publications = []
       this.personPublicationsCombinedMatches = []
+      this.personPublicationsCombinedMatchesByReview = {}
       this.filteredPersonPublicationsCombinedMatchesByReview = {}
       this.publicationsGroupedByTitleByReview = {}
       this.publicationsGroupedByDoiByReview = {}
@@ -1339,6 +1342,12 @@ export default {
         return pubSet.reviewType
       })
 
+      // now group main pubs from pubset into separate combined matches map for display to make faster (fixes flicker in chip color for source)
+      this.personPublicationsCombinedMatchesByReview = _.mapValues(this.personPubSetsByReviewType, (pubSets) => {
+        return _.map(pubSets, (pubSet) => {
+          return pubSet.mainPersonPub
+        })
+      })
       // console.log(`PersonPublication Sets by Review Type are: ${JSON.stringify(this.personPubSetsByReviewType, null, 2)}`)
 
       // console.log(`Publications grouped by title by review: ${JSON.stringify(this.publicationsGroupedByTitleByReview, null, 2)}`)
@@ -1390,18 +1399,13 @@ export default {
     async filterPublications () {
       let filterOutCurrentPublication = false
       this.filteredPersonPublicationsCombinedMatchesByReview = _.mapValues(
-        this.personPubSetsByReviewType,
-        (personPubSets) => {
-          return _.filter(personPubSets, (pubSet) => {
-            const personPub = this.getMainPersonPubFromSet(pubSet)
-            // console.log(`Person pub on filter is: ${JSON.stringify(personPub, null, 2)}, person pub sets are: ${JSON.stringify(personPubSets, null, 2)}`)
+        this.personPublicationsCombinedMatchesByReview,
+        (personPubs) => {
+          return _.filter(personPubs, (personPub) => {
             let includePublication = personPub.publication.title.toLowerCase().includes(this.pubSearch.toLowerCase().trim())
             if (includePublication) {
               // also check if confidence is to be filtered out
-              // console.log('checking if we should include publication')
-              // console.log(`confidence val is: ${this.getPublicationConfidence(item)}`)
               if (this.selectedPersonConfidence === '50%' && this.getPublicationConfidence(personPub) < 0.50) {
-                // console.log('trying to filter out publication')
                 includePublication = false
               }
             }
@@ -1455,24 +1459,20 @@ export default {
       // apply any sorting applied
       console.log('sorting', this.selectedPersonPubSort)
       if (this.selectedPersonPubSort === 'Title') {
-        this.personPublicationsCombinedMatches = _.sortBy(this.personPublicationsCombinedMatches, (personPubSet) => {
-          // console.log(`Placing in sort of personPubSet: ${JSON.stringify(personPubSet, null, 2)}`)
-          const personPub = this.getMainPersonPubFromSet(personPubSet)
+        this.personPublicationsCombinedMatches = _.sortBy(this.personPublicationsCombinedMatches, (personPub) => {
           return this.trimFirstArticles(personPub.publication.title)
         })
       } else {
         // need to sort by confidence and then name, not guaranteed to be in order from what is returned from DB
         // first group items by count
-        const pubsByConf = _.groupBy(this.personPublicationsCombinedMatches, (pubSet) => {
-          const pub = this.getMainPersonPubFromSet(pubSet)
+        const pubsByConf = _.groupBy(this.personPublicationsCombinedMatches, (pub) => {
           return this.getPublicationConfidence(pub)
         })
 
         // sort each person array by title for each conf
-        const pubsByConfByName = _.mapValues(pubsByConf, (pubSets) => {
-          return _.sortBy(pubSets, (pubSet) => {
-            const mainPersonPub = this.getMainPersonPubFromSet(pubSet)
-            return mainPersonPub.publication.title
+        const pubsByConfByName = _.mapValues(pubsByConf, (pubs) => {
+          return _.sortBy(pubs, (pub) => {
+            return pub.publication.title
           })
         })
 
@@ -1548,9 +1548,13 @@ export default {
       // console.log(`Loaded Publication: ${JSON.stringify(this.publication)}`)
       // console.log(`Publication journal is: ${JSON.stringify(this.publication.journal_title, null, 2)}`)
       this.publicationCitation = this.getCitationApa(this.publication.csl_string)
-      this.publicationJournalClassifications = _.map(this.publication.journal.journals_classifications_aggregate.nodes, (node) => {
-        return node.classification
-      })
+      if (this.publication.journal) {
+        this.publicationJournalClassifications = _.map(this.publication.journal.journals_classifications_aggregate.nodes, (node) => {
+          return node.classification
+        })
+      } else {
+        this.publicationJournalClassifications = []
+      }
       // console.log(`Found Journal Classifications: ${JSON.stringify(this.publicationJournalClassifications, null, 2)}`)
       try {
         const sanitizedDoi = sanitize(this.publication.doi, { replacement: '_' })
@@ -1611,8 +1615,11 @@ export default {
         this.personPubSetsByReviewType[this.reviewTypeFilter] = _.filter(this.personPubSetsByReviewType[this.reviewTypeFilter], (curPubSet) => {
           return pubSet.mainPersonPub.id !== curPubSet.mainPersonPub.id
         })
-        this.filteredPersonPublicationsCombinedMatchesByReview[this.reviewTypeFilter] = _.filter(this.filteredPersonPublicationsCombinedMatchesByReview[this.reviewTypeFilter], (curPubSet) => {
-          return pubSet.mainPersonPub.id !== curPubSet.mainPersonPub.id
+        this.personPublicationsCombinedMatchesByReview[this.reviewTypeFilter] = _.filter(this.personPublicationsCombinedMatchesByReview[this.reviewTypeFilter], (personPub) => {
+          return pubSet.mainPersonPub.id !== personPub.id
+        })
+        this.filteredPersonPublicationsCombinedMatchesByReview[this.reviewTypeFilter] = _.filter(this.filteredPersonPublicationsCombinedMatchesByReview[this.reviewTypeFilter], (curPub) => {
+          return pubSet.mainPersonPub.id !== curPub.id
         })
         // update overall reviewType
         _.set(pubSet, 'reviewType', reviewType)
@@ -1621,7 +1628,9 @@ export default {
         if (!this.personPubSetsByReviewType[reviewType]) this.personPubSetsByReviewType[reviewType] = []
         this.personPubSetsByReviewType[reviewType] = _.concat(this.personPubSetsByReviewType[reviewType], pubSet)
         if (!this.filteredPersonPublicationsCombinedMatchesByReview[reviewType]) this.filteredPersonPublicationsCombinedMatchesByReview[reviewType] = []
-        this.filteredPersonPublicationsCombinedMatchesByReview[reviewType] = _.concat(this.filteredPersonPublicationsCombinedMatchesByReview[reviewType], pubSet)
+        this.filteredPersonPublicationsCombinedMatchesByReview[reviewType] = _.concat(this.filteredPersonPublicationsCombinedMatchesByReview[reviewType], pubSet.mainPersonPub)
+        if (!this.personPublicationsCombinedMatchesByReview[reviewType]) this.personPublicationsCombinedMatchesByReview[reviewType] = []
+        this.personPublicationsCombinedMatchesByReview[reviewType] = _.concat(this.personPublicationsCombinedMatchesByReview[reviewType], pubSet.mainPersonPub)
         if (this.reviewTypeFilter === 'pending' && this.selectedPersonTotal === 'Pending') {
           const currentPersonIndex = _.findIndex(this.people, (person) => {
             return person.id === this.person.id
