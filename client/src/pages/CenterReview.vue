@@ -531,6 +531,7 @@ export default {
     },
     selectedCenter: function () {
       console.log('Selected Center Change. Reloading publications...')
+      this.selectedCenterAuthor = this.preferredSelectedCenterAuthor
       this.loadPublications()
     },
     changedPubYears: async function () {
@@ -620,7 +621,7 @@ export default {
       const notInPersonPub2SetId = this.notInPersonPubSet(personPub2Id)
       const personPubSet1Id = this.getPersonPubSetId(personPub1Id)
       const personPubSet2Id = this.getPersonPubSetId(personPub2Id)
-      console.log(`Linking person pub id 1: ${personPub1Id} to person pub id 2: ${personPub2Id}`)
+      // console.log(`Linking person pub id 1: ${personPub1Id} to person pub id 2: ${personPub2Id}`)
       if (notInPersonPub1SetId && notInPersonPub2SetId) {
         // neither one is in a set yet and just add to set list
         // console.log(`Starting new set for personPubId1: ${personPub1Id}`)
@@ -1259,7 +1260,6 @@ export default {
       this.publications = []
       this.citationsByTitle = {}
       this.people = []
-      this.selectedCenterAuthor = 'All'
       await this.loadCenterAuthorOptions()
       this.personPublicationsCombinedMatches = []
       this.personPublicationsCombinedMatchesByReview = {}
