@@ -1449,9 +1449,6 @@ export default {
       }
       this.personPublicationsCombinedMatchesByOrgReview = _.groupBy(this.personPublicationsCombinedMatchesByReview[this.selectedInstitutionReviewState.toLowerCase()], function (pub) {
         if (pub.org_reviews && pub.org_reviews.length > 0) {
-          if (pub.org_reviews[0].person_id === 94) {
-            console.log(`Found review org review for ${pub.org_reviews[0].person_id}, review: ${JSON.stringify(pub.org_reviews, null, 2)}`)
-          }
           return pub.org_reviews[0].review_type
         } else {
           return 'pending'
