@@ -1279,7 +1279,7 @@ export default {
         _.each(publications, (personPub) => {
           this.personPublicationsKeys[personPub.id] = {
             titleKey: this.getPublicationTitleKey(personPub.publication.title),
-            doiKey: this.getPublicationTitleKey(personPub.publication.doi)
+            doiKey: this.getPublicationDoiKey(personPub.publication)
           }
         })
         this.publicationsGroupedByTitleByReview[reviewType] = _.groupBy(publications, (personPub) => {
