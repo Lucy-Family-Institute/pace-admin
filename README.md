@@ -7,10 +7,20 @@ This pilot project will prototype a new process that automates data collection f
 
 ## Starting from scratch
 
+    clone from git into target machine
+    cd pace-admin
     cp .env.template .env
+    curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
+    Logout of terminal and log back in
+    nvm install 13.14.0
+    nvm use 13.14.0
+
+    Follow steps here to install docker: https://docs.docker.com/compose/install/
+
     make install
-    make cleardb
-    make start_docker
+    sudo snap install docker
+    sudo make cleardb
+    sudo make start_docker
     make migrate
     make newdb
 
