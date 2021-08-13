@@ -53,7 +53,7 @@ export default class PublicationGraph {
     // merge personPubs together by title and then doi
     _.each(_.keys(publicationsGroupedByTitle), (titleKey) => {
       if (titleKey && titleKey.length > 0) {
-        console.log(`Linking person pubs by titleKey: '${titleKey}' personpubs: ${JSON.stringify(publicationsGroupedByTitle[titleKey], null, 2)}`)
+        // console.log(`Linking person pubs by titleKey: '${titleKey}' personpubs: ${JSON.stringify(publicationsGroupedByTitle[titleKey], null, 2)}`)
         this.linkPersonPubs(publicationsGroupedByTitle[titleKey])
       } else {
         // make independent pub sets for each
