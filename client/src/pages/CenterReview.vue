@@ -607,7 +607,6 @@ export default {
           }
         } catch (error) {
           console.log(`Warning, error on linking publications: ${error}`)
-          throw error
         }
       })
     },
@@ -650,9 +649,8 @@ export default {
         const set1 = this.getPersonPubSet(set1Id)
         const set2 = this.getPersonPubSet(set2Id)
         if (set1.reviewType !== reviewType || set2.reviewType !== reviewType) {
-          const error = `Error: Mismatch in reviewType for sets to be merged.  Expected: ${reviewType}, found set 1: ${set1.reviewType} set 2: ${set2.reviewType}`
+          const error = `Warning: Mismatch in reviewType for sets to be merged.  Expected: ${reviewType}, found set 1: ${set1.reviewType} set 2: ${set2.reviewType}`
           console.log(error)
-          throw error
         }
         const set2List = set2.personPublicationIds
         _.each(set2List, (personPubId) => {
@@ -669,9 +667,8 @@ export default {
       if (set) {
         _.each(set, (personPubId) => {
           if (setId && this.getPersonPubSetId(personPubId) === setId) {
-            const error = `Cannot remove person Pub Set (on merge), personPubId: ${personPubId} not in any other set`
+            const error = `Warning: Cannot remove person Pub Set (on merge), personPubId: ${personPubId} not in any other set`
             console.log(error)
-            throw error
           }
         })
         // if we get this far no errors encountered, and all person pubs are now in another set
@@ -686,9 +683,8 @@ export default {
         // do nothing if already in the set
         if (this.getPersonPubSetId(personPubId) !== setId) {
           if (set.reviewType !== reviewType) {
-            const error = `Failed to add person pub to set with mismatched review types. Expected ${reviewType}, found: ${set.reviewType}`
+            const error = `Warning: Failed to add person pub to set with mismatched review types. Expected ${reviewType}, found: ${set.reviewType}`
             console.log(error)
-            throw error
           }
           const addPub = this.getPersonPublicationById(personPubId)
           this.personPubSetsById[setId].personPublicationIds = _.concat(this.personPubSetsById[setId].personPublicationIds, personPubId)
@@ -702,9 +698,8 @@ export default {
           }
         }
       } else {
-        const error = `Failed to add personPub with id: ${personPubId} to set id: ${setId}, personPubSet does not exist`
+        const error = `Warning: Failed to add personPub with id: ${personPubId} to set id: ${setId}, personPubSet does not exist`
         console.log(error)
-        throw error
       }
     },
     notInPersonPubSet (personPubId) {
@@ -735,9 +730,8 @@ export default {
         const currentSetId = this.getPersonPubSetId(personPubId)
         const currentSet = this.getPersonPubSet(currentSetId)
         if (currentSet.reviewType !== reviewType) {
-          const error = `Error: Mismatch on review type for person Pub set for personPub id: ${personPubId}, expected review type: ${reviewType} and found review type: ${currentSet.reviewType}`
+          const error = `Warning: Mismatch on review type for person Pub set for personPub id: ${personPubId}, expected review type: ${reviewType} and found review type: ${currentSet.reviewType}`
           console.log(error)
-          throw error
         } else {
           return this.getPersonPubSetId(personPubId)
         }
@@ -1303,11 +1297,15 @@ export default {
       return this.normalizeString(title, true, true)
     },
     getPublicationDoiKey (publication) {
-      if (!publication.doi) {
-        return `${publication.source_name}_${publication.source_id}`
+      let doiKey
+      if (!publication.doi || publication.doi === null || this.removeSpaces(publication.doi) === '') {
+        if (publication.source_name && publication.source_id) {
+          doiKey = `${publication.source_name}_${publication.source_id}`
+        }
       } else {
-        return publication.doi
+        doiKey = publication.doi
       }
+      return doiKey
     },
     getPubCSVResultObject (personPublication) {
       const titleKey = this.getPublicationTitleKey(personPublication.publication.title)
@@ -1358,8 +1356,6 @@ export default {
 
       // start add code for pubsets
       // map both by shared title and by shared doi and merged lists together later
-      let publicationTitlesByReviewType = {}
-      let publicationDoisByReviewType = {}
       // put in pubs grouped by doi for each review status
       _.each(this.reviewStates, (reviewType) => {
         const publications = this.publicationsGroupedByInstitutionReview[reviewType]
@@ -1374,29 +1370,18 @@ export default {
         this.publicationsGroupedByTitleByInstitutionReview[reviewType] = _.groupBy(publications, (personPub) => {
           // let title = personPub.publication.title
           const titleKey = this.personPublicationsKeys[personPub.id].titleKey
-          // console.log(`Title: '${title} title key: ${titleKey}'`)
-          if (!publicationTitlesByReviewType[titleKey]) {
-            publicationTitlesByReviewType[titleKey] = {}
+          if (titleKey) {
+            return `${titleKey}`
+          } else {
+            return undefined
           }
-          if (!publicationTitlesByReviewType[titleKey][reviewType]) {
-            publicationTitlesByReviewType[titleKey][reviewType] = reviewType
-          }
-          // publicationTitlesByReviewType[titleKey][reviewType].push(personPub)
-          return `${titleKey}`
         })
 
         this.publicationsGroupedByDoiByInstitutionReview[reviewType] = _.groupBy(publications, (personPub) => {
           // let doi = personPub.publication.doi
           const doiKey = this.personPublicationsKeys[personPub.id].doiKey
           // console.log(`Doi: '${doi} doi key: ${doiKey}'`)
-          if (!publicationDoisByReviewType[doiKey]) {
-            publicationDoisByReviewType[doiKey] = {}
-          }
-          if (!publicationDoisByReviewType[doiKey][reviewType]) {
-            publicationDoisByReviewType[doiKey][reviewType] = reviewType
-          }
-          // publicationDoisByReviewType[doiKey][reviewType].push(personPub)
-          return `${doiKey}`
+          return doiKey
         })
 
         // console.log(`Person pubs grouped by Title are: ${JSON.stringify(this.publicationsGroupedByTitleByReview, null, 2)}`)
@@ -1407,12 +1392,26 @@ export default {
         // keep a map of personPubId to set id in order to find the set that something should be added to if found as same pub
         // merge personPubs together by title and then doi
         _.each(_.keys(this.publicationsGroupedByTitleByInstitutionReview[reviewType]), (titleKey) => {
-          this.linkPersonPubs(this.publicationsGroupedByTitleByInstitutionReview[reviewType][titleKey], reviewType)
+          if (titleKey && titleKey.length > 0) {
+            this.linkPersonPubs(this.publicationsGroupedByTitleByInstitutionReview[reviewType][titleKey], reviewType)
+          } else {
+            // make independent pub sets for each
+            _.each(this.publicationsGroupedByTitleByInstitutionReview[reviewType][titleKey], (pubSet) => {
+              this.linkPersonPubs([pubSet], reviewType)
+            })
+          }
         })
 
         // now link together if same doi (if already found above will add to existing set)
         _.each(_.keys(this.publicationsGroupedByDoiByInstitutionReview[reviewType]), (doiKey) => {
-          this.linkPersonPubs(this.publicationsGroupedByDoiByInstitutionReview[reviewType][doiKey], reviewType)
+          if (doiKey !== undefined && doiKey !== 'undefined' && doiKey !== null && this.removeSpaces(doiKey) !== '') {
+            this.linkPersonPubs(this.publicationsGroupedByDoiByInstitutionReview[reviewType][doiKey], reviewType)
+          } else {
+            // do separate pubset for each doi
+            _.each(this.publicationsGroupedByDoiByInstitutionReview[reviewType][doiKey], (pubSet) => {
+              this.linkPersonPubs([pubSet], reviewType)
+            })
+          }
         })
         console.log(`Finished publication graph.`)
 
