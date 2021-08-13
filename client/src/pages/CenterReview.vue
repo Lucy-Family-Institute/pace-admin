@@ -448,7 +448,6 @@ export default {
     publicationsGroupedByTitleByOrgReview: {},
     publicationsGroupedByDoiByInstitutionReview: {},
     publicationsGroupedByDoiByOrgReview: {},
-    publicationsGroupedByTitle: {},
     sortAuthorsByTitle: {}, // map of title's to the matched author to sort by (i.e., the matched author with the lowest matched position)
     institutions: [],
     institutionGroup: [],
@@ -1261,16 +1260,25 @@ export default {
       this.citationsByTitle = {}
       this.people = []
       await this.loadCenterAuthorOptions()
+      this.personPubSetsById = {}
+      this.personPubSetPointer = {}
+      this.personPubSetIdIndex = 0
+      this.personPublicationsById = {}
+      this.personPubSetsByReviewType = {}
+      this.personPublicationKeys = {}
+      this.publicationsGroupedByInstitutionReview = {}
       this.personPublicationsCombinedMatches = []
       this.personPublicationsCombinedMatchesByReview = {}
       this.personPublicationsCombinedMatchesByOrgReview = {}
       this.filteredPersonPublicationsCombinedMatchesByOrgReview = {}
       this.publicationsGroupedByTitleByOrgReview = {}
       this.publicationsGroupedByTitleByInstitutionReview = {}
-      this.publicationsGroupedByTitle = {}
+      this.publicationsGroupedByDoiByOrgReview = {}
+      this.publicationsGroupedByDoiByInstitutionReview = {}
       this.confidenceSetItems = []
       this.confidenceSet = undefined
       this.filteredPersonPubCounts = {}
+      this.sortAuthorsByTitle = {}
     },
     async setCurrentPersonPublicationsCombinedMatches () {
       let reviewType = 'pending'
