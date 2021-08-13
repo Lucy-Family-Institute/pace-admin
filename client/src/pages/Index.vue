@@ -749,11 +749,15 @@ export default {
       return this.personPubSetIdIndex
     },
     getPublicationDoiKey (publication) {
-      if (!publication.doi) {
-        return `${publication.source_name}_${publication.source_id}`
+      let doiKey
+      if (!publication.doi || publication.doi === null || this.removeSpaces(publication.doi) === '') {
+        if (publication.source_name && publication.source_id) {
+          doiKey = `${publication.source_name}_${publication.source_id}`
+        }
       } else {
-        return publication.doi
+        doiKey = publication.doi
       }
+      return doiKey
     },
     async startProgressBar () {
       this.publicationsLoaded = false
@@ -1292,8 +1296,11 @@ export default {
           if (!publicationTitlesByReviewType[titleKey][reviewType]) {
             publicationTitlesByReviewType[titleKey][reviewType] = reviewType
           }
-          // publicationTitlesByReviewType[titleKey][reviewType].push(personPub)
-          return `${titleKey}`
+          if (titleKey) {
+            return `${titleKey}`
+          } else {
+            return undefined
+          }
         })
 
         this.publicationsGroupedByDoiByReview[reviewType] = _.groupBy(publications, (personPub) => {
@@ -1307,7 +1314,7 @@ export default {
             publicationDoisByReviewType[doiKey][reviewType] = reviewType
           }
           // publicationDoisByReviewType[doiKey][reviewType].push(personPub)
-          return `${doiKey}`
+          return doiKey
         })
 
         // console.log(`Person pubs grouped by Title are: ${JSON.stringify(this.publicationsGroupedByTitleByReview, null, 2)}`)
@@ -1318,12 +1325,26 @@ export default {
         // keep a map of personPubId to set id in order to find the set that something should be added to if found as same pub
         // merge personPubs together by title and then doi
         _.each(_.keys(this.publicationsGroupedByTitleByReview[reviewType]), (titleKey) => {
-          this.linkPersonPubs(this.publicationsGroupedByTitleByReview[reviewType][titleKey], reviewType)
+          if (titleKey && titleKey.length > 0) {
+            this.linkPersonPubs(this.publicationsGroupedByTitleByReview[reviewType][titleKey], reviewType)
+          } else {
+            // make independent pub sets for each
+            _.each(this.publicationsGroupedByTitleByReview[reviewType][titleKey], (pubSet) => {
+              this.linkPersonPubs([pubSet], reviewType)
+            })
+          }
         })
 
         // now link together if same doi (if already found above will add to existing set)
         _.each(_.keys(this.publicationsGroupedByDoiByReview[reviewType]), (doiKey) => {
-          this.linkPersonPubs(this.publicationsGroupedByDoiByReview[reviewType][doiKey], reviewType)
+          if (doiKey !== undefined && doiKey !== 'undefined' && doiKey !== null && this.removeSpaces(doiKey) !== '') {
+            this.linkPersonPubs(this.publicationsGroupedByDoiByReview[reviewType][doiKey], reviewType)
+          } else {
+            // do separate pubset for each doi
+            _.each(this.publicationsGroupedByDoiByReview[reviewType][doiKey], (pubSet) => {
+              this.linkPersonPubs([pubSet], reviewType)
+            })
+          }
         })
 
         // get match with highest confidence level and use that one
