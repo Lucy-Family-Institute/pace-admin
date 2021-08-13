@@ -12,6 +12,9 @@ import readReviewTypes from './gql/readReviewTypes'
 import insertReview from '../client/src/gql/insertReview'
 import readPersonPublicationsReviews from './gql/readPersonPublicationsReviews'
 import readOrganizations from './gql/readOrganizations'
+import NormedPersonPublication from './modules/normedPersonPublication'
+import PublicationGraph from './modules/publicationGraph'
+import PublicationSet from './modules/publicationSet'
 
 dotenv.config({
   path: '../.env'
@@ -73,51 +76,46 @@ async function synchronizeReviewsForOrganization(persons, reviewOrgValue) {
       return personPub
     })
 
-    // console.log(`Start group by publications for person id: ${person.id}...`)
-    const publicationsGroupedByReview = _.groupBy(publications, function (pub) {
-      if (pub['reviews_aggregate'].nodes && pub['reviews_aggregate'].nodes.length > 0) {
-        return pub['reviews_aggregate'].nodes[0].review_type
+    const normedPersonPubs: NormedPersonPublication[] = _.map(publications, (personPub) => {
+      let reviewTypeStatus
+      let mostRecentReview
+      if (personPub['reviews_aggregate'].nodes && personPub['reviews_aggregate'].nodes.length > 0) {
+        reviewTypeStatus = personPub['reviews_aggregate'].nodes[0].review_type
+        mostRecentReview = personPub['reviews_aggregate'].nodes[0]
       } else {
-        return 'pending'
+        reviewTypeStatus = 'pending'
       }
+      const normedPersonPub: NormedPersonPublication = {
+        id: personPub.id,
+        person: personPub.person,
+        publication: personPub.publication,
+        reviewTypeStatus: reviewTypeStatus,
+        mostRecentReview: mostRecentReview
+      }
+      return normedPersonPub
     })
-    // console.log(`Finish group by publications for person id: ${person.id}.`)
 
-    // check for any title's with reviews out of sync,
-    // if more than one review type found add title mapped to array of reviewtype to array pub list
-    let publicationTitlesByReviewType = {}
-    
-    // put in pubs grouped by doi for each review status
-    _.each(reviewStates, (reviewType) => {
-      const publications = publicationsGroupedByReview[reviewType]
-      _.each(publications, (personPub) => {
-        if (personPub['publication'].title !== null){
-          const titleKey = getPublicationTitleKey(personPub['publication'].title)
-          if (!publicationTitlesByReviewType[titleKey]) {
-            publicationTitlesByReviewType[titleKey] = {}
-          }
-          if (!publicationTitlesByReviewType[titleKey][reviewType]) {
-            publicationTitlesByReviewType[titleKey][reviewType] = []
-          }
-          publicationTitlesByReviewType[titleKey][reviewType].push(personPub)
+    const pubGraph: PublicationGraph = new PublicationGraph()
+    pubGraph.addToGraph(normedPersonPubs)
+
+    const pubSets: PublicationSet[] = pubGraph.getAllPublicationSets()
+    // check for any title's with reviews out of sync
+    const publicationSetsOutOfSync: PublicationSet[] = []
+
+    _.each(pubSets, (pubSet: PublicationSet) => {
+      let outOfSync = false
+      _.each (pubSet.personPublications, (personPub: NormedPersonPublication) => {
+        if (personPub.reviewTypeStatus !== pubSet.reviewType) {
+          outOfSync = true
         }
       })
+      if (outOfSync) publicationSetsOutOfSync.push(pubSet)
     })
 
-    // check for any title's with reviews out of sync
-    const publicationTitlesOutOfSync = []
-
-    _.each(_.keys(publicationTitlesByReviewType), (titleKey) => {
-      if (_.keys(publicationTitlesByReviewType[titleKey]).length > 1) {
-        // console.log(`Warning: Doi out of sync found: ${doi} for person id: ${this.person.id} doi record: ${JSON.stringify(publicationDoisByReviewType[doi], null, 2)}`)
-        publicationTitlesOutOfSync.push(titleKey)
-      }
-    })
-
-    if (publicationTitlesOutOfSync.length > 0) {
-      console.log(`Person id '${person['id']}' Dois found with reviews out of sync: ${JSON.stringify(publicationTitlesOutOfSync, null, 2)}`)
+    if (publicationSetsOutOfSync.length > 0) {
+      console.log(`Person id '${person['id']}' Dois found with reviews out of sync: ${JSON.stringify(publicationSetsOutOfSync, null, 2)}`)
       console.log(`Synchronizing Reviews for these personPubs out of sync for person id '${person['id']}'...`)
-      await pMap(publicationTitlesOutOfSync, async (titleKey) => {
+      await pMap(publicationSetsOutOfSync, async (pubSet: PublicationSet) => {
         // console.log(`Publication title '${title}' reviews by review type: ${JSON.stringify(publicationTitlesByReviewType[title], null, 2)}`)
         // get most recent review
         let mostRecentUpdateTime = undefined
@@ -125,32 +123,28 @@ async function synchronizeReviewsForOrganization(persons, reviewOrgValue) {
         let mostRecentReview = undefined
         let newReviewStatus = undefined
         let newReviewOrgValue = undefined
-        _.each(_.keys(publicationTitlesByReviewType[titleKey]), (reviewType) => {
-          // just get first one
-          const personPub = publicationTitlesByReviewType[titleKey][reviewType][0]
-          if (personPub['reviews_aggregate'].nodes.length > 0) {
+        _.each(pubSet.personPublications, (personPub) => {
+          if (personPub.mostRecentReview) {
             // console.log(`Looking at reviews for doi: ${doi}, reviewType: ${reviewType}, nodes: ${JSON.stringify(personPub['reviews_aggregate'].nodes, null, 2)}`)
-            const currentDateTime = new Date(personPub['reviews_aggregate'].nodes[0].datetime)
+            const currentDateTime = new Date(personPub.mostRecentReview.datetime)
             if (!mostRecentUpdateTime || currentDateTime > mostRecentUpdateTime) {
               mostRecentUpdateTime = currentDateTime
               mostRecentReview = {
-                reviewType: reviewType,
-                reviewOrgValue: personPub['reviews_aggregate'].nodes[0].review_organization_value,
-                userId: personPub['reviews_aggregate'].nodes[0].user_id
+                reviewType: personPub.reviewTypeStatus,
+                reviewOrgValue: personPub.mostRecentReview.review_organization_value,
+                userId: personPub.mostRecentReview.user_id
               }
             }
           }
         })
         if (mostRecentReview) {
-          await pMap (reviewStates, async (reviewType) => {
-            if (reviewType !== mostRecentReview.reviewType && publicationTitlesByReviewType[titleKey][reviewType]) {
-              await pMap (publicationTitlesByReviewType[titleKey][reviewType], async (personPub) => {
-                console.log(`Inserting Review for title key: ${titleKey}, personpub: '${personPub['id']}', most recent review ${JSON.stringify(mostRecentReview, null, 2)}`)
-                const mutateResult = await client.mutate(
-                  insertReview(mostRecentReview.userId, personPub['id'], mostRecentReview.reviewType, mostRecentReview.reviewOrgValue)
-                )
-                insertedReviewsCount += 1
-              }, { concurrency: 1 })
+          await pMap (pubSet.personPublications, async (personPub) => {
+            if (personPub.reviewTypeStatus !== mostRecentReview.reviewType) {
+              console.log(`Inserting Review personpub: '${personPub['id']}', most recent review ${JSON.stringify(mostRecentReview, null, 2)}`)
+              const mutateResult = await client.mutate(
+                insertReview(mostRecentReview.userId, personPub['id'], mostRecentReview.reviewType, mostRecentReview.reviewOrgValue)
+              )
+              insertedReviewsCount += 1
             }
           }, { concurrency: 1 })
         }
