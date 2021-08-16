@@ -89,3 +89,17 @@ When you get to a point where publications have been reviewed and approved for a
 
 * [Client](./client/README.md) - the UI tool for administering PACE Administration data.
 * [Ingest](./ingest/README.md) - responsible for loading data into the adminsitration system.
+
+## TODO (8/6/2021 - 4:00 PM)
+### Lives in
+    Able to come to lab
+### Lab (study) age range
+### Subject timer for current lab
+### Participant, family, call notes
+### Search
+### 3.0 - 3.364
+
+### filters for assign: date add, created, participated
+
+### Where they come from - Facebook (open field)
+

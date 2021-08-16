@@ -61,3 +61,6 @@
     </div>
   </footer>
 </template>
+
+<style scoped>
+</style>

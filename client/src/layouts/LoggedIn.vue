@@ -1,11 +1,19 @@
 <template>
   <q-layout view="lHh lpr fFf">
+    <!-- Skip links -->
+    <nav class="skip-links" aria-label="Skip links">
+      <ul>
+        <li><a href="#content" accesskey="C" title="Skip to content = C">Skip To Content</a></li>
+        <li><a href="#nav-top" accesskey="S" title="Skip to navigation = S">Skip To Navigation</a></li>
+      </ul>
+    </nav>
     <q-header elevated>
       <Header />
     </q-header>
     <q-page-container>
       <div class="wrapper" id="wrapper">
         <router-view />
+        <Footer />
       </div>
     </q-page-container>
   </q-layout>
@@ -18,13 +26,15 @@ import _ from 'lodash'
 import axios from 'axios'
 
 import Header from '@/components/edu.nd/Header.vue'
+import Footer from '@/components/edu.nd/Footer.vue'
 
 import readOrganizations from '../../../gql/readOrganizations.gql'
 
 export default {
   name: 'MyLayout',
   components: {
-    Header
+    Header,
+    Footer
   },
   data () {
     return {
