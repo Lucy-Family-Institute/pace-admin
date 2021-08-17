@@ -123,53 +123,58 @@ async function main() {
 
   const results = await gqlClient.query({
     query: gql`
-      query MyQuery {
-        persons_publications(where: {reviews: {review_type: {_eq: accepted}, review_organization_value: {_eq: ${meiliCenterSearch}}},
-          org_reviews: {review_type: {_eq: "accepted"}, review_organization_value: {_eq: "ND"}}}) {
-          id
-          org_reviews(order_by: {datetime: desc}, limit: 1) {
-            review_type
-          }
-          reviews(order_by: {datetime: desc}, limit: 1) {
-            review_type
-          }
-          publication {
-            id
-            abstract
-            doi
-            title
-            year
-            csl_string
-            journal_title: csl(path:"container-title")
-            journal {
-              title
-              journal_type
-              journals_classifications {
-                classification {
-                  identifier
-                  name
-                }
-              }
-              journals_impactfactors {
-                year
-                impactfactor
-              }
-              publisher
-            }
-            awards {
-              id
-              funder_award_identifier
-              funder_name
-              source_name
-            }
-          }
-          person {
-            family_name
-            given_name
-            id
+    query MyQuery {
+      persons_publications(where: {reviews: {review_type: {_eq: accepted}, review_organization_value: {_neq: ND}},
+        org_reviews: {review_type: {_eq: "accepted"}, review_organization_value: {_eq: "ND"}}}) {
+        id
+        org_reviews(where: {review_organization_value: {_eq: "ND"}}, order_by: {datetime: desc}, limit: 1) {
+          review_type
+          review_organization_value
+        }
+        reviews(where: {review_organization_value: {_neq: ND}}, order_by: {datetime: desc}, limit: 1) {
+          review_type
+          review_organization_value
+          review_organization {
+            comment
           }
         }
-      }    
+        publication {
+          id
+          abstract
+          doi
+          title
+          year
+          csl_string
+          journal_title: csl(path:"container-title")
+          journal {
+            title
+            journal_type
+            journals_classifications {
+              classification {
+                identifier
+                name
+              }
+            }
+            journals_impactfactors {
+              year
+              impactfactor
+            }
+            publisher
+          }
+          awards {
+            id
+            funder_award_identifier
+            funder_name
+            source_name
+          }
+        }
+        person {
+          family_name
+          given_name
+          id
+        }
+      }
+    }  
     `
   })
 
@@ -238,6 +243,8 @@ async function main() {
           }
         )),
         citation: getCitationApa(doc.publication.csl_string),
+        review_organization_value: _.get(doc.reviews[0], 'review_organization_value', null),
+        review_organization_label: _.get(doc.reviews[0].review_organization, 'comment', null),
         wildcard: "*" // required for empty search (i.e., return all)
       }
     })
@@ -257,7 +264,7 @@ async function main() {
 
   let status
   const { updateId } = await index.updateAttributesForFaceting([
-    'year', 'type', 'journal', 'classifications', 'authors', 'journal_type', 'publisher', 'classificationsTopLevel', 'funder', 'impact_factor_range'
+    'year', 'type', 'journal', 'classifications', 'authors', 'journal_type', 'publisher', 'classificationsTopLevel', 'funder', 'impact_factor_range', 'review_organization_value', 'review_organization_label'
   ])
   do {
     await sleep(10)
