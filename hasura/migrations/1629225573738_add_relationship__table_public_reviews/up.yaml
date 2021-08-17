@@ -1,0 +1,8 @@
+- args:
+    name: review_organization
+    table:
+      name: reviews
+      schema: public
+    using:
+      foreign_key_constraint_on: review_organization_value
+  type: create_object_relationship
