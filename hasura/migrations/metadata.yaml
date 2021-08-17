@@ -1553,8 +1553,8 @@ tables:
       set: {}
       check: {}
       columns:
-      - comment
       - value
+      - comment
   select_permissions:
   - role: user
     comment: null
@@ -1640,6 +1640,10 @@ tables:
   - using:
       foreign_key_constraint_on: persons_publications_id
     name: persons_publication
+    comment: null
+  - using:
+      foreign_key_constraint_on: review_organization_value
+    name: review_organization
     comment: null
   - using:
       foreign_key_constraint_on: review_type

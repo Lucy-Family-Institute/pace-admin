@@ -20,10 +20,23 @@
           <q-chip
             v-for="option in queryOptions"
             v-bind:key="option"
-            removable @remove="removeFacetFilter(option)" color="primary" text-color="white"
+            removable @remove="removeFacetFilter(option, true)" color="primary" text-color="white"
           >
             {{cleanChip(option)}}
           </q-chip>
+        </div>
+      </div>
+      <div class="q-pa-md row" style="width:100%">
+        <div class="col-9" style="width:100%">
+          <q-item>
+            <q-select
+              v-model="selectedCenter"
+              :options="reviewOptions"
+              label="Select Center/Institute:"
+              class="white"
+              style="min-width: 250px"
+            />
+          </q-item>
         </div>
       </div>
       <div class="row no-wrap">
@@ -176,7 +189,7 @@
                   <q-chip
                     v-for="option in queryOptions"
                     v-bind:key="option"
-                    removable @remove="removeFacetFilter(option)" color="primary" text-color="white"
+                    removable @remove="removeFacetFilter(option, true)" color="primary" text-color="white"
                   >
                     {{cleanChip(option)}}
                   </q-chip>
@@ -247,7 +260,10 @@ export default {
       processingTime: undefined,
       numberOfHits: undefined,
       facetLists: {},
-      filters: ''
+      filters: '',
+      review_organizations: {},
+      reviewOptions: {},
+      selectedCenter: undefined
     }
   },
   async created () {
@@ -270,6 +286,9 @@ export default {
     },
     facetFilters: async function () {
       this.runSearch()
+    },
+    selectedCenter: function () {
+      this.addFacetFilter('review_organization_label', this.selectedCenter.value)
     }
   },
   methods: {
@@ -287,7 +306,7 @@ export default {
     async runSearch () {
       const searchfor = this.search ? this.search : '*'
       const options = {
-        facetsDistribution: ['year', 'authors', 'classifications', 'journal', 'journal_type', 'publisher', 'classificationsTopLevel', 'funder', 'impact_factor_range'],
+        facetsDistribution: ['year', 'authors', 'classifications', 'journal', 'journal_type', 'publisher', 'classificationsTopLevel', 'funder', 'impact_factor_range', 'review_organization_value', 'review_organization_label'],
         attributesToHighlight: ['title', 'abstract', 'authors'],
         limit: 1000
       }
@@ -308,7 +327,29 @@ export default {
       this.numberOfHits = results.nbHits
       this.facetsDistribution = Object.freeze(results.facetsDistribution)
 
-      this.sortFacets(['classifications', 'authors', 'journal', 'journal_type', 'publisher', 'funder', 'impact_factor_range'], this.facetsDistribution)
+      this.review_organizations = Object.freeze(_.orderBy(
+        _.map(results.facetsDistribution.review_organization_label, (value, key) => {
+          return { name: key, count: value }
+        }), 'count', 'desc'
+      ))
+      this.reviewOptions = _.map(this.review_organizations, (reviewOrg) => {
+        let label = _.toUpper(reviewOrg.name)
+        if (!_.find(this.facetFilters, (val) => _.startsWith(val, 'review_organization_label'))) {
+          label = `${label} (${reviewOrg.count})`
+        }
+        return {
+          label: label,
+          value: _.toUpper(reviewOrg.name)
+        }
+      })
+
+      this.sortFacets(['classifications', 'authors', 'journal', 'journal_type', 'publisher', 'funder', 'impact_factor_range', 'review_organization_value', 'review_organization_label'], this.facetsDistribution)
+      // if (!this.selectedCenter) {
+      //   this.selectedCenter = {
+      //     label: this.reviewOptions[0].label,
+      //     value: this.reviewOptions[0].value
+      //   }
+      // }
       // }
     },
     makeStartCase (word) {
@@ -320,7 +361,7 @@ export default {
         this.$set(this.facetLists, field, Object.freeze(
           _.orderBy(
             _.map(data[field], (value, key) => {
-              if (field === 'funder') {
+              if (field === 'funder' || field === 'review_organization_label') {
                 return { name: _.toUpper(key), count: value }
               } else {
                 return { name: this.makeStartCase(key), count: value }
@@ -376,8 +417,8 @@ export default {
     },
     async addFacetFilter (key, value) {
       if (_.includes(this.facetFilters, `${key}:${value}`)) return
-      if (key === 'year') {
-        this.removeFacetFilter(_.find(this.facetFilters, (val) => _.startsWith(val, key)))
+      if (key === 'year' || key === 'review_organization_value' || key === 'review_organization_label') {
+        this.removeFacetFilter(_.find(this.facetFilters, (val) => _.startsWith(val, key)), false)
       }
       this.facetFilters.push(`${key}:${value}`)
       this.dashboardMiniState = true
@@ -385,7 +426,11 @@ export default {
     async setFilter () {
       // this.filters = `ages > ${this.ages.min} AND ages < ${this.ages.max}`
     },
-    async removeFacetFilter (key) {
+    async removeFacetFilter (key, clearValue) {
+      console.log(`Removing key: ${JSON.stringify(key, null, 2)}`)
+      if (clearValue && (_.startsWith(key, 'review_organization_value') || _.startsWith(key, 'review_organization_label'))) {
+        this.selectedCenter = undefined
+      }
       this.$delete(this.facetFilters, _.indexOf(this.facetFilters, key))
     },
     async browseTo (doi) {
