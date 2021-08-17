@@ -4,22 +4,31 @@
       <Header />
     </q-header>
     <q-page-container>
-      <div class="wrapper" id="wrapper">
-        <router-view />
-      </div>
+      <router-view />
     </q-page-container>
   </q-layout>
 </template>
+
+<style>
+  .row {
+    width: revert;
+  }
+  .white {
+    color: white;
+  }
+  .tab {
+    color: var(--brand-blue);
+  }
+</style>
 
 <script>
 import { openURL } from 'quasar'
 import { sync } from 'vuex-pathify'
 import _ from 'lodash'
-import axios from 'axios'
 
 import Header from '@/components/edu.nd/Header.vue'
 
-import readOrganizations from '../../../gql/readOrganizations.gql'
+import readOrganizations from '@gql/readOrganizations.gql'
 
 export default {
   name: 'MyLayout',
@@ -42,8 +51,6 @@ export default {
     $route: 'syncSessionAndStore'
   },
   computed: {
-    isLoggedIn: sync('auth/isLoggedIn'),
-    userId: sync('auth/userId'),
     centerOptions: sync('filter/centerOptions'),
     selectedCenter: sync('filter/selectedCenter'),
     preferredSelectedCenter: sync('filter/preferredSelectedCenter')
@@ -54,38 +61,16 @@ export default {
       openURL(process.env.DASHBOARD_BASE_URL)
     },
     async syncSessionAndStore () {
-      if (
-        this.isLoggedIn === null ||
-        (this.isLoggedIn === true && this.userId === null)
-      ) {
-        try {
-          const response = await axios({ url: '/session', method: 'GET' })
-          if (_.get(response.data, 'databaseId') !== undefined) {
-            this.isLoggedIn = true
-            this.userId = response.data.databaseId
-          } else {
-            this.isLoggedIn = false
-            this.userId = null
-          }
-        } catch (error) { // TODO specify the error
-          // this.isBackendDisconnected = true
+      const results = await this.$apollo.query({
+        query: readOrganizations
+      })
+
+      this.centerOptions = _.map(results.data.review_organization, (reviewOrg) => {
+        return {
+          label: reviewOrg.comment,
+          value: reviewOrg.value
         }
-      } else if (this.isLoggedIn === false) {
-        this.userId = null
-      }
-
-      if (this.isLoggedIn) {
-        const results = await this.$apollo.query({
-          query: readOrganizations
-        })
-
-        this.centerOptions = _.map(results.data.review_organization, (reviewOrg) => {
-          return {
-            label: reviewOrg.comment,
-            value: reviewOrg.value
-          }
-        })
-      }
+      })
 
       if (!this.selectedCenter) {
         this.selectedCenter = this.preferredSelectedCenter
@@ -94,15 +79,3 @@ export default {
   }
 }
 </script>
-
-<style>
-  .row {
-    width: revert;
-  }
-  .white {
-    color: white;
-  }
-  .tab {
-    color: var(--brand-blue);
-  }
-</style>

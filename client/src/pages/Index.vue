@@ -1,5 +1,4 @@
 <template>
-  <div>
     <div class="q-pa-md">
       <!-- TODO calculate exact height below -->
         <!--div class="page-sidebar"-->
@@ -372,7 +371,6 @@
                 </template>
               </q-splitter>
             </div>
-          </div>
         <!--</main>
       </div>
     </div>

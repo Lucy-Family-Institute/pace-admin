@@ -1,75 +1,71 @@
 <template>
-  <div>
-    <div class="wrapper" id="wrapper">
-      <header id="header" class="site-header">
-        <p class="mark-header"><a href="https://www.nd.edu/">University of Notre Dame</a></p>
-        <div class="site-title-group">
-          <p id="site-title" class="site-title"><a href="/" accesskey="1" title="Homepage shortcut key = 1">PACE</a></p>
-        </div>
-        <div class="nav-header">
-        <nav id="nav-top" class="nav-top" role="navigation" aria-label="Primary navigation">
-          <div id="primary">
-            <ul>
-              <li><a class="active" href="/" aria-label="Home"><svg class="icon" width="16" height="16"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#icon-home"></use></svg></a></li>
-              <li><a href="#">Page A</a></li>
-              <li><a href="#">Page B</a></li>
-              <li><a href="#">Page C</a></li>
-              <li class="nav-search"><button class="btn-search search-toggle" aria-label="Toggle search"><svg class="icon" width="16" height="16"><use xlink:href="#icon-search"></use></svg></button></li>
-            </ul>
-            <div class="nav-search-wrapper">
-              <form method="get" action="/search/" id="search-nav-top" class="search-form" role="search" aria-label="Site search">
-                <input type="hidden" name="as_sitesearch" value="siteurl.nd.edu">
-                <input type="hidden" name="entqr" value="3">
-                <input type="search" name="q" class="search-input" id="search-input-nav-top" placeholder="Search this site" title="type your search term" aria-label="Site Search input">
-                <button class="search-button" type="submit" aria-label="Search"><svg class="icon" width="16" height="16" data-icon="search"><use xlink:href="#icon-search"></use></svg></button>
-                <button class="search-close search-toggle" aria-label="Close Search"><svg class="icon" width="16" height="16"><use xlink:href="#icon-close"></use></svg></button>
-              </form>
-            </div>
-          </div>
-        </nav>
-      </div>
-      </header>
-    </div>
-  </div>
+  <q-header elevated class="site-header">
+    <q-toolbar>
+      <q-btn
+        flat
+        no-wrap
+        stretch
+        to="/"
+      >
+        <q-toolbar-title>PACE</q-toolbar-title>
+      </q-btn>
+      <q-space />
+      <q-btn-group unelevated spread v-if="!isLoggedIn">
+        <q-btn
+          stretch
+          flat
+          label="Login"
+          @click="login"
+        />
+      </q-btn-group>
+      <q-btn-group unelevated spread v-else>
+        <q-btn
+          dense
+          flat
+          class="text-weight-light text-grey-8"
+        >
+        <q-avatar color="secondary" text-color="white">{{ name[0] }}</q-avatar>
+          <q-menu>
+            <q-list style="min-width: 200px">
+              <a href="/logout">
+                <q-item clickable v-close-popup>
+                  <q-item-section>
+                    <q-item-label>
+                      <q-icon name="lock" class="q-pr-sm"/>Logout
+                    </q-item-label>
+                  </q-item-section>
+                </q-item>
+              </a>
+            </q-list>
+          </q-menu>
+        </q-btn>
+      </q-btn-group>
+    </q-toolbar>
+  </q-header>
 </template>
 
 <style scoped>
-.nav-header {
-  z-index: 1;
+.site-header {
+  color: white;
+  --brand-blue: #0c2340;
+  --brand-gold: #ae9142;
+  --brand-blue-dark: #081629;
+  border-top: 5px solid var(--brand-gold);
+  background: var(--brand-blue);
+  border-bottom: 5px solid var(--brand-blue-dark);
 }
 </style>
 
 <script>
+import { get } from 'vuex-pathify'
 export default {
   data () {
     return {
     }
   },
-  async created () {
-    var hasNavTop = (!!document.querySelector('#nav-top'))
-    // var navMobile = document.querySelector('.nav-mobile-util')
-    // var navMobileHeight = navMobile.offsetHeight
-    // var navMobileOffset = navMobile.offsetTop
-    // var isMobile = function () { return (window.innerWidth < 960) }
-
-    if (hasNavTop) {
-      // var navPrimary = document.querySelector('.nav-header')
-      var navFixed = document.querySelector('#navbar')
-      if (!navFixed) {
-        navFixed = document.createElement('nav')
-        navFixed.id = 'navbar'
-        navFixed.className = 'navbar nav-top'
-        navFixed.setAttribute('role', 'navigation')
-        document.body.appendChild(navFixed)
-      }
-      var topNavHtml = document.querySelector('#nav-top').innerHTML
-        .replace(/id="primary(_\d+)?"/gi, '')
-        .replace(/id="([\w-]+)?-nav-top"/gi, 'id="$1-navbar"')
-      navFixed.innerHTML = topNavHtml
-    }
-  },
-  methods: {
-
+  computed: {
+    isLoggedIn: get('auth/isLoggedIn'),
+    name: get('auth/name')
   }
 }
 </script>

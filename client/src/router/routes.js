@@ -12,12 +12,19 @@ export function makeBeforeEach (store) {
     if (!store.get('auth/isLoggedIn')) {
       try {
         const response = await axios({ url: '/session', method: 'GET' })
-        if (_.get(response.data, 'databaseId') !== undefined) {
+        const userId = _.get(response, 'data.databaseId')
+        const name = _.get(response, 'data.name')
+        if (userId) {
           store.set('auth/isLoggedIn', true)
-          store.set('auth/userId', response.data.databaseId)
+          store.set('auth/userId', userId)
+          store.set('auth/name', name)
         } else {
           store.set('auth/isLoggedIn', false)
           store.set('auth/userId', null)
+          store.set('auth/name', null)
+          if (!['/'].includes(to.path)) {
+            return next('/')
+          }
         }
       } catch (error) { // TODO specify the error
         // this.isBackendDisconnected = true
@@ -37,9 +44,9 @@ export function makeRoutes (store) {
           path: '',
           beforeEnter: (to, fro, next) => {
             if (store.get('auth/isLoggedIn')) {
-              next('/review')
+              return next('/review')
             }
-            next()
+            return next()
           },
           component: () => import('pages/PublicLanding.vue')
         },
@@ -49,7 +56,7 @@ export function makeRoutes (store) {
           children: [
             {
               path: '',
-              component: () => import('pages/Index.vue')
+              component: () => import('pages/Review.vue')
             }
           ]
         }

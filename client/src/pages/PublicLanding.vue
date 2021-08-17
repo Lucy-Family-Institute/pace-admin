@@ -60,7 +60,6 @@
       </header>
       <!-- Site Content -->
       <div id="content" class="site-content">
-
         <!-- Page Header -->
         <div class="page-header has-title has-image">
           <p class="page-title" aria-hidden="true">{{ title }}</p>
@@ -223,7 +222,6 @@ main {
 </style>
 
 <script>
-
 import { date } from 'quasar'
 
 export default {
@@ -276,7 +274,8 @@ export default {
       return `
         PACE is being developed and run by the
         <a href="${this.hesburghUrl}">Hesburgh Libraries</a>' <a href="${this.labUrl}">Strategic Innvotation Lab</a>
-        in partnership with <a href="${this.ndResearchUrl}">ND Research</a> and <a href="${this['221BUrl']}">221B Consulting</a>
+        in partnership with <a href="${this.ndResearchUrl}">ND Research</a>
+        and <a href="${this['221BUrl']}">221B Consulting</a>
         with the goal of reducing the traditionally time-consuming and
         error-prone process of collecting and cleaning faculty publication data.
       `
@@ -290,9 +289,9 @@ export default {
   meta () {
     return {
       // sets document title
-      title: 'Index Page',
+      title: 'Landing Page',
       // optional; sets final title as "Index Page - My Website", useful for multiple level meta
-      titleTemplate: title => `${title} - My Website`,
+      titleTemplate: title => `${this.siteName}`,
 
       // meta tags
       meta: {
