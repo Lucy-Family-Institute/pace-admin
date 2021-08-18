@@ -19,6 +19,7 @@ This pilot project will prototype a new process that automates data collection f
 
     make install
     sudo snap install docker
+
     sudo make cleardb
     sudo make start_docker
     make migrate
@@ -33,15 +34,12 @@ Note: When running `make migrate`, you may get the following error:
 
     If you get the above error, give a few minutes then try again.
 
-## Open some terminals
+## Open several terminals
 
-    make docker
+    make docker && make logs
     make client
     make -B server
-    make migration_console
-
-It's worth running ``make install_js`` every now and then to make sure your packages are up-to-date.
-
+    make migration-console
 ## User Management
 
 Create your Auth Front End Credentials:
@@ -102,3 +100,17 @@ When you get to a point where publications have been reviewed and approved for a
 
 * [Client](./client/README.md) - the UI tool for administering PACE Administration data.
 * [Ingest](./ingest/README.md) - responsible for loading data into the adminsitration system.
+
+## TODO (8/6/2021 - 4:00 PM)
+### Lives in
+    Able to come to lab
+### Lab (study) age range
+### Subject timer for current lab
+### Participant, family, call notes
+### Search
+### 3.0 - 3.364
+
+### filters for assign: date add, created, participated
+
+### Where they come from - Facebook (open field)
+
