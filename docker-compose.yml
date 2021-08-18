@@ -35,6 +35,8 @@ services:
       DB_USER: ${POSTGRES_USER}
       DB_SCHEMA: public
       DB_PASSWORD: ${POSTGRES_PASSWORD}
+      PROXY_ADDRESS_FORWARDING: "true"
+      KEYCLOAK_FRONTEND_URL: http://localhost:8001/auth
       KEYCLOAK_USER: ${KEYCLOAK_USERNAME}
       KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
       KEYCLOAK_IMPORT: /opt/jboss/keycloak/realm-export.json
@@ -64,6 +66,22 @@ services:
     restart: always
     volumes:
       - ./dashboard-search/data.ms:/data.ms
+  
+  nginx:
+    image: nginx
+    volumes:
+      - ./build/nginx/:/etc/nginx/templates
+      - ./data/pdfs:/pdfs
+      - ./data/thumbnails:/thumbnails
+    ports:
+      - ${NGINX_PORT}:${NGINX_PORT}
+    environment:
+      - DOCKER_HOST_IP=${DOCKER_HOST_IP}
+      - NGINX_PORT=${NGINX_PORT}
+      - KEYCLOAK_PORT=${KEYCLOAK_PORT}
+      - CLIENT_DEV_PORT=${CLIENT_DEV_PORT}
+      - HASURA_PORT=${HASURA_PORT}
+      - EXPRESS_PORT=${EXPRESS_PORT}
     
 volumes:
   postgres_data:

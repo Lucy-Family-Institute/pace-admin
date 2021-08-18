@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 
-import routes from './routes'
+import { makeRoutes, makeBeforeEach } from './routes'
 
 Vue.use(VueRouter)
 
@@ -10,11 +10,10 @@ Vue.use(VueRouter)
  * directly export the Router instantiation
  */
 
-export default function (/* { store, ssrContext } */) {
-  const Router = new VueRouter({
+export default function ({ store, ssrContext }) {
+  const router = new VueRouter({
     scrollBehavior: () => ({ x: 0, y: 0 }),
-    routes,
-
+    routes: makeRoutes(store),
     // Leave these as is and change from quasar.conf.js instead!
     // quasar.conf.js -> build -> vueRouterMode
     // quasar.conf.js -> build -> publicPath
@@ -22,5 +21,7 @@ export default function (/* { store, ssrContext } */) {
     base: process.env.VUE_ROUTER_BASE
   })
 
-  return Router
+  router.beforeEach(makeBeforeEach(store))
+
+  return router
 }

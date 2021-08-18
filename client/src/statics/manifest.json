@@ -1,0 +1,35 @@
+{
+  "lang": "en",
+  "dir": "ltr",
+  "name": "PACE",
+  "short_name": "pace.nd.edu",
+  "start_url": "/",
+  "display": "minimal-ui",
+  "theme_color": "#0c2340",
+  "background_color": "#0c2340",
+  "icons": [{
+    "src": "https://static.nd.edu/images/monogram/gold/monogram-57.png",
+    "sizes": "57x57",
+    "type": "image/png"
+  }, {
+    "src": "https://static.nd.edu/images/monogram/gold/monogram-72.png",
+    "sizes": "72x72",
+    "type": "image/png"
+  }, {
+    "src": "https://static.nd.edu/images/monogram/gold/monogram-114.png",
+    "sizes": "114x114",
+    "type": "image/png"
+  }, {
+    "src": "https://static.nd.edu/images/monogram/gold/monogram-144.png",
+    "sizes": "144x144",
+    "type": "image/png"
+  }, {
+    "src": "https://static.nd.edu/images/monogram/gold/monogram-192.png",
+    "sizes": "192x192",
+    "type": "image/png"
+  }, {
+    "src": "https://static.nd.edu/images/monogram/gold/monogram-512.png",
+    "sizes": "512x512",
+    "type": "image/png"
+  }]
+}

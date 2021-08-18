@@ -1,0 +1,4 @@
+services:
+  nginx:
+    volumes:
+      - ./client/dist/spa:/www

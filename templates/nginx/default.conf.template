@@ -1,0 +1,47 @@
+upstream keycloak {
+  server ${DOCKER_HOST_IP}:${KEYCLOAK_PORT};
+}
+
+upstream hasura {
+  server ${DOCKER_HOST_IP}:${HASURA_PORT};
+  keepalive 64;
+}
+
+server {
+  listen ${NGINX_PORT};
+
+  location ~ /console {
+    proxy_pass http://hasura;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+  }
+
+  location ~ /(v1|healthz) {
+    proxy_pass http://hasura;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+  }
+
+  location ~ /(keycloak|session|login|logout|webhooks) {
+    proxy_pass http://${DOCKER_HOST_IP}:${EXPRESS_PORT};
+  }
+
+  location /pdfs {
+    root /pdfs;
+  }
+
+  location /thumbnails {
+    root /thumbnails;
+  }
+
+  location / {
+  {{ if eq (getenv "ENV") "prod" }}
+    root /www;
+  {{ else }}
+    proxy_pass http://${DOCKER_HOST_IP}:${CLIENT_DEV_PORT};
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+  {{ end }}
+  }
+}
