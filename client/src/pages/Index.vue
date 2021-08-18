@@ -20,7 +20,7 @@
             </q-item>
           </div>
         </div>
-        <MainAuthorReviewFilter />
+        <MainFilter />
         <!--/div-->
       <!-- Site Content -->
       <!--<div id="content" class="site-content">
@@ -41,7 +41,7 @@
                 :style="{height: ($q.screen.height-56-16-2)+'px'}"
               >
                 <template v-slot:before>
-                  <!-- TODO calculate exact height below -->
+                  <PeopleAuthorSortFilter />
                   <q-linear-progress
                 v-if="!personsLoaded && !personsLoadedError"
                 stripe
@@ -422,7 +422,8 @@ import readPublication from '../../../gql/readPublication.gql'
 // import * as service from '@porter/osf.io';
 import readOrganizations from '../../../gql/readOrganizations.gql'
 import PublicationFilter from '../components/PublicationFilter.vue'
-import MainAuthorReviewFilter from '../components/MainAuthorReviewFilter.vue'
+import PeopleAuthorSortFilter from '../components/PeopleAuthorSortFilter.vue'
+import MainFilter from '../components/MainFilter.vue'
 import sanitize from 'sanitize-filename'
 import moment from 'moment'
 
@@ -430,7 +431,8 @@ export default {
   name: 'PageIndex',
   components: {
     PublicationFilter,
-    MainAuthorReviewFilter
+    PeopleAuthorSortFilter,
+    MainFilter
   },
   data: () => ({
     personLoadCount: 0,
@@ -439,7 +441,7 @@ export default {
     personScrollIndex: 0,
     dom,
     date,
-    firstModel: 375,
+    firstModel: 400,
     secondModel: 500,
     people: [],
     publications: [],
@@ -1027,6 +1029,10 @@ export default {
           await this.$refs['personScroll'].scrollTo(scrollIndex)
           // console.log(this.$refs)
           this.$refs[`person${currentPersonIndex}`].show()
+          // check publications and if not loaded reload publications too
+          if (this.publications && this.publications.length <= 0) {
+            this.loadPublications(this.person)
+          }
         } else {
           console.log(`Person id: ${this.person.id} no longer found.  Clearing UI states...`)
           // clear everything out
