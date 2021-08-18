@@ -28,8 +28,6 @@
           <div>
             <YearFilter />
           </div>
-        </div>
-        <div class="row">
           <div>
             <PeopleFilter />
           </div>
@@ -97,7 +95,20 @@ export default {
     selectedCenterPubSort: sync('filter/selectedCenterPubSort'),
     selectedCenterAuthor: sync('filter/selectedCenterAuthor'),
     centerAuthorOptions: sync('filter/centerAuthorOptions'),
-    pubSearch: sync('filter/pubSearch')
+    selectedMemberYears: sync('filter/selectedMemberYears'),
+    selectedInstitutions: sync('filter/selectedInstitutions'),
+    institutionOptions: sync('filter/institutionOptions'),
+    selectedPubYears: sync('filter/selectedPubYears'),
+    selectedPersonConfidence: sync('filter/selectedPersonConfidence'),
+    pubSearch: sync('filter/pubSearch'),
+    preferredPersonTotal: sync('filter/preferredPersonTotal'),
+    preferredPersonConfidence: sync('filter/preferredPersonConfidence'),
+    yearPubStaticMin: sync('filter/yearPubStaticMin'),
+    yearPubStaticMax: sync('filter/yearPubStaticMax'),
+    yearMemberStaticMin: sync('filter/yearMemberStaticMin'),
+    yearMemberStaticMax: sync('filter/yearMemberStaticMax'),
+    changedPubYears: sync('filter/changedPubYears'),
+    changedMemberYears: sync('filter/changedMemberYears')
   },
   async created () {
     this.fetchData()
@@ -123,6 +134,22 @@ export default {
         // console.log(`Current type review is: ${JSON.stringify(typeReview, null, 2)}`)
         return typeReview.value
       })
+    },
+    resetFilters () {
+      this.selectedPersonPubSort = this.preferredPersonPubSort
+      this.selectedCenterPubSort = this.selectedCenterPubSort
+      this.selectedPersonSort = this.preferredPersonSort
+      this.selectedPersonTotal = this.preferredPersonTotal
+      this.selectedPersonConfidence = this.preferredPersonConfidence
+      this.selectedPubYears = {
+        min: this.yearPubStaticMin,
+        max: this.yearPubStaticMax
+      }
+      this.selectedInstitutions = _.clone(this.institutionOptions)
+      this.selectedMemberYears = {
+        min: this.yearMemberStaticMin,
+        max: this.yearMemberStaticMax
+      }
     }
   }
 }
