@@ -68,16 +68,16 @@
             <p class="text-center buttons">
               <q-btn
                 type="a"
-                href="/login"
-                color="primary"
-                size="lg"
-                label="LOGIN" />&nbsp;
-              <q-btn
-                type="a"
                 :href="`mailto:${email}`"
                 color="secondary"
                 size="lg"
-                label="EXPLORE PARTNERSHIP" />
+                label="EXPLORE PARTNERSHIP" />&nbsp;
+              <q-btn
+                type="a"
+                href="/login"
+                color="primary"
+                size="lg"
+                label="LOGIN" />
             </p>
           </div>
           <p class="page-image">
@@ -93,16 +93,16 @@
             <p class="text-center buttons">
               <q-btn
                 type="a"
-                href="/login"
-                color="primary"
-                size="lg"
-                label="LOGIN" />&nbsp;
-              <q-btn
-                type="a"
                 :href="`mailto:${email}`"
                 color="secondary"
                 size="lg"
-                label="EXPLORE PARTNERSHIP" />
+                label="EXPLORE PARTNERSHIP" />&nbsp;
+              <q-btn
+                type="a"
+                href="/login"
+                color="primary"
+                size="lg"
+                label="LOGIN" />
             </p>
           </div>
 
@@ -197,7 +197,65 @@ p.page-image img {
 
 main {
   font-size: 1.45rem;
-  height: 650px;
+}
+
+/* .site-content {
+  display: block;
+} */
+
+@media only screen and (min-width:0em) {
+  .site-content {
+    min-height:950px;
+  }
+}
+
+@media only screen and (min-width: 48em) {
+  .site-content {
+    display: block;
+    padding-left: 1em;
+    padding-right: 1em;
+  }
+  .page-main {
+    margin-top: -50px;
+    min-height: 250px;
+    padding-left: 50px;
+    padding-right: 50px;
+  }
+}
+
+/* @media only screen and (min-width:844px) {
+  .page-image {
+
+  }
+  .site-content {
+    padding-bottom: 30px;
+    min-height:1000px;
+  }
+} */
+
+/*
+@media only screen and (min-width:928px) {
+  .page-image {
+    margin-bottom: -150px
+  }
+  .site-content {
+    margin-top: -40px;
+  }
+} */
+
+/* @media only screen and (min-width:1160px) {
+  .site-content {
+    padding-bottom: 30px;
+    min-height:1600px;
+  }
+}*/
+
+@media only screen and (min-width:60em) {
+  .site-content {
+    min-height:0;
+  }
+}
+  /* height: 650px;
 }
 
 @media only screen and (min-width:60em) {
@@ -218,7 +276,7 @@ main {
   .site-footer {
     margin-top: -5em
   }
-}
+} */
 </style>
 
 <script>

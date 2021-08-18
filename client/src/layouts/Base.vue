@@ -1,16 +1,18 @@
 <template>
-  <q-layout view="lHh lpr fFf">
-    <q-header elevated>
+  <q-layout view="hHh lpR fFf">
+    <q-header>
       <Header />
     </q-header>
-    <q-page-container>
-      <router-view />
+    <q-page-container style="padding-top: 60px;">
+      <q-page>
+        <router-view />
+      </q-page>
     </q-page-container>
   </q-layout>
 </template>
 
 <style>
-  .row {
+  /* .row {
     width: revert;
   }
   .white {
@@ -18,7 +20,7 @@
   }
   .tab {
     color: var(--brand-blue);
-  }
+  } */
 </style>
 
 <script>

@@ -49,23 +49,34 @@ export function makeRoutes (store) {
             return next()
           },
           component: () => import('pages/PublicLanding.vue')
-        },
-        {
-          path: 'review',
-          component: () => import('layouts/Base.vue'),
-          children: [
-            {
-              path: '',
-              component: () => import('pages/Review.vue')
-            }
-          ]
         }
-        // { path: 'review', component: () =>  },
-        // { path: 'logs', component: () => import('pages/Index.vue') },
-        // { path: 'dashboard', component: () => import('pages/Dashboard.vue') },
-        // { path: 'center_review', component: () => import('pages/CenterReview.vue') }
+      ]
+    },
+    {
+      path: '/review/',
+      component: () => import('layouts/Base.vue'),
+      children: [
+        {
+          path: '',
+          component: () => import('pages/Review.vue')
+        }
+      ]
+    },
+    {
+      path: '/dashboard/',
+      component: () => import('layouts/Base.vue'),
+      children: [
+        {
+          path: '',
+          component: () => import('pages/Dashboard.vue')
+        }
       ]
     }
+    // { path: 'logs', component: () => import('pages/Index.vue') },
+    // { path: 'dashboard', component: () => import('pages/Dashboard.vue') },
+    // { path: 'center_review', component: () => import('pages/CenterReview.vue') }
+    //   ]
+    // }
   ]
 
   // Always leave this as last one

@@ -1,5 +1,5 @@
 <template>
-  <q-header elevated class="site-header">
+  <q-header>
     <q-toolbar>
       <q-btn
         flat
@@ -45,14 +45,14 @@
 </template>
 
 <style scoped>
-.site-header {
+.q-header {
   color: white;
   --brand-blue: #0c2340;
   --brand-gold: #ae9142;
   --brand-blue-dark: #081629;
   border-top: 5px solid var(--brand-gold);
-  background: var(--brand-blue);
   border-bottom: 5px solid var(--brand-blue-dark);
+  background: var(--brand-blue);
 }
 </style>
 
