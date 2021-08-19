@@ -286,6 +286,15 @@ dashboard-ingest:
 ##############################################################################
 # Clean-up tasks
 ##############################################################################
+.PHONY: clean
+clean:
+	rm -rf build
+	rm -rf client/node_modules
+	rm -rf server/node_modules
+	rm -rf ingest/node_modules
+	rm -rf dashboard-search/node_modules
+	rm -rf dashboard-client/node_modules
+
 .PHONY: clear-pdfs
 #: Remove pdfs and thumbnails
 clear-pdfs:
