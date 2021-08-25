@@ -1,8 +1,0 @@
-- args:
-    name: datum
-    table:
-      name: publications
-      schema: public
-    using:
-      foreign_key_constraint_on: data_id
-  type: create_object_relationship

@@ -1,0 +1,21 @@
+version: '3.7'
+
+services:
+  postgres:
+      image: postgres:13.4
+      environment:
+        PGDATA: /var/lib/postgresql/data/pgdata
+        POSTGRES_USER: ${POSTGRES_USER}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      ports:
+        - ${POSTGRES_PORT}:5432
+      restart: always
+      volumes:
+        - postgres_data:/var/lib/postgresql/data
+        - ${DUMP_PATH}:/tmp/backup.sql
+        - ./build/keycloak/init.sql:/docker-entrypoint-initdb.d/1-keycloak.sql
+        - ./build/hasura/init.sql:/docker-entrypoint-initdb.d/2-hasura.sql
+        - ./build/hasura/restore.sh:/docker-entrypoint-initdb.d/3-restore.sh
+
+volumes:
+  postgres_data:

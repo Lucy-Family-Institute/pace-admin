@@ -1,6 +1,0 @@
-- args:
-    sql: "\n           alter table \"public\".\"awards\"\n           add constraint
-      \"awards_subfunder_id_fkey\"\n           foreign key (\"subfunder_id\")\n           references
-      \"public\".\"subfunders\"\n           (\"id\") on update no action on delete
-      restrict;\n      "
-  type: run_sql

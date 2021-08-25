@@ -1,22 +1,22 @@
 upstream keycloak {
-  server ${DOCKER_HOST_IP}:${KEYCLOAK_PORT};
+  server {{ .Env.DOCKER_HOST_IP}}:{{ .Env.KEYCLOAK_PORT }};
 }
 
 upstream hasura {
-  server ${DOCKER_HOST_IP}:${HASURA_PORT};
+  server {{ .Env.DOCKER_HOST_IP}}:{{ .Env.HASURA_PORT }};
   keepalive 64;
 }
 
 server {
-  listen ${NGINX_PORT};
+  listen {{ .Env.NGINX_PORT}};
 
-  location ~ /console {
-    proxy_pass http://hasura;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-  }
+#  location ~ /console { 
+#    proxy_pass http://hasura;
+#    proxy_set_header Host $host;
+#    proxy_set_header X-Real-IP $remote_addr;
+#  }
 
-  location ~ /(v1|healthz) {
+  location ~ /(v1alpha1|v1|v1beta1|v2|apis|healthz) {
     proxy_pass http://hasura;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
@@ -24,7 +24,7 @@ server {
   }
 
   location ~ /(keycloak|session|login|logout|webhooks) {
-    proxy_pass http://${DOCKER_HOST_IP}:${EXPRESS_PORT};
+    proxy_pass http://{{ .Env.DOCKER_HOST_IP}}:{{ .Env.EXPRESS_PORT }};
   }
 
   location /pdfs {
@@ -39,7 +39,7 @@ server {
   {{ if eq (getenv "ENV") "prod" }}
     root /www;
   {{ else }}
-    proxy_pass http://${DOCKER_HOST_IP}:${CLIENT_DEV_PORT};
+    proxy_pass http://{{ .Env.DOCKER_HOST_IP}}:{{ .Env.CLIENT_DEV_PORT }};
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
   {{ end }}

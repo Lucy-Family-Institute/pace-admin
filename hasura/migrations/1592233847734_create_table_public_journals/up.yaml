@@ -1,8 +1,0 @@
-- args:
-    sql: CREATE TABLE "public"."journals"("id" serial NOT NULL, "name" text NOT NULL,
-      "publisher" text, "issn" text, "e_issn" text, PRIMARY KEY ("id") , UNIQUE ("id"));
-  type: run_sql
-- args:
-    name: journals
-    schema: public
-  type: add_existing_table_or_view

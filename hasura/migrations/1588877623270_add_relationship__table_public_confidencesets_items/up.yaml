@@ -1,8 +1,0 @@
-- args:
-    name: confidenceset
-    table:
-      name: confidencesets_items
-      schema: public
-    using:
-      foreign_key_constraint_on: confidenceset_id
-  type: create_object_relationship

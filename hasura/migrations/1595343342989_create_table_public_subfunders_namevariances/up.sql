@@ -1,0 +1,2 @@
+
+CREATE TABLE "public"."subfunders_namevariances"("id" serial NOT NULL, "name" text NOT NULL, "subfunder_id" integer NOT NULL, PRIMARY KEY ("id") , FOREIGN KEY ("subfunder_id") REFERENCES "public"."subfunders"("id") ON UPDATE no action ON DELETE restrict, UNIQUE ("id"));
