@@ -341,7 +341,7 @@ add-dev-user: node-admin-client/node_modules $(addprefix env-, $(ADD_DEV_USER_RE
 # 	@$(RUN_MAKE) private-add-dev-user
 
 .PHONY: setup
-setup: cleardb docker-database-restore sleep-45 docker sleep-15 add-dev-user
+setup: cleardb docker-database-restore sleep-45 docker sleep-15 migrate add-dev-user
 
 ##############################################################################
 # Clean-up tasks

@@ -5,13 +5,37 @@
         flat
         no-wrap
         stretch
-        to="/"
+        :to="{ name: 'home' }"
       >
         <q-toolbar-title>PACE</q-toolbar-title>
       </q-btn>
       <q-space />
+      <q-btn-group unelevated>
+        <router-link
+          :to="{ name: 'review' }"
+          custom
+          v-slot:default="props"
+        >
+          <q-btn icon="group" v-bind="buttonProps(props)" />
+        </router-link>
+        <router-link
+          :to="{ name: 'center-review' }"
+          custom
+          v-slot:default="props"
+        >
+          <q-btn icon="account_balance" v-bind="buttonProps(props)" />
+        </router-link>
+        <router-link
+          :to="{ name: 'dashboard' }"
+          custom
+          v-slot:default="props"
+        >
+          <q-btn icon="poll" v-bind="buttonProps(props)"/>
+        </router-link>
+      </q-btn-group>
+      <q-space />
       <q-btn-group unelevated spread>
-      <p class="mark-header" style="margin:16px 10px 5px; background-image: url(https://static.nd.edu/images/marks/gold-white/ndmark.svg); height: 40px; width: 170px;"><a href="/"></a></p>
+        <span class="mark-header" style="margin:16px 10px 5px; background-image: url(https://static.nd.edu/images/marks/gold-white/ndmark.svg); height: 40px; width: 170px;"></span>
       </q-btn-group>
       <q-btn-group unelevated spread v-if="!isLoggedIn">
         <q-btn
@@ -30,72 +54,23 @@
         <q-avatar color="secondary" text-color="white">{{ name[0] }}</q-avatar>
           <q-menu>
             <q-list style="min-width: 200px">
-              <a href="/logout">
-                <q-item clickable v-close-popup>
-                  <q-item-section>
-                    <q-item-label>
-                      <q-icon name="lock" class="q-pr-sm"/>Logout
-                    </q-item-label>
-                  </q-item-section>
-                </q-item>
-              </a>
+              <q-item
+                clickable
+                tag="a"
+                href="/logout"
+                v-close-popup
+              >
+                <q-item-section>
+                  <q-item-label>
+                    <q-icon name="lock" class="q-pr-sm"/>Logout
+                  </q-item-label>
+                </q-item-section>
+              </q-item>
             </q-list>
           </q-menu>
         </q-btn>
       </q-btn-group>
     </q-toolbar>
-    <div>
-      <q-tabs align="justify">
-          <q-route-tab name="/"
-            icon="home"
-            style="font-size: 10rem;"
-            class="tab"
-            to="/"
-            exact
-          />
-          <q-route-tab name="person"
-            v-if="isLoggedIn"
-            icon="group"
-            to="/review"
-            class="tab"
-            exact
-          />
-          <q-route-tab name="center"
-            v-if="isLoggedIn"
-            icon="account_balance"
-            to="/center_review"
-            class="tab"
-            exact
-          />
-          <q-route-tab name="dashboard"
-            icon="poll"
-            class="tab"
-            to="/dashboard"
-            exact
-          />
-          <q-tab>
-          <q-btn-group unelevated spread>
-          <q-separator class="gt-sm" vertical inset/>
-          <q-btn
-            dense
-            flat
-            label="Logout"
-            type="a" href="/logout"
-            class="tab"
-            v-if="isLoggedIn"
-          />
-          <q-btn
-            dense
-            flat
-            label="Login"
-            class="tab"
-            type="a" href="/login"
-            v-else
-          />
-        </q-btn-group>
-          </q-tab>
-        </q-tabs>
-      </div>
   </q-header>
 </template>
 
@@ -109,6 +84,10 @@
   border-bottom: 5px solid var(--brand-blue-dark);
   background: var(--brand-blue);
 }
+
+.underlined {
+  border-bottom: 2px solid white
+}
 </style>
 
 <script>
@@ -121,6 +100,19 @@ export default {
   computed: {
     isLoggedIn: get('auth/isLoggedIn'),
     name: get('auth/name')
+  },
+  methods: {
+    buttonProps ({ href, route, isActive, isExactActive }) {
+      const props = {
+        to: route
+      }
+
+      if (isActive === true) {
+        props.class = 'underlined'
+      }
+
+      return props
+    }
   }
 }
 </script>

@@ -417,6 +417,7 @@ export default {
     'download-csv': JsonCSV
   },
   data: () => ({
+    centerOptions: null,
     pubLoadCount: 0,
     reviewStates: undefined,
     selectedReviewState: undefined,
