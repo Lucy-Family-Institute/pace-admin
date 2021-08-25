@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "description": "A Quasar Framework app",
   "productName": "Quasar App",
-  "author": "rickjohnson <richardpatrickjohnson@gmail.com>",
+  "cordovaId": "org.cordova.quasar.app",
+  "capacitorId": "",
+  "author": "Jeffrey Spies <code@jeffspies.com>",
   "private": true,
   "scripts": {
     "lint": "eslint --ext .js,.vue ./",
@@ -14,43 +16,40 @@
     "apexcharts": "^3.19.2",
     "axios": "^0.18.1",
     "combinations": "^1.0.0",
-    "core-js": "^3.6.5",
     "cytoscape": "^3.15.1",
     "cytoscape-euler": "^1.2.2",
-    "dotenv": "^10.0.0",
     "lodash": "^4.17.19",
     "meilisearch": "^0.11.0",
     "p-map": "^4.0.0",
-    "quasar": "^2.0.0",
+    "quasar": "^1.0.0",
     "vue-apexcharts": "^1.5.3",
     "vue-d3-network": "^0.1.28",
     "vue-json-csv": "^1.2.11",
-    "vuex": "4",
     "vuex-pathify": "^1.4.1",
     "vuex-persistedstate": "^3.0.1"
   },
   "devDependencies": {
-    "@babel/eslint-parser": "^7.13.14",
-    "@quasar/app": "^3.0.0",
-    "eslint": "^7.14.0",
-    "eslint-config-prettier": "^8.1.0",
-    "eslint-plugin-vue": "^7.0.0",
-    "eslint-webpack-plugin": "^2.4.0"
+    "@quasar/app": "^1.0.0",
+    "@quasar/quasar-app-extension-dotenv": "^1.0.3",
+    "babel-eslint": "^10.0.1",
+    "eslint": "^6.8.0",
+    "eslint-config-standard": "^14.1.0",
+    "eslint-loader": "^3.0.3",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-node": "^11.0.0",
+    "eslint-plugin-promise": "^4.0.1",
+    "eslint-plugin-standard": "^4.0.0",
+    "eslint-plugin-vue": "^6.1.2"
   },
-  "browserslist": [
-    "last 10 Chrome versions",
-    "last 10 Firefox versions",
-    "last 4 Edge versions",
-    "last 7 Safari versions",
-    "last 8 Android versions",
-    "last 8 ChromeAndroid versions",
-    "last 8 FirefoxAndroid versions",
-    "last 10 iOS versions",
-    "last 5 Opera versions"
-  ],
   "engines": {
-    "node": ">= 12.22.1",
+    "node": ">= 10.18.1",
     "npm": ">= 6.13.4",
     "yarn": ">= 1.21.1"
+  },
+  "browserslist": [
+    "last 1 version, not dead, ie >= 11"
+  ],
+  "resolutions": {
+    "@babel/parser": "7.7.5"
   }
 }
