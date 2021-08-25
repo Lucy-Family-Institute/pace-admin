@@ -1,7 +1,0 @@
-- args:
-    sql: ALTER TABLE "public"."awards" ALTER COLUMN "funder_award_identifier" SET
-      NOT NULL;
-  type: run_sql
-- args:
-    sql: COMMENT ON COLUMN "public"."awards"."funder_award_identifier" IS E'null'
-  type: run_sql

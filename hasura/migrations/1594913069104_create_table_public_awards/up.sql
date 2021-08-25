@@ -1,0 +1,2 @@
+
+CREATE TABLE "public"."awards"("id" serial NOT NULL, "publication_id" integer NOT NULL, "funder_name" text NOT NULL, "funder_award_identifier" text NOT NULL, "source_metadata" jsonb NOT NULL, "source_name" text NOT NULL, PRIMARY KEY ("id") , FOREIGN KEY ("publication_id") REFERENCES "public"."publications"("id") ON UPDATE no action ON DELETE restrict, UNIQUE ("id"));

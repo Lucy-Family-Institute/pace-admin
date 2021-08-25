@@ -1,7 +1,0 @@
-- args:
-    name: publications_authors
-    new_name: authors_publications
-    table:
-      name: publications
-      schema: public
-  type: rename_relationship

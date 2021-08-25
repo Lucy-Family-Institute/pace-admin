@@ -2,20 +2,18 @@ version: '3.7'
 
 services:
   postgres:
-    image: postgres:9.6
-    environment:
-      PGDATA: /var/lib/postgresql/data/pgdata
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - ${POSTGRES_PORT}:5432
-    restart: always
-    volumes:
-      - ./server/src/modules/keycloak/init.sql:/docker-entrypoint-initdb.d/1-init.sql
-      - postgres_data:/var/lib/postgresql/data
+      image: postgres:13.4
+      environment:
+        PGDATA: /var/lib/postgresql/data/pgdata
+        POSTGRES_USER: ${POSTGRES_USER}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      ports:
+        - ${POSTGRES_PORT}:5432
+      volumes:
+        - postgres_data:/var/lib/postgresql/data
 
   graphql-engine:
-    image: hasura/graphql-engine:v1.0.0-beta.10
+    image: hasura/graphql-engine:v2.0.7
     ports:
       - ${HASURA_PORT}:8080
     restart: always
@@ -43,11 +41,9 @@ services:
       # Uncomment the line below if you want to specify JDBC parameters. The parameter below is just an example, and it shouldn't be used in production without knowledge. It is highly recommended that you read the PostgreSQL JDBC driver documentation in order to use it.
       #JDBC_PARAMS: "ssl=true"
     volumes: 
-      - ./server/src/modules/keycloak/realm-export.json:/opt/jboss/keycloak/realm-export.json
+      - ./build/keycloak/realm-export.json:/opt/jboss/keycloak/realm-export.json
     ports:
       - ${KEYCLOAK_PORT}:8080
-    depends_on:
-      - postgres
     restart: always
   
   redis:
@@ -75,13 +71,6 @@ services:
       - ./data/thumbnails:/thumbnails
     ports:
       - ${NGINX_PORT}:${NGINX_PORT}
-    environment:
-      - DOCKER_HOST_IP=${DOCKER_HOST_IP}
-      - NGINX_PORT=${NGINX_PORT}
-      - KEYCLOAK_PORT=${KEYCLOAK_PORT}
-      - CLIENT_DEV_PORT=${CLIENT_DEV_PORT}
-      - HASURA_PORT=${HASURA_PORT}
-      - EXPRESS_PORT=${EXPRESS_PORT}
-    
+
 volumes:
   postgres_data:

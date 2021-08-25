@@ -1,0 +1,2 @@
+
+CREATE TABLE "public"."persons_organizations"("id" serial NOT NULL, "person_id" integer NOT NULL, "organization_value" text NOT NULL, PRIMARY KEY ("id") , FOREIGN KEY ("person_id") REFERENCES "public"."persons"("id") ON UPDATE no action ON DELETE no action, FOREIGN KEY ("organization_value") REFERENCES "public"."review_organization"("value") ON UPDATE no action ON DELETE no action, UNIQUE ("id"));
