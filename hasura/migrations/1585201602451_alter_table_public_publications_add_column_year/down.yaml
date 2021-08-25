@@ -1,3 +1,0 @@
-- args:
-    sql: ALTER TABLE "public"."publications" DROP COLUMN "year";
-  type: run_sql

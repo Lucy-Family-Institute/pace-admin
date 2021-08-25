@@ -1,3 +1,0 @@
-- args:
-    sql: alter table "public"."publications_authors" rename to "authors_publications";
-  type: run_sql

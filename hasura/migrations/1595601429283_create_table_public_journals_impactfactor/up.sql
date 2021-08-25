@@ -1,0 +1,2 @@
+
+CREATE TABLE "public"."journals_impactfactor"("id" serial NOT NULL, "journal_id" integer NOT NULL, "year" integer NOT NULL, "impactfactor" float8 NOT NULL, PRIMARY KEY ("id") , FOREIGN KEY ("journal_id") REFERENCES "public"."journals"("id") ON UPDATE no action ON DELETE restrict);
