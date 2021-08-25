@@ -65,7 +65,6 @@ export default {
       // })
       // this.reviewStateOptions = _.compact(_.map(results.data.reviewstates, 'name'))
       // this.filterReviewStates = _.clone(this.reviewStateOptions)
-      // console.log(`Loaded Review State Options: ${this.reviewStateOptions}`)
       this.selectedPersonPubSort = (this.selectedPersonPubSort) ? this.selectedPersonPubSort : this.preferredPersonPubSort
       this.pubSearch = ''
     }

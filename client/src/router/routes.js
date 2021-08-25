@@ -41,6 +41,7 @@ export function makeRoutes (store) {
       component: () => import('layouts/Landing.vue'),
       children: [
         {
+          name: 'home',
           path: '',
           beforeEnter: (to, fro, next) => {
             if (store.get('auth/isLoggedIn')) {
@@ -53,34 +54,40 @@ export function makeRoutes (store) {
       ]
     },
     {
-      path: '/review/',
+      path: '/review',
       component: () => import('layouts/Base.vue'),
       children: [
         {
+          name: 'review',
           path: '',
           component: () => import('pages/Index.vue')
         }
       ]
     },
     {
-      path: '/dashboard/',
+      path: '/dashboard',
       component: () => import('layouts/Base.vue'),
       children: [
         {
+          name: 'dashboard',
           path: '',
           component: () => import('pages/Dashboard.vue')
         }
       ]
     },
     {
-      path: '/center_review/',
+      path: '/center-review',
       component: () => import('layouts/Base.vue'),
       children: [
         {
+          name: 'center-review',
           path: '',
           component: () => import('pages/CenterReview.vue')
         }
       ]
+    },
+    {
+      path: '/center_review', redirect: { name: 'center_review' }
     }
   ]
 
