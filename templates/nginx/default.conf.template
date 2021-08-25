@@ -7,6 +7,10 @@ upstream hasura {
   keepalive 64;
 }
 
+upstream search {
+  server {{ .Env.DOCKER_HOST_IP}}:{{ .Env.MEILI_PORT }};
+}
+
 server {
   listen {{ .Env.NGINX_PORT}};
 
@@ -23,6 +27,14 @@ server {
     proxy_set_header Connection "upgrade";
   }
 
+  location /api/search/ {
+    rewrite /api/search/(.*) /$1 break;
+    proxy_pass http://search;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+  }
+
   location ~ /(keycloak|session|login|logout|webhooks) {
     proxy_pass http://{{ .Env.DOCKER_HOST_IP}}:{{ .Env.EXPRESS_PORT }};
   }
@@ -33,12 +45,6 @@ server {
 
   location /thumbnails {
     root /thumbnails;
-  }
-
-  location /dashboard {
-    proxy_pass http://{{ .Env.DOCKER_HOST_IP}}:{{ .Env.DASHBOARD_BASE_URL }};
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
   }
 
   location / {

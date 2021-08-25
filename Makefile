@@ -9,11 +9,7 @@ include .env
 # MAKEFLAGS += --warn-undefined-variables
 
 ifndef ENV
-ENV := dev
-ifndef HIDE_INFO
-$(info ENV has been set to default 'dev'; run ENV=prod make for production commands)
-$(info )
-endif
+$(info Please set ENV to 'dev' or 'prod' in your .env file.)
 endif
 
 ifndef CONFIRM
@@ -39,7 +35,7 @@ ifeq ($(UNAME),Linux)
 	endif
 endif
 
-RUN_MAKE := HIDE_INFO=0 ENV=$(ENV) CONFIRM=$(CONFIRM) $(MAKE)
+RUN_MAKE := ENV=$(ENV) CONFIRM=$(CONFIRM) $(MAKE)
 
 ##############################################################################
 # Utilities
@@ -222,7 +218,13 @@ migration-console:
 ######################################
 ### Docker
 
-$(BUILD_DIR):
+# This will run if any of the build files have been directly changed (i.e, a no-no),
+# if the templates folder has changed (e.g., a file has been added or removed).
+# or if any of the template files have changed.
+# We touch the build folder for good measure.
+TEMPLATES_FILES := $(shell find ./$(TEMPLATES_DIR) -type f)
+BUILD_FILES := $(shell find ./$(BUILD_DIR) -type f)
+$(BUILD_DIR): $(BUILD_FILES) $(TEMPLATES_DIR) $(TEMPLATES_FILES) 
 	@echo Running gomplate...
 	@docker run \
 		--user $(UID):$(GID) \
@@ -234,8 +236,17 @@ $(BUILD_DIR):
 		hairyhenderson/gomplate \
 		--input-dir /input \
 		--output-dir /output
+	@touch $(BUILD_DIR)
 
 docker-database-restore: $(BUILD_DIR)
+ifeq ($(ENV),dev)
+else ifeq ($(CONFIRM),true)
+else
+	$(info )
+	$(info You can only restore a database in ENV=prod mode when CONFIRM=true.)
+	$(info )
+	@exit 1;
+endif
 	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) ENV=$(ENV) UID=$(UID) GID=$(GID) \
 		docker-compose \
 		-f docker-compose.restore.yml \
@@ -259,8 +270,9 @@ DOCKER_REQS := \
 	KEYCLOAK_USERNAME \
 	KEYCLOAK_PASSWORD \
 	KEYCLOAK_PORT \
+	MEILI_PORT \
 	MEILI_KEY \
-	NGINX_PORT \
+	NGINX_PORT
 
 .PHONY: docker
 #: Run docker containers in docker-compose in the background
@@ -288,7 +300,8 @@ docker-restart: docker-stop docker
 ### Clients
 
 CLIENT_REQS := \
-	GRAPHQL_END_POINT
+	GRAPHQL_END_POINT \
+	MEILI_PUBLIC_KEY
 
 .PHONY: client
 #: Start the client dev server
@@ -357,28 +370,31 @@ clean: $(addprefix env-, $(CLEAN_REQS))
 .PHONY: clear-pdfs
 #: Remove pdfs and thumbnails
 clear-pdfs:
+ifeq ($(ENV),dev)
+else ifeq ($(CONFIRM),true)
+else
+	$(info )
+	$(info You can only clear PDFS and thumbnails in ENV=prod mode when CONFIRM=true.)
+	$(info )
+	@exit 1;
+endif
 	@rm data/pdfs/* data/thumbnails/*
 
 .PHONY: cleardb
 #: Clear the database by destroying the docker volumes
 cleardb:
-ifeq ($(ENV),prod)
-ifneq ($(CONFIRM),true)
-	@echo "You can only clear the database in ENV=prod mode when CONFIRM=true."
-	@echo
-	@exit 1;
+ifeq ($(ENV),dev)
+else ifeq ($(CONFIRM),true)
 else
+	$(info )
+	$(info You can only clear the database in ENV=prod mode when CONFIRM=true.)
+	$(info )
+	@exit 1;
+endif
 	@echo "Clearing the production database..."
 	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose \
 		-f docker-compose.yml \
 		down -v --remove-orphans
-endif
-else
-	@echo "Clearing the database..."
-	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose \
-		-f docker-compose.yml \
-		down -v --remove-orphans
-endif
 
 ##############################################################################
 # Aliases

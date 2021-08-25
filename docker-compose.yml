@@ -58,7 +58,7 @@ services:
     environment:
       MEILI_MASTER_KEY: ${MEILI_KEY}
     ports:
-      - 7700:7700
+      - ${MEILI_PORT}:${MEILI_PORT}
     restart: always
     volumes:
       - ./dashboard-search/data.ms:/data.ms

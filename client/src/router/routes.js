@@ -71,7 +71,12 @@ export function makeRoutes (store) {
         {
           name: 'dashboard',
           path: '',
-          component: () => import('pages/Dashboard.vue')
+          component: () => import('pages/dashboard/Index.vue')
+        },
+        {
+          name: 'search',
+          path: 'search',
+          component: () => import('pages/dashboard/Search.vue')
         }
       ]
     },
