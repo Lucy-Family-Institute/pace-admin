@@ -1,8 +1,0 @@
-- args:
-    cascade: false
-    sql: "CREATE OR REPLACE VIEW \"public\".\"persons_publications_metadata\" AS \n
-      SELECT persons_publications.id,\n    persons_publications.person_id,\n    persons_publications.publication_id,\n
-      \   persons_publications.confidence,\n    publications.title,\n    lower(publications.doi)
-      as doi,\n    publications.source_name,\n    publications.year\n   FROM persons_publications,\n
-      \   publications\n  WHERE (persons_publications.publication_id = publications.id);"
-  type: run_sql

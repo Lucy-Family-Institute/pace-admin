@@ -1,4 +1,0 @@
-- args:
-    sql: "\n          alter table \"public\".\"reviews\" drop constraint \"reviews_reviewstate_abbrev_fkey\"\n
-      \     "
-  type: run_sql

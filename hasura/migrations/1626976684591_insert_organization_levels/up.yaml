@@ -1,9 +1,0 @@
-- args:
-    cascade: false
-    sql: "insert into review_organization_level values ('ND', 1);\ninsert into review_organization_level
-      values ('NDENERGY', 2);\ninsert into review_organization_level values ('EIGH',
-      2);\ninsert into review_organization_level values ('NDNANO', 2);\ninsert into
-      review_organization_level values ('IPH', 2);\ninsert into review_organization_level
-      values ('ECI', 2);\ninsert into review_organization_level values ('CRC', 2);\ninsert
-      into review_organization_level values ('NDIAS', 2);\n "
-  type: run_sql

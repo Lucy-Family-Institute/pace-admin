@@ -1,6 +1,0 @@
-- args:
-    relationship: awards
-    table:
-      name: publications
-      schema: public
-  type: drop_relationship

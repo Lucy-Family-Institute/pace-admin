@@ -6,7 +6,7 @@ include .env
 ##############################################################################
 # Prologue
 ##############################################################################
-MAKEFLAGS += --warn-undefined-variables
+# MAKEFLAGS += --warn-undefined-variables
 
 ifndef ENV
 ENV := dev
@@ -25,6 +25,8 @@ GID := $(shell id -g)
 
 ENV_PATH := $(PWD)/.env
 
+NODE_DIRS := client server ingest dashboard-search dashboard-client node-admin-client
+
 TEMPLATES_DIR := templates
 BUILD_DIR := build
 
@@ -37,11 +39,23 @@ ifeq ($(UNAME),Linux)
 	endif
 endif
 
-RUN_MAKE := HIDE_INFO=1 ENV=$(ENV) CONFIRM=$(CONFIRM) $(MAKE)
+RUN_MAKE := HIDE_INFO=0 ENV=$(ENV) CONFIRM=$(CONFIRM) $(MAKE)
 
 ##############################################################################
-# Docs - Self documenting help feature
+# Utilities
 ##############################################################################
+
+.PHONY: env
+env:
+env-%:
+	@ if [ -z '${${*}}' ]; then echo 'Environment variable $* not set.' && exit 1; fi
+
+.PHONY: sleep
+sleep:
+sleep-%: sleep
+	@echo Sleeping - back momentarily...
+	@sleep $*
+
 .PHONY: help
 help: # Source: https://stackoverflow.com/a/59087509
 	@grep -B1 -E "^[a-zA-Z0-9_-]+\:([^\=]|$$)" Makefile \
@@ -72,30 +86,15 @@ endif
 
 install-quasar:
 ifeq (,$(shell which quasar))
-	npm -g install quasar
 	npm install -g @quasar/cli
-endif
-
-install-typescript:
-ifeq (,$(shell which tsc))
-	npm -g install tsc
-endif
-
-install-ts-node:
-ifeq (,$(shell which ts-node))
-	npm -g install ts-node
 endif
 
 %/node_modules: %/package.json
 	cd $(@D) && yarn && touch -m node_modules
 
 .PHONY: update-js
-update-js: \
-	client/node_modules \
-	server/node_modules \
-	ingest/node_modules \
-	dashboard-search/node_modules \
-	dashboard-client/node_modules
+#: Force an update of all node_modules directories; mostly unnecessary
+update-js: env-NODE_DIRS $(addsuffix /node_modules, $(NODE_DIRS))
 
 .PHONY: install
 install: \
@@ -103,8 +102,6 @@ install: \
 	install-hasura-cli \
 	install-yarn \
 	install-quasar \
-	install-ts-node \
-	install-typescript \
 	update-js 
 	@echo 'Installing...'
 
@@ -213,6 +210,7 @@ update-pdfs: ingest/node_modules
 ### Hasura
 
 .PHONY: migrate
+#: Run Hasura migrations against the database
 migrate:
 	cd hasura && hasura migrate apply && cd ..
 
@@ -224,12 +222,12 @@ migration-console:
 ######################################
 ### Docker
 
-.PHONY: build-templates
-build-templates:
+$(BUILD_DIR):
 	@echo Running gomplate...
 	@docker run \
 		--user $(UID):$(GID) \
 		--env-file $(ENV_PATH) \
+		--env DOCKER_HOST_IP=$(DOCKER_HOST_IP) \
 		--env ENV=$(ENV) \
 		-v $(PWD)/$(TEMPLATES_DIR):/input \
 		-v $(PWD)/$(BUILD_DIR):/output \
@@ -237,35 +235,68 @@ build-templates:
 		--input-dir /input \
 		--output-dir /output
 
+docker-database-restore: $(BUILD_DIR)
+	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) ENV=$(ENV) UID=$(UID) GID=$(GID) \
+		docker-compose \
+		-f docker-compose.restore.yml \
+		up -d
+
+DOCKER_REQS := \
+	BUILD_DIR \
+	DOCKER_HOST_IP \
+	ENV \
+	UID \
+	GID \
+	POSTGRES_USER \
+	POSTGRES_PASSWORD \
+	POSTGRES_PORT \
+	HASURA_PORT \
+	HASURA_SECRET \
+	HASURA_DATABASE \
+	HASURA_ENABLE_CONSOLE \
+	HASURA_WEBHOOK \
+	KEYCLOAK_DATABASE \
+	KEYCLOAK_USERNAME \
+	KEYCLOAK_PASSWORD \
+	KEYCLOAK_PORT \
+	MEILI_KEY \
+	NGINX_PORT \
+
 .PHONY: docker
 #: Run docker containers in docker-compose in the background
-docker: build-templates
+docker: $(addprefix env-, $(DOCKER_REQS)) $(BUILD_DIR)
 	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) ENV=$(ENV) UID=$(UID) GID=$(GID) \
 		docker-compose \
 		-f docker-compose.yml \
 		up -d
 
 .PHONY: logs
-#: Tail docker logs
-logs:
-	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose logs -f
+#: Tail docker logs; use make logs service=dockername to print specific logs
+logs: env-DOCKER_HOST_IP
+	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose logs -f $(service)
 
 .PHONY: docker-stop
+#: Stop docker
 docker-stop:
 	docker-compose down
 
 .PHONY: docker-restart
+#: Restart docker
 docker-restart: docker-stop docker
 
 ######################################
 ### Clients
 
+CLIENT_REQS := \
+	GRAPHQL_END_POINT
+
 .PHONY: client
 #: Start the client dev server
-client: client/node_modules
+client: $(addprefix env-, $(CLIENT_REQS)) client/node_modules
 	cd client && quasar dev && cd ..
 
 .PHONY: dashboard-client
+#: Start the dashboard-client dev server
 dashboard-client: dashboard-client/node_modules
 	cd dashboard-client && quasar dev && cd ..
 
@@ -280,17 +311,53 @@ server: server/node_modules
 ######################################
 ### Search
 
+.PHONY: dashboard-ingest
 dashboard-ingest:
 	cd dashboard-search && ts-node src/ingest.ts && cd ..
+
+# .PHONY: restore
+# restore:
+# 	docker-compose exec postgres psql --username $(POSTGRES_USER) $(HASURA_DATABASE) < /tmp/backup.sql
+# docker-compose exec postgres pg_restore --dbname=$(HASURA_DATABASE) --username $(POSTGRES_USER) --data-only /tmp/backup.sql
+
+ADD_DEV_USER_REQS := \
+	AUTH_SERVER_URL \
+	KEYCLOAK_USERNAME \
+	KEYCLOAK_PASSWORD \
+	KEYCLOAK_REALM \
+	GRAPHQL_END_POINT \
+	HASURA_SECRET \
+	DEV_USER_EMAIL \
+	DEV_USER_FIRST_NAME \
+	DEV_USER_LAST_NAME \
+	DEV_USER_PASSWORD
+
+.PHONY: add-dev-user
+add-dev-user: node-admin-client/node_modules $(addprefix env-, $(ADD_DEV_USER_REQS))
+	@cd node-admin-client && yarn run add-users && cd ..
+
+# .PHONY: add-dev-user
+# add-dev-user:
+# 	@$(RUN_MAKE) private-add-dev-user
+
+.PHONY: setup
+setup: cleardb docker-database-restore sleep-45 docker sleep-15 add-dev-user
 
 ##############################################################################
 # Clean-up tasks
 ##############################################################################
+CLEAN_REQS =\
+	NODE_DIRS
+
+.PHONY: clean
+#: Clean the build folder and all node_module folders by deleting them
+clean: $(addprefix env-, $(CLEAN_REQS))
+	@rm -rf build $(addsuffix /node_modules, $(NODE_DIRS))
+
 .PHONY: clear-pdfs
 #: Remove pdfs and thumbnails
 clear-pdfs:
-	rm data/pdfs/*
-	rm data/thumbnails/*
+	@rm data/pdfs/* data/thumbnails/*
 
 .PHONY: cleardb
 #: Clear the database by destroying the docker volumes
