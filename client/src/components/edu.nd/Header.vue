@@ -10,7 +10,7 @@
         <q-toolbar-title>PACE</q-toolbar-title>
       </q-btn>
       <q-space />
-      <q-btn-group unelevated>
+      <q-btn-group align="center" style="width:50%" unelevated spread>
         <router-link
           :to="{ name: 'review' }"
           custom
