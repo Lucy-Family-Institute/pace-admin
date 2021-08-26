@@ -415,6 +415,9 @@ import readReviewTypes from '../../../gql/readReviewTypes.gql'
 import readPublications from '../gql/readPublications'
 // import readPendingPublications from '../../../gql/readPendingPublications.gql'
 import readPersonPublications from '../../../gql/readPersonPublications.gql'
+import readConfSetsPersonPublications from '../../../gql/readConfSetsPersonPublications.gql'
+import readReviewsPersonPublications from '../../../gql/readReviewsPersonPublications.gql'
+
 // import readPublicationsByReviewState from '../../../gql/readPublicationsByReviewState.gql'
 import readPublication from '../../../gql/readPublication.gql'
 // import * as service from '@porter/osf.io';
@@ -423,7 +426,7 @@ import PublicationFilter from '../components/PublicationFilter.vue'
 import PeopleAuthorSortFilter from '../components/PeopleAuthorSortFilter.vue'
 import MainFilter from '../components/MainFilter.vue'
 import sanitize from 'sanitize-filename'
-// import moment from 'moment'
+import moment from 'moment'
 
 export default {
   name: 'PageIndex',
@@ -447,6 +450,8 @@ export default {
     personsLoaded: false,
     personsLoadedError: false,
     publicationsGroupedByReview: {},
+    confSetsByPersonPubId: {},
+    reviewsByPersonPubId: {},
     personPublicationsCombinedMatches: [],
     personReviewedPubCounts: {},
     // these are helper objects to connect personPubSets together
@@ -1193,6 +1198,8 @@ export default {
       this.personPublicationsCombinedMatches = []
       this.personPublicationsCombinedMatchesByReview = {}
       this.filteredPersonPublicationsCombinedMatchesByReview = {}
+      this.confSetsByPersonPubId = {}
+      this.reviewsByPersonPubId = {}
       this.publicationsGroupedByTitleByReview = {}
       this.publicationsGroupedByDoiByReview = {}
       this.personPubSetPointer = {}
@@ -1225,8 +1232,8 @@ export default {
       this.publicationsGroupedByReview = _.groupBy(this.publications, function (pub) {
         if (!indexThis.personPublicationsById) indexThis.personPublicationsById = {}
         indexThis.personPublicationsById[pub.id] = pub
-        if (pub.reviews_aggregate.nodes && pub.reviews_aggregate.nodes.length > 0) {
-          return pub.reviews_aggregate.nodes[0].review_type
+        if (indexThis.reviewsByPersonPubId[pub.id] && indexThis.reviewsByPersonPubId[pub.id].nodes && indexThis.reviewsByPersonPubId[pub.id].nodes.length > 0) {
+          return indexThis.reviewsByPersonPubId[pub.id].nodes[0].review_type
         } else {
           return 'pending'
         }
@@ -1422,10 +1429,10 @@ export default {
       }
     },
     getPublicationConfidence (personPublication) {
-      if (personPublication.confidencesets_aggregate &&
-        personPublication.confidencesets_aggregate.nodes &&
-        personPublication.confidencesets_aggregate.nodes.length > 0) {
-        return personPublication.confidencesets_aggregate.nodes[0].value
+      if (this.confSetsByPersonPubId[personPublication.id] &&
+        this.confSetsByPersonPubId[personPublication.id].nodes &&
+        this.confSetsByPersonPubId[personPublication.id].nodes.length > 0) {
+        return this.confSetsByPersonPubId[personPublication.id].nodes[0].value
       } else {
         return personPublication.confidence
       }
@@ -1473,6 +1480,7 @@ export default {
       // const result = await this.$apollo.query(readPublicationsByPerson(item.id))
       // this.publications = result.data.publications
       try {
+        console.log(`Starting query publications ${moment().format('HH:mm:ss:SSS')}`)
         const pubsWithReviewResult = await this.$apollo.query({
           query: readPersonPublications,
           variables: {
@@ -1482,6 +1490,33 @@ export default {
             yearMax: this.selectedPubYears.max
           },
           fetchPolicy: 'network-only'
+        })
+        console.log(`Finished query publications ${moment().format('HH:mm:ss:SSS')}`)
+        const confSetsResult = await this.$apollo.query({
+          query: readConfSetsPersonPublications,
+          variables: {
+            personId: this.person.id,
+            // userId: this.userId,   // commenting out for now to have any review from any user visible for now and actionable by any user
+            yearMin: this.selectedPubYears.min,
+            yearMax: this.selectedPubYears.max
+          },
+          fetchPolicy: 'network-only'
+        })
+        this.confSetsByPersonPubId = _.mapKeys(confSetsResult.data.confidencesets_persons_publications_aggregate, (nodes) => {
+          return nodes[0].persons_publications_id
+        })
+        const reviewsResult = await this.$apollo.query({
+          query: readReviewsPersonPublications,
+          variables: {
+            personId: this.person.id,
+            // userId: this.userId,   // commenting out for now to have any review from any user visible for now and actionable by any user
+            yearMin: this.selectedPubYears.min,
+            yearMax: this.selectedPubYears.max
+          },
+          fetchPolicy: 'network-only'
+        })
+        this.reviewsByPersonPubId = _.mapKeys(reviewsResult.data.reviews_persons_publications_aggregate, (nodes) => {
+          return nodes[0].persons_publications_id
         })
         // check if person selected changed when clicks happen rapidly and if so abort
         if (this.person.id === person.id) {
