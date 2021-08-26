@@ -26,5 +26,10 @@
     "redis": "^3.0.2",
     "ts-node": "^8.6.2",
     "typescript": "^3.8.3"
+  },
+  "scripts": {
+    "start": "ts-node ./src/index.ts",
+    "compile": "tsc",
+    "start-compiled": "node ./dist/src/index.js"
   }
 }

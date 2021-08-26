@@ -25,14 +25,11 @@ export async function loadModule (
   value = _.get(config, 'middleware', undefined)
   if(value !== undefined) {
     _.forEach(value, async (middleware) => {
-      // console.log(`Loading ${label} middleware`)
       let middlewareToUse
       if (_.isPlainObject(middleware)) {
         middlewareToUse = middleware.func(options)
-        console.log('herewmiddleware')
         middlewareCache[middleware.label] = middlewareToUse
       } else if (_.isFunction(middleware)) {
-        console.log(label)
         middlewareToUse = middleware(options)
       }
       app.use(middlewareToUse)

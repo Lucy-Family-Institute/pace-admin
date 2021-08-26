@@ -1,14 +1,6 @@
-upstream keycloak {
-  server {{ .Env.DOCKER_HOST_IP}}:{{ .Env.KEYCLOAK_PORT }};
-}
-
 upstream hasura {
-  server {{ .Env.DOCKER_HOST_IP}}:{{ .Env.HASURA_PORT }};
+  server graphql-engine:{{ .Env.HASURA_PORT }};
   keepalive 64;
-}
-
-upstream search {
-  server {{ .Env.DOCKER_HOST_IP}}:{{ .Env.MEILI_PORT }};
 }
 
 server {
@@ -29,14 +21,14 @@ server {
 
   location /api/search/ {
     rewrite /api/search/(.*) /$1 break;
-    proxy_pass http://search;
+    proxy_pass http://search:{{ .Env.MEILI_PORT }};
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
   }
 
   location ~ /(keycloak|session|login|logout|webhooks) {
-    proxy_pass http://{{ .Env.DOCKER_HOST_IP}}:{{ .Env.EXPRESS_PORT }};
+    proxy_pass http://express:{{ .Env.EXPRESS_PORT }};
   }
 
   location /pdfs {
