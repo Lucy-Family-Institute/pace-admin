@@ -889,6 +889,15 @@
         table:
           schema: public
           name: reviews
+  - name: reviews_persons_publications
+    using:
+      manual_configuration:
+        remote_table:
+          schema: public
+          name: reviews_persons_publications
+        insertion_order: null
+        column_mapping:
+          id: persons_publications_id
   insert_permissions:
   - role: user
     permission:
@@ -1310,6 +1319,15 @@
         insertion_order: null
         column_mapping:
           persons_publications_id: id
+  - name: publication
+    using:
+      manual_configuration:
+        remote_table:
+          schema: public
+          name: publications
+        insertion_order: null
+        column_mapping:
+          publication_id: id
   - name: type_review
     using:
       manual_configuration:
