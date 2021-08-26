@@ -21,7 +21,7 @@ GID := $(shell id -g)
 
 ENV_PATH := $(PWD)/.env
 
-NODE_DIRS := client server ingest dashboard-search dashboard-client node-admin-client
+NODE_DIRS := client server ingest dashboard-search node-admin-client
 
 TEMPLATES_DIR := templates
 BUILD_DIR := build
@@ -64,17 +64,6 @@ help: # Source: https://stackoverflow.com/a/59087509
 # Install/Update Dependencies
 ##############################################################################
 
-install-hasura-cli:
-ifeq (,$(shell which hasura))
-	curl -L https://github.com/hasura/graphql-engine/raw/master/cli/get.sh | bash
-endif
-
-install-docker-compose:
-ifeq (,$(shell which docker-compose))
-	sudo curl -L "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-	sudo chmod +x /usr/local/bin/docker-compose
-endif
-
 install-yarn:
 ifeq (,$(shell which yarn))
 	npm -g install yarn
@@ -94,8 +83,6 @@ update-js: env-NODE_DIRS $(addsuffix /node_modules, $(NODE_DIRS))
 
 .PHONY: install
 install: \
-	install-docker-compose \
-	install-hasura-cli \
 	install-yarn \
 	install-quasar \
 	update-js 
@@ -297,7 +284,7 @@ docker-stop:
 docker-restart: docker-stop docker
 
 ######################################
-### Clients
+### Client
 
 CLIENT_REQS := \
 	GRAPHQL_END_POINT \
@@ -307,11 +294,6 @@ CLIENT_REQS := \
 #: Start the client dev server
 client: $(addprefix env-, $(CLIENT_REQS)) client/node_modules
 	cd client && quasar dev && cd ..
-
-.PHONY: dashboard-client
-#: Start the dashboard-client dev server
-dashboard-client: dashboard-client/node_modules
-	cd dashboard-client && quasar dev && cd ..
 
 ######################################
 ### Server
@@ -327,11 +309,6 @@ server: server/node_modules
 .PHONY: dashboard-ingest
 dashboard-ingest:
 	cd dashboard-search && ts-node src/ingest.ts && cd ..
-
-# .PHONY: restore
-# restore:
-# 	docker-compose exec postgres psql --username $(POSTGRES_USER) $(HASURA_DATABASE) < /tmp/backup.sql
-# docker-compose exec postgres pg_restore --dbname=$(HASURA_DATABASE) --username $(POSTGRES_USER) --data-only /tmp/backup.sql
 
 ADD_DEV_USER_REQS := \
 	AUTH_SERVER_URL \
@@ -354,7 +331,7 @@ add-dev-user: node-admin-client/node_modules $(addprefix env-, $(ADD_DEV_USER_RE
 # 	@$(RUN_MAKE) private-add-dev-user
 
 .PHONY: setup
-setup: cleardb docker-database-restore sleep-45 docker sleep-15 migrate add-dev-user
+setup: cleardb docker-database-restore sleep-45 docker sleep-15 migrate add-dev-user dashboard-ingest
 
 ##############################################################################
 # Clean-up tasks
