@@ -597,7 +597,7 @@ export default {
             this.linkPersonPubPair(personPub.id, nextPersonPub.id, reviewType)
           }
         } catch (error) {
-          console.log(`Warning, error on linking publications: ${error}`)
+          console.warn(`Warning, error on linking publications: ${error}`)
           throw error
         }
       })
@@ -634,7 +634,7 @@ export default {
         const set2 = this.getPersonPubSet(set2Id)
         if (set1.reviewType !== reviewType || set2.reviewType !== reviewType) {
           const error = `Error: Mismatch in reviewType for sets to be merged.  Expected: ${reviewType}, found set 1: ${set1.reviewType} set 2: ${set2.reviewType}`
-          console.log(error)
+          console.error(error)
           throw error
         }
         const set2List = set2.personPublicationIds
@@ -653,7 +653,7 @@ export default {
         _.each(set, (personPubId) => {
           if (setId && this.getPersonPubSetId(personPubId) === setId) {
             const error = `Cannot remove person Pub Set (on merge), personPubId: ${personPubId} not in any other set`
-            console.log(error)
+            console.error(error)
             throw error
           }
         })
@@ -670,7 +670,7 @@ export default {
         if (this.getPersonPubSetId(personPubId) !== setId) {
           if (set.reviewType !== reviewType) {
             const error = `Failed to add person pub to set with mismatched review types. Expected ${reviewType}, found: ${set.reviewType}`
-            console.log(error)
+            console.error(error)
             throw error
           }
           const addPub = this.getPersonPublicationById(personPubId)
@@ -685,7 +685,7 @@ export default {
         }
       } else {
         const error = `Failed to add personPub with id: ${personPubId} to set id: ${setId}, personPubSet does not exist`
-        console.log(error)
+        console.error(error)
         throw error
       }
     },
@@ -717,7 +717,7 @@ export default {
         const currentSet = this.getPersonPubSet(currentSetId)
         if (currentSet.reviewType !== reviewType) {
           const error = `Error: Mismatch on review type for person Pub set for personPub id: ${personPubId}, expected review type: ${reviewType} and found review type: ${currentSet.reviewType}`
-          console.log(error)
+          console.error(error)
           throw error
         } else {
           return this.getPersonPubSetId(personPubId)
@@ -916,7 +916,7 @@ export default {
       const pubsByDoi = _.groupBy(publications, (pub) => { return pub.doi })
       _.forEach(_.keys(pubsByDoi), (doi) => {
         if (pubsByDoi[doi].length > 2) {
-          console.log(`Duplicate doi found: ${doi} items: ${JSON.stringify(pubsByDoi[doi], null, 2)}`)
+          console.warn(`Duplicate doi found: ${doi} items: ${JSON.stringify(pubsByDoi[doi], null, 2)}`)
         }
       })
     },
@@ -1128,7 +1128,7 @@ export default {
         }
         this.personsLoaded = true
       } else {
-        console.log('Another load of person detected before this process finished, aborting process.')
+        console.warn('Another load of person detected before this process finished, aborting process.')
       }
     },
     async loadReviewStates () {
@@ -1334,13 +1334,13 @@ export default {
 
       _.each(_.keys(publicationTitlesByReviewType), (titleKey) => {
         if (_.keys(publicationTitlesByReviewType[titleKey]).length > 1) {
-          console.log(`Warning: Title out of sync found: ${titleKey} for person id: ${this.person.id} title record: ${JSON.stringify(publicationTitlesByReviewType[titleKey], null, 2)}`)
+          console.warn(`Title out of sync found: ${titleKey} for person id: ${this.person.id} title record: ${JSON.stringify(publicationTitlesByReviewType[titleKey], null, 2)}`)
           publicationTitlesOutOfSync.push(titleKey)
         }
       })
 
       if (publicationTitlesOutOfSync.length > 0) {
-        console.log(`Warning: Titles found with reviews out of sync: ${JSON.stringify(publicationTitlesOutOfSync, null, 2)}`)
+        console.warn(`Titles found with reviews out of sync: ${JSON.stringify(publicationTitlesOutOfSync, null, 2)}`)
       }
 
       // initialize the list in view
@@ -1492,7 +1492,7 @@ export default {
           })
           this.loadPersonPublicationsCombinedMatches()
         } else {
-          console.log(`Detected change in person selected abort query for person id: ${person.id}`)
+          console.warn(`Detected change in person selected abort query for person id: ${person.id}`)
         }
       } catch (error) {
         this.publicationsLoaded = true
@@ -1541,7 +1541,7 @@ export default {
           }
         }
       } catch (error) {
-        console.log(error)
+        console.error(error)
       } finally {
       }
     },
@@ -1620,7 +1620,7 @@ export default {
         this.clearPublication()
         return mutateResults
       } catch (error) {
-        console.log(error)
+        console.error(error)
       }
     },
     async clickReviewPending (index, person, personPublication) {
@@ -1714,7 +1714,7 @@ export default {
           csl['issued']['date-parts'][0][0] = publicationYear
         }
       } catch (error) {
-        console.log(`Warning: Was unable to update publication year for citation with error: ${error}`)
+        console.warn(`Was unable to update publication year for citation with error: ${error}`)
       }
 
       const citeObj = new Cite(csl)

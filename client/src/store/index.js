@@ -40,7 +40,7 @@ Vue.use(Vuex)
 //     if (await data) {
 //       try {
 //       } catch (e) {
-//         console.log(e)
+//         console.error(e)
 //       }
 //     }
 //     return data

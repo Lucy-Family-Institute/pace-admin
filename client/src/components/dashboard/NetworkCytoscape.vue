@@ -38,14 +38,12 @@ export default {
     results: sync('dashboard/results')
   },
   mounted () {
-    
     const el = document.createElement('div')
     el.setAttribute('id', 'cytoscape-div')
     el.setAttribute('width', '100%')
     el.setAttribute('style', 'min-height: 600px;')
     this.$el.appendChild(el)
     this.cy = cytoscape({ container: el, ...this.config })
-    console.log(mounted)
   },
   watch: {
     $route: 'init',
@@ -83,7 +81,6 @@ export default {
       //   }
       // }))
       // this.links = Object.freeze(links)
-      // console.log(this.cy)
       this.cy.data(this.graph)
     }
   }

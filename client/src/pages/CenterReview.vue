@@ -597,7 +597,7 @@ export default {
             this.linkPersonPubPair(personPub.id, nextPersonPub.id, reviewType)
           }
         } catch (error) {
-          console.log(`Warning, error on linking publications: ${error}`)
+          console.warn(`Warning, error on linking publications: ${error}`)
         }
       })
     },
@@ -633,7 +633,7 @@ export default {
         const set2 = this.getPersonPubSet(set2Id)
         if (set1.reviewType !== reviewType || set2.reviewType !== reviewType) {
           const error = `Warning: Mismatch in reviewType for sets to be merged.  Expected: ${reviewType}, found set 1: ${set1.reviewType} set 2: ${set2.reviewType}`
-          console.log(error)
+          console.error(error)
         }
         const set2List = set2.personPublicationIds
         _.each(set2List, (personPubId) => {
@@ -651,7 +651,7 @@ export default {
         _.each(set, (personPubId) => {
           if (setId && this.getPersonPubSetId(personPubId) === setId) {
             const error = `Warning: Cannot remove person Pub Set (on merge), personPubId: ${personPubId} not in any other set`
-            console.log(error)
+            console.error(error)
           }
         })
         // if we get this far no errors encountered, and all person pubs are now in another set
@@ -667,7 +667,7 @@ export default {
         if (this.getPersonPubSetId(personPubId) !== setId) {
           if (set.reviewType !== reviewType) {
             const error = `Warning: Failed to add person pub to set with mismatched review types. Expected ${reviewType}, found: ${set.reviewType}`
-            console.log(error)
+            console.error(error)
           }
           const addPub = this.getPersonPublicationById(personPubId)
           this.personPubSetsById[setId].personPublicationIds = _.concat(this.personPubSetsById[setId].personPublicationIds, personPubId)
@@ -681,7 +681,7 @@ export default {
         }
       } else {
         const error = `Warning: Failed to add personPub with id: ${personPubId} to set id: ${setId}, personPubSet does not exist`
-        console.log(error)
+        console.error(error)
       }
     },
     notInPersonPubSet (personPubId) {
@@ -712,7 +712,7 @@ export default {
         const currentSet = this.getPersonPubSet(currentSetId)
         if (currentSet.reviewType !== reviewType) {
           const error = `Warning: Mismatch on review type for person Pub set for personPub id: ${personPubId}, expected review type: ${reviewType} and found review type: ${currentSet.reviewType}`
-          console.log(error)
+          console.error(error)
         } else {
           return this.getPersonPubSetId(personPubId)
         }
@@ -892,7 +892,7 @@ export default {
       const pubsByDoi = _.groupBy(publications, (pub) => { return pub.doi })
       _.forEach(_.keys(pubsByDoi), (doi) => {
         if (pubsByDoi[doi].length > 2) {
-          console.log(`Duplicate doi found: ${doi} items: ${JSON.stringify(pubsByDoi[doi], null, 2)}`)
+          console.warn(`Duplicate doi found: ${doi} items: ${JSON.stringify(pubsByDoi[doi], null, 2)}`)
         }
       })
     },
@@ -1337,7 +1337,6 @@ export default {
           return doiKey
         })
 
-        // console.log(`Person pubs grouped by Title are: ${JSON.stringify(this.publicationsGroupedByTitleByReview, null, 2)}`)
         // grab one with highest confidence to display and grab others via title later when changing status
 
         // this.personPublicationsCombinedMatchesByReview[reviewType] = {}
@@ -1645,7 +1644,7 @@ export default {
           await this.loadPublicationsCSLData(publicationIds)
           this.publicationsCslLoaded = true
         } else {
-          console.log('Reload of publications detected, aborting this process')
+          console.warn('Reload of publications detected, aborting this process')
         }
       } catch (error) {
         this.publicationsLoaded = true
@@ -1686,7 +1685,7 @@ export default {
       if (confidenceset) {
         _.set(obj, 'confidenceset_value', confidenceset['value'])
       } else {
-        console.log(`Warning no confidence set found for person pubication: ${personPublication.id}`)
+        console.warn(`Warning no confidence set found for person pubication: ${personPublication.id}`)
       }
       return obj
     },
@@ -1757,12 +1756,11 @@ export default {
           }
         }
       } catch (error) {
-        console.log(error)
+        console.error(error)
       } finally {
       }
     },
     // async refreshReviewQueue () {
-    //   console.log('Refreshing review queue')
     //   this.reviewQueueKey += 1
     // },
     async addReview (index, person, personPublication, reviewType) {
@@ -1778,7 +1776,6 @@ export default {
         let mutateResults = []
         await _.each(personPubs, async (personPub) => {
           // const personPub = personPubs[0]
-          console.log(`Adding Review for person publication: ${personPub.id}`)
           let selectedCenterValue = this.selectedCenter.value
           if (!selectedCenterValue) {
             selectedCenterValue = this.preferredSelectedCenter.value
@@ -1786,7 +1783,6 @@ export default {
           const mutateResult = await this.$apollo.mutate(
             insertReview(this.userId, personPub.id, reviewType, selectedCenterValue)
           )
-          console.log('&&', reviewType, this.reviewTypeFilter)
           if (mutateResult && personPub.id === personPublication.id) {
             this.$refs[`personPub${index}`].hide()
             Vue.delete(this.personPublicationsCombinedMatches, index)
@@ -1815,11 +1811,10 @@ export default {
           })
           this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
         }
-        console.log(`Added reviews: ${JSON.stringify(mutateResults, null, 2)}`)
         this.clearPublication()
         return mutateResults
       } catch (error) {
-        console.log(error)
+        console.error(error)
       }
     },
     async clickReviewPending (index, person, personPublication) {
@@ -1917,7 +1912,7 @@ export default {
           csl['issued']['date-parts'][0][0] = publicationYear
         }
       } catch (error) {
-        console.log(`Warning: Was unable to update publication year for citation with error: ${error}`)
+        console.warn(`Was unable to update publication year for citation with error: ${error}`)
       }
 
       const citeObj = new Cite(csl)
