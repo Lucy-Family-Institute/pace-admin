@@ -55,7 +55,7 @@ This pilot project will prototype a new process that automates data collection f
     DEV_USER_PASSWORD=password
     ```
 
-## Production
+## Running in production
 
 1. First, make sure `./.env` includes ENV=prod. This not only configures your
 environment properly but adds several protections to commands invoked via
@@ -71,7 +71,9 @@ When you get to a point where publications have been reviewed and approved for a
 
     make dashboard-ingest
 
-## Table of Contents (TODO)
+## Updating your database
+
+## File tree summary (TODO)
 
 * [client](./client/README.md) - the UI tool for administering PACE Administration data.
 * [ingest](./ingest/README.md) - responsible for loading data into the adminsitration system.

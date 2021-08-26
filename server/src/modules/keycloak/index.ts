@@ -66,7 +66,7 @@ async function init (options) {
   const app = options.app
   const client = options.client
   const sessions = options.middleware.sessions
-
+  console.log(options)
   passport.use(
     'keycloak',
     new KeycloakStrategy({
@@ -89,7 +89,6 @@ async function init (options) {
     '/auth/keycloak/callback',
     passport.authenticate('keycloak', { failureRedirect: '/login' }),
     (req: Request, res:Response) => {
-      // console.log(req.user)
       res.redirect('/')
     }
   )

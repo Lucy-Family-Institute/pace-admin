@@ -1,4 +1,25 @@
 services:
+  express:
+    build:
+      context: ./server/.
+      args:
+        EXPRESS_PORT: ${EXPRESS_PORT}
+        SESSION_NAME: ${SESSION_NAME}
+        SESSION_SECRET: ${SESSION_SECRET}
+        KEYCLOAK_PORT: ${KEYCLOAK_PORT}
+        KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
+        KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+        KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+        AUTH_SERVER_URL: ${AUTH_SERVER_URL}
+        AUTH_CALLBACK_URL: ${AUTH_CALLBACK_URL}
+        APP_BASE_URL: ${APP_BASE_URL}
+        HASURA_SECRET: ${HASURA_SECRET}
+        NGINX_PORT: ${NGINX_PORT}
+        REDIS_HOST: redis
+        REDIS_PORT: 6379
+    ports:
+      - ${EXPRESS_PORT}:${EXPRESS_PORT}
+    restart: always
   nginx:
     volumes:
-      - ./client/dist/spa:/www
+      - ./build/spa:/www

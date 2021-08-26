@@ -2,15 +2,16 @@ version: '3.7'
 
 services:
   postgres:
-      image: postgres:13.4
-      environment:
-        PGDATA: /var/lib/postgresql/data/pgdata
-        POSTGRES_USER: ${POSTGRES_USER}
-        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      ports:
-        - ${POSTGRES_PORT}:5432
-      volumes:
-        - postgres_data:/var/lib/postgresql/data
+    image: postgres:13.4
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - ${POSTGRES_PORT}:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
 
   graphql-engine:
     image: hasura/graphql-engine:v2.0.7
@@ -47,12 +48,10 @@ services:
     restart: always
   
   redis:
-    image: redis:alpine
-    ports:
-      - 9379:6379
+    image: redis:6.2.5
     command: ["redis-server", "--appendonly", "yes"]
     restart: always
-  
+
   search:
     image: getmeili/meilisearch:v0.11.0
     environment:
@@ -64,13 +63,14 @@ services:
       - ./dashboard-search/data.ms:/data.ms
   
   nginx:
-    image: nginx
+    image: nginx:1.21.1
     volumes:
       - ./build/nginx/:/etc/nginx/templates
       - ./data/pdfs:/pdfs
       - ./data/thumbnails:/thumbnails
     ports:
       - ${NGINX_PORT}:${NGINX_PORT}
+    restart: always
 
 volumes:
   postgres_data:

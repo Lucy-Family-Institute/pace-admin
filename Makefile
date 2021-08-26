@@ -205,6 +205,9 @@ migration-console:
 ######################################
 ### Docker
 
+DC_prod := docker-compose -f docker-compose.yml -f docker-compose.prod.yml
+DC_dev := docker-compose -f docker-compose.yml
+
 # This will run if any of the build files have been directly changed (i.e, a no-no),
 # if the templates folder has changed (e.g., a file has been added or removed).
 # or if any of the template files have changed.
@@ -264,20 +267,36 @@ DOCKER_REQS := \
 .PHONY: docker
 #: Run docker containers in docker-compose in the background
 docker: $(addprefix env-, $(DOCKER_REQS)) $(BUILD_DIR)
+ifeq ($(ENV),prod)
+	@docker-compose -f docker-compose.yml -f docker-compose.prod.yml build
+	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) ENV=$(ENV) UID=$(UID) GID=$(GID) \
+		docker-compose \
+		-f docker-compose.yml \
+		-f docker-compose.prod.yml \
+		up -d
+else
 	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) ENV=$(ENV) UID=$(UID) GID=$(GID) \
 		docker-compose \
 		-f docker-compose.yml \
 		up -d
+endif
 
 .PHONY: logs
 #: Tail docker logs; use make logs service=dockername to print specific logs
 logs: env-DOCKER_HOST_IP
-	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose logs -f $(service)
+	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) $(DC_$(ENV)) logs -f $(service)
 
 .PHONY: docker-stop
 #: Stop docker
 docker-stop:
-	docker-compose down
+ifeq ($(ENV),prod)
+	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose \
+		-f docker-compose.yml \
+		-f docker-compose.prod.yml \
+		down
+else
+	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose down
+endif
 
 .PHONY: docker-restart
 #: Restart docker
@@ -301,7 +320,7 @@ client: $(addprefix env-, $(CLIENT_REQS)) client/node_modules
 .PHONY: server
 #: Start the express server
 server: server/node_modules
-	cd server && ts-node src/index.ts && cd ..
+	cd server && REDIS_HOST=localhost REDIS_PORT=6379 ts-node src/index.ts && cd ..
 
 ######################################
 ### Search
@@ -326,12 +345,16 @@ ADD_DEV_USER_REQS := \
 add-dev-user: node-admin-client/node_modules $(addprefix env-, $(ADD_DEV_USER_REQS))
 	@cd node-admin-client && yarn run add-users && cd ..
 
-# .PHONY: add-dev-user
-# add-dev-user:
-# 	@$(RUN_MAKE) private-add-dev-user
-
 .PHONY: setup
 setup: cleardb docker-database-restore sleep-45 docker sleep-15 migrate add-dev-user dashboard-ingest
+
+.PHONY: build-spa
+build-spa:
+	@cd client && yarn run build
+
+.PHONY: prod
+prod: build-spa docker
+
 
 ##############################################################################
 # Clean-up tasks
@@ -342,7 +365,7 @@ CLEAN_REQS =\
 .PHONY: clean
 #: Clean the build folder and all node_module folders by deleting them
 clean: $(addprefix env-, $(CLEAN_REQS))
-	@rm -rf build $(addsuffix /node_modules, $(NODE_DIRS))
+	@rm -rf build server/dist $(addsuffix /node_modules, $(NODE_DIRS))
 
 .PHONY: clear-pdfs
 #: Remove pdfs and thumbnails
@@ -355,6 +378,7 @@ else
 	$(info )
 	@exit 1;
 endif
+	@echo "Removing pdfs and thumbnails"
 	@rm data/pdfs/* data/thumbnails/*
 
 .PHONY: cleardb
@@ -368,7 +392,7 @@ else
 	$(info )
 	@exit 1;
 endif
-	@echo "Clearing the production database..."
+	@echo "Clearing the database..."
 	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose \
 		-f docker-compose.yml \
 		down -v --remove-orphans

@@ -6,8 +6,8 @@ import { Request, Response } from 'express'
 
 const RedisStore = redisStore(session)
 const redisClient = redis.createClient({
-  host: 'localhost', 
-  port: 9379
+  host: process.env.REDIS_HOST, 
+  port: process.env.REDIS_PORT
 })
 const store = new RedisStore({
   client: redisClient,
