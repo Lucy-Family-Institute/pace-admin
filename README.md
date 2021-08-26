@@ -7,86 +7,52 @@ This pilot project will prototype a new process that automates data collection f
 
 ## Starting from scratch
 
-    clone from git into target machine
+1. Make sure you have [Docker](https://docs.docker.com/engine/install/) and [Docker Compose](https://docs.docker.com/compose/install/).
+1. Also install the [Hasura CLI](https://github.com/hasura/graphql-engine/tree/master/cli).
+1. You may already have Node on your system but installing the recommended version via [NVM](https://github.com/nvm-sh/nvm) or [NVM Windows](https://github.com/coreybutler/nvm-windows) is preferred. Please install NVM.
+1. Clone the repository from [Github](https://github.com/share-research/pace-admin)
+1. Run the following to enter the pace-admin directory and initiate a new environment variable file by copying environment template:
+    ```    
     cd pace-admin
-    cp .env.template .env
-    curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | bash
-    Logout of terminal and log back in
-    nvm install 13.14.0
-    nvm use 13.14.0
-
-    Follow steps here to install docker: https://docs.docker.com/compose/install/
-
+    cp .env.example .env
+    ```
+1. Now would be the appropriate time to make changes to your `.env` file; we will provide documentation for the options in the near future.
+1. Now install and use the version of node as specified in `./.nvmrc` by running the following from the above pace-admin directory:
+    ``` 
+    nvm install
+    nvm use
+    ```
+1. Install Yarn, Quasar CLI, and each applications node modules by running:
+    ```
     make install
-    sudo snap install docker
-
-    sudo make cleardb
-    sudo make start_docker
-    make migrate
+    ```
+1. Run:
+    ```
+    make setup
     make newdb
-
-Note: When running `make migrate`, you may get the following error:
-
-    cd hasura && hasura migrate apply && cd ..
-    INFO hasura cli is up to date                      version=1.3.2
-    FATA[0002] version check: failed to get version from server: failed making version api call: Get http://localhost:8002/v1/version: EOF
-    make: *** [migrate] Error 1
-
-    If you get the above error, give a few minutes then try again.
-
-## Open several terminals
-
+    ```
+1. Open several termanals and run the following commands:
+    ```
     make docker && make logs
     make client
-    make -B server
+    make server
     make migration-console
-## User Management
-
-Create your Auth Front End Credentials:
-
-- http://localhost:8001
-- Select User admin
-- Use Keycloak credentials in `.env`
-- Go to Manage > Users and add a user for yourself
-- Edit user's Credentials; Add a password and uncheck "Temporary"
-
-Propogate your email into the Hasura users table:
-
-- In http://localhost:9695/console
-- Select the "Data" tab and scroll to `users` table.
-- Select "Insert Row" and add the email address from the above Auth Front End Credentials.
+    ```
+1. Now open http://localhost:8000 (or whatever port you chose in your `.env` file) and login using the credentials in the following variables of the .env file:
+    ```
+    DEV_USER_EMAIL=test@test.com
+    DEV_USER_FIRST_NAME=Test
+    DEV_USER_LAST_NAME=Testersen
+    DEV_USER_PASSWORD=password
+    ```
 
 ## Production
 
-You may need to change the following variables in your .env file
-
-    GRAPHQL_END_POINT=http://localhost:8002/v1/graphql
-    IMAGE_HOST_URL=http://localhost:8000/
-
-To run client and server as daemon, install and run pm2:
-
-    npm install pm2 -g
-
-Then to setup processes to run as daemons
-
-    pm2 start 'make client'
-    pm2 start 'make -B server'
-
-Then run check logs to see status
-
-    pm2 logs
-
-And check status of processes
-
-    pm2 monit
-
-Finally once confirmed running correctly configure startup script they restart when the machine is restarted
-
-    pm2 startup
-
-Run the command it specifies and if successful run the following to save the current process list to be restarted when pm2 restarts
-
-    pm2 save
+1. First, make sure `./.env` includes ENV=prod. This not only configures your
+environment properly but adds several protections to commands invoked via
+`make`.
+1. Next, check the rest of the environment varialbes in `./.env`. You'll
+certainly need to customize these settings.
 ## Production - Harvest Data from Scopus
 
 ## Production - Generate Thumbnails and harvest PDFs for publications
@@ -96,24 +62,23 @@ When you get to a point where publications have been reviewed and approved for a
 
     make dashboard-ingest
 
-## Modules
+## Table of Contents (TODO)
 
-* [Client](./client/README.md) - the UI tool for administering PACE Administration data.
-* [Ingest](./ingest/README.md) - responsible for loading data into the adminsitration system.
-
-## TODO (8/6/2021 - 4:00 PM)
-### Lives in
-    Able to come to lab
-### Lab (study) age range
-### Subject timer for current lab
-### Participant, family, call notes
-### Search
-### 3.0 - 3.364
-
-### filters for assign: date add, created, participated
-
-### Where they come from - Facebook (open field)
-
-## FAQ
+* [client](./client/README.md) - the UI tool for administering PACE Administration data.
+* [ingest](./ingest/README.md) - responsible for loading data into the adminsitration system.
+* [dashboard-search]() - 
+* [node-admin-client]() -
+* [server]() -
+* [build]() - A temporary folder created by running the `templates` folder through the gomplate templating engine.
+* [config]() -
+* [data]() -
+* [gql]() -
+* [hasura]() -
+* [templates]() - 
+* .env.example
+* .nvmrc
+* docker-compose.*yml
+* Makefile
+## FAQ (TODO)
 ### What do I do about the following warning from redis? WARNING overcommit_memory is set to 0! Background save may fail under low memory condition. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
 
