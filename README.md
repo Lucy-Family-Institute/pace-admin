@@ -23,12 +23,21 @@ This pilot project will prototype a new process that automates data collection f
     nvm use
     ```
 1. Install Yarn, Quasar CLI, and each applications node modules by running:
-    ```
+    ```bash
     make install
     ```
 1. Run:
-    ```
+    ```bash
     make setup
+    ```
+    When this is complete, copy the value of the public field into `MEILI_PUBLIC_KEY` of your `.env` file. For example,
+    ```json
+    {
+      "public": "...",
+      "private": "..."
+    }
+1. Run:
+    ```bash
     make newdb
     ```
 1. Open several termanals and run the following commands:
