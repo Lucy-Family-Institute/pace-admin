@@ -331,7 +331,6 @@ export default {
       this.updateGraphs()
     },
     dashboardMiniState: async function () {
-      console.log(`Watching dashboardministate: ${this.dashboardMiniState}`)
       this.updateModelWidth()
     }
   },
