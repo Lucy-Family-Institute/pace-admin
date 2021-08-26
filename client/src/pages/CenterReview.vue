@@ -404,6 +404,7 @@ import sanitize from 'sanitize-filename'
 import pMap from 'p-map'
 import readPersonsByInstitutionByYearByOrganization from '../gql/readPersonsByInstitutionByYearByOrganization'
 import readOrganizationsCenters from '../../../gql/readOrganizationsCenters.gql'
+import moment from 'moment'
 // import VueFuse from 'vue-fuse'
 
 // Vue.use(VueFuse)
@@ -436,6 +437,8 @@ export default {
     personPubSetsById: {},
     // the current index for personPubSets, will increment whenever adding a new one
     personPubSetIdIndex: 0,
+    // store extra fields that take a long time to load
+    publicationsByIds: {},
     personPublicationsById: {},
     personPubSetsByReviewType: {},
     personPublicationsKeys: {},
@@ -748,18 +751,20 @@ export default {
       return obj.toLowerCase().trim()
     },
     getPublicationSourceId (personPublication) {
-      if (personPublication.publication.source_name.toLowerCase() === 'scopus' &&
-        personPublication.publication.scopus_eid) {
-        return personPublication.publication.scopus_eid
-      } else if (personPublication.publication.source_name.toLowerCase() === 'semanticscholar' &&
-        personPublication.publication.semantic_scholar_id) {
-        return personPublication.publication.semantic_scholar_id
-      } else if (personPublication.publication.source_name.toLowerCase() === 'webofscience') {
-        return (personPublication.publication.wos_id && personPublication.publication.wos_id['_text'] ? personPublication.publication.wos_id['_text'] : undefined)
-      } else if (personPublication.publication.source_name.toLowerCase() === 'pubmed' &&
-        personPublication.publication.pubmed_resource_identifiers &&
-        _.isArray(personPublication.publication.pubmed_resource_identifiers)) {
-        const resourceId = _.find(personPublication.publication.pubmed_resource_identifiers, (id) => {
+      let publication = this.publicationsByIds[personPublication.publication_id]
+      if (!publication) publication = personPublication.publication
+      if (publication.source_name.toLowerCase() === 'scopus' &&
+        publication.scopus_eid) {
+        return publication.scopus_eid
+      } else if (publication.source_name.toLowerCase() === 'semanticscholar' &&
+        publication.semantic_scholar_id) {
+        return publication.semantic_scholar_id
+      } else if (publication.source_name.toLowerCase() === 'webofscience') {
+        return (publication.wos_id && publication.wos_id['_text'] ? publication.wos_id['_text'] : undefined)
+      } else if (publication.source_name.toLowerCase() === 'pubmed' &&
+        publication.pubmed_resource_identifiers &&
+        _.isArray(publication.pubmed_resource_identifiers)) {
+        const resourceId = _.find(publication.pubmed_resource_identifiers, (id) => {
           return id['resourceIdentifierType'] === 'pmc'
         })
         if (resourceId) {
@@ -767,8 +772,8 @@ export default {
         } else {
           return undefined
         }
-      } else if (personPublication.publication.source_name.toLowerCase() === 'crossref') {
-        return personPublication.publication.doi
+      } else if (publication.source_name.toLowerCase() === 'crossref') {
+        return publication.doi
       } else {
         return undefined
       }
@@ -1209,6 +1214,7 @@ export default {
     },
     async clearPublications () {
       this.publications = []
+      this.publicationsByIds = {}
       this.citationsByTitle = {}
       this.people = []
       await this.loadCenterAuthorOptions()
@@ -1589,7 +1595,7 @@ export default {
         })
         // // for now assume only one review, needs to be fixed later
         const pubsWithConfResult = await this.$apollo.query({
-          query: readPersonPublicationsConfSets(_.keys(personPubByIds)),
+          query: readPersonPublicationsConfSets(this.selectedInstitutions, this.selectedCenter.value, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max),
           fetchPolicy: 'network-only'
         })
 
@@ -1641,7 +1647,9 @@ export default {
         }
 
         if (currentLoadCount === this.pubLoadCount) {
+          console.log(`Starting load publications csl data ${moment().format('HH:mm:ss:SSS')}`)
           await this.loadPublicationsCSLData(publicationIds)
+          console.log(`Finished load publications csl data ${moment().format('HH:mm:ss:SSS')}`)
           this.publicationsCslLoaded = true
         } else {
           console.warn('Reload of publications detected, aborting this process')
@@ -1659,6 +1667,7 @@ export default {
       // break publicationIds into chunks of 50
       const batches = _.chunk(publicationIds, 2000)
       let batchesPubsCSLByTitle = []
+      const indexThis = this
       await pMap(batches, async (batch, index) => {
         const pubsCSLResult = await this.$apollo.query({
           query: readPublicationsCSL(batch),
@@ -1666,6 +1675,7 @@ export default {
         })
 
         batchesPubsCSLByTitle.push(_.groupBy(pubsCSLResult.data.publications, (publication) => {
+          indexThis.publicationsByIds[publication.id] = publication
           return this.getPublicationTitleKey(publication.title)
         }))
       }, { concurrency: 1 })

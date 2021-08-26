@@ -21,6 +21,11 @@ export default function readPublicationsCSL (publicationIds) {
       id
       doi
       title
+      source_name
+      scopus_eid: source_metadata(path: "eid")
+      pubmed_resource_identifiers: source_metadata(path: "resourceIdentifiers")
+      semantic_scholar_id: source_metadata(path: "paperId")
+      wos_id: source_metadata(path: "uid")
       csl_string
     }
   }
