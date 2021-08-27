@@ -101,6 +101,9 @@ load_authors: ingest/node_modules
 load_author_attributes: ingest/node_modules
 	cd ingest && ts-node loadAuthorAttributes.ts && cd ..
 
+detect_duplicate_author_attributes: ingest/node_modules
+	cd ingest && ts-node detectDuplicateAuthorAttributes.ts
+
 ingest_metadata: ingest/node_modules
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
 
