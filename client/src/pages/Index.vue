@@ -1717,7 +1717,7 @@ export default {
       let variant2 = `${person.family_name}, ${person.given_name}`
       nameVariantMap[variant1] = variant1
       nameVariantMap[variant2] = variant2
-      
+
       _.each(person.persons_namevariances, (nameVariant) => {
         const nameStr = `${nameVariant.family_name}, ${nameVariant.given_name}`
         nameVariantMap[nameStr] = nameStr
