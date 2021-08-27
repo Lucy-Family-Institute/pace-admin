@@ -1711,13 +1711,18 @@ export default {
     },
     setNameVariants (person) {
       this.nameVariants = []
-      this.nameVariants[0] = `${person.family_name}, ${person.given_name.charAt(0)}`
-      this.nameVariants[1] = `${person.family_name}, ${person.given_name}`
-      // return variants
+      // put in map so it removes any duplicates along the way
+      let nameVariantMap = {}
+      let variant1 = `${person.family_name}, ${person.given_name.charAt(0)}`
+      let variant2 = `${person.family_name}, ${person.given_name}`
+      nameVariantMap[variant1] = variant1
+      nameVariantMap[variant2] = variant2
+      
       _.each(person.persons_namevariances, (nameVariant) => {
         const nameStr = `${nameVariant.family_name}, ${nameVariant.given_name}`
-        this.nameVariants.push(nameStr)
+        nameVariantMap[nameStr] = nameStr
       })
+      this.nameVariants = _.values(nameVariantMap)
     },
     getUpdatedPublicationYear (csl) {
       // look for both online and print dates, and make newer date win if different
