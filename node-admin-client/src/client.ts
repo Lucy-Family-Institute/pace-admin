@@ -46,7 +46,8 @@ export class PaceClient {
   }
 
   public async registerUser( user: User ): Promise<void> {
-    const keycloakUser = await this.keycloakClient.getOrRegisterUser(user)
+    console.log(`Trying to add`, user)
+    await this.keycloakClient.getOrRegisterUser(user)
     try {
       await this.apolloClient.mutate({
         mutation: gql`
@@ -57,7 +58,7 @@ export class PaceClient {
           }
         `,
         variables: {
-          email: keycloakUser.email
+          email: user.email
         }
       })
     } catch (error) {

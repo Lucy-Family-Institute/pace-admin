@@ -35,7 +35,7 @@ async function main () {
       clientId: process.env.KEYCLOAK_CLIENT_ID,
       realm: process.env.KEYCLOAK_REALM,
       clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
-      authServerUrl: process.env.AUTH_SERVER_URL,
+      authServerUrl: `${process.env.AUTH_SERVER_URL}`,
       callbackUrl: process.env.AUTH_CALLBACK_URL,
       sessionName: process.env.SESSION_NAME,
       baseUrl: process.env.APP_BASE_URL
