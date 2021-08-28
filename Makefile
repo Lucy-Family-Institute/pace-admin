@@ -214,7 +214,7 @@ DC_dev := docker-compose -f docker-compose.yml
 # We touch the build folder for good measure.
 TEMPLATES_FILES := $(shell find ./$(TEMPLATES_DIR) -type f)
 BUILD_FILES := $(shell find ./$(BUILD_DIR) -type f)
-$(BUILD_DIR): $(BUILD_FILES) $(TEMPLATES_DIR) $(TEMPLATES_FILES) 
+$(BUILD_DIR): .env $(BUILD_FILES) $(TEMPLATES_DIR) $(TEMPLATES_FILES) 
 	@echo Running gomplate...
 	@docker run \
 		--user $(UID):$(GID) \
@@ -267,19 +267,9 @@ DOCKER_REQS := \
 .PHONY: docker
 #: Run docker containers in docker-compose in the background
 docker: $(addprefix env-, $(DOCKER_REQS)) $(BUILD_DIR)
-ifeq ($(ENV),prod)
-	@docker-compose -f docker-compose.yml -f docker-compose.prod.yml build
+	@$(DC_$(ENV)) build
 	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) ENV=$(ENV) UID=$(UID) GID=$(GID) \
-		docker-compose \
-		-f docker-compose.yml \
-		-f docker-compose.prod.yml \
-		up -d
-else
-	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) ENV=$(ENV) UID=$(UID) GID=$(GID) \
-		docker-compose \
-		-f docker-compose.yml \
-		up -d
-endif
+		$(DC_$(ENV)) up -d
 
 .PHONY: logs
 #: Tail docker logs; use make logs service=dockername to print specific logs
@@ -289,14 +279,8 @@ logs: env-DOCKER_HOST_IP
 .PHONY: docker-stop
 #: Stop docker
 docker-stop:
-ifeq ($(ENV),prod)
-	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose \
-		-f docker-compose.yml \
-		-f docker-compose.prod.yml \
-		down
-else
-	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose down
-endif
+	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) \
+		$(DC_$(ENV)) down
 
 .PHONY: docker-restart
 #: Restart docker
@@ -345,8 +329,19 @@ ADD_DEV_USER_REQS := \
 add-dev-user: node-admin-client/node_modules $(addprefix env-, $(ADD_DEV_USER_REQS))
 	@cd node-admin-client && yarn run add-users && cd ..
 
+.PHONY=setup-restore
+setup-restore: cleardb docker-database-restore sleep-45 docker sleep-25 migrate add-dev-user dashboard-ingest
+
+.PHONY=setup-new
+setup-new: cleardb docker
+
 .PHONY: setup
-setup: cleardb docker-database-restore sleep-45 docker sleep-15 migrate add-dev-user dashboard-ingest
+setup: 
+ifdef DUMP_PATH
+	@$(RUN_MAKE) setup-restore
+else
+	@$(RUN_MAKE) setup-new
+endif
 
 .PHONY: build-spa
 build-spa:

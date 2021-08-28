@@ -8,17 +8,20 @@ This pilot project will prototype a new process that automates data collection f
 ## Starting from scratch
 
 1. Make sure you have [Docker](https://docs.docker.com/engine/install/) and [Docker Compose](https://docs.docker.com/compose/install/).
-1. Also install the [Hasura CLI](https://github.com/hasura/graphql-engine/tree/master/cli).
+1. Also install the [Hasura CLI](https://github.com/hasura/graphql-engine/tree/master/cli). Run the following comme to ensure you have the correct version:
+    ```bash
+    hasura update-cli --version v2.0.0-beta.2
+    ```
 1. You may already have Node on your system but installing the recommended version via [NVM](https://github.com/nvm-sh/nvm) or [NVM Windows](https://github.com/coreybutler/nvm-windows) is preferred. Please install NVM.
 1. Clone the repository from [Github](https://github.com/share-research/pace-admin)
 1. Run the following to enter the pace-admin directory and initiate a new environment variable file by copying environment template:
-    ```    
+    ```bash
     cd pace-admin
     cp .env.example .env
     ```
 1. Now would be the appropriate time to make changes to your `.env` file; we will provide documentation for the options in the near future.
 1. Now install and use the version of node as specified in `./.nvmrc` by running the following from the above pace-admin directory:
-    ``` 
+    ```bash 
     nvm install
     nvm use
     ```

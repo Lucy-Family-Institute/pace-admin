@@ -17,6 +17,7 @@ services:
         NGINX_PORT: ${NGINX_PORT}
         REDIS_HOST: redis
         REDIS_PORT: 6379
+        DOCKER_HOST_IP: ${DOCKER_HOST_IP}
     ports:
       - ${EXPRESS_PORT}:${EXPRESS_PORT}
     restart: always

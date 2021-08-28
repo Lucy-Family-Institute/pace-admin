@@ -2,7 +2,7 @@ version: '3.7'
 
 services:
   postgres:
-    image: postgres:13.4
+    image: postgres:9.6
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata
       POSTGRES_USER: ${POSTGRES_USER}
@@ -11,9 +11,11 @@ services:
       - ${POSTGRES_PORT}:5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./build/keycloak/init.sql:/docker-entrypoint-initdb.d/1-keycloak.sql
+      - ./build/hasura/init.sql:/docker-entrypoint-initdb.d/2-hasura.sql
     restart: always
 
-  graphql-engine:
+  hasura:
     image: hasura/graphql-engine:v2.0.7
     ports:
       - ${HASURA_PORT}:8080
@@ -35,7 +37,7 @@ services:
       DB_SCHEMA: public
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       PROXY_ADDRESS_FORWARDING: "true"
-      KEYCLOAK_FRONTEND_URL: http://localhost:8001/auth
+      KEYCLOAK_FRONTEND_URL: http://localhost:8000/auth
       KEYCLOAK_USER: ${KEYCLOAK_USERNAME}
       KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
       KEYCLOAK_IMPORT: /opt/jboss/keycloak/realm-export.json
@@ -45,22 +47,25 @@ services:
       - ./build/keycloak/realm-export.json:/opt/jboss/keycloak/realm-export.json
     ports:
       - ${KEYCLOAK_PORT}:8080
+      - 9990:9990
     restart: always
   
   redis:
     image: redis:6.2.5
     command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - 6379:6379
     restart: always
 
-  search:
-    image: getmeili/meilisearch:v0.11.0
-    environment:
-      MEILI_MASTER_KEY: ${MEILI_KEY}
-    ports:
-      - ${MEILI_PORT}:${MEILI_PORT}
-    restart: always
-    volumes:
-      - ./dashboard-search/data.ms:/data.ms
+  # search:
+  #   image: getmeili/meilisearch:v0.11.0
+  #   environment:
+  #     MEILI_MASTER_KEY: ${MEILI_KEY}
+  #   ports:
+  #     - ${MEILI_PORT}:${MEILI_PORT}
+  #   restart: always
+  #   volumes:
+  #     - ./dashboard-search/data.ms:/data.ms
   
   nginx:
     image: nginx:1.21.1

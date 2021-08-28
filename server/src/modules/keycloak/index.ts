@@ -78,23 +78,28 @@ async function init (options) {
       authServerURL: options.authServerUrl,
       callbackURL: options.callbackUrl
     }, async (accesseToken, refreshToken, profile, done) => {
-      const result = await getUserByEmail(client, profile.email)
-      profile.databaseId = result.id
+      try {
+        const result = await getUserByEmail(client, profile.email)
+        profile.databaseId = result.id
+      } catch (error) {
+        console.error ('Is your user in both keycloak and the hasura database?', error)
+      }
       done(null, profile)
     }
   ))
 
-  app.get('/auth/keycloak', passport.authenticate('keycloak')) //{ scope: ['profile'] }))
+  app.get('/keycloak', passport.authenticate('keycloak')) //{ scope: ['profile'] }))
   app.get(
-    '/auth/keycloak/callback',
+    '/keycloak/callback',
     passport.authenticate('keycloak', { failureRedirect: '/login' }),
     (req: Request, res:Response) => {
+      console.log(req.headers)
       res.redirect('/')
     }
   )
   app.get('/login', (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.redirect('/auth/keycloak')
+      return res.redirect('/keycloak')
     }
     res.redirect('/')
   })
