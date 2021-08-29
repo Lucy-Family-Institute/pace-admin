@@ -1,0 +1,21 @@
+query MyQuery ($personId: Int!, $yearMin: Int!, $yearMax: Int!) {
+  reviews_persons_publications_aggregate(
+    distinct_on: persons_publications_id,
+      where: {
+        person_id: {_eq: $personId},
+        publication: {
+          year: {_gte: $yearMin, _lte: $yearMax}
+        },
+        review_organization_value: {_eq: "ND"}
+      },
+      order_by: {
+        persons_publications_id: asc,
+        datetime: desc
+      }
+  ) {
+      nodes {
+        review_type
+        persons_publications_id
+      }
+    }
+}
