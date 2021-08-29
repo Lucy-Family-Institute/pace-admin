@@ -45,6 +45,26 @@ export class PaceClient {
     })
   }
 
+  public async getDatabaseUser ( email: string ) {
+    const results = await this.apolloClient.mutate({
+      mutation: gql`
+        mutation MyQuery ($email: String!) {
+          users (object: {primaryEmail: {_eq: $email}}) {
+            id
+            primaryEmail
+          }
+        }
+      `,
+      variables: {
+        email
+      }
+    })
+    if (results.data.users.length === 1) {
+      return results.data.users[0]
+    }
+    return null
+  }
+
   public async registerUser( user: User ): Promise<void> {
     console.log(`Trying to add`, user)
     await this.keycloakClient.getOrRegisterUser(user)

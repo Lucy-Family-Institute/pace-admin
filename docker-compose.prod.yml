@@ -10,7 +10,7 @@ services:
         KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
         KEYCLOAK_REALM: ${KEYCLOAK_REALM}
         KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
-        AUTH_SERVER_URL: ${AUTH_SERVER_URL}
+        AUTH_SERVER_URL: "http://keycloak:${KEYCLOAK_DOCKER_PORT}/auth"
         AUTH_CALLBACK_URL: ${AUTH_CALLBACK_URL}
         APP_BASE_URL: ${APP_BASE_URL}
         HASURA_SECRET: ${HASURA_SECRET}
@@ -18,8 +18,9 @@ services:
         REDIS_HOST: redis
         REDIS_PORT: 6379
         DOCKER_HOST_IP: ${DOCKER_HOST_IP}
+        GRAPHQL_END_POINT: "http://hasura:${HASURA_DOCKER_PORT}/v1/graphql"
     ports:
-      - ${EXPRESS_PORT}:${EXPRESS_PORT}
+      - ${EXPRESS_PORT}:${EXPRESS_DOCKER_PORT}
     restart: always
   nginx:
     volumes:

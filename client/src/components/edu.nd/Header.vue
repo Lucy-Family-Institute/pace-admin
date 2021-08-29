@@ -10,7 +10,7 @@
         <q-toolbar-title>PACE</q-toolbar-title>
       </q-btn>
       <q-space />
-      <q-btn-group align="center" style="width:50%" unelevated spread>
+      <q-btn-group align="center" unelevated spread id="menu">
         <router-link
           :to="{ name: 'review' }"
           custom
@@ -87,6 +87,11 @@
 
 .underlined {
   border-bottom: 2px solid white
+}
+
+#menu > .q-btn {
+  margin-left: 15px;
+  margin-right: 15px;
 }
 </style>
 

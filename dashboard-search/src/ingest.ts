@@ -17,8 +17,7 @@ dotenv.config({
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
 const meiliKey = process.env.MEILI_KEY
-const meiliUrl = process.env.MEILI_PRIVATE_URL
-const meiliCenterSearch = process.env.MEILI_CENTER_SEARCH
+const meiliUrl = `${process.env.APP_BASE_URL}/api/search/`
 
 const sleep = util.promisify(setTimeout)
 

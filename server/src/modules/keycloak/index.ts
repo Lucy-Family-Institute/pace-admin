@@ -1,40 +1,9 @@
-import KcAdminClient from 'keycloak-admin'
-import gql from 'graphql-tag'
+import { gql } from '@apollo/client/core'
 import passport from 'passport'
 import _ from 'lodash'
 
 import { Request, Response, NextFunction } from 'express'
 import { Strategy as KeycloakStrategy } from 'passport-keycloak-oauth2-oidc'
-
-const registerUserGql = gql`
-  mutation registerUser($authServerId: String!, $emailPrimary: String!) {
-    insert_users(objects: {
-      auth_serverx_id: $authServerId,
-      email_primary: $emailPrimary,
-    }) {
-      returning {
-        id
-        auth_server_id
-        email_primary
-        display_full_name
-      }
-    }
-  }
-`
-
-async function registerUser (client, authServerId: string, emailPrimary: string) {
-  const response = await client.mutate({
-    registerUserGql,
-    variables: {
-      authServerId,
-      emailPrimary
-    }
-  })
-  if (!response) {
-    return null
-  }
-  return response.data.insert_users.returning[0]
-}
 
 async function getUserByEmail (client, email: string) {
   const response = await client.query({
@@ -65,8 +34,7 @@ async function getUserByEmail (client, email: string) {
 async function init (options) {
   const app = options.app
   const client = options.client
-  const sessions = options.middleware.sessions
-  console.log(options)
+  
   passport.use(
     'keycloak',
     new KeycloakStrategy({
@@ -88,18 +56,18 @@ async function init (options) {
     }
   ))
 
-  app.get('/keycloak', passport.authenticate('keycloak')) //{ scope: ['profile'] }))
+  // passport.authenticate('keycloak')
+  app.get('/keycloak', (req, res) => res.redirect('/login')) //{ scope: ['profile'] }))
   app.get(
     '/keycloak/callback',
     passport.authenticate('keycloak', { failureRedirect: '/login' }),
     (req: Request, res:Response) => {
-      console.log(req.headers)
       res.redirect('/')
     }
   )
   app.get('/login', (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.redirect('/keycloak')
+      return res.redirect(`${options.authServerUrl}/realms/pace/protocol/openid-connect/auth?response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Fkeycloak%2Fcallback&client_id=client`)
     }
     res.redirect('/')
   })
