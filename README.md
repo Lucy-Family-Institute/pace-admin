@@ -96,3 +96,8 @@ When you get to a point where publications have been reviewed and approved for a
 ## FAQ (TODO)
 ### What do I do about the following warning from redis? WARNING overcommit_memory is set to 0! Background save may fail under low memory condition. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
 
+## TODO
+
+- Deal with data.ms in dashboard-search (add to make clean, add .gitkeep, and add to .gitignore)
+- Run app through lighthouse
+- Add rest of notre dame metadata in the vue-head on the landing page
