@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - ${POSTGRES_PORT}:5432
+      - ${POSTGRES_PORT}:${POSTGRES_DOCKER_PORT}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./build/keycloak/init.sql:/docker-entrypoint-initdb.d/1-keycloak.sql
@@ -18,7 +18,7 @@ services:
   hasura:
     image: hasura/graphql-engine:v2.0.7
     ports:
-      - ${HASURA_PORT}:8080
+      - ${HASURA_PORT}:${HASURA_DOCKER_PORT}
     restart: always
     environment:
       HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_SECRET}
@@ -27,8 +27,9 @@ services:
       HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
       HASURA_GRAPHQL_AUTH_HOOK: http://${DOCKER_HOST_IP}:8000/${HASURA_WEBHOOK}
 
+   #6.0.1
   keycloak:
-    image: jboss/keycloak:6.0.1
+    image: jboss/keycloak:15.0.2
     environment:
       DB_VENDOR: POSTGRES
       DB_ADDR: postgres
@@ -37,7 +38,6 @@ services:
       DB_SCHEMA: public
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       PROXY_ADDRESS_FORWARDING: "true"
-      KEYCLOAK_FRONTEND_URL: http://localhost:8000/auth
       KEYCLOAK_USER: ${KEYCLOAK_USERNAME}
       KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
       KEYCLOAK_IMPORT: /opt/jboss/keycloak/realm-export.json
@@ -45,36 +45,36 @@ services:
       #JDBC_PARAMS: "ssl=true"
     volumes: 
       - ./build/keycloak/realm-export.json:/opt/jboss/keycloak/realm-export.json
+      # - ./build/keycloak/standalone.xml:/opt/jboss/keycloak/standalone/configuration/standalone.xml
     ports:
-      - ${KEYCLOAK_PORT}:8080
-      - 9990:9990
+      - ${KEYCLOAK_PORT}:${KEYCLOAK_DOCKER_PORT}
     restart: always
   
   redis:
     image: redis:6.2.5
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - 6379:6379
+      - ${REDIS_PORT}:${REDIS_DOCKER_PORT}
     restart: always
 
-  # search:
-  #   image: getmeili/meilisearch:v0.11.0
-  #   environment:
-  #     MEILI_MASTER_KEY: ${MEILI_KEY}
-  #   ports:
-  #     - ${MEILI_PORT}:${MEILI_PORT}
-  #   restart: always
-  #   volumes:
-  #     - ./dashboard-search/data.ms:/data.ms
+  search:
+    image: getmeili/meilisearch:v0.11.0
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_KEY}
+    ports:
+      - ${MEILI_PORT}:${MEILI_DOCKER_PORT}
+    restart: always
+    volumes:
+      - ./dashboard-search/data.ms:/data.ms
   
   nginx:
     image: nginx:1.21.1
     volumes:
       - ./build/nginx/:/etc/nginx/templates
-      - ./data/pdfs:/pdfs
-      - ./data/thumbnails:/thumbnails
+      - ${PDFS_PATH}:/pdfs
+      - ${THUMBNAILS_PATH}:/thumbnails
     ports:
-      - ${NGINX_PORT}:${NGINX_PORT}
+      - ${NGINX_PORT}:${NGINX_DOCKER_PORT}
     restart: always
 
 volumes:

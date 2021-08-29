@@ -1,7 +1,6 @@
 import express from 'express'
 import cors from 'cors'
 import bodyParser from 'body-parser'
-import proxy from 'express-http-proxy'
 import dotenv from 'dotenv'
 
 import { createAdminClient } from './graphqlClient'
@@ -11,7 +10,6 @@ import sessions from './modules/redisSessions/'
 import passportModule from './modules/passport/'
 import keycloakModule from './modules/keycloak/'
 import hasuraModule from './modules/hasura/'
-// import staticModule from './modules/static/'
 
 dotenv.config({ path: '../.env' })
 
@@ -46,7 +44,7 @@ async function main () {
 
     const port:number = parseInt(process.env.EXPRESS_PORT)
     app.listen(port, '0.0.0.0', () =>
-      console.log(`Open the proxy at ${process.env.NGINX_PORT}`)
+      console.log(`Listening on ${process.env.EXPRESS_PORT}`)
     )
   } catch (err) {
     console.log(err)
