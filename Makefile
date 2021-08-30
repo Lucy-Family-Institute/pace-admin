@@ -41,12 +41,12 @@ RUN_MAKE := ENV=$(ENV) CONFIRM=$(CONFIRM) $(MAKE)
 # Primary Commands
 ##############################################################################
 
-include makefiles/dependencies.mk
-include makefiles/ingest.mk
-include makefiles/hasura.mk
-include makefiles/docker.mk
-include makefiles/cleanup.mk
-include makefiles/aliases.mk
+include makeparts/dependencies.mk
+include makeparts/ingest.mk
+include makeparts/hasura.mk
+include makeparts/docker.mk
+include makeparts/cleanup.mk
+include makeparts/aliases.mk
 
 ######################################
 ### Client
@@ -121,5 +121,5 @@ clone-volume:
 ##############################################################################
 # Epilogue
 ##############################################################################
-include makefiles/utilities.mk
+include makeparts/utilities.mk
 .DEFAULT_GOAL := help
