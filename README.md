@@ -101,3 +101,4 @@ When you get to a point where publications have been reviewed and approved for a
 - Deal with data.ms in dashboard-search (add to make clean, add .gitkeep, and add to .gitignore)
 - Run app through lighthouse
 - Add rest of notre dame metadata in the vue-head on the landing page
+- don't recomple spa every time on make prod
