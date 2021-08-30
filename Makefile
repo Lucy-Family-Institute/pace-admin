@@ -85,10 +85,10 @@ add-dev-user: node-admin-client/node_modules $(addprefix env-, $(ADD_DEV_USER_RE
 	@cd node-admin-client && yarn run add-users && cd ..
 
 .PHONY=setup-restore
-setup-restore: cleardb docker-database-restore sleep-45 docker sleep-25 migrate add-dev-user dashboard-ingest
+setup-restore: docker-database-restore sleep-45 docker sleep-25 migrate add-dev-user dashboard-ingest
 
 .PHONY=setup-new
-setup-new: cleardb docker sleep-15 migrate add-dev-user
+setup-new: docker sleep-15 migrate add-dev-user
 
 .PHONY: setup
 setup: 
@@ -104,6 +104,15 @@ build-spa:
 
 .PHONY: prod
 prod: build-spa docker
+
+.PHONY: clone-volume
+#: make clone-volume from=volumeName to=volumeNameBackup
+clone-volume:
+	docker volume create --name $(to)
+	docker container run --rm -it \
+						-v $(from):/from \
+						-v $(to):/to \
+						alpine ash -c "cd /from ; cp -av . /to"
 
 ##############################################################################
 # Epilogue

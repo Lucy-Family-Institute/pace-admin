@@ -21,12 +21,12 @@ export interface PaceClientConfig {
 }
 
 export class PaceClient {
-  keycloakClient: KeycloakClient
+  keycloak: KeycloakClient
   apolloClient: ApolloClient<NormalizedCacheObject>
 
   constructor(config: PaceClientConfig) {
     
-    this.keycloakClient = new KeycloakClient({
+    this.keycloak = new KeycloakClient({
       server: config.keycloakServer,
       username: config.keycloakUsername,
       password: config.keycloakPassword,
@@ -67,7 +67,7 @@ export class PaceClient {
 
   public async registerUser( user: User ): Promise<void> {
     console.log(`Trying to add`, user)
-    await this.keycloakClient.getOrRegisterUser(user)
+    await this.keycloak.getOrRegisterUser(user)
     try {
       await this.apolloClient.mutate({
         mutation: gql`
