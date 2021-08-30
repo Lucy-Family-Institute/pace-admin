@@ -102,8 +102,9 @@ endif
 
 # $(BUILD_DIR)/spa: .env
 
-# build-spa: $(BUILD_DIR)/spa
-# 	@cd client && yarn run build
+.PHONY: build-spa
+build-spa:
+	@cd client && yarn run build
 
 .PHONY: prod
 prod: build-spa docker
