@@ -79,6 +79,12 @@ export class KeycloakClient {
     return null
   }
 
+  public async getAllUsers () {
+    await this.authenticate()
+    const users: any[] = await this.client.users.find({ realm: this.realm })
+    return users
+  }
+
   public async registerUser (config: RegistrationConfig): Promise<UserRepresentation> {
    config = {
       ...config,
