@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import fetch from 'node-fetch'
+import fetch from 'cross-fetch'
 import { ApolloClient, InMemoryCache, gql, HttpLink, NormalizedCacheObject} from '@apollo/client/core'
 
 export const cache: InMemoryCache = new InMemoryCache({})
