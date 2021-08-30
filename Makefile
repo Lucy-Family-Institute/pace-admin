@@ -98,8 +98,9 @@ else
 	@$(RUN_MAKE) setup-new
 endif
 
+SPA_SOURCE_FILES := $(shell find ./client/spa -type f)
 .PHONY: build-spa
-build-spa:
+build-spa: .env client/ $(SPA_SOURCE_FILES)
 	@cd client && yarn run build
 
 .PHONY: prod

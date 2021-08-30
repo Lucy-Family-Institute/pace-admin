@@ -284,7 +284,7 @@
       "clientAuthenticatorType": "client-secret",
       "secret": "{{ .Env.KEYCLOAK_CLIENT_SECRET }}",
       "redirectUris": [
-        "http://localhost:8000/*"
+        "{{ .Env.APP_BASE_URL }}/*"
       ],
       "webOrigins": [],
       "notBefore": 0,
