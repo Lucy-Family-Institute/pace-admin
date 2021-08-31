@@ -24,7 +24,7 @@ services:
   nginx:
     volumes:
       - ./build/spa:/www
-      - ./build/nginx/:/etc/nginx/templates
+      - ./build/nginx/:/etc/nginx/conf.d
       - ${PDFS_PATH}:/pdfs
       - ${THUMBNAILS_PATH}:/thumbnails
       - ./build/certbot/conf:/etc/letsencrypt

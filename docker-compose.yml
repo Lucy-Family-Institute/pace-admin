@@ -65,7 +65,7 @@ services:
   nginx:
     image: nginx:1.21.1
     volumes:
-      - ./build/nginx/:/etc/nginx/templates
+      - ./build/nginx/:/etc/nginx/conf.d
       - ${PDFS_PATH}:/pdfs
       - ${THUMBNAILS_PATH}:/thumbnails
     ports:
