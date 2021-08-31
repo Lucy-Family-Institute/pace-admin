@@ -96,7 +96,7 @@ update-pdfs: ingest/node_modules
 	cd ingest && ts-node downloadFile.ts && cd ..
 
 .PHONY: dashboard-ingest
-dashboard-ingest:
+dashboard-ingest: dashboard-search/node_modules
 	cd dashboard-search && ts-node src/ingest.ts && cd ..
 
 detect_duplicate_author_attributes: ingest/node_modules
