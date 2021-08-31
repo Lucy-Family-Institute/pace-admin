@@ -11,13 +11,13 @@ services:
       - ${POSTGRES_PORT}:${POSTGRES_DOCKER_PORT}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    restart: always
+    restart: unless-stopped
 
   hasura:
     image: hasura/graphql-engine:v2.0.7
     ports:
       - ${HASURA_PORT}:${HASURA_DOCKER_PORT}
-    restart: always
+    restart: unless-stopped
     environment:
       HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_SECRET}
       HASURA_GRAPHQL_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${HASURA_DATABASE}
@@ -43,12 +43,12 @@ services:
     # volumes: 
       # - ./build/keycloak/realm-export.json:/opt/jboss/keycloak/realm-export.json
       # - ./build/keycloak/standalone.xml:/opt/jboss/keycloak/standalone/configuration/standalone.xml
-    restart: always
+    restart: unless-stopped
   
   redis:
     image: redis:6.2.5
     command: ["redis-server", "--appendonly", "yes"]
-    restart: always
+    restart: unless-stopped
     ports:
       - ${REDIS_PORT}:${REDIS_DOCKER_PORT}
 
@@ -56,11 +56,11 @@ services:
     image: getmeili/meilisearch:v0.11.0
     environment:
       MEILI_MASTER_KEY: ${MEILI_KEY}
-    restart: always
+    restart: unless-stopped
     ports:
       - ${MEILI_PORT}:${MEILI_DOCKER_PORT}
     volumes:
-      - ./dashboard-search/data.ms:/data.ms
+      - search_data:/data.ms
   
   nginx:
     image: nginx:1.21.1
@@ -70,7 +70,7 @@ services:
       - ${THUMBNAILS_PATH}:/thumbnails
     ports:
       - ${NGINX_PORT}:${NGINX_DOCKER_PORT}
-    restart: always
+    restart: unless-stopped
 
 volumes:
   postgres_data:

@@ -15,9 +15,9 @@ data/
 *.code-workspace
 dashboard-search/data.ms/*
 scratch/*
-build/*
+/build/*
 
 .env*
+!/build/cerbot/.gitkeep
 !.env.example
-
-!**/.gitkeep
+!/**/.gitkeep
