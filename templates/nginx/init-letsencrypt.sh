@@ -86,4 +86,5 @@ docker-compose \
     --force-renewal" certbot
 echo
 
-echo "done"
+echo "done"echo "### Reloading nginx ..."
+docker-compose exec nginx nginx -s reload
