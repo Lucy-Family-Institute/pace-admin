@@ -1647,9 +1647,7 @@ export default {
         }
 
         if (currentLoadCount === this.pubLoadCount) {
-          console.log(`Starting load publications csl data ${moment().format('HH:mm:ss:SSS')}`)
           await this.loadPublicationsCSLData(publicationIds)
-          console.log(`Finished load publications csl data ${moment().format('HH:mm:ss:SSS')}`)
           this.publicationsCslLoaded = true
         } else {
           console.warn('Reload of publications detected, aborting this process')

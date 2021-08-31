@@ -1480,7 +1480,6 @@ export default {
       // const result = await this.$apollo.query(readPublicationsByPerson(item.id))
       // this.publications = result.data.publications
       try {
-        console.log(`Starting query publications ${moment().format('HH:mm:ss:SSS')}`)
         const pubsWithReviewResult = await this.$apollo.query({
           query: readPersonPublications,
           variables: {
@@ -1491,7 +1490,6 @@ export default {
           },
           fetchPolicy: 'network-only'
         })
-        console.log(`Finished query publications ${moment().format('HH:mm:ss:SSS')}`)
         const confSetsResult = await this.$apollo.query({
           query: readConfSetsPersonPublications,
           variables: {
