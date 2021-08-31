@@ -66,8 +66,8 @@ async function init (options) {
   )
   app.get('/login', async (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      const redirectUrl = `${options.baseUrl}/keycloak/callback&client_id=client`
-      return res.redirect(`${options.baseUrl}/auth/realms/pace/protocol/openid-connect/auth?response_type=code&redirect_uri=${encodeURIComponent(redirectUrl)}`)
+      const redirectUrl = `${options.baseUrl}/keycloak/callback`
+      return res.redirect(`${options.baseUrl}/auth/realms/pace/protocol/openid-connect/auth?response_type=code&redirect_uri=${encodeURIComponent(redirectUrl)}&client_id=${options.clientId}`)
     }
     res.redirect('/')
   })
