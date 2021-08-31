@@ -114,7 +114,7 @@ $(BUILD_SPA_DIR): $(ENV_PATH) $(CLIENT_DIR) $(CLIENT_FILES)
 prod: $(BUILD_SPA_DIR) docker
 
 .PHONY: certs
-certs:
+certs: prod
 	bash ./templates/nginx/init-letsencrypt.sh
 
 .PHONY: ssh
