@@ -67,12 +67,12 @@ async function init (options) {
   app.get('/login', async (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       const redirectUrl = `${options.baseUrl}/keycloak/callback`
-      return res.redirect(`${options.baseUrl}/auth/realms/pace/protocol/openid-connect/auth?response_type=code&redirect_uri=${encodeURI(redirectUrl)}&client_id=client`)
+      return res.redirect(`${options.baseUrl}/auth/realms/pace/protocol/openid-connect/auth?response_type=code&redirect_uri=${encodeURIComponent(redirectUrl)}&client_id=client`)
     }
     res.redirect('/')
   })
   app.get('/logout', (req: Request, res: Response) => {
-    const url = `${options.baseUrl}/auth/realms/${options.realm}/protocol/openid-connect/logout?redirect_uri=${encodeURI(options.baseUrl)}`
+    const url = `${options.baseUrl}/auth/realms/${options.realm}/protocol/openid-connect/logout?redirect_uri=${encodeURIComponent(options.baseUrl)}`
     req.logout()
     res.redirect(url)
   })
