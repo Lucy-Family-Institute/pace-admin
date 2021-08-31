@@ -1,8 +1,7 @@
 import { gql } from '@apollo/client/core'
-import passport from 'passport'
-import _ from 'lodash'
-
 import { Request, Response, NextFunction } from 'express'
+import _ from 'lodash'
+import passport from 'passport'
 import { Strategy as KeycloakStrategy } from 'passport-keycloak-oauth2-oidc'
 
 async function getUserByEmail (client, email: string) {
@@ -65,14 +64,15 @@ async function init (options) {
       res.redirect('/')
     }
   )
-  app.get('/login', (req: Request, res: Response, next: NextFunction) => {
+  app.get('/login', async (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.redirect(`${process.env.APP_BASE_URL}/auth/realms/pace/protocol/openid-connect/auth?response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Fkeycloak%2Fcallback&client_id=client`)
+      const redirectUrl = `${options.baseUrl}/keycloak/callback`
+      return res.redirect(`${options.baseUrl}/auth/realms/pace/protocol/openid-connect/auth?response_type=code&redirect_uri=${encodeURI(redirectUrl)}&client_id=client`)
     }
     res.redirect('/')
   })
   app.get('/logout', (req: Request, res: Response) => {
-    const url = `${process.env.APP_BASE_URL}/auth/realms/${options.realm}/protocol/openid-connect/logout?redirect_uri=${options.baseUrl}`
+    const url = `${options.baseUrl}/auth/realms/${options.realm}/protocol/openid-connect/logout?redirect_uri=${encodeURI(options.baseUrl)}`
     req.logout()
     res.redirect(url)
   })

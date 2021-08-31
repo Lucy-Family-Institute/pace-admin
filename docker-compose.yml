@@ -11,8 +11,6 @@ services:
       - ${POSTGRES_PORT}:${POSTGRES_DOCKER_PORT}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./build/keycloak/init.sql:/docker-entrypoint-initdb.d/1-keycloak.sql
-      - ./build/hasura/init.sql:/docker-entrypoint-initdb.d/2-hasura.sql
     restart: always
 
   hasura:
@@ -25,9 +23,8 @@ services:
       HASURA_GRAPHQL_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${HASURA_DATABASE}
       HASURA_GRAPHQL_ENABLE_CONSOLE: ${HASURA_ENABLE_CONSOLE}
       HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
-      HASURA_GRAPHQL_AUTH_HOOK: http://${DOCKER_HOST_IP}:8000/${HASURA_WEBHOOK}
+      HASURA_GRAPHQL_AUTH_HOOK: ${APP_BASE_URL}/${HASURA_WEBHOOK}
 
-   #6.0.1
   keycloak:
     image: jboss/keycloak:15.0.2
     environment:
@@ -40,22 +37,20 @@ services:
       PROXY_ADDRESS_FORWARDING: "true"
       KEYCLOAK_USER: ${KEYCLOAK_USERNAME}
       KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
-      KEYCLOAK_IMPORT: /opt/jboss/keycloak/realm-export.json
+      # KEYCLOAK_IMPORT: /opt/jbss/keycloak/realm-export.json
       # Uncomment the line below if you want to specify JDBC parameters. The parameter below is just an example, and it shouldn't be used in production without knowledge. It is highly recommended that you read the PostgreSQL JDBC driver documentation in order to use it.
       #JDBC_PARAMS: "ssl=true"
-    volumes: 
-      - ./build/keycloak/realm-export.json:/opt/jboss/keycloak/realm-export.json
+    # volumes: 
+      # - ./build/keycloak/realm-export.json:/opt/jboss/keycloak/realm-export.json
       # - ./build/keycloak/standalone.xml:/opt/jboss/keycloak/standalone/configuration/standalone.xml
-    ports:
-      - ${KEYCLOAK_PORT}:${KEYCLOAK_DOCKER_PORT}
     restart: always
   
   redis:
     image: redis:6.2.5
     command: ["redis-server", "--appendonly", "yes"]
+    restart: always
     ports:
       - ${REDIS_PORT}:${REDIS_DOCKER_PORT}
-    restart: always
 
   search:
     image: getmeili/meilisearch:v0.11.0
@@ -65,7 +60,7 @@ services:
       - ${MEILI_PORT}:${MEILI_DOCKER_PORT}
     restart: always
     volumes:
-      - ./dashboard-search/data.ms:/data.ms
+      - search_data:/data.ms
   
   nginx:
     image: nginx:1.21.1
@@ -79,3 +74,4 @@ services:
 
 volumes:
   postgres_data:
+  search_data:

@@ -8,9 +8,7 @@ DC_dev := docker-compose -f docker-compose.yml
 # if the templates folder has changed (e.g., a file has been added or removed).
 # or if any of the template files have changed.
 # We touch the build folder for good measure.
-TEMPLATES_FILES := $(shell find ./$(TEMPLATES_DIR) -type f)
-BUILD_FILES := $(shell find ./$(BUILD_DIR) -type f)
-$(BUILD_DIR): .env $(BUILD_FILES) $(TEMPLATES_DIR) $(TEMPLATES_FILES) 
+$(BUILD_TEMPLATES_DIR): $(ENV_PATH) $(TEMPLATES_DIR) $(TEMPLATES_FILES) 
 	@echo Running gomplate...
 	@docker run \
 		--user $(UID):$(GID) \
@@ -18,13 +16,13 @@ $(BUILD_DIR): .env $(BUILD_FILES) $(TEMPLATES_DIR) $(TEMPLATES_FILES)
 		--env DOCKER_HOST_IP=$(DOCKER_HOST_IP) \
 		--env ENV=$(ENV) \
 		-v $(PWD)/$(TEMPLATES_DIR):/input \
-		-v $(PWD)/$(BUILD_DIR):/output \
+		-v $(PWD)/$(BUILD_TEMPLATES_DIR):/output \
 		hairyhenderson/gomplate \
 		--input-dir /input \
 		--output-dir /output
-	@touch $(BUILD_DIR)
+	@touch $(BUILD_TEMPLATES_DIR)
 
-docker-database-restore: $(BUILD_DIR)
+docker-database-restore: $(BUILD_TEMPLATES_DIR)
 ifeq ($(ENV),dev)
 else ifeq ($(CONFIRM),true)
 else
@@ -39,7 +37,7 @@ endif
 		up -d
 
 DOCKER_REQS := \
-	BUILD_DIR \
+	BUILD_TEMPLATES_DIR \
 	DOCKER_HOST_IP \
 	ENV \
 	UID \
@@ -71,7 +69,7 @@ DOCKER_REQS := \
 
 .PHONY: docker
 #: Run docker containers in docker-compose in the background
-docker: $(addprefix env-, $(DOCKER_REQS)) $(BUILD_DIR)
+docker: $(addprefix env-, $(DOCKER_REQS)) $(BUILD_TEMPLATES_DIR)
 	@$(DC_$(ENV)) build
 	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) ENV=$(ENV) UID=$(UID) GID=$(GID) \
 		$(DC_$(ENV)) up -d
