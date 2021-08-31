@@ -22,7 +22,7 @@ server {
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
   {{ else }}
-    listen {{ .Env.NGINX_PORT}};
+    listen {{ .Env.NGINX_DOCKER_PORT }};
     server_name _;
   {{ end }}
 
