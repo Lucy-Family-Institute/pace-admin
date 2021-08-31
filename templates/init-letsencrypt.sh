@@ -43,7 +43,10 @@ echo
 
 
 echo "### Starting nginx ..."
-docker-compose up --force-recreate -d nginx
+docker-compose \
+  -f docker-compose.yml \
+  -f docker-compose.prod.yml \
+  up --force-recreate -d nginx
 echo
 
 echo "### Deleting dummy certificate for $domains ..."
@@ -87,4 +90,7 @@ docker-compose \
 echo
 
 echo "done"echo "### Reloading nginx ..."
-docker-compose exec nginx nginx -s reload
+docker-compose \
+  -f docker-compose.yml \
+  -f docker-compose.prod.yml \
+  exec nginx nginx -s reload
