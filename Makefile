@@ -113,6 +113,10 @@ $(BUILD_SPA_DIR): $(ENV_PATH) $(CLIENT_DIR) $(CLIENT_FILES)
 #: Running production: build spa and then run docker
 prod: $(BUILD_SPA_DIR) docker
 
+.PHONY: certs
+certs:
+	sh ./templates/nginx/init-letsencrypt.sh
+
 .PHONY: ssh
 ssh:
 	@ssh -i ~/.ssh/rick_johnson.pem ubuntu@paceadmin.zapto.org
