@@ -18,6 +18,6 @@ scratch/*
 /build/*
 
 .env*
-!/build/cerbot/.gitkeep
 !.env.example
+
 !/**/.gitkeep
