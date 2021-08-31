@@ -3,7 +3,7 @@ services:
     build:
       context: ./server/.
       args:
-        EXPRESS_PORT: ${EXPRESS_PORT}
+        EXPRESS_PORT: ${EXPRESS_DOCKER_PORT}
         SESSION_NAME: ${SESSION_NAME}
         SESSION_SECRET: ${SESSION_SECRET}
         KEYCLOAK_PORT: ${KEYCLOAK_PORT}
@@ -16,12 +16,15 @@ services:
         HASURA_SECRET: ${HASURA_SECRET}
         NGINX_PORT: ${NGINX_PORT}
         REDIS_HOST: redis
-        REDIS_PORT: 6379
+        REDIS_PORT: ${REDIS_DOCKER_PORT}
         DOCKER_HOST_IP: ${DOCKER_HOST_IP}
         GRAPHQL_END_POINT: "http://hasura:${HASURA_DOCKER_PORT}/v1/graphql"
-    ports:
-      - ${EXPRESS_PORT}:${EXPRESS_DOCKER_PORT}
     restart: always
   nginx:
     volumes:
       - ./build/spa:/www
+  redis:
+    ports: []
+  hasura:
+    environment:
+      HASURA_GRAPHQL_AUTH_HOOK: http://express:${EXPRESS_DOCKER_PORT}/${HASURA_WEBHOOK}

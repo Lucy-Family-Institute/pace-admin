@@ -1809,7 +1809,7 @@
     "oauth2DeviceCodeLifespan": "600",
     "clientSessionMaxLifespan": "0",
     "parRequestUriLifespan": "60",
-    "frontendUrl": "http://localhost:8000/auth"
+    "frontendUrl": "{{ .Env.APP_BASE_URL }}"
   },
   "keycloakVersion": "15.0.2",
   "userManagedAccessAllowed": false,

@@ -12,11 +12,12 @@ server/config/*
 server/!config/default.*
 server/sessions
 data/
-.env
-bak.env
 *.code-workspace
 dashboard-search/data.ms/*
 scratch/*
 build/*
+
+.env*
+!.env.example
 
 !**/.gitkeep

@@ -23,8 +23,15 @@ ENV_PATH := $(PWD)/.env
 
 NODE_DIRS := client server ingest dashboard-search node-admin-client
 
+BUILD_TEMPLATES_DIR := build
+
 TEMPLATES_DIR := templates
-BUILD_DIR := build
+TEMPLATES_FILES := $(shell find $(TEMPLATES_DIR) -type f)
+
+CLIENT_DIR := client
+CLIENT_FILES := $(shell find client ! -path '*node_modules*' -type f)
+
+BUILD_SPA_DIR := build/spa
 
 WSL := $(if $(shell command -v bash.exe 2> /dev/null),1,0)
 UNAME := $(shell uname -s)
@@ -51,13 +58,13 @@ include makeparts/aliases.mk
 ######################################
 ### Client
 
-CLIENT_REQS := \
+WEBAPP_REQS := \
 	GRAPHQL_END_POINT \
 	MEILI_PUBLIC_KEY
 
-.PHONY: client
+.PHONY: webapp
 #: Start the client dev server
-client: $(addprefix env-, $(CLIENT_REQS)) client/node_modules
+webapp: $(addprefix env-, $(WEBAPP_REQS)) client/node_modules
 	cd client && quasar dev && cd ..
 
 ######################################
@@ -66,7 +73,7 @@ client: $(addprefix env-, $(CLIENT_REQS)) client/node_modules
 .PHONY: server
 #: Start the express server
 server: server/node_modules
-	cd server && REDIS_HOST=localhost REDIS_PORT=6379 ts-node src/index.ts && cd ..
+	cd server && REDIS_HOST=localhost REDIS_DOCKER_PORT=6379 ts-node src/index.ts && cd ..
 
 ADD_DEV_USER_REQS := \
 	AUTH_SERVER_URL \
@@ -98,25 +105,17 @@ else
 	@$(RUN_MAKE) setup-new
 endif
 
-# SPA_SOURCE_FILES := $(shell find ./client/spa -type f)
-
-# $(BUILD_DIR)/spa: .env
-
-.PHONY: build-spa
-build-spa:
+$(BUILD_SPA_DIR): $(ENV_PATH) $(CLIENT_DIR) $(CLIENT_FILES)
 	@cd client && yarn run build
+	@touch $(BUILD_SPA_DIR)
 
 .PHONY: prod
-prod: build-spa docker
+#: Running production: build spa and then run docker
+prod: $(BUILD_SPA_DIR) docker
 
-.PHONY: clone-volume
-#: make clone-volume from=volumeName to=volumeNameBackup
-clone-volume:
-	docker volume create --name $(to)
-	docker container run --rm -it \
-						-v $(from):/from \
-						-v $(to):/to \
-						alpine ash -c "cd /from ; cp -av . /to"
+.PHONY: ssh
+ssh:
+	@ssh -i ~/.ssh/rick_johnson.pem ubuntu@paceadmin.zapto.org
 
 ##############################################################################
 # Epilogue
