@@ -22,7 +22,7 @@ const meiliUrl = `${process.env.APP_BASE_URL}/api/search/`
 const sleep = util.promisify(setTimeout)
 
 const searchClient = new MeiliSearch({
-  host: meiliUrl,
+  host: 'http://localhost:7700', // todo fix this sometime
   apiKey: meiliKey
 })
 
@@ -120,6 +120,8 @@ async function main() {
     index = await searchClient.getIndex('publications')
   }
 
+  console.log(index)
+
   const results = await gqlClient.query({
     query: gql`
     query MyQuery {
@@ -214,6 +216,7 @@ async function main() {
       const impactFactor =  getImpactFactorValue(doc)
       //set range value for impact factor
       const impactFactorLevel = getImpactFactorRange(impactFactor)
+      console.log('here')
       return {
         id: `${doc.publication.id}`,
         type: 'publication',
