@@ -19,7 +19,7 @@ endif
 UID := $(shell id -u)
 GID := $(shell id -g)
 
-ENV_PATH := $(PWD)/.env
+ENV_PATH := .env
 
 NODE_DIRS := client server ingest dashboard-search node-admin-client
 
