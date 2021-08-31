@@ -404,7 +404,6 @@ import sanitize from 'sanitize-filename'
 import pMap from 'p-map'
 import readPersonsByInstitutionByYearByOrganization from '../gql/readPersonsByInstitutionByYearByOrganization'
 import readOrganizationsCenters from '../../../gql/readOrganizationsCenters.gql'
-import moment from 'moment'
 // import VueFuse from 'vue-fuse'
 
 // Vue.use(VueFuse)
