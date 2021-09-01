@@ -16,17 +16,21 @@ ifndef CONFIRM
 CONFIRM := 0
 endif
 
+ifndef UID
 UID := $(shell id -u)
+endif
+ifndef GID
 GID := $(shell id -g)
+endif
 
 ENV_PATH := .env
 
 NODE_DIRS := client server ingest dashboard-search node-admin-client
 
-BUILD_TEMPLATES_DIR := build
-
 TEMPLATES_DIR := templates
 TEMPLATES_FILES := $(shell find $(TEMPLATES_DIR) -type f)
+
+BUILD_TEMPLATES_DIR := build/templates
 
 SERVER_DIR := server
 SERVER_FILES := $(shell find $(SERVER_DIR) ! -path '*node_modules*' ! -path '*dist*' -type f)
@@ -46,6 +50,13 @@ ifeq ($(UNAME),Linux)
 		DOCKER_HOST_IP := $(shell ip -4 addr show docker0 | grep -Po 'inet \K[\d.]+')
 	endif
 endif
+
+ifeq ($(NGINX_PORT),443)
+DC_prod := -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.prod.ssl.yml
+else
+DC_prod := -f docker-compose.yml -f docker-compose.prod.yml
+endif
+DC_dev := -f docker-compose.yml
 
 RUN_MAKE := ENV=$(ENV) CONFIRM=$(CONFIRM) $(MAKE)
 
@@ -120,7 +131,7 @@ prod: $(BUILD_TEMPLATES_DIR) $(BUILD_SPA_DIR) docker
 
 .PHONY: certs
 certs: prod 
-	@bash ./build/init-letsencrypt.sh
+	@bash ./build/templates/letsencrypt/init-letsencrypt.sh
 
 .PHONY: ssh
 ssh:
