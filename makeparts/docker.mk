@@ -15,8 +15,8 @@ $(BUILD_TEMPLATES_DIR): $(ENV_PATH) $(TEMPLATES_DIR) $(TEMPLATES_FILES)
 		--env-file $(ENV_PATH) \
 		--env DOCKER_HOST_IP=$(DOCKER_HOST_IP) \
 		--env ENV=$(ENV) \
-		-v $(PWD)/$(TEMPLATES_DIR):/input \
-		-v $(PWD)/$(BUILD_TEMPLATES_DIR):/output \
+		-v $(CURRENT_DIR)/$(TEMPLATES_DIR):/input \
+		-v $(CURRENT_DIR)/$(BUILD_TEMPLATES_DIR):/output \
 		hairyhenderson/gomplate \
 		--input-dir /input \
 		--output-dir /output
