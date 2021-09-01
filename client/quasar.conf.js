@@ -2,6 +2,7 @@
 // https://quasar.dev/quasar-cli/quasar-conf-js
 
 var path = require('path')
+// var ImageMinimizerPlugin = require('image-minimizer-webpack-plugin')
 
 module.exports = function (ctx) {
   return {
@@ -102,6 +103,19 @@ module.exports = function (ctx) {
           test: /\.(graphql|gql)$/,
           use: ['graphql-tag/loader']
         })
+        // cfg.module.rules.push({
+        //   test: /\.(jpe?g|png)$/i,
+        //   use: [
+        //     new ImageMinimizerPlugin({
+        //       minimizerOptions: {
+        //         plugins: [
+        //           ['jpegtran', { progressive: true }],
+        //           ['optipng', { optimizationLevel: 5 }]
+        //         ]
+        //       }
+        //     })
+        //   ]
+        // })
       }
     },
 
