@@ -10,7 +10,7 @@
   "scripts": {
     "lint": "eslint --ext .js,.vue src",
     "test": "echo \"No test specified\" && exit 0",
-    "build": "quasar build",
+    "build": "quasar build && purgecss --config ./purgecss.config.js",
     "build-ssr": "quasar build -m ssr"
   },
   "dependencies": {
@@ -51,7 +51,8 @@
     "eslint-plugin-vue": "^5.0.0",
     "image-minimizer-webpack-plugin": "^2.2.0",
     "imagemin-jpegtran": "^7.0.0",
-    "imagemin-optipng": "^8.0.0"
+    "imagemin-optipng": "^8.0.0",
+    "purgecss": "^4.0.3"
   },
   "engines": {
     "node": ">= 8.9.0",
