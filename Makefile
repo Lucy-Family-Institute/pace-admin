@@ -28,8 +28,11 @@ BUILD_TEMPLATES_DIR := build
 TEMPLATES_DIR := templates
 TEMPLATES_FILES := $(shell find $(TEMPLATES_DIR) -type f)
 
+SERVER_DIR := server
+SERVER_FILES := $(shell find $(SERVER_DIR) ! -path '*node_modules*' ! -path '*dist*' -type f)
+
 CLIENT_DIR := client
-CLIENT_FILES := $(shell find client ! -path '*node_modules*' -type f)
+CLIENT_FILES := $(shell find $(CLIENT_DIR) ! -path '*node_modules*' -type f)
 
 BUILD_SPA_DIR := build/spa
 
@@ -70,9 +73,9 @@ webapp: $(addprefix env-, $(WEBAPP_REQS)) client/node_modules
 ######################################
 ### Server
 	
-.PHONY: server
+.PHONY: express
 #: Start the express server
-server: server/node_modules
+express: server/node_modules
 	cd server && REDIS_HOST=localhost REDIS_DOCKER_PORT=6379 ts-node src/index.ts && cd ..
 
 ADD_DEV_USER_REQS := \
@@ -121,9 +124,6 @@ certs: prod
 ssh:
 	@ssh -i ~/.ssh/rick_johnson.pem ubuntu@paceadmin.zapto.org
 
-
-jeff:
-	echo $(TEMPLATES_FILES)
 ##############################################################################
 # Epilogue
 ##############################################################################
