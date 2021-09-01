@@ -36,6 +36,8 @@ CLIENT_FILES := $(shell find $(CLIENT_DIR) ! -path '*node_modules*' -type f)
 
 BUILD_SPA_DIR := build/spa
 
+CURRENT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+
 WSL := $(if $(shell command -v bash.exe 2> /dev/null),1,0)
 UNAME := $(shell uname -s)
 DOCKER_HOST_IP := host.docker.internal
