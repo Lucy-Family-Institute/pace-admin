@@ -59,6 +59,10 @@ module.exports = function (ctx) {
     // https://quasar.dev/quasar-cli/cli-documentation/supporting-ie
     supportIE: false,
 
+    vendor: {
+      remove: ['apexcharts/dist', 'citeproc', 'citation-js', 'moment', 'vue-d3-network/dist']
+    },
+
     // https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-build
     build: {
       // env: {
@@ -76,6 +80,7 @@ module.exports = function (ctx) {
       // extractCSS: false,
       distDir: '../build/spa',
       minify: true,
+      // analyze: true,
 
       // https://quasar.dev/quasar-cli/cli-documentation/handling-webpack
       extendWebpack (cfg) {

@@ -10,7 +10,8 @@
   "scripts": {
     "lint": "eslint --ext .js,.vue src",
     "test": "echo \"No test specified\" && exit 0",
-    "build": "quasar build"
+    "build": "quasar build",
+    "build-ssr": "quasar build -m ssr"
   },
   "dependencies": {
     "@quasar/extras": "^1.10.10",
