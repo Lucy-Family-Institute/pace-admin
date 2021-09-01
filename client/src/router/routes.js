@@ -3,12 +3,12 @@ import _ from 'lodash'
 
 export function makeBeforeEach (store) {
   return async (to, from, next) => {
-    const desiredPort = process.env.ENV === 'prod'
-      ? process.env.APP_PORT_PROD
-      : process.env.APP_PORT_DEV
-    if (window.location.port !== `${desiredPort}`) {
-      window.location.port = desiredPort
-    }
+    // const desiredPort = process.env.ENV === 'prod'
+    //   ? process.env.APP_PORT_PROD
+    //   : process.env.APP_PORT_DEV
+    // if (window.location.port !== `${desiredPort}`) {
+    //   window.location.port = desiredPort
+    // }
     if (!store.get('auth/isLoggedIn')) {
       try {
         const response = await axios({ url: '/session', method: 'GET' })
