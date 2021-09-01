@@ -75,6 +75,7 @@ module.exports = function (ctx) {
       // preloadChunks: false,
       // extractCSS: false,
       distDir: '../build/spa',
+      minify: true,
 
       // https://quasar.dev/quasar-cli/cli-documentation/handling-webpack
       extendWebpack (cfg) {
