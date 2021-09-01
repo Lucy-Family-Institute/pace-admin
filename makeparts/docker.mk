@@ -67,10 +67,13 @@ DOCKER_REQS := \
 	REDIS_PORT \
 	REDIS_DOCKER_PORT
 
+build/.docker-build: $(ENV_PATH) $(SERVER_DIR) $(SERVER_FILES)
+	@$(DC_$(ENV)) build
+	@touch build/.docker-build
+
 .PHONY: docker
 #: Run docker containers in docker-compose in the background
-docker: $(addprefix env-, $(DOCKER_REQS)) $(BUILD_TEMPLATES_DIR)
-	@$(DC_$(ENV)) build
+docker: $(addprefix env-, $(DOCKER_REQS)) $(BUILD_TEMPLATES_DIR) build/.docker-build
 	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) ENV=$(ENV) UID=$(UID) GID=$(GID) \
 		$(DC_$(ENV)) up -d
 
