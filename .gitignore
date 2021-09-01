@@ -25,3 +25,8 @@ scratch/*
 
 .env*
 !.env.example
+
+# It's very easy to accidentally install modules in the root folder
+/node_modules
+/package.json
+/yarn.lock
