@@ -81,7 +81,7 @@
             </p>
           </div>
           <p class="page-image">
-              <img :src="hero.imageUrl" width="800"
+              <img :src="hero.imageUrl" width="947" height="533"
                   :alt="hero.alt">
           </p>
         </div>
