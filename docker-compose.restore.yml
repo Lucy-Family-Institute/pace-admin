@@ -17,6 +17,5 @@ services:
         - ./build/templates/keycloak/init.sql:/docker-entrypoint-initdb.d/1-keycloak.sql
         - ./build/templates/hasura/init.sql:/docker-entrypoint-initdb.d/2-hasura.sql
         - ./build/templates/hasura/restore.sh:/docker-entrypoint-initdb.d/3-restore.sh
-
 volumes:
   postgres_data:
