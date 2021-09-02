@@ -34,6 +34,7 @@ mkdir -p "$data_path/conf/live/$domains"
 docker-compose \
   -f docker-compose.yml \
   -f docker-compose.prod.yml \
+  -f docker-compose.prod.ssl.yml \
   run --rm --entrypoint "\
   openssl req -x509 -nodes -newkey rsa:$rsa_key_size -days 1\
     -keyout '$path/privkey.pem' \
@@ -46,6 +47,7 @@ echo "### Starting nginx ..."
 docker-compose \
   -f docker-compose.yml \
   -f docker-compose.prod.yml \
+  -f docker-compose.prod.ssl.yml \
   up --force-recreate -d nginx
 echo
 
@@ -53,6 +55,7 @@ echo "### Deleting dummy certificate for $domains ..."
 docker-compose \
   -f docker-compose.yml \
   -f docker-compose.prod.yml \
+  -f docker-compose.prod.ssl.yml \
   run --rm --entrypoint "\
   rm -Rf /etc/letsencrypt/live/$domains && \
   rm -Rf /etc/letsencrypt/archive/$domains && \
@@ -79,6 +82,7 @@ if [ $staging != "0" ]; then staging_arg="--staging"; fi
 docker-compose \
   -f docker-compose.yml \
   -f docker-compose.prod.yml \
+  -f docker-compose.prod.ssl.yml \
   run --rm --entrypoint "\
   certbot certonly --webroot -w /var/www/certbot \
     $staging_arg \
@@ -93,4 +97,5 @@ echo "done"echo "### Reloading nginx ..."
 docker-compose \
   -f docker-compose.yml \
   -f docker-compose.prod.yml \
+  -f docker-compose.prod.ssl.yml \
   exec nginx nginx -s reload

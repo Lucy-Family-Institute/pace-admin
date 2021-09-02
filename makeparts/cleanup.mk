@@ -7,7 +7,7 @@ CLEAN_REQS =\
 .PHONY: clean
 #: Clean the build folder and all node_module folders by deleting them
 clean: $(addprefix env-, $(CLEAN_REQS))
-	@rm -rf build server/dist $(addsuffix /node_modules, $(NODE_DIRS))
+	@rm -rf build/temmplates/* build/flags/* build/certbot/* server/dist $(addsuffix /node_modules, $(NODE_DIRS))
 
 .PHONY: clear-pdfs
 #: Remove pdfs and thumbnails
