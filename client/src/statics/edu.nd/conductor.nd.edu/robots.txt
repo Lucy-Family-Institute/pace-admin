@@ -1,0 +1,9 @@
+User-agent: *
+Disallow: /news/archives/
+Disallow: /news/category/
+Disallow: /styles/
+Disallow: /admin/
+Disallow: /news/*/amp/
+
+User-agent: Googlebot
+Allow: /news/*/amp/

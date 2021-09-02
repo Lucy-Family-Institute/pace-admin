@@ -218,9 +218,9 @@ cite, .cite {font-style:italic;}
 /* Fonts
 ----------------------------------------------------*/
 @font-face {font-family:GPC; font-weight:700; font-style:normal; font-display:swap;
-  src:url('https://static.nd.edu/fonts/gp-min/gpc-bold.woff2') format('woff2'),
-      url('https://static.nd.edu/fonts/gp-min/gpc-bold.woff') format('woff'),
-      url('https://static.nd.edu/fonts/gp-min/gpc-bold.ttf') format('truetype');
+  src:url('/statics/edu.nd/static.nd.edu/fonts/gp-min/gpc-bold.woff2') format('woff2'),
+      url('/statics/edu.nd/static.nd.edu/fonts/gp-min/gpc-bold.woff') format('woff'),
+      url('/statics/edu.nd/static.nd.edu/fonts/gp-min/gpc-bold.ttf') format('truetype');
 }
 
 /* Images & Video
@@ -268,7 +268,7 @@ body .video,
   .video-poster::after {content:''; display:block;}
 body .video > img {margin-bottom:0;}
 body .video .play,
-.video-poster::after {position:absolute; bottom:0; left:0; width:100%; height:100%; margin:0 auto; background:rgba(0, 0, 0, 0.1) url('/stylesheets/themes/ndt/v3/images/play-btn.svg') no-repeat left center / auto 100%; transform-origin:12% 79%; transform:scale(1); transition:all var(--anim-duration-fast) cubic-bezier(0, 0, 0.25, 1);}
+.video-poster::after {position:absolute; bottom:0; left:0; width:100%; height:100%; margin:0 auto; background:rgba(0, 0, 0, 0.1) url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/play-btn.svg') no-repeat left center / auto 100%; transform-origin:12% 79%; transform:scale(1); transition:all var(--anim-duration-fast) cubic-bezier(0, 0, 0.25, 1);}
 body .video:hover .play,
 .video-poster:hover::after {background-color:rgba(0, 0, 0, 0); transform:scale(1.15);}
 
@@ -377,7 +377,7 @@ article.snippet {margin-bottom:2rem;}
 .link-top {max-width: unset; text-align: right; color: var(--brand-blue); font-size: 0.9rem;}
   .link-top a {display:inline-block; padding:0.6em 1.5em; margin:0 0.25em 0.25em 0; font-size:1rem; border:3px solid transparent; border-radius:0.6em; line-height:1.2; text-decoration:none; color:var(--brand-blue); transition:all var(--anim-duration-fast) var(--anim-ease);}
     .link-top a:hover {background-color:var(--sky-blue); color:var(--brand-blue); transform:scale(1.02);}
-    .link-top a::before {content:""; display:inline-block; width:0.7em; height:1em; margin-right:0.5em; background:url('/stylesheets/themes/ndt/v3/images/arrow-up.svg') 50% 100% / auto no-repeat;}
+    .link-top a::before {content:""; display:inline-block; width:0.7em; height:1em; margin-right:0.5em; background:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/arrow-up.svg') 50% 100% / auto no-repeat;}
   .faq-item:target .link-top a {background-color: var(--sky-blue-light);}
     .faq-item:target .link-top a:hover {background-color: white;}
 
@@ -459,7 +459,7 @@ article footer {margin-top:2.5rem;}
 
 .lb-element .lb-overlay {opacity:0.95; background-color:var(--brand-blue-dark);}
 .lb-element .lb-btn-close {opacity:1; transition:all 325ms ease-in-out; position:fixed; top:0; right:0; color:#fff;}
-.lb-element .lb-arrow {background:url('/stylesheets/themes/ndt/v3/images/chevron-gold.svg') 50% 50% / 1.5em no-repeat; opacity:1; transition:all 325ms ease-in-out;}
+.lb-element .lb-arrow {background:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/chevron-gold.svg') 50% 50% / 1.5em no-repeat; opacity:1; transition:all 325ms ease-in-out;}
   .lb-element .lb-arrow:hover,
   .lb-element .lb-arrow:focus,
   .lb-element .lb-btn-close:hover,
@@ -519,16 +519,16 @@ article footer {margin-top:2.5rem;}
   /* Link icons */
   .site-content [href^='http']::after,
   .external-link::after,
-  .btn[href^="http"]::after {--icon-light:url('/stylesheets/themes/ndt/v3/images/external-link-light.svg'); --icon-dark:url('/stylesheets/themes/ndt/v3/images/external-link-blue.svg');}
+  .btn[href^="http"]::after {--icon-light:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/external-link-light.svg'); --icon-dark:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/external-link-blue.svg');}
   .site-content [href$=".pdf"]::after {--icon-light:url(/stylesheets/themes/ndt/v3/images/file-pdf-light.svg); --icon-dark:url("/stylesheets/themes/ndt/v3/images/file-pdf.svg");}
   .site-content [href$=".doc"]::after,
-  .site-content [href$=".docx"]::after {--icon-light:url('/stylesheets/themes/ndt/v3/images/file-word-light.svg'); --icon-dark:url('/stylesheets/themes/ndt/v3/images/file-word.svg');}
-  .site-content [href$=".zip"]::after {--icon-light:url('/stylesheets/themes/ndt/v3/images/file-archive-light.svg'); --icon-dark:url('/stylesheets/themes/ndt/v3/images/file-archive.svg');}
+  .site-content [href$=".docx"]::after {--icon-light:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/file-word-light.svg'); --icon-dark:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/file-word.svg');}
+  .site-content [href$=".zip"]::after {--icon-light:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/file-archive-light.svg'); --icon-dark:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/file-archive.svg');}
   .site-content [href$=".ppt"]::after,
-  .site-content [href$=".pptx"]::after {--icon-light:url('/stylesheets/themes/ndt/v3/images/file-powerpoint-light.svg'); --icon-dark:url('/stylesheets/themes/ndt/v3/images/file-powerpoint.svg');}
+  .site-content [href$=".pptx"]::after {--icon-light:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/file-powerpoint-light.svg'); --icon-dark:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/file-powerpoint.svg');}
   .site-content [href$=".xls"]::after,
-  .site-content [href$=".xlsx"]::after {--icon-light:url('/stylesheets/themes/ndt/v3/images/file-excel-light.svg'); --icon-dark:url('/stylesheets/themes/ndt/v3/images/file-excel.svg');}
-  .btn-more::after {background-image:url('/stylesheets/themes/ndt/v3/images/chevron-gold.svg');}
+  .site-content [href$=".xlsx"]::after {--icon-light:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/file-excel-light.svg'); --icon-dark:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/file-excel.svg');}
+  .btn-more::after {background-image:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/chevron-gold.svg');}
 
   h1 [href^='http']::after,
   .h1 [href^='http']::after,
@@ -576,7 +576,7 @@ article footer {margin-top:2.5rem;}
       .btn-cta.btn-light:active {background-color:var(--gray-extra-light);}
 
   .btn-more {padding-right:1.2em;}
-    .btn-more::after {content:'\2060'; display:inline; padding:0.5625em 0.5em; margin-left:0.15em; vertical-align:text-bottom; background:url('/stylesheets/themes/ndt/v3/images/chevron-gold.svg') 50% 50% / 0.45em no-repeat; transform:translateX(0); transition:all var(--anim-duration-fast) var(--anim-ease);}
+    .btn-more::after {content:'\2060'; display:inline; padding:0.5625em 0.5em; margin-left:0.15em; vertical-align:text-bottom; background:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/chevron-gold.svg') 50% 50% / 0.45em no-repeat; transform:translateX(0); transition:all var(--anim-duration-fast) var(--anim-ease);}
     .btn-more:hover::after {transform:translateX(0.25em);}
 
   .btn-action {width:4rem; height:4rem; color:#fff; line-height:1; text-indent:4rem; white-space:nowrap; overflow:hidden; position:relative; border-radius:100%; background-color:var(--brand-blue); padding:0.5em;}
@@ -631,7 +631,7 @@ article footer {margin-top:2.5rem;}
   .hover-bg:focus-within {background-color:var(--sky-blue); border-color:var(--sky-blue-dark);}
     .hover-bg:focus-within a:focus {outline:none;}
 
-  .hover-more {padding-right:3rem; background-position:calc(100% - 2rem) 50%; background-size:1rem; background-repeat:no-repeat; background-image:url('/stylesheets/themes/ndt/v3/images/chevron-gold.svg');}
+  .hover-more {padding-right:3rem; background-position:calc(100% - 2rem) 50%; background-size:1rem; background-repeat:no-repeat; background-image:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/chevron-gold.svg');}
   .hover-more.card {padding-right:0;}
     .hover-more.card-body,
     .hover-more .card-body {padding-right:4rem;}
@@ -662,7 +662,7 @@ article footer {margin-top:2.5rem;}
     .site-tagline {color:var(--gray-light); text-align:left;}
 
   .mark-header {width:100%; margin:0 0 1rem; height:3rem; position:relative;}
-    .mark-header a {display:block; height:47px; margin:0 auto; color:#fff; text-indent:-9999px; overflow:hidden; position:relative; background:url('https://static.nd.edu/images/brandbar/dept-nd-white.svg') 50% 54% / 300px auto no-repeat; background-color:var(--brand-blue-dark);}
+    .mark-header a {display:block; height:47px; margin:0 auto; color:#fff; text-indent:-9999px; overflow:hidden; position:relative; background:url('/statics/edu.nd/static.nd.edu/images/brandbar/dept-nd-white.svg') 50% 54% / 300px auto no-repeat; background-color:var(--brand-blue-dark);}
     .mark-header a:focus {outline:3px solid #15a6b5; outline-offset:5px;}
 
   .page-image {width:100vw; margin:0 -5vw; position:relative; overflow:hidden;}
@@ -864,7 +864,7 @@ article footer {margin-top:2.5rem;}
     .footer-breadcrumbs a:hover {text-decoration:underline;}
   .footer-parent {background:var(--brand-blue-light);}
   .footer-parent a {color:#fff;}
-  .mark-footer {background:url('https://static.nd.edu/images/marks/white/ndmark.svg') 50% 50% / contain no-repeat;}
+  .mark-footer {background:url('/statics/edu.nd/static.nd.edu/images/marks/white/ndmark.svg') 50% 50% / contain no-repeat;}
     .mark-footer img {display:none;}
 }
 
@@ -962,7 +962,7 @@ article footer {margin-top:2.5rem;}
   ----------------------------------------------------*/
   .hover-more {background-image:none;}
     .hover-more:hover,
-    .hover-more:focus-within {background-image:url('/stylesheets/themes/ndt/v3/images/chevron-gold.svg'); background-position-x:calc(100% - 1.5rem);}
+    .hover-more:focus-within {background-image:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/chevron-gold.svg'); background-position-x:calc(100% - 1.5rem);}
 
   /* FAQs
   ----------------------------------------------------*/
@@ -994,7 +994,7 @@ article footer {margin-top:2.5rem;}
     .has-parent .site-title,
     .has-tagline .site-title {font-size:2.5rem;}
     .site-title a {padding:0; line-height:1.2em;}
-  .mark-header a {background:url('https://static.nd.edu/images/marks/gold-white/ndmark.svg') 50% 50% / contain no-repeat; background-color:transparent;}
+  .mark-header a {background:url('/statics/edu.nd/static.nd.edu/images/marks/gold-white/ndmark.svg') 50% 50% / contain no-repeat; background-color:transparent;}
   .search-input {float:left; width:auto; font-size:0.9rem; line-height:1.4rem;}
   .btn-nav-mobile {display:none;}
 
@@ -1243,7 +1243,7 @@ article footer {margin-top:2.5rem;}
   only screen and (min-resolution:1.5dppx){
 
   @media only screen and (min-width:48em) {
-    .mark-header a {background-image:url('https://static.nd.edu/images/marks/gold-white/ndmark.svg');}
+    .mark-header a {background-image:url('/statics/edu.nd/static.nd.edu/images/marks/gold-white/ndmark.svg');}
 }
 }
 

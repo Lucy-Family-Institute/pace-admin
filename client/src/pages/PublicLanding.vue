@@ -183,7 +183,7 @@
 </template>
 
 <style scoped>
-@import 'https://conductor.nd.edu/stylesheets/themes/ndt/v3/ndt.css';
+@import '../statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/ndt.css';
 @import '../statics/ndweb/stylesheets/site.css';
 p.page-image img {
   border: 1px #e6e6e6 solid;
