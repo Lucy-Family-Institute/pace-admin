@@ -131,7 +131,7 @@ prod: $(BUILD_TEMPLATES_DIR) $(BUILD_SPA_DIR) docker
 
 .PHONY: certs
 certs: prod 
-	@bash ./build/templates/letsencrypt/init-letsencrypt.sh
+	@bash $(BUILD_TEMPLATES_DIR)/letsencrypt/init-letsencrypt.sh
 
 .PHONY: ssh
 ssh:
