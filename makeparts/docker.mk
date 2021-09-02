@@ -7,7 +7,7 @@
 # We touch the build folder for good measure.
 $(BUILD_TEMPLATES_DIR): $(ENV_PATH) $(TEMPLATES_DIR) $(TEMPLATES_FILES) 
 	@echo Running gomplate...
-	@mkdir $(BUILD_TEMPLATES_DIR)
+	@mkdir -p $(BUILD_TEMPLATES_DIR)
 	@docker run \
 		--user $(UID):$(GID) \
 		--env-file $(ENV_PATH) \
@@ -68,7 +68,7 @@ DOCKER_REQS := \
 
 build/flags/.docker-build: $(ENV_PATH) $(SERVER_DIR) $(SERVER_FILES)
 	@docker-compose $(DC_$(ENV)) build
-	@mkdir build/flags
+	@mkdir -p build/flags
 	@touch build/flags/.docker-build
 
 .PHONY: docker
