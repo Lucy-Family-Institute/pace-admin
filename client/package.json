@@ -11,7 +11,8 @@
     "lint": "eslint --ext .js,.vue src",
     "test": "echo \"No test specified\" && exit 0",
     "build": "quasar build",
-    "build-ssr": "quasar build -m ssr"
+    "build-ssr": "quasar build -m ssr",
+    "build-pwa": "quasar build -m pwa"
   },
   "dependencies": {
     "@quasar/extras": "^1.10.10",
