@@ -61,7 +61,7 @@ module.exports = function (ctx) {
     supportIE: false,
 
     vendor: {
-      remove: ['apexcharts/dist', 'citeproc', 'citation-js', 'moment', 'vue-d3-network/dist']
+      remove: ['apexcharts/dist', 'citeproc', 'citation-js', 'moment', 'vue-d3-network/dist', 'lodash']
     },
 
     // https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-build
