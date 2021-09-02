@@ -375,6 +375,11 @@ export default {
           rel: 'icon',
           sizes: '16x16',
           href: 'https://static.nd.edu/images/monogram/gold/monogram-16.png'
+        },
+        hero: {
+          rel: 'preload',
+          as: 'image',
+          href: '/statics/graph16x9wVig.avif'
         }
       },
 
