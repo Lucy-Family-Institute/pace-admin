@@ -41,8 +41,8 @@ services:
       # Uncomment the line below if you want to specify JDBC parameters. The parameter below is just an example, and it shouldn't be used in production without knowledge. It is highly recommended that you read the PostgreSQL JDBC driver documentation in order to use it.
       #JDBC_PARAMS: "ssl=true"
     # volumes: 
-      # - ./build/keycloak/realm-export.json:/opt/jboss/keycloak/realm-export.json
-      # - ./build/keycloak/standalone.xml:/opt/jboss/keycloak/standalone/configuration/standalone.xml
+      # - ./build/templates/keycloak/realm-export.json:/opt/jboss/keycloak/realm-export.json
+      # - ./build/templates/keycloak/standalone.xml:/opt/jboss/keycloak/standalone/configuration/standalone.xml
     restart: unless-stopped
   
   redis:
@@ -65,11 +65,11 @@ services:
   nginx:
     image: nginx:1.21.1
     volumes:
-      - ./build/nginx/:/etc/nginx/conf.d
+      - ./build/templates/nginx/:/etc/nginx/conf.d
       - ${PDFS_PATH}:/pdfs
       - ${THUMBNAILS_PATH}:/thumbnails
     ports:
-      - ${NGINX_PORT}:${NGINX_DOCKER_PORT}
+      - ${NGINX_PORT}:${NGINX_PORT}
     restart: unless-stopped
 
 volumes:

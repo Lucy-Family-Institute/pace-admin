@@ -14,9 +14,8 @@ services:
         - postgres_data:/var/lib/postgresql/data
         - ${KEYCLOAK_DUMP}:/tmp/keycloak.sql
         - ${HASURA_DUMP}:/tmp/hasura.sql
-        - ./build/keycloak/init.sql:/docker-entrypoint-initdb.d/1-keycloak.sql
-        - ./build/hasura/init.sql:/docker-entrypoint-initdb.d/2-hasura.sql
-        - ./build/hasura/restore.sh:/docker-entrypoint-initdb.d/3-restore.sh
-
+        - ./build/templates/keycloak/init.sql:/docker-entrypoint-initdb.d/1-keycloak.sql
+        - ./build/templates/hasura/init.sql:/docker-entrypoint-initdb.d/2-hasura.sql
+        - ./build/templates/hasura/restore.sh:/docker-entrypoint-initdb.d/3-restore.sh
 volumes:
   postgres_data:

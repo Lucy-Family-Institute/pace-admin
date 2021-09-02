@@ -1,15 +1,13 @@
 ######################################
 ### Docker
 
-DC_prod := docker-compose -f docker-compose.yml -f docker-compose.prod.yml
-DC_dev := docker-compose -f docker-compose.yml
-
 # This will run if any of the build files have been directly changed (i.e, a no-no),
 # if the templates folder has changed (e.g., a file has been added or removed).
 # or if any of the template files have changed.
 # We touch the build folder for good measure.
 $(BUILD_TEMPLATES_DIR): $(ENV_PATH) $(TEMPLATES_DIR) $(TEMPLATES_FILES) 
 	@echo Running gomplate...
+	@mkdir $(BUILD_TEMPLATES_DIR)
 	@docker run \
 		--user $(UID):$(GID) \
 		--env-file $(ENV_PATH) \
@@ -35,6 +33,7 @@ endif
 		docker-compose \
 		-f docker-compose.restore.yml \
 		up -d
+	@echo "Now make stop-docker and make docker or make prod; you may need to also run make migrate"
 
 DOCKER_REQS := \
 	BUILD_TEMPLATES_DIR \
@@ -67,26 +66,27 @@ DOCKER_REQS := \
 	REDIS_PORT \
 	REDIS_DOCKER_PORT
 
-build/.docker-build: $(ENV_PATH) $(SERVER_DIR) $(SERVER_FILES)
-	@$(DC_$(ENV)) build
-	@touch build/.docker-build
+build/flags/.docker-build: $(ENV_PATH) $(SERVER_DIR) $(SERVER_FILES)
+	@docker-compose $(DC_$(ENV)) build
+	@mkdir build/flags
+	@touch build/flags/.docker-build
 
 .PHONY: docker
 #: Run docker containers in docker-compose in the background
-docker: $(addprefix env-, $(DOCKER_REQS)) $(BUILD_TEMPLATES_DIR) build/.docker-build
+docker: $(addprefix env-, $(DOCKER_REQS)) $(BUILD_TEMPLATES_DIR) build/flags/.docker-build
 	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) ENV=$(ENV) UID=$(UID) GID=$(GID) \
-		$(DC_$(ENV)) up -d
+		docker-compose $(DC_$(ENV)) up -d
 
 .PHONY: logs
 #: Tail docker logs; use make logs service=dockername to print specific logs
 logs: env-DOCKER_HOST_IP
-	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) $(DC_$(ENV)) logs -f $(service)
+	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose $(DC_$(ENV)) logs -f $(service)
 
 .PHONY: docker-stop
 #: Stop docker
 docker-stop:
 	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) \
-		$(DC_$(ENV)) down
+		docker-compose $(DC_$(ENV)) down
 
 .PHONY: docker-restart
 #: Restart docker
