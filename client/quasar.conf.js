@@ -88,14 +88,14 @@ module.exports = function (ctx) {
         comments: false,
         mangle: true,
         compress: {
-          sequences: true,
-          dead_code: true,
-          conditionals: true,
-          booleans: true,
-          unused: true,
-          if_return: true,
-          join_vars: true,
-          drop_console: true
+          // sequences: true,
+          // dead_code: true,
+          // conditionals: true,
+          // booleans: true,
+          // unused: true,
+          // if_return: true,
+          // join_vars: true,
+          // drop_console: true
         }
       },
 
