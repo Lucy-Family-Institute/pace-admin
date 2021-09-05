@@ -267,11 +267,13 @@
                         row-key="id"
                         :hide-bottom="acceptedAuthors.length <= 0"
                       >
-                        <q-tr v-if="acceptedAuthors.length <= 0" slot="bottom-row">
-                          <q-td align="left" colspan="100%">
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>None</i>
-                          </q-td>
-                        </q-tr>
+                        <template v-slot:bottom-row>
+                          <q-tr v-if="acceptedAuthors.length <= 0">
+                            <q-td align="left" colspan="100%">
+                              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>None</i>
+                            </q-td>
+                          </q-tr>
+                        </template>
                       </q-table>
                     </q-card-section>
                     <q-card-section>
@@ -282,11 +284,13 @@
                         row-key="id"
                         :hide-bottom="rejectedAuthors.length <= 0"
                       >
-                        <q-tr v-if="rejectedAuthors.length <= 0" slot="bottom-row">
-                          <q-td align="left" colspan="100%">
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>None</i>
-                          </q-td>
-                        </q-tr>
+                        <template v-slot:bottom-row>
+                          <q-tr v-if="rejectedAuthors.length <= 0">
+                            <q-td align="left" colspan="100%">
+                              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>None</i>
+                            </q-td>
+                          </q-tr>
+                        </template>
                       </q-table>
                     </q-card-section>
                     <q-card-section>
@@ -297,11 +301,13 @@
                         row-key="id"
                         :hide-bottom="unsureAuthors.length <= 0"
                       >
-                        <q-tr v-if="unsureAuthors.length <= 0" slot="bottom-row">
-                          <q-td align="left" colspan="100%">
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>None</i>
-                          </q-td>
-                        </q-tr>
+                        <template v-slot:bottom-row>
+                          <q-tr v-if="unsureAuthors.length <= 0">
+                            <q-td align="left" colspan="100%">
+                              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>None</i>
+                            </q-td>
+                          </q-tr>
+                        </template>
                       </q-table>
                     </q-card-section>
                     <q-card-section>
@@ -366,47 +372,30 @@
 </style>
 
 <script>
-import Vue from 'vue'
 import { get, sync } from 'vuex-pathify'
 import { dom, date } from 'quasar'
-// add csv downloader
 import JsonCSV from 'vue-json-csv'
-// const { getScrollPosition, setScrollPosition } = scroll
 import readPersons from '../gql/readPersons'
-// import readPersonsByInstitution from '../gql/readPersonsByInstitution'
-// import readPublicationsByPerson from '../gql/readPublicationsByPerson'
-// import readPublicationsByPersonByReview from '../gql/readPublicationsByPersonByReview'
+
 import readAuthorsByPublication from '../gql/readAuthorsByPublication'
 import readPublicationsCSL from '../gql/readPublicationsCSL'
-// import readConfidenceSetItems from '../gql/readConfidenceSetItems'
 import insertReview from '../gql/insertReview'
-// import readUser from '../gql/readUser'
-// import readInstitutions from '../gql/readInstitutions'
+
 import _ from 'lodash'
 import Cite from 'citation-js'
-
-// import readPersonsByInstitutionByYear from '../gql/readPersonsByInstitutionByYear'
-// import readPersonsByInstitutionByYearPendingPubs from '../gql/readPersonsByInstitutionByYearPendingPubs'
 import readReviewTypes from '../../../gql/readReviewTypes.gql'
 import readPublications from '../gql/readPublications'
-// import readPendingPublications from '../../../gql/readPendingPublications.gql'
 import readPersonPublicationsAll from '../gql/readPersonPublicationsAll'
 import readPersonPublicationsConfSets from '../gql/readPersonPublicationsConfSets'
 import readPersonPublicationsReviews from '../gql/readPersonPublicationsReviews'
 import readAuthorsByPublications from '../gql/readAuthorsByPublications'
-// import readPublicationsByReviewState from '../../../gql/readPublicationsByReviewState.gql'
 import readPublication from '../../../gql/readPublication.gql'
-// import * as service from '@porter/osf.io';
-
 import CenterReviewPubFilter from '../components/CenterReviewPubFilter.vue'
 import MainFilter from '../components/MainFilter.vue'
 import sanitize from 'sanitize-filename'
 import pMap from 'p-map'
 import readPersonsByInstitutionByYearByOrganization from '../gql/readPersonsByInstitutionByYearByOrganization'
 import readOrganizationsCenters from '../../../gql/readOrganizationsCenters.gql'
-// import VueFuse from 'vue-fuse'
-
-// Vue.use(VueFuse)
 
 export default {
   name: 'PageIndex',
@@ -517,7 +506,7 @@ export default {
     drawer: false,
     miniState: false
   }),
-  beforeDestroy () {
+  beforeUnmount () {
     clearInterval(this.interval)
     clearInterval(this.bufferInterval)
   },
@@ -593,7 +582,7 @@ export default {
         try {
           if (index === 0 && totalPubs === 1) {
             // will start a new personpub set list if not already in one
-            this.startPersonPubSet(personPub['id'], reviewType)
+            this.startPersonPubSet(personPub.id, reviewType)
           } else if (index !== (totalPubs - 1)) {
             const nextPersonPub = _.nth(personPubList, (index + 1))
             this.linkPersonPubPair(personPub.id, nextPersonPub.id, reviewType)
@@ -759,15 +748,15 @@ export default {
         publication.semantic_scholar_id) {
         return publication.semantic_scholar_id
       } else if (publication.source_name.toLowerCase() === 'webofscience') {
-        return (publication.wos_id && publication.wos_id['_text'] ? publication.wos_id['_text'] : undefined)
+        return (publication.wos_id && publication.wos_id._text ? publication.wos_id._text : undefined)
       } else if (publication.source_name.toLowerCase() === 'pubmed' &&
         publication.pubmed_resource_identifiers &&
         _.isArray(publication.pubmed_resource_identifiers)) {
         const resourceId = _.find(publication.pubmed_resource_identifiers, (id) => {
-          return id['resourceIdentifierType'] === 'pmc'
+          return id.resourceIdentifierType === 'pmc'
         })
         if (resourceId) {
-          return resourceId['resourceIdentifier']
+          return resourceId.resourceIdentifier
         } else {
           return undefined
         }
@@ -798,7 +787,7 @@ export default {
     },
     getDisplaySourceLabel (personPublication) {
       const sourceId = this.getPublicationSourceId(personPublication)
-      let sourceName = personPublication.publication.source_name
+      const sourceName = personPublication.publication.source_name
       let display = sourceName
       if (sourceId) {
         display = `${sourceName}: ${sourceId}`
@@ -951,7 +940,7 @@ export default {
       this.selectedReviewState = reviewState
     },
     async scrollToPublication (index) {
-      this.$refs['pubScroll'].scrollTo(index)
+      this.$refs.pubScroll.scrollTo(index)
     },
     async showCurrentSelectedPublication (pubIsExpanded) {
       if (this.personPublication) {
@@ -961,8 +950,8 @@ export default {
         })
         if (currentPubIndex >= 0) {
           let newScrollIndex = currentPubIndex
-          const prevScrollIndex = this.$refs['pubScroll']['prevToIndex']
-          let scrollDifferential = newScrollIndex - prevScrollIndex
+          const prevScrollIndex = this.$refs.pubScroll.prevToIndex
+          const scrollDifferential = newScrollIndex - prevScrollIndex
           let scrollAdjustment = 0
           if (newScrollIndex !== 0) {
             if (scrollDifferential > 0) {
@@ -974,7 +963,7 @@ export default {
             }
           }
           newScrollIndex += scrollAdjustment
-          await this.$refs['pubScroll'].scrollTo(newScrollIndex)
+          await this.$refs.pubScroll.scrollTo(newScrollIndex)
 
           if (pubIsExpanded) {
             this.$refs[`personPub${currentPubIndex}`].show()
@@ -1020,7 +1009,7 @@ export default {
       await this.loadCenterAuthorOptions()
     },
     async loadCenterAuthorOptions () {
-      let obj = ['All']
+      const obj = ['All']
       _.each(this.people, (person) => {
         obj.push(`${this.getAuthorString(person)} (${this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person)})`)
       })
@@ -1111,7 +1100,7 @@ export default {
       return authorString
     },
     getAuthorString (author) { //, includeCounts) {
-      let obj = `${author.family_name}, ${author.given_name}`
+      const obj = `${author.family_name}, ${author.given_name}`
       // if (includeCounts &&
       //   author.persons_publications_metadata_aggregate &&
       //   author.persons_publications_metadata_aggregate.aggregate &&
@@ -1138,7 +1127,7 @@ export default {
       _.each(cslAuthors, (author) => {
         _.each(personPublications, (personPublication) => {
           // if (this.lastNameMatchFuzzy(personPublication.person.family_name, 'family', cslAuthors)) {
-          if (_.lowerCase(personPublication.person.family_name) === _.lowerCase(author['family'])) {
+          if (_.lowerCase(personPublication.person.family_name) === _.lowerCase(author.family)) {
             if (returnPersonPubAuthors) {
               if (!matchedAuthorsIds[personPublication.person.id]) {
                 matchedAuthorsIds[personPublication.person.id] = true
@@ -1395,10 +1384,10 @@ export default {
       // end add code for pubsets
       // initialize the pub author matches
       this.matchedPublicationAuthorsByTitle = _.mapValues(this.authorsByTitle, (cslAuthors, titleKey) => {
-        return this.getMatchedCslAuthors(cslAuthors, this.publicationsGroupedByTitleByInstitutionReview['accepted'][titleKey], true)
+        return this.getMatchedCslAuthors(cslAuthors, this.publicationsGroupedByTitleByInstitutionReview.accepted[titleKey], true)
       })
       this.sortAuthorsByTitle = {}
-      this.sortAuthorsByTitle['accepted'] = _.mapValues(this.matchedPublicationAuthorsByTitle, (matchedAuthors) => {
+      this.sortAuthorsByTitle.accepted = _.mapValues(this.matchedPublicationAuthorsByTitle, (matchedAuthors) => {
         this.updateFilteredPersonPubCounts('accepted', matchedAuthors)
         return this.getAuthorsString(matchedAuthors)
       })
@@ -1537,7 +1526,7 @@ export default {
         const sortedConfs = _.sortBy(_.keys(pubsByConfByName), (confidence) => { return Number.parseFloat(confidence) }).reverse()
 
         // now push values into array in desc order of count and flatten
-        let sortedPubs = []
+        const sortedPubs = []
         _.each(sortedConfs, (key) => {
           sortedPubs.push(pubsByConfByName[key])
         })
@@ -1582,7 +1571,7 @@ export default {
           return reviewPersonPub.persons_publications_id
         })
 
-        const personPubNDReviewsAccepted = personPubNDReviewsByType['accepted']
+        const personPubNDReviewsAccepted = personPubNDReviewsByType.accepted
 
         const pubsWithCenterReviewsResult = await this.$apollo.query({
           query: readPersonPublicationsReviews(_.keys(personPubByIds), this.selectedCenter.value),
@@ -1601,7 +1590,7 @@ export default {
         const personPubConfidenceSets = _.groupBy(pubsWithConfResult.data.confidencesets_persons_publications, (confPersonPub) => {
           return confPersonPub.persons_publications_id
         })
-        let singlePubIdsByTitle = {}
+        const singlePubIdsByTitle = {}
 
         if (currentLoadCount === this.pubLoadCount) {
           this.publications = _.map(personPubNDReviewsAccepted, (personPubReview) => {
@@ -1663,7 +1652,7 @@ export default {
       this.citationsByTitle = {}
       // break publicationIds into chunks of 50
       const batches = _.chunk(publicationIds, 2000)
-      let batchesPubsCSLByTitle = []
+      const batchesPubsCSLByTitle = []
       const indexThis = this
       await pMap(batches, async (batch, index) => {
         const pubsCSLResult = await this.$apollo.query({
@@ -1690,7 +1679,7 @@ export default {
       const obj = _.clone(personPublication.person)
       const confidenceset = (personPublication.confidencesets && personPublication.confidencesets[0] ? personPublication.confidencesets[0] : undefined)
       if (confidenceset) {
-        _.set(obj, 'confidenceset_value', confidenceset['value'])
+        _.set(obj, 'confidenceset_value', confidenceset.value)
       } else {
         console.warn(`Warning no confidence set found for person pubication: ${personPublication.id}`)
       }
@@ -1710,17 +1699,17 @@ export default {
       this.personPublication = personPublication
       const personPublicationsByReview = await this.getTitlePersonPublicationsByReview(this.getPublicationTitleKey(personPublication.publication.title))
       const reviewedAuthors = []
-      this.acceptedAuthors = _.map(personPublicationsByReview['accepted'], (personPub) => {
+      this.acceptedAuthors = _.map(personPublicationsByReview.accepted, (personPub) => {
         const reviewedAuthor = this.getReviewedAuthor(personPub)
         reviewedAuthors.push(reviewedAuthor)
         return reviewedAuthor
       })
-      this.rejectedAuthors = _.map(personPublicationsByReview['rejected'], (personPub) => {
+      this.rejectedAuthors = _.map(personPublicationsByReview.rejected, (personPub) => {
         const reviewedAuthor = this.getReviewedAuthor(personPub)
         reviewedAuthors.push(reviewedAuthor)
         return reviewedAuthor
       })
-      this.unsureAuthors = _.map(personPublicationsByReview['unsure'], (personPub) => {
+      this.unsureAuthors = _.map(personPublicationsByReview.unsure, (personPub) => {
         const reviewedAuthor = this.getReviewedAuthor(personPub)
         reviewedAuthors.push(reviewedAuthor)
         return reviewedAuthor
@@ -1764,7 +1753,6 @@ export default {
         }
       } catch (error) {
         console.error(error)
-      } finally {
       }
     },
     // async refreshReviewQueue () {
@@ -1780,7 +1768,7 @@ export default {
       const pubSet = this.getPersonPubSet(this.getPersonPubSetId(personPublication.id))
       const personPubs = pubSet.personPublications
       try {
-        let mutateResults = []
+        const mutateResults = []
         await _.each(personPubs, async (personPub) => {
           // const personPub = personPubs[0]
           let selectedCenterValue = this.selectedCenter.value
@@ -1792,7 +1780,7 @@ export default {
           )
           if (mutateResult && personPub.id === personPublication.id) {
             this.$refs[`personPub${index}`].hide()
-            Vue.delete(this.personPublicationsCombinedMatches, index)
+            delete this.personPublicationsCombinedMatches[index]
           }
           mutateResults.push(mutateResult)
           this.publicationsReloadPending = true
@@ -1916,7 +1904,7 @@ export default {
         // update publication year to be current if can, otherwise leave as is
         const publicationYear = this.getUpdatedPublicationYear(csl)
         if (publicationYear !== null && publicationYear > 0) {
-          csl['issued']['date-parts'][0][0] = publicationYear
+          csl.issued['date-parts'][0][0] = publicationYear
         }
       } catch (error) {
         console.warn(`Was unable to update publication year for citation with error: ${error}`)

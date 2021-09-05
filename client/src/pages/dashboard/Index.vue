@@ -64,17 +64,20 @@
   </q-page>
 </template>
 
-<style lang="sass">
-.my-card
-  width: 100%
-  max-width: 450px
-.graph-card
-  width: 100%
-  max-width: 915px
+<style lang="scss">
+.my-card {
+  width: 100%;
+  max-width: 450px;
+}
+.graph-card {
+  width: 100%;
+  max-width: 915px;
+}
 
-.clickable
-   text-decoration: underline
-   cursor: pointer
+.clickable {
+  text-decoration: underline;
+  cursor: pointer;
+}
 </style>
 
 <script>

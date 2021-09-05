@@ -81,7 +81,7 @@ WEBAPP_REQS := \
 .PHONY: webapp
 #: Start the client dev server
 webapp: $(addprefix env-, $(WEBAPP_REQS)) client/node_modules
-	cd client && quasar dev && cd ..
+	cd client && npx quasar dev && cd ..
 
 ######################################
 ### Server

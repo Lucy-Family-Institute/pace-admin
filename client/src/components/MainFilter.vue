@@ -134,7 +134,6 @@ export default {
     },
     resetFilters () {
       this.selectedPersonPubSort = this.preferredPersonPubSort
-      this.selectedCenterPubSort = this.selectedCenterPubSort
       this.selectedPersonSort = this.preferredPersonSort
       this.selectedPersonTotal = this.preferredPersonTotal
       this.selectedPersonConfidence = this.preferredPersonConfidence

@@ -1,4 +1,7 @@
-import Vue from 'vue'
 import VueFriendlyIframe from 'vue-friendly-iframe'
-
-Vue.component('vue-friendly-iframe', VueFriendlyIframe)
+import { boot } from 'quasar/wrappers'
+export default boot(
+  ({ app }) => {
+    app.component('vue-friendly-iframe', VueFriendlyIframe)
+  }
+)

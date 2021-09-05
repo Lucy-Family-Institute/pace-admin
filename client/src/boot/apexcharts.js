@@ -1,4 +1,7 @@
 import VueApexCharts from 'vue-apexcharts'
-import Vue from 'vue'
-
-Vue.component('apexchart', VueApexCharts)
+import { boot } from 'quasar/wrappers'
+export default boot(
+  ({ app }) => {
+    app.component('apexchart', VueApexCharts)
+  }
+)

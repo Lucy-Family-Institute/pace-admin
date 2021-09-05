@@ -40,8 +40,7 @@ export default {
         'All'
       ],
       filterMenuIcons: {
-        'institution':
-        {
+        institution: {
           icon: 'account_balance',
           label: 'Institutions',
           separator: true

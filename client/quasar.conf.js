@@ -1,55 +1,118 @@
-// Configuration for your app
-// https://quasar.dev/quasar-cli/quasar-conf-js
+/*
+ * This file runs in a Node context (it's NOT transpiled by Babel), so use only
+ * the ES6 features that are supported by your Node version. https://node.green/
+ */
 
-var path = require('path')
+// Configuration for your app
+// https://v2.quasar.dev/quasar-cli/quasar-conf-js
+
+/* eslint-env node */
+const ESLintPlugin = require('eslint-webpack-plugin')
+const { configure } = require('quasar/wrappers')
+const { resolve } = require('path')
 // var ImageMinimizerPlugin = require('image-minimizer-webpack-plugin')
 
-module.exports = function (ctx) {
+module.exports = configure(function (ctx) {
   return {
+    // https://v2.quasar.dev/quasar-cli/supporting-ts
+    supportTS: false,
+
+    // https://v2.quasar.dev/quasar-cli/prefetch-feature
+    // preFetch: true,
+
     // app boot file (/src/boot)
     // --> boot files are part of "main.js"
-    // https://quasar.dev/quasar-cli/cli-documentation/boot-files
+    // https://v2.quasar.dev/quasar-cli/boot-files
     boot: [
       'axios',
-      'graphql',
+      'apollo',
       'iframes',
       'apexcharts'
     ],
 
-    // https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-css
+    // https://v2.quasar.dev/quasar-cli/quasar-conf-js#Property%3A-css
     css: [
-      'app.sass'
+      'app.scss'
     ],
 
     // https://github.com/quasarframework/quasar/tree/dev/extras
     extras: [
       // 'ionicons-v4',
-      // 'mdi-v4',
+      // 'mdi-v5',
       // 'fontawesome-v5',
       // 'eva-icons',
       // 'themify',
+      // 'line-awesome',
       // 'roboto-font-latin-ext', // this or either 'roboto-font', NEVER both!
 
       // 'roboto-font', // optional, you are not bound to it
       'material-icons' // optional, you are not bound to it
     ],
 
-    // https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-framework
+    // Full list of options: https://v2.quasar.dev/quasar-cli/quasar-conf-js#Property%3A-build
+    build: {
+      vueRouterMode: 'hash', // available values: 'hash', 'history'
+      env: require('dotenv').config({
+        path: '../.env'
+      }).parsed,
+      // transpile: false,
+
+      // Add dependencies for transpiling with Babel (Array of string/regex)
+      // (from node_modules, which are by default not transpiled).
+      // Applies only if "transpile" is set to true.
+      // transpileDependencies: [],
+
+      // rtl: true, // https://v2.quasar.dev/options/rtl-support
+      // preloadChunks: true,
+      // showProgress: false,
+      // gzip: true,
+      // analyze: true,
+
+      // Options below are automatically set depending on the env, set them if you want to override
+      // extractCSS: false,
+
+      distDir: '../build/spa',
+      minify: true,
+
+      // https://v2.quasar.dev/quasar-cli/handling-webpack
+      // "chain" is a webpack-chain object https://github.com/neutrinojs/webpack-chain
+      chainWebpack (chain) {
+        chain.resolve.alias
+          .set('@', resolve(__dirname, './src'))
+          .set('@gql', resolve(__dirname, '../gql'))
+        
+        chain.plugin('eslint-webpack-plugin')
+          .use(ESLintPlugin, [{ extensions: ['js', 'vue'] }])
+        
+        chain.module
+          .rule('graphql')
+          .test(/\.(graphql|gql)$/)
+          .use('graphql-tag/loader')
+          .loader('graphql-tag/loader')
+          .end()
+      }
+    },
+
+    // Full list of options: https://v2.quasar.dev/quasar-cli/quasar-conf-js#Property%3A-devServer
+    devServer: {
+      https: false,
+      port: 8080,
+      open: false // opens browser window automatically
+    },
+
+    // https://v2.quasar.dev/quasar-cli/quasar-conf-js#Property%3A-framework
     framework: {
-      // iconSet: 'ionicons-v4', // Quasar icon set
-      // lang: 'de', // Quasar language pack
+      config: {},
 
-      // Possible values for "all":
-      // * 'auto' - Auto-import needed Quasar components & directives
-      //            (slightly higher compile time; next to minimum bundle size; most convenient)
-      // * false  - Manually specify what to import
-      //            (fastest compile time; minimum bundle size; most tedious)
-      // * true   - Import everything from Quasar
-      //            (not treeshaking Quasar; biggest bundle size; convenient)
-      all: 'auto',
+      // iconSet: 'material-icons', // Quasar icon set
+      // lang: 'en-US', // Quasar language pack
 
-      components: [],
-      directives: [],
+      // For special cases outside of where the auto-import strategy can have an impact
+      // (like functional components as one of the examples),
+      // you can manually specify Quasar components/directives to be available everywhere:
+      //
+      // components: [],
+      // directives: [],
 
       // Quasar plugins
       plugins: [
@@ -57,140 +120,97 @@ module.exports = function (ctx) {
       ]
     },
 
-    // https://quasar.dev/quasar-cli/cli-documentation/supporting-ie
-    supportIE: false,
-
-    vendor: {
-      remove: ['apexcharts/dist', 'citeproc', 'citation-js', 'moment', 'vue-d3-network/dist', 'lodash']
-    },
-
-    // https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-build
-    build: {
-      // env: {
-      //   ...require('dotenv').config({
-      //     path: path.resolve(__dirname, '../.env')
-      //   }).parsed,
-      //   ...process.env
-      // },
-      scopeHoisting: true,
-      // vueRouterMode: 'history',
-      // showProgress: false,
-      // gzip: true,
-      // analyze: true,
-      // preloadChunks: false,
-      // extractCSS: false,
-      distDir: '../build/spa',
-      minify: true,
-      // analyze: true,
-
-      // https://quasar.dev/quasar-cli/cli-documentation/handling-webpack
-      extendWebpack (cfg) {
-        cfg.resolve.alias = {
-          ...cfg.resolve.alias,
-          '@': path.resolve(__dirname, './src'),
-          '@gql': path.resolve(__dirname, '../gql')
-        }
-        cfg.module.rules.push({
-          enforce: 'pre',
-          test: /\.(js|vue)$/,
-          loader: 'eslint-loader',
-          exclude: /node_modules/,
-          options: {
-            formatter: require('eslint').CLIEngine.getFormatter('stylish')
-          }
-        })
-        cfg.module.rules.push({
-          test: /\.(graphql|gql)$/,
-          use: ['graphql-tag/loader']
-        })
-        // cfg.module.rules.push({
-        //   test: /\.(jpe?g|png)$/i,
-        //   use: [
-        //     new ImageMinimizerPlugin({
-        //       minimizerOptions: {
-        //         plugins: [
-        //           ['jpegtran', { progressive: true }],
-        //           ['optipng', { optimizationLevel: 5 }]
-        //         ]
-        //       }
-        //     })
-        //   ]
-        // })
-      }
-    },
-
-    // https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-devServer
-    devServer: {
-      // https: true,
-      // port: 8080,
-      open: true // opens browser window automatically
-    },
-
     // animations: 'all', // --- includes all animations
-    // https://quasar.dev/options/animations
+    // https://v2.quasar.dev/options/animations
     animations: [],
 
-    // https://quasar.dev/quasar-cli/developing-ssr/configuring-ssr
+    // https://v2.quasar.dev/quasar-cli/developing-ssr/configuring-ssr
     ssr: {
-      pwa: false
+      pwa: false,
+
+      // manualStoreHydration: true,
+      // manualPostHydrationTrigger: true,
+
+      prodPort: 3000, // The default port that the production server should use
+      // (gets superseded if process.env.PORT is specified at runtime)
+
+      maxAge: 1000 * 60 * 60 * 24 * 30,
+      // Tell browser when a file from the server should expire from cache (in ms)
+
+      chainWebpackWebserver (chain) {
+        chain.plugin('eslint-webpack-plugin')
+          .use(ESLintPlugin, [{ extensions: ['js'] }])
+      },
+
+      middlewares: [
+        ctx.prod ? 'compression' : '',
+        'render' // keep this as last one
+      ]
     },
 
-    // https://quasar.dev/quasar-cli/developing-pwa/configuring-pwa
+    // https://v2.quasar.dev/quasar-cli/developing-pwa/configuring-pwa
     pwa: {
-      // workboxPluginMode: 'InjectManifest',
-      // workboxOptions: {}, // only for NON InjectManifest
+      workboxPluginMode: 'GenerateSW', // 'GenerateSW' or 'InjectManifest'
+      workboxOptions: {}, // only for GenerateSW
+
+      // for the custom service worker ONLY (/src-pwa/custom-service-worker.[js|ts])
+      // if using workbox in InjectManifest mode
+      chainWebpackCustomSW (chain) {
+        chain.plugin('eslint-webpack-plugin')
+          .use(ESLintPlugin, [{ extensions: ['js'] }])
+      },
+
       manifest: {
-        // name: 'PACE',
-        // short_name: 'PACE',
-        // description: 'A Quasar Framework app',
+        name: 'Quasar App',
+        short_name: 'Quasar App',
+        description: 'A Quasar Framework app',
         display: 'standalone',
         orientation: 'portrait',
         background_color: '#ffffff',
         theme_color: '#027be3',
         icons: [
           {
-            'src': 'statics/icons/icon-128x128.png',
-            'sizes': '128x128',
-            'type': 'image/png'
+            src: 'icons/icon-128x128.png',
+            sizes: '128x128',
+            type: 'image/png'
           },
           {
-            'src': 'statics/icons/icon-192x192.png',
-            'sizes': '192x192',
-            'type': 'image/png'
+            src: 'icons/icon-192x192.png',
+            sizes: '192x192',
+            type: 'image/png'
           },
           {
-            'src': 'statics/icons/icon-256x256.png',
-            'sizes': '256x256',
-            'type': 'image/png'
+            src: 'icons/icon-256x256.png',
+            sizes: '256x256',
+            type: 'image/png'
           },
           {
-            'src': 'statics/icons/icon-384x384.png',
-            'sizes': '384x384',
-            'type': 'image/png'
+            src: 'icons/icon-384x384.png',
+            sizes: '384x384',
+            type: 'image/png'
           },
           {
-            'src': 'statics/icons/icon-512x512.png',
-            'sizes': '512x512',
-            'type': 'image/png'
+            src: 'icons/icon-512x512.png',
+            sizes: '512x512',
+            type: 'image/png'
           }
         ]
       }
     },
 
-    // https://quasar.dev/quasar-cli/developing-cordova-apps/configuring-cordova
+    // Full list of options: https://v2.quasar.dev/quasar-cli/developing-cordova-apps/configuring-cordova
     cordova: {
-      // id: 'org.cordova.quasar.app',
       // noIosLegacyBuildFlag: true, // uncomment only if you know what you are doing
     },
 
-    // https://quasar.dev/quasar-cli/developing-electron-apps/configuring-electron
-    electron: {
-      // bundler: 'builder', // or 'packager'
+    // Full list of options: https://v2.quasar.dev/quasar-cli/developing-capacitor-apps/configuring-capacitor
+    capacitor: {
+      hideSplashscreen: true
+    },
 
-      extendWebpack (cfg) {
-        // do something with Electron main process Webpack cfg
-        // chainWebpack also available besides this extendWebpack
-      },
+    // Full list of options: https://v2.quasar.dev/quasar-cli/developing-electron-apps/configuring-electron
+    electron: {
+      bundler: 'packager', // 'packager' or 'builder'
 
       packager: {
         // https://github.com/electron-userland/electron-packager/blob/master/docs/api.md#options
@@ -208,8 +228,25 @@ module.exports = function (ctx) {
       builder: {
         // https://www.electron.build/configuration/configuration
 
-        // appId: 'client'
+        appId: 'app'
+      },
+
+      // "chain" is a webpack-chain object https://github.com/neutrinojs/webpack-chain
+      chainWebpackMain (chain) {
+        chain.plugin('eslint-webpack-plugin')
+          .use(ESLintPlugin, [{ extensions: ['js'] }])
+      },
+
+      // "chain" is a webpack-chain object https://github.com/neutrinojs/webpack-chain
+      chainWebpackPreload (chain) {
+        chain.plugin('eslint-webpack-plugin')
+          .use(ESLintPlugin, [{ extensions: ['js'] }])
       }
+    },
+
+    vendor: {
+      disable: true
+      // remove: ['apexcharts/dist', 'citeproc', 'citation-js', 'moment', 'vue-d3-network/dist', 'lodash']
     }
   }
-}
+})

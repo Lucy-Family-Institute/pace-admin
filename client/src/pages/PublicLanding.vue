@@ -183,8 +183,8 @@
 </template>
 
 <style scoped>
-@import '../statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/ndt.css';
-@import '../statics/ndweb/stylesheets/site.css';
+@import '../../public/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/ndt.css';
+@import '../../public/ndweb/stylesheets/site.css';
 p.page-image img {
   border: 1px #e6e6e6 solid;
 }
@@ -223,70 +223,21 @@ main {
   }
 }
 
-/* @media only screen and (min-width:844px) {
-  .page-image {
-
-  }
-  .site-content {
-    padding-bottom: 30px;
-    min-height:1000px;
-  }
-} */
-
-/*
-@media only screen and (min-width:928px) {
-  .page-image {
-    margin-bottom: -150px
-  }
-  .site-content {
-    margin-top: -40px;
-  }
-} */
-
-/* @media only screen and (min-width:1160px) {
-  .site-content {
-    padding-bottom: 30px;
-    min-height:1600px;
-  }
-}*/
-
 @media only screen and (min-width:60em) {
   .site-content {
     min-height:0;
   }
 }
-  /* height: 650px;
-}
-
-@media only screen and (min-width:60em) {
-  main {
-    font-size: 1.45rem;
-    height: 200px;
-  }
-  .site-footer {
-    margin-top: -16em;
-  }
-}
-
-@media only screen and (min-width:75em) {
-  main {
-    font-size: 1.45rem;
-    height: 200px;
-  }
-  .site-footer {
-    margin-top: -5em
-  }
-} */
 </style>
 
 <script>
-import { date } from 'quasar'
+import { date, useMeta } from 'quasar'
 
 export default {
   data () {
     return {
-      siteName: `PACE`,
-      title: `Publication Activity Collection Environment`,
+      siteName: 'PACE',
+      title: 'Publication Activity Collection Environment',
       description: `
         Providing high-confidence publication data for centers,
         institutes, and departments to measure impact and highlight
@@ -316,7 +267,7 @@ export default {
         holderUrl: 'https://www.nd.edu'
       },
       hero: {
-        imageUrl: '/statics/graph16x9wVig.avif',
+        imageUrl: '/graph16x9wVig.avif',
         alt: `
           Network visualizatin of publication and funding activity 
           at the University of Notre Dame's Harper Cancer Reach 
@@ -344,12 +295,12 @@ export default {
     }
     window.removeEventListener('resize', resizeHandler)
   },
-  meta () {
-    return {
+  setup () {
+    useMeta(() => ({
       // sets document title
-      title: 'Landing Page',
+      title: 'PACE',
       // optional; sets final title as "Index Page - My Website", useful for multiple level meta
-      titleTemplate: title => `${this.siteName}`,
+      // titleTemplate: title => `${this.siteName}`,
 
       // meta tags
       meta: {
@@ -379,17 +330,17 @@ export default {
         hero: {
           rel: 'preload',
           as: 'image',
-          href: '/statics/graph16x9wVig.avif'
+          href: '/graph16x9wVig.avif'
         }
       },
 
       // JS tags
       script: {
         '1-ndt': {
-          src: '/statics/ndweb/javascripts/ndt.js'
+          src: '/ndweb/javascripts/ndt.js'
         },
         '2-local': {
-          src: '/statics/ndweb/javascripts/site.js'
+          src: '/ndweb/javascripts/site.js'
         }
       },
 
@@ -401,10 +352,10 @@ export default {
 
       // <body> attributes
       bodyAttr: {
-        'voacab': 'https://schema.org/',
-        'class': 'nav-top-true full-width'
+        vocab: 'https://schema.org/',
+        class: 'nav-top-true full-width'
       }
-    }
+    }))
   }
 }
 </script>

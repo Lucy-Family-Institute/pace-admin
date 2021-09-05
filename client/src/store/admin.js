@@ -38,31 +38,31 @@ export default {
   },
   actions: {
     toggleBulkEditing: ({ getters, commit }) => {
-      return new Promise(async (resolve, reject) => {
+      return new Promise((resolve, reject) => {
         commit('toggleBulkEditing')
         resolve(getters.isBulkEditing)
       })
     },
     incrementLogCount: ({ getters, commit }) => {
-      return new Promise(async (resolve, reject) => {
+      return new Promise((resolve, reject) => {
         commit('incrementLogCount')
         resolve(getters.logCount)
       })
     },
     incrementAcceptedCount: ({ getters, commit }) => {
-      return new Promise(async (resolve, reject) => {
+      return new Promise((resolve, reject) => {
         commit('incrementAcceptedCount')
         resolve(getters.acceptedCount)
       })
     },
     incrementRejectedCount: ({ getters, commit }) => {
-      return new Promise(async (resolve, reject) => {
+      return new Promise((resolve, reject) => {
         commit('incrementRejectedCount')
         resolve(getters.rejectedCount)
       })
     },
-    incrementUnsureCount: ({ getters, commit }) => {
-      return new Promise(async (resolve, reject) => {
+    incrementUnsureCount: async ({ getters, commit }) => {
+      return new Promise((resolve, reject) => {
         commit('incrementUnsureCount')
         resolve(getters.unsureCount)
       })

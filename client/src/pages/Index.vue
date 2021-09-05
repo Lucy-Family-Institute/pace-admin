@@ -315,11 +315,13 @@
                                 :columns="confidenceColumns"
                                 row-key="id"
                               >
-                                <q-tr slot="bottom-row">
-                                  <q-td colspan="100%">
-                                    <strong>Total: {{ (confidenceSet ? confidenceSet.value : 'unknown') }}</strong>
-                                  </q-td>
-                                </q-tr>
+                                <template v-slot:bottom-row>
+                                  <q-tr>
+                                    <q-td colspan="100%">
+                                      <strong>Total: {{ (confidenceSet ? confidenceSet.value : 'unknown') }}</strong>
+                                    </q-td>
+                                  </q-tr>
+                                </template>
                               </q-table>
                             </q-card-section>
                             <q-card-section>
@@ -329,7 +331,7 @@
                                 :columns="authorColumns"
                                 row-key="position"
                                 :rows-per-page-options="[0]"
-                                :pagination.sync="pagination"
+                                v-model:pagination="pagination"
                                 hide-bottom
                               />
                             </q-card-section>
@@ -391,36 +393,26 @@
 </style>
 
 <script>
-import Vue from 'vue'
 import { get, sync } from 'vuex-pathify'
 import { dom, date } from 'quasar'
-// const { getScrollPosition, setScrollPosition } = scroll
 import readPersons from '../gql/readPersons'
-// import readPersonsByInstitution from '../gql/readPersonsByInstitution'
-// import readPublicationsByPerson from '../gql/readPublicationsByPerson'
-// import readPublicationsByPersonByReview from '../gql/readPublicationsByPersonByReview'
+
 import readAuthorsByPublication from '../gql/readAuthorsByPublication'
 import readConfidenceSetItems from '../gql/readConfidenceSetItems'
 import insertReview from '../gql/insertReview'
-// import readUser from '../gql/readUser'
-// import readInstitutions from '../gql/readInstitutions'
-import _ from 'lodash'
-import Cite from 'citation-js'
 
-// import readPersonsByInstitutionByYear from '../gql/readPersonsByInstitutionByYear'
+import _ from 'lodash'
+// import Cite from 'citation-js'
+
 import readPersonsByInstitutionByYearAllCenters from '../gql/readPersonsByInstitutionByYearAllCenters'
 import readPersonsByInstitutionByYearByOrganization from '../gql/readPersonsByInstitutionByYearByOrganization'
-// import readPersonsByInstitutionByYearPendingPubs from '../gql/readPersonsByInstitutionByYearPendingPubs'
 import readReviewTypes from '../../../gql/readReviewTypes.gql'
 import readPublications from '../gql/readPublications'
-// import readPendingPublications from '../../../gql/readPendingPublications.gql'
 import readPersonPublications from '../../../gql/readPersonPublications.gql'
 import readConfSetsPersonPublications from '../../../gql/readConfSetsPersonPublications.gql'
 import readReviewsPersonPublications from '../../../gql/readReviewsPersonPublications.gql'
 
-// import readPublicationsByReviewState from '../../../gql/readPublicationsByReviewState.gql'
 import readPublication from '../../../gql/readPublication.gql'
-// import * as service from '@porter/osf.io';
 import readOrganizations from '../../../gql/readOrganizations.gql'
 import PublicationFilter from '../components/PublicationFilter.vue'
 import PeopleAuthorSortFilter from '../components/PeopleAuthorSortFilter.vue'
@@ -523,11 +515,12 @@ export default {
     miniState: false,
     peopleScrollKey: 0
   }),
-  beforeDestroy () {
+  beforeUnmount () {
     clearInterval(this.interval)
     clearInterval(this.bufferInterval)
   },
   async created () {
+    console.log(this.$apollo)
     await this.fetchData()
   },
   watch: {
@@ -595,7 +588,7 @@ export default {
         try {
           if (index === 0 && totalPubs === 1) {
             // will start a new personpub set list if not already in one
-            this.startPersonPubSet(personPub['id'], reviewType)
+            this.startPersonPubSet(personPub.id, reviewType)
           } else if (index !== (totalPubs - 1)) {
             const nextPersonPub = _.nth(personPubList, (index + 1))
             this.linkPersonPubPair(personPub.id, nextPersonPub.id, reviewType)
@@ -818,17 +811,17 @@ export default {
         personPublication.publication.pubmed_resource_identifiers &&
         _.isArray(personPublication.publication.pubmed_resource_identifiers)) {
         const resourceId = _.find(personPublication.publication.pubmed_resource_identifiers, (id) => {
-          return id['resourceIdentifierType'] === 'pmc'
+          return id.resourceIdentifierType === 'pmc'
         })
         if (resourceId) {
-          return resourceId['resourceIdentifier']
+          return resourceId.resourceIdentifier
         } else {
           return undefined
         }
       } else if (personPublication.publication.source_name.toLowerCase() === 'crossref') {
         return personPublication.publication.doi
       } else if (personPublication.publication.source_name.toLowerCase() === 'webofscience') {
-        return personPublication.publication.wos_id['_text']
+        return personPublication.publication.wos_id._text
       } else {
         return undefined
       }
@@ -844,7 +837,7 @@ export default {
     },
     getDisplaySourceLabel (personPublication) {
       const sourceId = this.getPublicationSourceId(personPublication)
-      let sourceName = personPublication.publication.source_name
+      const sourceName = personPublication.publication.source_name
       let display = sourceName
       if (sourceId) {
         display = `${sourceName}: ${sourceId}`
@@ -973,7 +966,7 @@ export default {
       this.selectedReviewState = reviewState
     },
     async scrollToPublication (index) {
-      this.$refs['pubScroll'].scrollTo(index + 1)
+      this.$refs.pubScroll.scrollTo(index + 1)
     },
     async showCurrentSelectedPublication () {
       if (this.person && this.personPublication) {
@@ -987,7 +980,7 @@ export default {
             // if greater than 2 move up 2 spaces
             scrollIndex += 2
           }
-          await this.$refs['pubScroll'].scrollTo(scrollIndex)
+          await this.$refs.pubScroll.scrollTo(scrollIndex)
           this.$refs[`personPub${currentPubIndex}`].show()
         } else {
           // clear everything out
@@ -1008,7 +1001,7 @@ export default {
             // if greater than 2 move up 2 spaces
             scrollIndex -= 2
           }
-          await this.$refs['personScroll'].scrollTo(scrollIndex)
+          await this.$refs.personScroll.scrollTo(scrollIndex)
           this.$refs[`person${currentPersonIndex}`].show()
           // check publications and if not loaded reload publications too
           if (this.publications && this.publications.length <= 0) {
@@ -1025,8 +1018,8 @@ export default {
 
     getPersonPublicationCount (person, minConfidence) {
       let includeCount = 0
-      let titles = {}
-      let dois = {}
+      const titles = {}
+      const dois = {}
       _.each(person.confidencesets_persons_publications_aggregate.nodes, (node) => {
         const title = node.title
         const titleKey = this.getPublicationTitleKey(title)
@@ -1042,7 +1035,7 @@ export default {
       if (this.selectedPersonTotal === 'All') {
         return includeCount
       } else {
-        let pendingCount = includeCount - this.personReviewedPubCounts[person.id]
+        const pendingCount = includeCount - this.personReviewedPubCounts[person.id]
         return (pendingCount >= 0 ? pendingCount : 0)
         // return pendingCount
       }
@@ -1119,7 +1112,7 @@ export default {
           const sortedCounts = await _.sortBy(_.keys(peopleByCountsByName), (count) => { return Number.parseInt(count) }).reverse()
 
           // now push values into array in desc order of count and flatten
-          let sortedPersons = []
+          const sortedPersons = []
           await _.each(sortedCounts, (key) => {
             sortedPersons.push(peopleByCountsByName[key])
           })
@@ -1241,8 +1234,8 @@ export default {
       // check for any doi's with reviews out of sync,
       // if more than one review type found add doi mapped to array of reviewtype to array pub list
       // map both by shared title and by shared doi and merged lists together later
-      let publicationTitlesByReviewType = {}
-      let publicationDoisByReviewType = {}
+      const publicationTitlesByReviewType = {}
+      const publicationDoisByReviewType = {}
       // put in pubs grouped by doi for each review status
       _.each(this.reviewStates, (reviewType) => {
         const publications = this.publicationsGroupedByReview[reviewType]
@@ -1461,7 +1454,7 @@ export default {
         const sortedConfs = _.sortBy(_.keys(pubsByConfByName), (confidence) => { return Number.parseFloat(confidence) }).reverse()
 
         // now push values into array in desc order of count and flatten
-        let sortedPubs = []
+        const sortedPubs = []
         _.each(sortedConfs, (key) => {
           sortedPubs.push(pubsByConfByName[key])
         })
@@ -1574,7 +1567,6 @@ export default {
         }
       } catch (error) {
         console.error(error)
-      } finally {
       }
     },
     // async refreshReviewQueue () {
@@ -1595,7 +1587,7 @@ export default {
       try {
         const pubSet = this.getPersonPubSet(this.getPersonPubSetId(personPublication.id))
         const personPubs = pubSet.personPublications
-        let mutateResults = []
+        const mutateResults = []
         await _.each(personPubs, async (personPub) => {
           // const personPub = personPubs[0]
           const mutateResult = await this.$apollo.mutate(
@@ -1603,7 +1595,7 @@ export default {
           )
           if (mutateResult && personPub.id === personPublication.id) {
             this.$refs[`personPub${index}`].hide()
-            Vue.delete(this.personPublicationsCombinedMatches, index)
+            delete this.personPublicationsCombinedMatches[index]
             // transfer from one review queue to the next primarily for counts, other sorting will shake out on reload when clicking the tab
           }
           mutateResults.push(mutateResult)
@@ -1709,9 +1701,9 @@ export default {
     setNameVariants (person) {
       this.nameVariants = []
       // put in map so it removes any duplicates along the way
-      let nameVariantMap = {}
-      let variant1 = `${person.family_name}, ${person.given_name.charAt(0)}`
-      let variant2 = `${person.family_name}, ${person.given_name}`
+      const nameVariantMap = {}
+      const variant1 = `${person.family_name}, ${person.given_name.charAt(0)}`
+      const variant2 = `${person.family_name}, ${person.given_name}`
       nameVariantMap[variant1] = variant1
       nameVariantMap[variant2] = variant2
 
@@ -1748,22 +1740,22 @@ export default {
         // update publication year to be current if can, otherwise leave as is
         const publicationYear = this.getUpdatedPublicationYear(csl)
         if (publicationYear !== null && publicationYear > 0) {
-          csl['issued']['date-parts'][0][0] = publicationYear
+          csl.issued['date-parts'][0][0] = publicationYear
         }
       } catch (error) {
         console.warn(`Was unable to update publication year for citation with error: ${error}`)
       }
 
-      const citeObj = new Cite(csl)
-      // create formatted citation as test
-      const apaCitation = citeObj.format('bibliography', {
-        template: 'apa'
-      })
-      return this.decode(apaCitation)
+      // const citeObj = new Cite(csl)
+      // // create formatted citation as test
+      // const apaCitation = citeObj.format('bibliography', {
+      //   template: 'apa'
+      // })
+      // return this.decode(apaCitation)
+      return 'citation'
     },
     resetFilters () {
       this.selectedPersonPubSort = this.preferredPersonPubSort
-      this.selectedCenterPubSort = this.selectedCenterPubSort
       this.selectedPersonSort = this.preferredPersonSort
       this.selectedPersonTotal = this.preferredPersonTotal
       this.selectedPersonConfidence = this.preferredPersonConfidence

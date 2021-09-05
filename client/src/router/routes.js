@@ -45,6 +45,7 @@ export function makeRoutes (store) {
           path: '',
           beforeEnter: (to, fro, next) => {
             if (store.get('auth/isLoggedIn')) {
+              console.log('here')
               return next('/review')
             }
             return next()
@@ -93,15 +94,15 @@ export function makeRoutes (store) {
     },
     {
       path: '/center_review', redirect: { name: 'center_review' }
+    },
+
+    // Always leave this as last one,
+    // but you can also remove it
+    {
+      path: '/:catchAll(.*)*',
+      component: () => import('pages/Error404.vue')
     }
   ]
 
-  // Always leave this as last one
-  if (process.env.MODE !== 'ssr') {
-    routes.push({
-      path: '*',
-      component: () => import('pages/Error404.vue')
-    })
-  }
   return routes
 }

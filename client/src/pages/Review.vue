@@ -387,7 +387,6 @@
 </style>
 
 <script>
-import Vue from 'vue'
 import { get, sync } from 'vuex-pathify'
 import { dom, date } from 'quasar'
 // const { getScrollPosition, setScrollPosition } = scroll
@@ -1251,7 +1250,7 @@ export default {
           )
           if (mutateResult && personPub.id === personPublication.id) {
             this.$refs[`personPub${index}`].hide()
-            Vue.delete(this.personPublicationsCombinedMatches, index)
+            delete this.personPublicationsCombinedMatches[index]
             // transfer from one review queue to the next primarily for counts, other sorting will shake out on reload when clicking the tab
             // remove from current lists
             _.unset(this.publicationsGroupedByDoiByReview[this.reviewTypeFilter], personPublication.publication.doi)
