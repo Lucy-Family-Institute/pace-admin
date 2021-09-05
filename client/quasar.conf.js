@@ -86,7 +86,7 @@ module.exports = function (ctx) {
 
       uglifyOptions: {
         comments: false,
-        mangle: true,
+        // mangle: true,
         compress: {
           // sequences: true,
           // dead_code: true,
