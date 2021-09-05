@@ -353,42 +353,11 @@ article.snippet {margin-bottom:2rem;}
     .breadcrumbs a:hover {text-decoration:underline;}
     .breadcrumbs a:visited {color:var(--gray);}
 
-/* FAQs
-----------------------------------------------------*/
-.faq {margin: 0; padding: 0; counter-reset: faq-counter;}
-.faq-item {margin: 0 -1rem 2rem -1rem; padding: 1rem; counter-increment: faq-counter; position: relative;}
-  .faq-item .faq-q {font-size: 1.2rem; color: var(--brand-blue); display: inline-block; margin-bottom: 1.5rem;}
-  .faq-item .faq-q::before {content: 'Q'; position: relative; display: flex; font-size: 1rem; font-weight: bold; color: var(--brand-blue); background: var(--sky-blue); text-align: center; width: 2.1em; height: 2.1em; margin-bottom: 0.5rem; border-radius: 100%; justify-content: center; align-items: center;}
-  .faq-item .faq-a {position: relative; margin: 0.75rem 0 0;}
-    .faq-item .faq-a::before {content: 'A'; position: relative; display: flex; font-size: 1rem; font-weight: bold; color: var(--brand-blue); background: var(--gray-extra-light); text-align: center; width: 2.1em; height: 2.1em; margin-bottom: 0.5rem; border-radius: 100%; justify-content: center; align-items: center;}
-  .faq-item:target {background: var(--sky-blue);}
-  .faq-item:target .faq-q::before {background: var(--sky-blue-light);}
-
-/* Anchors */
-.faq-anchors {margin-bottom: 4rem;}
-  .faq-anchors li {margin:0;}
-  .faq-anchors a {padding: 0.8rem 0.8rem 0.8rem 0.4rem; display: block; text-decoration: none; background: transparent; transition: all var(--anim-duration-fast) var(--anim-ease);}
-    .faq-anchors a:hover {background: var(--sky-blue);}
-  .faq-anchors + .faq .faq-item .faq-q::before {content: counter(faq-counter);}
-  .faq-anchors + .faq .faq-item .faq-a {margin: 0;}
-  .faq-anchors + .faq .faq-item .faq-a::before {display: none;}
-
 /* Back to top */
 .link-top {max-width: unset; text-align: right; color: var(--brand-blue); font-size: 0.9rem;}
   .link-top a {display:inline-block; padding:0.6em 1.5em; margin:0 0.25em 0.25em 0; font-size:1rem; border:3px solid transparent; border-radius:0.6em; line-height:1.2; text-decoration:none; color:var(--brand-blue); transition:all var(--anim-duration-fast) var(--anim-ease);}
     .link-top a:hover {background-color:var(--sky-blue); color:var(--brand-blue); transform:scale(1.02);}
     .link-top a::before {content:""; display:inline-block; width:0.7em; height:1em; margin-right:0.5em; background:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/arrow-up.svg') 50% 100% / auto no-repeat;}
-  .faq-item:target .link-top a {background-color: var(--sky-blue-light);}
-    .faq-item:target .link-top a:hover {background-color: white;}
-
-/* News & Events
-----------------------------------------------------*/
-article {margin-bottom:4em;}
-  article header {margin:0 0 1em;}
-.article-header {border-bottom:3px solid var(--gray-extra-light); margin-bottom:2.5rem; padding:0 0 2rem;}
-.article-title {margin:0 0 0.25em; padding:0; font-weight:400; font-size:1.45rem; line-height:1.35em; font-family:var(--font-heading-article);}
-  .snippet .article-title .icon {margin-left:0.25rem; font-size:0.67em; fill:#aaa;}
-article footer {margin-top:2.5rem;}
 
 /* Meta Information */
 .meta p {margin:0;}
@@ -406,14 +375,6 @@ article footer {margin-top:2.5rem;}
 .article-excerpt {margin:1em 0;}
 .attribution {font-style:italic;}
 
-/* Events
-----------------------------------------------------*/
-.events .article,
-.event.snippet {margin-bottom:0;}
-.snippet .event-date {text-align:center; margin:0; padding:1.5rem 0.5rem; width:4.5rem; line-height:1.1;}
-  .event-month {text-transform:uppercase; font-size:1.125rem; letter-spacing:0.08em; color:var(--gray);}
-  .event-day {display:block; color:var(--brand-blue); font-size:2rem; font-weight:700}
-
 /* Skip Links
 ----------------------------------------------------*/
 .skip-links {position:absolute; left:0; top:0; width:100%; margin-left:0; text-align:center; list-style:outside none;}
@@ -421,56 +382,6 @@ article footer {margin-top:2.5rem;}
   .skip-links a:active,
   .skip-links a:focus,
   .skip-links a:hover {left:0.5em; width:auto; height:auto; overflow:visible; background:#fff; padding:0.5em 1em; color:var(--brand-blue); font-weight:bold; font-size:14px; box-shadow:0 0 10px 0 #000; z-index:999;}
-
-/* Search
-----------------------------------------------------*/
-.promotions-results {margin:0 0 2rem; padding:1rem; border:1px solid #777; border-radius:3px; background:#eee;}
-  .promotions-results ul,
-  .promotions-results li,
-  .promotions-results p {margin:0;}
-.search-count,
-.search-time {font-family:inherit;}
-.search-count {margin:0; font-size:1.4rem;}
-  .search-query i {font-style:normal; font-weight:700;}
-.search-time {margin:0 0 1em; color:#777; font-size:1.2rem;}
-.search-results {margin:1em 0; padding:0; list-style:none;}
-  .search-results li {overflow:hidden; margin:0 0 2rem;}
-    .search-record {display:flex; margin:0;}
-    .search-result-img {max-width:120px; width:100%; margin-right:1rem;}
-    .search-record header {margin:0 0 0.5em;}
-    .search-result-title {margin-bottom:0; font-style:normal; font-family:var(--font-default); font-size:1.4rem;}
-    .search-result-title b {font-weight:500;}
-    .search-result-url {font-size:0.9rem; font-family:inherit; word-wrap:break-word; overflow-wrap:break-word;}
-      .search-result-url a {color:var(--link-blue); font-weight:700;}
-    .search-result-excerpt {margin:0 0 0.5em; line-height:1.3em;}
-    .search-result-excerpt br {display:none;}
-    .search-result-meta {color:#777; font-size:0.9rem;}
-
-/* Gallery
-----------------------------------------------------*/
-.page-main .gallery-lb {display:flex; flex-flow:row wrap; list-style:none; margin:1.5rem 0; padding:0;}
-  .page-main .gallery-lb li {width:calc(50% - 0.75rem); margin:0 0.5rem 0.5rem 0;}
-
-.gallery-lb a {transition:border 325ms ease-in-out; border:3px solid transparent; position:relative;}
-.gallery-lb a::after {content:''; display:block; position:absolute; top:0; right:0; bottom:0; left:0; background:rgba(0,0,0,0.05); transition:all var(--anim-duration-fast) cubic-bezier(0, 0, 0.25, 1);}
-.gallery-lb a:focus {border-color:#15a6b5;}
-.gallery-lb a:hover::after,
-.gallery-lb a:focus::after {background-color:transparent;}
-
-.lb-element .lb-overlay {opacity:0.95; background-color:var(--brand-blue-dark);}
-.lb-element .lb-btn-close {opacity:1; transition:all 325ms ease-in-out; position:fixed; top:0; right:0; color:#fff;}
-.lb-element .lb-arrow {background:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/chevron-gold.svg') 50% 50% / 1.5em no-repeat; opacity:1; transition:all 325ms ease-in-out;}
-  .lb-element .lb-arrow:hover,
-  .lb-element .lb-arrow:focus,
-  .lb-element .lb-btn-close:hover,
-  .lb-element .lb-btn-close:focus {opacity:1; transform:scale(1.15);}
-  .lb-element .lb-arrow::before {display:none;}
-  .lb-element .lb-arrow.prev {transform:rotate(180deg);}
-
-@supports (display:grid) {
-  .page-main .gallery-lb {display:grid; grid-gap:0.5rem; grid-template-columns:repeat(auto-fill, minmax(12rem,1fr));}
-    .page-main .gallery-lb li {width:auto; margin:0;}
-}
 
 /* Footer
 ----------------------------------------------------*/
@@ -964,26 +875,11 @@ article footer {margin-top:2.5rem;}
     .hover-more:hover,
     .hover-more:focus-within {background-image:url('/statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/images/chevron-gold.svg'); background-position-x:calc(100% - 1.5rem);}
 
-  /* FAQs
-  ----------------------------------------------------*/
-  .faq-item {padding: 1.5rem 1.5rem 1.5rem 4rem;}
-  .faq-item .faq-q {font-size: 1.375rem;}
-  .faq-item .faq-q::before,
-  .faq-item .faq-a::before {font-size: 1.2rem; position: absolute; margin-left: -3.325rem; top: 1.4rem;}
-  .faq-item .faq-a::before {top: -0.4rem;}
-
   /* Footer Nav
   ----------------------------------------------------*/
   .nav-footer {margin:0;}
   .nav-footer ul {display:flex; justify-content:flex-start;}
   .nav-footer.fixed {position:fixed; top:100vh; transform:translateY(-100%); left:0; width:100vw; padding:0 5vw;}
-
-  /* News & Events
-  ----------------------------------------------------*/
-  .article-actions,
-  .meta-share-group {width:100%; display:flex; justify-content:flex-start; align-items:center;}
-  .social-share {margin-left:auto;  align-self:flex-end;}
-  .archives-list > li {display:inline-block; vertical-align:top; width:32%;}
 
   /* Header
   ----------------------------------------------------*/
@@ -1151,19 +1047,9 @@ article footer {margin-top:2.5rem;}
   .page-title::after {margin-left:-0.5em; margin-top:0.2em; margin-bottom:0.7em; width:1.5em; height:0.1em; min-height:5px;}
   .page-header .page-title {margin-top:2rem;}
 
-  /* News & Events
-  ----------------------------------------------------*/
-  .event-day {font-size:2.75rem;}
-
   /* Content
   ----------------------------------------------------*/
 
-  /* Gallery
-  ----------------------------------------------------*/
-  .page-main .gallery-lb li {width:calc(33.3% - 0.75rem);}
-
-  @supports (display:grid) {
-    .page-main .gallery-lb li {width:auto;}
 }
 
   /* Footer
@@ -1672,83 +1558,8 @@ article footer {margin-top:2.5rem;}
  * 6. Header Themes
  ************************************************************************************/
 @media screen {
-   /* Textures/Patterns */
-  .bg-cells-texture .page-header::before {background-image:url(images/hdr-cells-800.jpg);}
-  .bg-clover-texture .page-header::before {background-image:url(images/hdr-clover-800.jpg);}
-  .bg-diagonal-texture .page-header::before {background-image:url(images/hdr-diagonal-800.jpg);}
-  .bg-flow-texture .page-header::before {background-image:url(images/hdr-flow-800.jpg);}
-  .bg-geometric-texture .page-header::before {background-image:url(images/hdr-geometric-800.jpg);}
-  .bg-honeycomb-texture .page-header::before {background-image:url(images/hdr-honeycomb-800.jpg);}
-  .bg-linework-texture .page-header::before {background-image:url(images/hdr-linework-800.jpg);}
-  .bg-main-building-texture .page-header::before {background-image:url(images/hdr-main-building-800.jpg);}
-  .bg-molecule-texture .page-header::before {background-image:url(images/hdr-molecule-800.jpg);}
-  .bg-network-texture .page-header::before {background-image:url(images/hdr-network-800.jpg);}
-  .bg-plaid-texture .page-header::before {background-image:url(images/hdr-plaid-800.jpg);}
-
-   /* Repeating Patterns */
-  .bg-circuit-texture .page-header::before {background-image:url(images/hdr-circuit-ptn.png); background-repeat:repeat; background-size:304px;}
-  .bg-cube-texture .page-header::before {background-image:url(images/hdr-cube-ptn.png); background-repeat:repeat; background-size:67px 100px;}
-  .bg-dome-texture .page-header::before {background-image:url(images/hdr-dome-ptn.png); background-repeat:repeat; background-size:50px;}
-  .bg-graph-paper-texture .page-header::before {background-image:url(images/hdr-graph-paper-ptn.png); background-repeat:repeat; background-size:72px;}
-  .bg-starcross-texture .page-header::before {background-image:url(images/hdr-starcross-ptn.png); background-repeat:repeat; background-size:67px;}
-  .bg-textile-texture .page-header::before {background-image:url(images/hdr-textile-ptn.png); background-repeat:repeat; background-size:600px;}
-  .bg-topography-texture .page-header::before {background-image:url(images/hdr-topography-ptn.png); background-repeat:repeat; background-size:400px;}
-  .bg-waves-texture .page-header::before {background-image:url(images/hdr-waves-ptn.png); background-repeat:repeat; background-size:400px;}
-
   /* Photos */
   .bg-campus-photo .page-header::before {background-image:url(images/hdr-campus-1600.jpg);}
-  .bg-faith-photo .page-header::before {background-image:url(images/hdr-faith-1600.jpg);}
-  .bg-global-photo .page-header::before {background-image:url(images/hdr-global-1600.jpg);}
-  .bg-mosaic-photo .page-header::before {background-image:url(images/hdr-mosaic-1600.jpg);}
-  .bg-research-photo .page-header::before {background-image:url(images/hdr-research-1600.jpg);}
-  .bg-students-photo .page-header::before {background-image:url(images/hdr-students-1600.jpg);}
-  .bg-technology-photo .page-header::before {background-image:url(images/hdr-tech-1600.jpg);}
-  .bg-vinewall-photo .page-header::before {background-image:url(images/hdr-vinewall-1600.jpg);}
-}
-
-@media screen and (min-width:60rem) {
-  /* Textures/Patterns */
-  .bg-cells-texture .page-header::before {background-image:url(images/hdr-cells-1200.jpg);}
-  .bg-clover-texture .page-header::before {background-image:url(images/hdr-clover-1200.jpg);}
-  .bg-diagonal-texture .page-header::before {background-image:url(images/hdr-diagonal-1200.jpg);}
-  .bg-flow-texture .page-header::before {background-image:url(images/hdr-flow-1200.jpg);}
-  .bg-geometric-texture .page-header::before {background-image:url(images/hdr-geometric-1200.jpg);}
-  .bg-honeycomb-texture .page-header::before {background-image:url(images/hdr-honeycomb-1200.jpg);}
-  .bg-linework-texture .page-header::before {background-image:url(images/hdr-linework-1200.jpg);}
-  .bg-main-building-texture .page-header::before {background-image:url(images/hdr-main-building-1200.jpg);}
-  .bg-molecule-texture .page-header::before {background-image:url(images/hdr-molecule-1200.jpg);}
-  .bg-network-texture .page-header::before {background-image:url(images/hdr-network-1200.jpg);}
-  .bg-plaid-texture .page-header::before {background-image:url(images/hdr-plaid-1200.jpg);}
-}
-
-@media screen and (min-width:75rem) {
-  /* Textures/Patterns */
-  .bg-cells-texture .page-header::before {background-image:url(images/hdr-cells-1600.jpg);}
-  .bg-clover-texture .page-header::before {background-image:url(images/hdr-clover-1600.jpg);}
-  .bg-diagonal-texture .page-header::before {background-image:url(images/hdr-diagonal-1600.jpg);}
-  .bg-flow-texture .page-header::before {background-image:url(images/hdr-flow-1600.jpg);}
-  .bg-geometric-texture .page-header::before {background-image:url(images/hdr-geometric-1600.jpg);}
-  .bg-honeycomb-texture .page-header::before {background-image:url(images/hdr-honeycomb-1600.jpg);}
-  .bg-linework-texture .page-header::before {background-image:url(images/hdr-linework-1600.jpg);}
-  .bg-main-building-texture .page-header::before {background-image:url(images/hdr-main-building-1600.jpg);}
-  .bg-molecule-texture .page-header::before {background-image:url(images/hdr-molecule-1600.jpg);}
-  .bg-network-texture .page-header::before {background-image:url(images/hdr-network-1600.jpg);}
-  .bg-plaid-texture .page-header::before {background-image:url(images/hdr-plaid-1600.jpg);}
-}
-
-@media
-  only screen and (-webkit-min-device-pixel-ratio:1.5),
-  only screen and (min-device-pixel-ratio:1.5),
-  only screen and (-webkit-min-device-pixel-ratio:144),
-  only screen and (min-resolution:144dpi),
-  only screen and (min-resolution:1.5dppx){
-
-  .bg-circuit-texture .page-header::before {background-image:url(images/hdr-circuit-ptn@2x.png);}
-  .bg-cube-texture .page-header::before {background-image:url(images/hdr-cube-ptn@2x.png);}
-  .bg-dome-texture .page-header::before {background-image:url(images/hdr-dome-ptn@2x.png);}
-  .bg-graph-paper-texture .page-header::before {background-image:url(images/hdr-graph-paper-ptn@2x.png);}
-  .bg-starcross-texture .page-header::before {background-image:url(images/hdr-starcross-ptn@2x.png);}
-  .bg-textile-texture .page-header::before {background-image:url(images/hdr-textile-ptn@2x.png);}
 }
 
 /*************************************************************************************
