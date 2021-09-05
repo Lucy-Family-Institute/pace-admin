@@ -1047,11 +1047,6 @@ article.snippet {margin-bottom:2rem;}
   .page-title::after {margin-left:-0.5em; margin-top:0.2em; margin-bottom:0.7em; width:1.5em; height:0.1em; min-height:5px;}
   .page-header .page-title {margin-top:2rem;}
 
-  /* Content
-  ----------------------------------------------------*/
-
-}
-
   /* Footer
   ----------------------------------------------------*/
   .footer-breadcrumbs li {display:inline-block;}
