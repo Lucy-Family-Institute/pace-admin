@@ -84,6 +84,11 @@ module.exports = function (ctx) {
       minify: true,
       // analyze: true,
 
+      uglifyOptions: {
+        comments: false,
+        compress: {}
+      },
+
       // https://quasar.dev/quasar-cli/cli-documentation/handling-webpack
       extendWebpack (cfg) {
         cfg.resolve.alias = {
