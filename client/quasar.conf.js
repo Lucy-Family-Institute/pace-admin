@@ -86,7 +86,17 @@ module.exports = function (ctx) {
 
       uglifyOptions: {
         comments: false,
-        compress: {}
+        mangle: true,
+        compress: {
+          sequences: true,
+          dead_code: true,
+          conditionals: true,
+          booleans: true,
+          unused: true,
+          if_return: true,
+          join_vars: true,
+          drop_console: true
+        }
       },
 
       // https://quasar.dev/quasar-cli/cli-documentation/handling-webpack
