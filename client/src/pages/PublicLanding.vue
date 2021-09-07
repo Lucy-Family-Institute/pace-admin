@@ -188,7 +188,6 @@
 <style scoped>
 /* @import '../statics/edu.nd/reduced.css'; */
 @import '../statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/ndt.css';
-@import '../statics/edu.nd/ndwebgroup.github.io/webtheme/assets/stylesheets/syntax.css';
 @import '../statics/edu.nd/ndwebgroup.github.io/webtheme/assets/stylesheets/v3/site.css';
 main {
   font-size: 1.45rem;
