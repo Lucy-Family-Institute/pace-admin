@@ -1,5 +1,5 @@
 <template>
-  <div class="full-width">
+  <div>
     <!-- Skip links -->
     <nav class="skip-links" aria-label="Skip links">
       <ul>
@@ -60,39 +60,33 @@
       </header>
       <!-- Site Content -->
       <div id="content" class="site-content">
+        <!-- Page Header -->
         <div class="page-header has-title has-image">
-          <div class="page-title-wrapper" aria-hidden="true">
-            <p class="page-title">{{ title }}</p>
-            <div class="page-lede">
-              <p>{{ description }}</p>
-              <p class="text-center buttons">
-                <q-btn
-                  type="a"
-                  :href="`mailto:${email}`"
-                  color="secondary"
-                  size="lg"
-                  label="EXPLORE PARTNERSHIP" />&nbsp;
-                <q-btn
-                  type="a"
-                  href="/login"
-                  color="primary"
-                  size="lg"
-                  label="LOGIN" />
-              </p>
-            </div>
+          <p class="page-title" aria-hidden="true">{{ title }}</p>
+          <div class="page-lede" aria-hidden="true">
+            <p>{{ description }}</p>
+            <p class="text-center buttons">
+              <q-btn
+                type="a"
+                :href="`mailto:${email}`"
+                color="secondary"
+                size="lg"
+                label="EXPLORE PARTNERSHIP" />&nbsp;
+              <q-btn
+                type="a"
+                href="/login"
+                color="primary"
+                size="lg"
+                label="LOGIN" />
+            </p>
           </div>
-          <p class="page-image full">
-            <img src="/statics/placeholder-graph-800x450.avif" :alt="hero.alt" width="800" height="400"
-              srcset="/statics/placeholder-graph-800x450.avif 800w,
-                      /statics/placeholder-graph-1200x675.avif 1200w,
-                      /statics/placeholder-graph-1600x900.avif 1600w,
-                      /statics/placeholder-graph-1920x1080.avif 1920w"
-              sizes="100vw">
+          <p class="page-image">
+              <img :src="hero.imageUrl" width="947" height="533"
+                  :alt="hero.alt">
           </p>
-
         </div>
 
-        <main class="page-main block-center" role="main">
+        <main class="page-main" role="main">
           <h1 class="page-title">{{ title }}</h1>
           <div class="page-lede">
             <p>{{ description }}</p>
@@ -111,10 +105,13 @@
                 label="LOGIN" />
             </p>
           </div>
-          <p v-html="intro"></p>
+
+          <!-- Page Intro -->
+          <div class="block-center" style="height: 100px">
+            <p v-html="intro"></p>
+          </div>
         </main>
       </div>
-
       <!-- Site Footer -->
       <footer id="footer" class="site-footer" role="contentinfo">
         <div class="footer-org" typeof="Organization" resource="#siteorg">
@@ -187,10 +184,43 @@
 
 <style scoped>
 @import '../statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/ndt.css';
-@import 'https://ndwebgroup.github.io/webtheme/assets/stylesheets/syntax.css';
-@import 'https://ndwebgroup.github.io/webtheme/assets/stylesheets/v3/site.css';
+@import '../statics/ndweb/stylesheets/site.css';
+p.page-image img {
+  border: 1px #e6e6e6 solid;
+}
+.site-content {
+  --sidebar-width: 0vw;
+}
+.buttons {
+  white-space: nowrap;
+}
+
 main {
   font-size: 1.45rem;
+}
+
+/* .site-content {
+  display: block;
+} */
+
+@media only screen and (min-width:0em) {
+  .site-content {
+    min-height:950px;
+  }
+}
+
+@media only screen and (min-width: 48em) {
+  .site-content {
+    display: block;
+    padding-left: 1em;
+    padding-right: 1em;
+  }
+  .page-main {
+    margin-top: -50px;
+    min-height: 250px;
+    padding-left: 50px;
+    padding-right: 50px;
+  }
 }
 </style>
 
@@ -264,7 +294,7 @@ export default {
       // sets document title
       title: 'Landing Page',
       // optional; sets final title as "Index Page - My Website", useful for multiple level meta
-      // titleTemplate: title => `${this.siteName}`,
+      titleTemplate: title => `${this.siteName}`,
 
       // meta tags
       meta: {
@@ -291,19 +321,11 @@ export default {
           sizes: '16x16',
           href: 'https://static.nd.edu/images/monogram/gold/monogram-16.png'
         },
-        fontsLibreFranklin: {
-          rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css?family=Libre+Franklin:400,bold%7CSumana:400',
-          media: 'all'
+        hero: {
+          rel: 'preload',
+          as: 'image',
+          href: '/statics/graph16x9wVig.avif'
         }
-        // css2: {
-        //   rel: 'stylesheet',
-        //   href: 'https://ndwebgroup.github.io/webtheme/assets/stylesheets/syntax.css'
-        // },
-        // css3: {
-        //   rel: 'stylesheet',
-        //   href: 'https://ndwebgroup.github.io/webtheme/assets/stylesheets/v3/site.css'
-        // }
       },
 
       // JS tags
@@ -318,12 +340,14 @@ export default {
 
       // <html> attributes
       htmlAttr: {
+        lang: 'en',
+        class: 'no-js'
       },
 
       // <body> attributes
       bodyAttr: {
         'voacab': 'https://schema.org/',
-        'class': 'bg-cube-texture nav-top-true full-width'
+        'class': 'nav-top-true full-width'
       }
     }
   }

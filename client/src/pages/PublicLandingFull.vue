@@ -1,5 +1,5 @@
 <template>
-  <div class="full-width">
+  <div>
     <!-- Skip links -->
     <nav class="skip-links" aria-label="Skip links">
       <ul>
@@ -187,10 +187,11 @@
 
 <style scoped>
 @import '../statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/ndt.css';
-@import 'https://ndwebgroup.github.io/webtheme/assets/stylesheets/syntax.css';
-@import 'https://ndwebgroup.github.io/webtheme/assets/stylesheets/v3/site.css';
-main {
-  font-size: 1.45rem;
+
+@media only screen and (min-width: 60em) {
+  .page-title-wrapper {
+      grid-column: 3/4;
+  }
 }
 </style>
 
@@ -264,7 +265,7 @@ export default {
       // sets document title
       title: 'Landing Page',
       // optional; sets final title as "Index Page - My Website", useful for multiple level meta
-      // titleTemplate: title => `${this.siteName}`,
+      titleTemplate: title => `${this.siteName}`,
 
       // meta tags
       meta: {
@@ -291,19 +292,11 @@ export default {
           sizes: '16x16',
           href: 'https://static.nd.edu/images/monogram/gold/monogram-16.png'
         },
-        fontsLibreFranklin: {
-          rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css?family=Libre+Franklin:400,bold%7CSumana:400',
-          media: 'all'
+        hero: {
+          rel: 'preload',
+          as: 'image',
+          href: '/statics/graph16x9wVig.avif'
         }
-        // css2: {
-        //   rel: 'stylesheet',
-        //   href: 'https://ndwebgroup.github.io/webtheme/assets/stylesheets/syntax.css'
-        // },
-        // css3: {
-        //   rel: 'stylesheet',
-        //   href: 'https://ndwebgroup.github.io/webtheme/assets/stylesheets/v3/site.css'
-        // }
       },
 
       // JS tags
@@ -318,12 +311,14 @@ export default {
 
       // <html> attributes
       htmlAttr: {
+        lang: 'en',
+        class: 'no-js'
       },
 
       // <body> attributes
       bodyAttr: {
         'voacab': 'https://schema.org/',
-        'class': 'bg-cube-texture nav-top-true full-width'
+        'class': 'nav-top-true full-width'
       }
     }
   }
