@@ -2,7 +2,7 @@ import { ApolloClient } from 'apollo-client'
 import VueApollo from 'vue-apollo'
 import { createHttpLink } from 'apollo-link-http'
 import { InMemoryCache } from 'apollo-cache-inmemory'
-import fetch from 'node-fetch'
+import fetch from 'cross-fetch'
 
 export default ({ Vue, app }) => {
   const uri = process.env.GRAPHQL_END_POINT

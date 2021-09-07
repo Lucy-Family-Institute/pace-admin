@@ -84,11 +84,14 @@ import NetworkD3 from '@/components/dashboard/NetworkD3.vue'
 import _ from 'lodash'
 import { debounce } from 'quasar'
 
+import VueApexCharts from 'vue-apexcharts'
+
 export default {
   name: 'PageIndex',
   components: {
     NetworkD3,
-    SearchView
+    SearchView,
+    apexchart: VueApexCharts
   },
   data () {
     return {

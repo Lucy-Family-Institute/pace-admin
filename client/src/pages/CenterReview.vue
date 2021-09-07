@@ -404,16 +404,16 @@ import sanitize from 'sanitize-filename'
 import pMap from 'p-map'
 import readPersonsByInstitutionByYearByOrganization from '../gql/readPersonsByInstitutionByYearByOrganization'
 import readOrganizationsCenters from '../../../gql/readOrganizationsCenters.gql'
-// import VueFuse from 'vue-fuse'
 
-// Vue.use(VueFuse)
+import VueFriendlyIframe from 'vue-friendly-iframe'
 
 export default {
   name: 'PageIndex',
   components: {
     CenterReviewPubFilter,
     MainFilter,
-    'download-csv': JsonCSV
+    'download-csv': JsonCSV,
+    'vue-friendly-iframe': VueFriendlyIframe
   },
   data: () => ({
     centerOptions: null,

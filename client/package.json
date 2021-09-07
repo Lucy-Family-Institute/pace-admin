@@ -23,6 +23,7 @@
     "axios": "^0.18.1",
     "citation-js": "^0.5.0-alpha.5",
     "combinations": "^1.0.0",
+    "cross-fetch": "^3.1.4",
     "cytoscape": "^3.15.1",
     "cytoscape-euler": "^1.2.2",
     "dotenv": "^8.2.0",
