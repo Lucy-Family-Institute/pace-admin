@@ -21,6 +21,7 @@ services:
         DOCKER_HOST_IP: ${DOCKER_HOST_IP}
         GRAPHQL_END_POINT: "http://hasura:${HASURA_DOCKER_PORT}/v1/graphql"
     restart: unless-stopped
+    scale: 2
   redis:
     ports: []
   hasura:
