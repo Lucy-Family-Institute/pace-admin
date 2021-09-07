@@ -368,9 +368,6 @@ export default {
       script: {
         '1-ndt': {
           src: '/statics/ndweb/javascripts/ndt.js'
-        },
-        '2-local': {
-          src: '/statics/ndweb/javascripts/site.js'
         }
       },
 
