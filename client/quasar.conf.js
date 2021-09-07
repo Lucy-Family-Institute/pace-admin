@@ -85,6 +85,9 @@ module.exports = function (ctx) {
       // analyze: true,
 
       uglifyOptions: {
+        performance: {
+          hints: false
+        },
         comments: false,
         // mangle: true,
         compress: {

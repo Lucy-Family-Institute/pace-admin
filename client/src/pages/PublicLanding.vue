@@ -187,8 +187,8 @@
 
 <style scoped>
 @import '../statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/ndt.css';
-@import 'https://ndwebgroup.github.io/webtheme/assets/stylesheets/syntax.css';
-@import 'https://ndwebgroup.github.io/webtheme/assets/stylesheets/v3/site.css';
+@import '../statics/edu.nd/ndwebgroup.github.io/webtheme/assets/stylesheets/syntax.css';
+@import '../statics/edu.nd/ndwebgroup.github.io/webtheme/assets/stylesheets/v3/site.css';
 main {
   font-size: 1.45rem;
 }
@@ -231,7 +231,6 @@ export default {
         holderUrl: 'https://www.nd.edu'
       },
       hero: {
-        imageUrl: '/statics/graph16x9wVig.avif',
         alt: `
           Network visualizatin of publication and funding activity 
           at the University of Notre Dame's Harper Cancer Reach 
