@@ -4,23 +4,6 @@
 document.documentElement.className = document.documentElement.className.replace(/(\s|^)no-js(\s|$)/, '$1' + 'js' + '$2');
 
 /*!
- * Get parameter value from URL or URL string
- * Used by Search and Video Placeholder
- * Updated 2015-12-07
- */
-function getURLParameter(param, href){
-  var href = (href && href.length > 0 && href.indexOf('?') != -1) ? href.split('?')[1] : window.location.search.substring(1),
-      pairs = href.split('&')
-  ;
-  for(var i = 0; i < pairs.length; i++){
-    var pair = pairs[i].split('=');
-    if(pair[0] == param){
-      return pair[1];
-    }
-  }
-}
-
-/*!
  * Element.closest() polyfill
  * https://developer.mozilla.org/en-US/docs/Web/API/Element/closest#Polyfill
  */
@@ -51,9 +34,6 @@ var forEach = function(array, callback, scope){
  * General Helpers
  */
 document.addEventListener('DOMContentLoaded', function(){
-  var has_gtag = (typeof(gtag) != 'undefined') ? true : false;
-  var has_ga = (typeof(ga) != 'undefined') ? true : false;
-
   // Table overflow
   forEach(document.querySelectorAll('table'), function(index, item) {
     table = item;
@@ -64,50 +44,6 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 
 }, false);
-
-/*!
- * Mobile Nav
- * @author Erik Runyon, Shawn Maust
- * Updated 2020-03-02
- */
-(function(){
-  if(!document.getElementById('nav')){
-    document.querySelector('.nav-mobile-util li:last-child').classList.add('hidden');
-    return;
-  }
-  var wrapper = document.querySelector('#wrapper');
-  var button = document.querySelectorAll('.nav-skip, .btn-nav-mobile');
-  var drawer = document.querySelector('#nav-mobile');
-  if (!drawer) {
-    drawer = document.createElement('nav');
-    drawer.id = 'nav-mobile';
-    drawer.className = 'nav-mobile';
-    wrapper.parentNode.insertBefore(drawer, wrapper);
-  }
-  var toggleDrawer = function(){
-    wrapper.classList.contains('active') ? wrapper.classList.remove('active') : wrapper.classList.add('active');
-    drawer.classList.contains('active') ? drawer.classList.remove('active') : drawer.classList.add('active');
-    forEach(button, function(index, item){
-      item.classList.contains('toggled') ? item.classList.remove('toggled') : item.classList.add('toggled');
-    });
-  };
-  var nav = document.getElementById('nav').outerHTML;
-  var mobile_nav_html = nav.replace(/id="nav"/i, 'id="nav-mobile-inner"')
-                       .replace(/aria-label="Primary navigation"/i, 'aria-label="Mobile Navigation"');
-  drawer.innerHTML = mobile_nav_html;
-
-  if (document.querySelector('#nav-footer')) {
-    var navFooter = document.querySelector('#nav-footer ul').cloneNode(true);
-    document.querySelector('#nav-mobile-inner').appendChild(navFooter);
-  }
-
-  // Add Listeners
-  document.querySelector('#content').addEventListener('click', function(){ if(wrapper.classList.contains('active')) toggleDrawer(); }, false);
-  window.addEventListener('resize', function(){ if(wrapper.classList.contains('active')) toggleDrawer(); }, false);
-  forEach(button, function(index, item){
-    item.addEventListener('click', function(e){ e.preventDefault(); toggleDrawer(); }, false)
-  });
-})();
 
 /*!
  * Fixed Navs
@@ -199,103 +135,4 @@ document.addEventListener('DOMContentLoaded', function(){
   document.addEventListener("DOMContentLoaded", resizeHandler); // Load
   window.addEventListener('resize', resizeHandler); // Resize
   window.addEventListener('scroll', scrollHandler);
-})();
-
-/*!
- * Primary Nav Search
- * @author Erik Runyon
- * Updated 2018-09-28
- */
-document.addEventListener('click', function(e){
-  // https://gomakethings.com/checking-event-target-selectors-with-event-bubbling-in-vanilla-javascript/
-  if(e.target.closest('.search-toggle')){
-    e.preventDefault();
-
-    // Close the mobile nav if open
-    if(document.querySelector('#nav-mobile').classList.contains('active')){
-      document.querySelectorAll('.nav-menu')[0].click();
-    }
-
-    var activeEl = document.activeElement,
-        b = document.querySelectorAll('.nav-top, .nav-mobile-util'),
-        isMobile = function(){ return !!activeEl.closest('.nav-mobile-util'); }
-    ;
-
-    forEach(b, function (index, element){
-      if(element.classList.contains('active')){
-        element.classList.add('is-closing-search');
-        window.setTimeout(function(){
-          element.classList.remove('active');
-          element.classList.remove('is-closing-search');
-        }, 500);
-      } else {
-        element.classList.add('is-opening-search');
-        window.setTimeout(function(){
-          element.classList.add('active');
-          element.classList.remove('is-opening-search');
-          if(isMobile()){ var searchContainer = activeEl.closest('.nav-mobile-util'); }
-          if(activeEl.closest('.nav-top')){ var searchContainer = activeEl.closest('.nav-top'); }
-          if(searchContainer){
-            var searchInput = searchContainer.querySelector('.search-input');
-            window.setTimeout(function(){ searchInput.focus(); }, 500);
-          }
-        }, 500);
-      }
-    });
-  }
-}, false);
-
-/*!
- * Activate Primary Nav Search when skip link is used
- * @author Erik Runyon
- * Updated 2018-10-30
- */
-window.addEventListener("hashchange", function(){
-  if(window.location.hash.substring(1) == 'search-nav-top'){
-    document.querySelector('#nav-top').classList.add('active');
-    window.setTimeout(function(){
-      document.querySelector('#search-input-nav-top').focus();
-    }, 500);
-  }
-}, false);
-
-/*!
- * Search
- * @author Erik Runyon
- * Updated 2017-10-23
- */
-if(document.querySelectorAll('.search-results').length > 0){
-  var p = document.createElement('p'),
-      search_results = document.querySelectorAll('.search-results')[0]
-  ;
-
-  p.className = 'search-sort';
-  p.innerHTML = 'Sort by: <select class="search-sort-select" id="sort-select"><option value="">Relevance</option><option value="date">Date</option></select>';
-
-  search_results.parentNode.insertBefore(p, search_results);
-
-  var sort_select = document.querySelector('#sort-select');
-  sort_select.addEventListener('change', function(e){
-    window.location.href = window.location.origin + window.location.pathname + '?q=' + getURLParameter('q') + '&as_sitesearch=' + getURLParameter('as_sitesearch') + '&sort=' + sort_select.value;
-  }, false);
-
-  if(getURLParameter('sort') == 'date'){
-    sort_select.value = 'date';
-  }
-}
-
-/* Google Fonts */
-if (typeof WebFontConfig === 'undefined') {
-  WebFontConfig = {
-    google: { families: [ 'Libre+Franklin:400,bold', 'Sumana:400' ] }
-  }
-}
-
-(function(){
-  var wf = document.createElement('script');
-  wf.src = 'https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js';
-  wf.type = 'text/javascript';
-  wf.async = 'true';
-  var s = document.getElementsByTagName('script')[0];
-  s.parentNode.insertBefore(wf, s);
 })();
