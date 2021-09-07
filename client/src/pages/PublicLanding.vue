@@ -186,11 +186,81 @@
 </template>
 
 <style scoped>
-/* @import '../statics/edu.nd/reduced.css'; */
 @import '../statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/ndt.css';
-@import '../statics/edu.nd/ndwebgroup.github.io/webtheme/assets/stylesheets/v3/site.css';
 main {
   font-size: 1.45rem;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Libre Franklin';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/librefranklin/v7/jizDREVItHgc8qDIbSTKq4XkRiUQ2zcLig.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Libre Franklin';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/librefranklin/v7/jizDREVItHgc8qDIbSTKq4XkRiUR2zcLig.woff2) format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Libre Franklin';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/librefranklin/v7/jizDREVItHgc8qDIbSTKq4XkRiUf2zc.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Libre Franklin';
+  font-style: normal;
+  font-weight: 700;
+  src: url(https://fonts.gstatic.com/s/librefranklin/v7/jizDREVItHgc8qDIbSTKq4XkRiUQ2zcLig.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Libre Franklin';
+  font-style: normal;
+  font-weight: 700;
+  src: url(https://fonts.gstatic.com/s/librefranklin/v7/jizDREVItHgc8qDIbSTKq4XkRiUR2zcLig.woff2) format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Libre Franklin';
+  font-style: normal;
+  font-weight: 700;
+  src: url(https://fonts.gstatic.com/s/librefranklin/v7/jizDREVItHgc8qDIbSTKq4XkRiUf2zc.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* devanagari */
+@font-face {
+  font-family: 'Sumana';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/sumana/v5/4UaDrE5TqRBjGj-29hLj36w.woff2) format('woff2');
+  unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Sumana';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/sumana/v5/4UaDrE5TqRBjGj-2-RLj36w.woff2) format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Sumana';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/s/sumana/v5/4UaDrE5TqRBjGj-29xLj.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 </style>
 
@@ -290,24 +360,7 @@ export default {
           rel: 'icon',
           sizes: '16x16',
           href: 'https://static.nd.edu/images/monogram/gold/monogram-16.png'
-        },
-        fontsLibreFranklin: {
-          rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css?family=Libre+Franklin:400,bold%7CSumana:400',
-          media: 'all'
         }
-        // reducedCss: {
-        //   rel: 'stylesheet',
-        //   href: '/statics/edu.nd/reduced.css'
-        // }
-        // css2: {
-        //   rel: 'stylesheet',
-        //   href: 'https://ndwebgroup.github.io/webtheme/assets/stylesheets/syntax.css'
-        // },
-        // css3: {
-        //   rel: 'stylesheet',
-        //   href: 'https://ndwebgroup.github.io/webtheme/assets/stylesheets/v3/site.css'
-        // }
       },
 
       // JS tags
