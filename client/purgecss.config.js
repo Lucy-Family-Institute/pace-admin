@@ -1,12 +1,14 @@
 module.exports = {
-  content: ['../build/spa/js/*.js'],
-  css: ['../build/spa/css/*.css'],
-  output: ['../build/spa/css/'],
-  fontFace: true,
-  keyframes: true,
-  variables: true,
+  content: [
+    '../build/spa/index.html',
+    '../build/spa/statics/**/*.js',
+    '../build/spa/js/*.js',
+    './src/pages/**/*.vue',
+    './src/layouts/**/*.vue',
+    './src/components/**/*.vue'
+  ],
   rejected: true,
-  safelist: {
-    standard: [/fixed-.*/, /absolute-.*/, /q-btn.*/, /justify-.*/]
-  }
+  css: ['../build/spa/css/*.css'],
+  output: ['../build/spa/css'],
+  safelist: [/^q-/, /^bg/, /^main/]
 }

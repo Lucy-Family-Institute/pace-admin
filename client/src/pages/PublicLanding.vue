@@ -186,6 +186,7 @@
 </template>
 
 <style scoped>
+/* @import '../statics/edu.nd/reduced.css'; */
 @import '../statics/edu.nd/conductor.nd.edu/stylesheets/themes/ndt/v3/ndt.css';
 @import '../statics/edu.nd/ndwebgroup.github.io/webtheme/assets/stylesheets/syntax.css';
 @import '../statics/edu.nd/ndwebgroup.github.io/webtheme/assets/stylesheets/v3/site.css';
@@ -261,7 +262,7 @@ export default {
   meta () {
     return {
       // sets document title
-      title: 'Landing Page',
+      title: 'PACE - Publication Activity Collection Environment',
       // optional; sets final title as "Index Page - My Website", useful for multiple level meta
       // titleTemplate: title => `${this.siteName}`,
 
@@ -295,6 +296,10 @@ export default {
           href: 'https://fonts.googleapis.com/css?family=Libre+Franklin:400,bold%7CSumana:400',
           media: 'all'
         }
+        // reducedCss: {
+        //   rel: 'stylesheet',
+        //   href: '/statics/edu.nd/reduced.css'
+        // }
         // css2: {
         //   rel: 'stylesheet',
         //   href: 'https://ndwebgroup.github.io/webtheme/assets/stylesheets/syntax.css'
