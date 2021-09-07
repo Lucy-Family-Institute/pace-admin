@@ -418,13 +418,15 @@ import readOrganizations from '../../../gql/readOrganizations.gql'
 import PublicationFilter from '../components/PublicationFilter.vue'
 import MainAuthorReviewFilter from '../components/MainAuthorReviewFilter.vue'
 import sanitize from 'sanitize-filename'
-import moment from 'moment'
+
+import VueFriendlyIframe from 'vue-friendly-iframe'
 
 export default {
   name: 'PageIndex',
   components: {
     PublicationFilter,
-    MainAuthorReviewFilter
+    MainAuthorReviewFilter,
+    'vue-friendly-iframe': VueFriendlyIframe
   },
   data: () => ({
     reviewStates: undefined,

@@ -427,12 +427,15 @@ import PeopleAuthorSortFilter from '../components/PeopleAuthorSortFilter.vue'
 import MainFilter from '../components/MainFilter.vue'
 import sanitize from 'sanitize-filename'
 
+import VueFriendlyIframe from 'vue-friendly-iframe'
+
 export default {
   name: 'PageIndex',
   components: {
     PublicationFilter,
     PeopleAuthorSortFilter,
-    MainFilter
+    MainFilter,
+    'vue-friendly-iframe': VueFriendlyIframe
   },
   data: () => ({
     centerOptions: null,

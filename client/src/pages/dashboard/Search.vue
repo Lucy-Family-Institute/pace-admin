@@ -96,10 +96,13 @@ import MeiliSearch from 'meilisearch'
 import JsonCSV from 'vue-json-csv'
 import _ from 'lodash'
 
+import VueApexCharts from 'vue-apexcharts'
+
 export default {
   name: 'Search',
   components: {
-    'download-csv': JsonCSV
+    'download-csv': JsonCSV,
+    'apexchart': VueApexCharts
   },
   data () {
     const that = this
