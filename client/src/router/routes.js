@@ -1,5 +1,5 @@
 import axios from 'axios'
-import _ from 'lodash'
+import { get as _get } from 'lodash'
 
 export function makeBeforeEach (store) {
   return async (to, from, next) => {
@@ -12,8 +12,8 @@ export function makeBeforeEach (store) {
     if (!store.get('auth/isLoggedIn')) {
       try {
         const response = await axios({ url: '/session', method: 'GET' })
-        const userId = _.get(response, 'data.databaseId')
-        const name = _.get(response, 'data.name')
+        const userId = _get(response, 'data.databaseId')
+        const name = _get(response, 'data.name')
         if (userId) {
           store.set('auth/isLoggedIn', true)
           store.set('auth/userId', userId)
