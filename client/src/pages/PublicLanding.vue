@@ -82,11 +82,11 @@
             </div>
           </div>
           <p class="page-image full">
-            <img src="/statics/placeholder-graph-800x450.avif" :alt="hero.alt" width="800" height="400"
-              srcset="/statics/placeholder-graph-800x450.avif 800w,
-                      /statics/placeholder-graph-1200x675.avif 1200w,
-                      /statics/placeholder-graph-1600x900.avif 1600w,
-                      /statics/placeholder-graph-1920x1080.avif 1920w"
+            <img src="https://cdn.jsdelivr.net/gh/share-research/pace-admin@new_home_ui/client/src/statics/placeholder-graph-800x450.avif" :alt="hero.alt" width="800" height="400"
+              srcset="https://cdn.jsdelivr.net/gh/share-research/pace-admin@new_home_ui/client/src/statics/placeholder-graph-800x450.avif 800w,
+                      https://cdn.jsdelivr.net/gh/share-research/pace-admin@new_home_ui/client/src/statics/placeholder-graph-1200x675.avif 1200w,
+                      https://cdn.jsdelivr.net/gh/share-research/pace-admin@new_home_ui/client/src/statics/placeholder-graph-1600x900.avif 1600w,
+                      https://cdn.jsdelivr.net/gh/share-research/pace-admin@new_home_ui/client/src/statics/placeholder-graph-1920x1080.avif 1920w"
               sizes="100vw">
           </p>
 

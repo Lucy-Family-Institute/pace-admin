@@ -129,6 +129,12 @@ $(BUILD_SPA_DIR): $(ENV_PATH) $(CLIENT_DIR) $(CLIENT_FILES)
 #: Running production: build spa and then run docker
 prod: $(BUILD_TEMPLATES_DIR) $(BUILD_SPA_DIR) docker
 
+git-pull:
+	git pull
+
+.PHONY: prod-restart
+prod-restart: stop-docker git-pull prod
+
 .PHONY: certs
 certs: prod 
 	@bash $(BUILD_TEMPLATES_DIR)/letsencrypt/init-letsencrypt.sh
