@@ -1,0 +1,346 @@
+/*! CSS Used from: https://paceadmin.zapto.org/css/app.d32bdf2c.css */
+*,:after,:before{box-sizing:inherit;-webkit-tap-highlight-color:transparent;-moz-tap-highlight-color:transparent;}
+#q-app,body{width:100%;direction:ltr;}
+body{margin:0;box-sizing:border-box;}
+footer,header,main,nav{display:block;}
+img{border-style:none;}
+svg:not(:root){overflow:hidden;}
+.q-btn{display:inline-flex;flex-direction:column;align-items:stretch;position:relative;outline:0;border:0;vertical-align:middle;padding:0;font-size:14px;line-height:1.715em;text-decoration:none;color:inherit;background:transparent;font-weight:500;text-transform:uppercase;text-align:center;width:auto;height:auto;}
+.q-btn__wrapper{padding:4px 16px;min-height:2.572em;border-radius:inherit;width:100%;height:100%;}
+.q-btn__wrapper:before{content:"";display:block;position:absolute;left:0;right:0;top:0;bottom:0;border-radius:inherit;box-shadow:0 1px 5px rgba(0,0,0,0.2),0 2px 2px rgba(0,0,0,0.14),0 3px 1px -2px rgba(0,0,0,0.12);}
+.q-btn--actionable{cursor:pointer;}
+.q-btn--actionable.q-btn--standard .q-btn__wrapper:before{transition:box-shadow 0.3s cubic-bezier(0.25,0.8,0.5,1);}
+.q-btn--actionable.q-btn--standard:active .q-btn__wrapper:before{box-shadow:0 3px 5px -1px rgba(0,0,0,0.2),0 5px 8px rgba(0,0,0,0.14),0 1px 14px rgba(0,0,0,0.12);}
+.q-btn--rectangle{border-radius:3px;}
+.q-btn__content{transition:opacity .3s;z-index:0;}
+.bg-primary{background:#027be3!important;background:var(--q-color-primary)!important;}
+.bg-secondary{background:#26a69a!important;background:var(--q-color-secondary)!important;}
+.text-white{color:#fff!important;}
+.row{display:flex;flex-wrap:wrap;}
+.justify-center{justify-content:center;}
+.items-center{align-items:center;}
+@media (min-width:0){
+.row>.col{width:auto;min-width:0;max-width:100%;}
+.col{flex:10000 1 0%;}
+}
+.non-selectable{-webkit-user-select:none!important;-moz-user-select:none!important;-ms-user-select:none!important;user-select:none!important;}
+.full-width{width:100%!important;margin-left:0!important;margin-right:0!important;}
+.block{display:block!important;}
+body{min-width:100px;min-height:100%;font-family:Roboto,-apple-system,Helvetica Neue,Helvetica,Arial,sans-serif;-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-smoothing:antialiased;line-height:1.5;font-size:14px;}
+h1{font-size:6rem;line-height:6rem;letter-spacing:-0.01562em;}
+h1{font-weight:300;}
+p{margin:0 0 16px;}
+.text-center{text-align:center;}
+.no-outline{outline:0!important;}
+.hidden{display:none!important;}
+.q-focus-helper,.q-focusable,.q-hoverable{outline:0;}
+body.desktop .q-focus-helper{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;border-radius:inherit;opacity:0;transition:background-color 0.3s cubic-bezier(0.25,0.8,0.5,1),opacity 0.4s cubic-bezier(0.25,0.8,0.5,1);}
+body.desktop .q-focus-helper:after,body.desktop .q-focus-helper:before{content:"";position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;border-radius:inherit;transition:background-color 0.3s cubic-bezier(0.25,0.8,0.5,1),opacity 0.6s cubic-bezier(0.25,0.8,0.5,1);}
+body.desktop .q-focus-helper:before{background:#000;}
+body.desktop .q-focus-helper:after{background:#fff;}
+body.desktop .q-focusable:focus>.q-focus-helper,body.desktop .q-hoverable:hover>.q-focus-helper{background:currentColor;opacity:.15;}
+body.desktop .q-focusable:focus>.q-focus-helper:before,body.desktop .q-hoverable:hover>.q-focus-helper:before{opacity:.1;}
+body.desktop .q-focusable:focus>.q-focus-helper:after,body.desktop .q-hoverable:hover>.q-focus-helper:after{opacity:.4;}
+body.desktop .q-focusable:focus>.q-focus-helper{opacity:.22;}
+@media (-ms-high-contrast:none),screen and (-ms-high-contrast:active){
+.q-btn__wrapper{flex-basis:auto;}
+}
+@media (-ms-high-contrast:none) and (min-width:0),screen and (-ms-high-contrast:active) and (min-width:0){
+.row>.col{flex-basis:auto;min-width:0%;}
+}
+@media (-ms-high-contrast:none),screen and (-ms-high-contrast:active){
+.q-btn{overflow:visible;}
+.q-btn--wrap{flex-direction:row;}
+.q-focus-helper{z-index:1;}
+}
+/*! CSS Used from: https://paceadmin.zapto.org/css/12.22e4c9a6.css */
+*,:after,:before{box-sizing:border-box;}
+body{width:100%;height:100%;margin:0;padding:0;scroll-behavior:smooth;}
+body{color:#333;font:1em/1.6em var(--font-default);}
+footer,header,main,nav{display:block;}
+p{margin:0 0 1rem;line-height:1.625;}
+a{color:var(--brand-blue-bright);overflow-wrap:break-word;-webkit-text-decoration-skip:ink;text-decoration-skip:ink;text-decoration-skip-ink:auto;background-color:transparent;-webkit-tap-highlight-color:rgba(0,0,0,0);}
+a:visited{color:var(--brand-blue);}
+a:hover{color:var(--brand-blue-bright);}
+a:active{color:var(--brand-gold);}
+a:focus{outline:thin dotted;}
+a{touch-action:manipulation;}
+.page-title,h1{margin:1em 0 0.25em;padding-top:10px;line-height:1.3;color:var(--brand-blue);text-rendering:optimizeLegibility;font-family:var(--font-heading);font-weight:600;max-width:none;}
+.page-title{margin:0 0 1rem;line-height:1.25;font-family:var(--font-heading);clear:both;}
+h1:first-child{margin-top:0;}
+.page-title,h1{font-size:2.125rem;}
+ul{margin:1rem 0;padding:0 0 0 2rem;}
+li{margin:0 0 0.25rem;}
+nav ul{list-style:none;}
+nav li,nav ul{margin:0;padding:0;}
+nav a{text-decoration:none;}
+.no-bullets{list-style-type:none;padding-left:0;}
+.no-bullets li{max-width:none;}
+svg:not(:root){overflow:hidden;}
+img{width:auto;height:auto;border:none;vertical-align:bottom;-ms-interpolation-mode:bicubic;box-sizing:content-box;}
+img{max-width:100%;}
+.icon{display:inline-block;width:1em;height:1em;fill:currentColor;vertical-align:baseline;}
+.hidden{display:none!important;}
+.text-center{text-align:center;}
+.block-center{max-width:65rem;margin-left:auto;margin-right:auto;}
+.justify-center{justify-content:center;}
+.site-header{text-align:center;}
+.site-title-group{display:flex;flex-flow:column;padding:0 5vw;margin-bottom:1rem;}
+.site-title{margin:0;text-align:left;font-family:var(--font-heading);font-size:2.4rem;font-weight:700;line-height:1.2em;margin-top:0;padding-top:0;}
+.site-title a{display:block;padding:0;border:none;}
+.skip-links{position:absolute;left:0;top:0;width:100%;margin-left:0;text-align:center;list-style:outside none;}
+.skip-links a{position:absolute;left:-100vw;top:0.5em;transition:0.25s;}
+.skip-links a:active,.skip-links a:focus,.skip-links a:hover{left:0.5em;width:auto;height:auto;overflow:visible;background:#fff;padding:0.5em 1em;color:var(--brand-blue);font-weight:700;font-size:14px;box-shadow:0 0 10px 0 #000;z-index:999;}
+.site-footer{position:relative;margin:0 auto;padding:2em 5vw 0;}
+.site-footer li .icon{margin-right:0.5em;}
+.site-footer p{font-size:0.875rem;}
+.footer-org{display:flex;flex-flow:column;}
+.address{margin:0;}
+.address,.footer-email,.footer-phone{display:block;}
+.copyright{margin-top:auto;font-size:0.875em;}
+.site-link{font-size:2.25rem;font-weight:700;text-decoration:none;font-family:var(--font-heading);margin:0.3em 0 0.5em;padding:0;line-height:1.2;}
+.footer-contacts{font-size:0.875em;}
+.footer-contacts .social{margin:0 0 1rem;}
+.footer-breadcrumbs{list-style:none;margin:0 0 0.5rem;padding:0;text-transform:uppercase;font-size:1rem;line-height:1.125em;font-family:var(--font-default);}
+.footer-breadcrumbs a{text-decoration:none;font-size:0.8rem;transition:all var(--anim-duration-fast) var(--anim-ease);}
+.footer-breadcrumbs a:hover{color:var(--sky-blue);}
+.footer-breadcrumbs li{display:block;letter-spacing:0.1em;}
+.footer-breadcrumbs li:after{content:"\203A";margin:0 0.5em;}
+.footer-parent{margin:2rem -5vw 0;padding:3rem 5vw;text-align:center;position:relative;}
+.footer-parent nav{max-width:50%;text-align:left;}
+.footer-parent a:hover{text-decoration:underline;}
+.footer-parent-links{display:flex;justify-content:space-between;max-width:250px;margin:1rem auto 0;font-size:0.875em;}
+.footer-parent-links ul{line-height:2.2;}
+.mark-footer{display:block;margin:0 auto 2rem;width:250px;height:60px;max-width:100%;text-decoration:none;}
+@media only screen{
+li,p{max-width:65rem;}
+.site-content [href^=http]:after{--icon-light:url(/stylesheets/themes/ndt/v3/images/external-link-light.svg);--icon-dark:url(/stylesheets/themes/ndt/v3/images/external-link-blue.svg);}
+.page-title{margin:0 0 .35em;padding:0 0 0.25em;z-index:100;}
+.page-title:after{content:"";display:block;width:50px;height:4px;margin:0.2em 0 0.2em -0.2em;background-color:var(--brand-gold);}
+.page-lede{font-size:1.25rem;z-index:100;}
+.site-header{border-top:5px solid var(--brand-gold);background:var(--brand-blue);}
+.site-title-group{display:flex;flex-flow:column;padding:0 5vw;}
+.site-title{color:#fff;}
+.site-title a,.site-title a:hover,.site-title a:visited{color:#fff;text-decoration:none;}
+.site-title a:focus{background-color:hsla(0,0%,100%,0.2);}
+.mark-header{width:100%;margin:0 0 1rem;height:3rem;position:relative;}
+.mark-header a{display:block;height:47px;margin:0 auto;color:#fff;text-indent:-9999px;overflow:hidden;position:relative;background:url(https://static.nd.edu/images/brandbar/dept-nd-white.svg) 50% 54%/300px auto no-repeat;background-color:var(--brand-blue-dark);}
+.mark-header a:focus{outline:3px solid #15a6b5;outline-offset:5px;}
+.page-image{width:100vw;margin:0 -5vw;position:relative;overflow:hidden;}
+.page-image img{width:100%;}
+.nav-top{display:none;}
+.nav-mobile-util{overflow:hidden;position:relative;z-index:999;width:100vw;margin:0;padding:0;color:var(--brand-blue);border-top:5px solid var(--brand-blue-dark);border-bottom:3px solid var(--gray-light);background:#fff;}
+.nav-mobile-util ul{display:flex;align-items:end;margin:0;padding:1rem 0;opacity:1;visibility:visible;}
+.nav-mobile-util li{flex:1 1 auto;margin:0;height:100%;text-align:center;font-size:0.75rem;}
+.nav-mobile-util a{display:block;height:2.5rem;padding:0;line-height:1.8em;text-decoration:none;text-transform:uppercase;}
+.nav-mobile-util svg{display:block;margin:0 auto;fill:var(--brand-blue);}
+.nav-mobile-util .icon{width:1.2rem;height:1.2rem;}
+body{-ms-overflow-style:none!important;}
+.footer-phone a{display:inline-block;}
+.wrapper{position:relative;right:0;transition:0.15s ease;overflow:hidden;}
+.site-footer{background:var(--brand-blue);color:#fff;}
+.site-footer a{color:#fff;text-decoration:none;transition:all var(--anim-duration-fast) var(--anim-ease);}
+.site-footer a:hover{text-decoration:underline;}
+.site-footer .site-link:hover{color:var(--sky-blue);text-decoration:none;}
+.footer-breadcrumbs,.footer-breadcrumbs a{color:var(--gray-light);}
+.footer-breadcrumbs a:hover{text-decoration:underline;}
+.footer-parent{background:var(--brand-blue-light);}
+.footer-parent a{color:#fff;}
+.mark-footer{background:url(https://static.nd.edu/images/marks/white/ndmark.svg) 50% 50%/contain no-repeat;}
+.mark-footer img{display:none;}
+}
+@media only screen and (min-width:30em){
+.mark-footer{margin-left:0;}
+.footer-parent{text-align:left;}
+.footer-parent nav{max-width:none;}
+.footer-parent-links{max-width:none;flex-flow:column;}
+.footer-parent-links li{display:inline-block;margin-right:1rem;}
+}
+@media only screen and (min-width:48em){
+.page-title,h1{font-size:2.25rem;}
+.site-header{text-align:left;padding:3.375rem 0 3.375rem;}
+.site-title-group{padding:2rem 1rem 0;}
+.site-title{font-size:2.67rem;}
+.site-title a{padding:0;line-height:1.2em;}
+.mark-header a{background:url(https://static.nd.edu/images/marks/gold-white/ndmark.svg) 50% 50%/contain no-repeat;background-color:transparent;}
+.site-footer{text-align:left;}
+.mark-footer{margin-left:auto;}
+.footer-breadcrumbs{margin:0;}
+.footer-org{padding:3rem 2rem 2rem 0;width:100%;align-items:flex-start;}
+.footer-parent{margin:0;padding:3rem 0 3rem 3rem;text-align:center;}
+.footer-parent nav{max-width:50%;}
+.footer-parent-links{flex-flow:row;}
+.footer-parent-links li{display:block;margin-right:0;}
+.footer-contacts{display:flex;flex-flow:row wrap;width:100%;}
+.footer-contacts .contact-info{line-height:1.7;margin-right:5em;order:1;}
+.footer-contacts ul{line-height:2.2;}
+.footer-contacts a{display:inline-block;}
+.footer-contacts .social{padding:0;min-width:6rem;order:2;}
+.site-link{display:block;}
+}
+@media only screen and (min-width:60em){
+.site-header{border-bottom:5px solid var(--brand-blue-dark);}
+.mark-header{margin-bottom:2rem;}
+.nav-mobile-util{display:none;}
+.nav-top{position:relative;display:inline-block;font-size:1rem;border-bottom:0 solid transparent;transition:all var(--anim-duration-slow);}
+.nav-top ul{transition:all 1s;}
+.nav-top a,.nav-top ul{display:flex;position:relative;opacity:1;}
+.nav-top a{align-items:center;height:100%;padding:1.25rem 1rem;line-height:1.2;color:var(--gray);border-top:0.25rem solid transparent;border-bottom:0.25rem solid transparent;transition:all var(--anim-duration) var(--anim-ease);}
+.nav-top .icon{margin-bottom:-0.25em;}
+.nav-top a:hover{background:var(--sky-blue-light);border-bottom-color:var(--sky-blue-dark);}
+.nav-top .active{background:var(--sky-blue-light);border-bottom-color:var(--sky-blue-dark);}
+.nav-header{display:block;z-index:10;}
+.nav-header .nav-top{background:#fff;}
+.navbar{display:block;position:fixed;opacity:0;z-index:999;top:0;transform:translateY(-100%);left:0;width:100%;padding:0 5vw;transition:0.3s ease;background:var(--brand-blue);border-top:4px solid var(--brand-gold);border-bottom:5px solid var(--brand-blue-dark);}
+.navbar.visible{transform:translateY(0);opacity:1;}
+.navbar ul{justify-content:flex-end;overflow:hidden;}
+.navbar a{color:#fff;}
+.navbar a:hover{border-bottom-color:transparent;}
+.navbar .active,.navbar a:hover{background:var(--brand-blue-light);}
+.navbar .icon{fill:#fff;}
+.has-title+.page-main .page-lede,.has-title+.page-main .page-title{height:0;width:0;overflow:hidden;margin:0;padding:0;}
+.page-title:after{margin-left:-0.5em;margin-top:0.2em;margin-bottom:0.7em;width:1.5em;height:0.1em;min-height:5px;}
+.page-header .page-title{margin-top:2rem;}
+.footer-breadcrumbs li,.footer-breadcrumbs li:not(:last-child):after{display:inline-block;}
+.site-link{margin-right:0.5em;}
+}
+@media only screen and (min-width:80em){
+.page-title,h1{font-size:3rem;}
+.page-header .page-lede{font-size:1.45rem;}
+.nav-top{font-size:1.125rem;}
+.nav-top a{padding:1.25rem 1.375rem;}
+}
+@media only screen and (min-width:100em){
+body{font-size:1.125rem;line-height:1.65;}
+.site-title{font-size:3rem;}
+}
+@media only screen and (-webkit-min-device-pixel-ratio:1.5),only screen and (-webkit-min-device-pixel-ratio:144),only screen and (min-device-pixel-ratio:1.5),only screen and (min-resolution:1.5dppx),only screen and (min-resolution:144dpi){
+@media only screen and (min-width:48em){
+.mark-header a{background-image:url(https://static.nd.edu/images/marks/gold-white/ndmark.svg);}
+}
+}
+.row{width:100%;flex-flow:row;}
+.wrapper{--gutter-width:5vw;--gutter-offset:calc(var(--gutter-width)*-1);overflow:hidden;}
+.site-content{padding:0 var(--gutter-width);width:100vw;margin:0 auto;}
+.page-header{display:flex;flex-flow:column;}
+.page-header .page-lede,.page-header .page-title{display:none;}
+.page-image{order:-1;}
+.page-main{width:100%;padding-top:2rem;}
+.page-main,.page-title-wrapper{position:relative;background:#fff;}
+.page-title-wrapper{display:none;z-index:10;}
+@media only screen and (min-width:48em){
+.site-header{padding:1rem;position:relative;z-index:300;}
+.nav-header{float:right;margin-top:-2rem;margin-bottom:0;}
+.nav-top{text-align:center;}
+.site-title-group{max-width:60vw;padding:0;}
+.site-title{margin:0;padding:0;}
+.page-main{position:relative;z-index:20;}
+.page-main:before{content:"";display:block;position:absolute;top:0;bottom:0;left:100%;width:100vw;z-index:-1;background:#fff;}
+.site-footer{padding:1rem;}
+}
+@media only screen and (min-width:60em){
+.site-content{min-height:calc(100vh - 10rem);}
+.page-main{padding:2rem 0 4rem 2rem;position:relative;}
+.page-header .page-lede,.page-header .page-title{display:block;}
+.page-header .page-title{padding-right:2rem;margin-bottom:0;}
+.page-header .page-lede{margin-top:1rem;padding-right:2em;}
+}
+@media screen and (-ms-high-contrast:active),screen and (-ms-high-contrast:none){
+body{font-family:Libre Franklin,Helvetica Neue,Helvetica,Arial,Verdana,sans-serif;}
+.site-title,h1{color:#0c2340;font-family:GPC,Arial Narrow,Helvetica Neue,Helvetica,Arial,Verdana,sans-serif;}
+a{color:#0c2340;}
+.site-header{background:#0c2340;overflow:auto;padding:1rem 5vw;}
+.mark-header{float:right;max-width:200px;}
+.nav-header{clear:right;margin-top:0;}
+.navbar{background:#0c2340;border-top:4px solid #ae9142;border-bottom:5px solid #081629;}
+.site-content{padding:0 5vw;}
+.page-image{margin:0;max-width:100%;}
+.page-main{float:right;width:75%;}
+.full-width .page-main{width:100%;}
+.page-title{border-bottom:2px solid #ae9142;}
+.page-header .page-title{border:0;}
+.site-footer{clear:both;display:flex;padding:1rem 5vw;}
+.site-footer{background:#0c2340;}
+}
+@media print{
+body{font-size:13pt;line-height:1.3;font-family:Georgia,Times New Roman,Times,serif;color:#000;}
+img{page-break-inside:avoid;}
+p{orphans:3;widows:3;}
+a{page-break-inside:avoid;}
+h1,img{page-break-after:avoid;page-break-inside:avoid;}
+ul{page-break-before:avoid;}
+a[href^="#"]:after{content:"";}
+.footer-parent-links,.mark-header,.nav-header,.nav-mobile-util,.nav-top,.skip-links{display:none;}
+.site-header{overflow:hidden;margin-bottom:1rem;border-bottom:1px solid grey;}
+.site-title{margin:0;color:#333;font-family:GPC,Helvetica Neue,Helvetica,Arial,Verdana,sans-serif;}
+.site-header a,.site-title a{color:#000;text-decoration:none;}
+.site-title{margin:0.25rem 0 0.5rem;font-size:2rem;}
+.site-link{font-size:2rem;}
+.page-image img{width:100%;}
+.site-footer{clear:both;display:flex;width:100%;justify-content:space-between;margin-top:2rem;border-top:1px solid grey;}
+.site-footer p{margin:0;}
+.footer-contacts{display:flex;}
+.site-footer .social{display:none;}
+.footer-parent{padding:0;margin:0;}
+.mark-footer{width:200px;}
+}
+@media screen and (min-width:48em){
+.site-content{grid-template-columns:[screen-start] var(--gutter-width) [container-start sidebar-start] var(--sidebar-width) [sidebar-end content-start] minmax(0,1fr) [content-end container-end] var(--gutter-width) [screen-end];}
+}
+main[data-v-fd4425ae]{font-size:1.45rem;}
+/*! CSS Used fontfaces */
+@font-face{font-family:'Roboto';font-style:normal;font-weight:100;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOkCnqEu92Fr1MmgVxFIzIFKw.woff2) format('woff2');unicode-range:U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:100;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOkCnqEu92Fr1MmgVxMIzIFKw.woff2) format('woff2');unicode-range:U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:100;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOkCnqEu92Fr1MmgVxEIzIFKw.woff2) format('woff2');unicode-range:U+1F00-1FFF;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:100;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOkCnqEu92Fr1MmgVxLIzIFKw.woff2) format('woff2');unicode-range:U+0370-03FF;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:100;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOkCnqEu92Fr1MmgVxHIzIFKw.woff2) format('woff2');unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:100;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOkCnqEu92Fr1MmgVxGIzIFKw.woff2) format('woff2');unicode-range:U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:100;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOkCnqEu92Fr1MmgVxIIzI.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:300;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmSU5fCRc4EsA.woff2) format('woff2');unicode-range:U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:300;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmSU5fABc4EsA.woff2) format('woff2');unicode-range:U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:300;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmSU5fCBc4EsA.woff2) format('woff2');unicode-range:U+1F00-1FFF;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:300;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmSU5fBxc4EsA.woff2) format('woff2');unicode-range:U+0370-03FF;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:300;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmSU5fCxc4EsA.woff2) format('woff2');unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:300;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmSU5fChc4EsA.woff2) format('woff2');unicode-range:U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:300;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmSU5fBBc4.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOmCnqEu92Fr1Mu72xKOzY.woff2) format('woff2');unicode-range:U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOmCnqEu92Fr1Mu5mxKOzY.woff2) format('woff2');unicode-range:U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOmCnqEu92Fr1Mu7mxKOzY.woff2) format('woff2');unicode-range:U+1F00-1FFF;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOmCnqEu92Fr1Mu4WxKOzY.woff2) format('woff2');unicode-range:U+0370-03FF;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOmCnqEu92Fr1Mu7WxKOzY.woff2) format('woff2');unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOmCnqEu92Fr1Mu7GxKOzY.woff2) format('woff2');unicode-range:U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOmCnqEu92Fr1Mu4mxK.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmEU9fCRc4EsA.woff2) format('woff2');unicode-range:U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmEU9fABc4EsA.woff2) format('woff2');unicode-range:U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmEU9fCBc4EsA.woff2) format('woff2');unicode-range:U+1F00-1FFF;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmEU9fBxc4EsA.woff2) format('woff2');unicode-range:U+0370-03FF;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmEU9fCxc4EsA.woff2) format('woff2');unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmEU9fChc4EsA.woff2) format('woff2');unicode-range:U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmEU9fBBc4.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmWUlfCRc4EsA.woff2) format('woff2');unicode-range:U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmWUlfABc4EsA.woff2) format('woff2');unicode-range:U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmWUlfCBc4EsA.woff2) format('woff2');unicode-range:U+1F00-1FFF;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmWUlfBxc4EsA.woff2) format('woff2');unicode-range:U+0370-03FF;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmWUlfCxc4EsA.woff2) format('woff2');unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmWUlfChc4EsA.woff2) format('woff2');unicode-range:U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmWUlfBBc4.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:900;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmYUtfCRc4EsA.woff2) format('woff2');unicode-range:U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:900;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmYUtfABc4EsA.woff2) format('woff2');unicode-range:U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:900;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmYUtfCBc4EsA.woff2) format('woff2');unicode-range:U+1F00-1FFF;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:900;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmYUtfBxc4EsA.woff2) format('woff2');unicode-range:U+0370-03FF;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:900;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmYUtfCxc4EsA.woff2) format('woff2');unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:900;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmYUtfChc4EsA.woff2) format('woff2');unicode-range:U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;}
+@font-face{font-family:'Roboto';font-style:normal;font-weight:900;font-display:swap;src:url(https://fonts.gstatic.com/s/roboto/v27/KFOlCnqEu92Fr1MmYUtfBBc4.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
+@font-face{font-family:'Libre Franklin';font-style:normal;font-weight:400;src:url(https://fonts.gstatic.com/s/librefranklin/v7/jizDREVItHgc8qDIbSTKq4XkRiUQ2zcLig.woff2) format('woff2');unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;}
+@font-face{font-family:'Libre Franklin';font-style:normal;font-weight:400;src:url(https://fonts.gstatic.com/s/librefranklin/v7/jizDREVItHgc8qDIbSTKq4XkRiUR2zcLig.woff2) format('woff2');unicode-range:U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;}
+@font-face{font-family:'Libre Franklin';font-style:normal;font-weight:400;src:url(https://fonts.gstatic.com/s/librefranklin/v7/jizDREVItHgc8qDIbSTKq4XkRiUf2zc.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
+@font-face{font-family:'Libre Franklin';font-style:normal;font-weight:700;src:url(https://fonts.gstatic.com/s/librefranklin/v7/jizDREVItHgc8qDIbSTKq4XkRiUQ2zcLig.woff2) format('woff2');unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;}
+@font-face{font-family:'Libre Franklin';font-style:normal;font-weight:700;src:url(https://fonts.gstatic.com/s/librefranklin/v7/jizDREVItHgc8qDIbSTKq4XkRiUR2zcLig.woff2) format('woff2');unicode-range:U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;}
+@font-face{font-family:'Libre Franklin';font-style:normal;font-weight:700;src:url(https://fonts.gstatic.com/s/librefranklin/v7/jizDREVItHgc8qDIbSTKq4XkRiUf2zc.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
+@font-face{font-family:'Libre Franklin';font-style:normal;font-weight:400;src:url(https://fonts.gstatic.com/s/librefranklin/v7/jizDREVItHgc8qDIbSTKq4XkRiUQ2zcLig.woff2) format('woff2');unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;}
+@font-face{font-family:'Libre Franklin';font-style:normal;font-weight:400;src:url(https://fonts.gstatic.com/s/librefranklin/v7/jizDREVItHgc8qDIbSTKq4XkRiUR2zcLig.woff2) format('woff2');unicode-range:U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;}
+@font-face{font-family:'Libre Franklin';font-style:normal;font-weight:400;src:url(https://fonts.gstatic.com/s/librefranklin/v7/jizDREVItHgc8qDIbSTKq4XkRiUf2zc.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
+@font-face{font-family:'Libre Franklin';font-style:normal;font-weight:700;src:url(https://fonts.gstatic.com/s/librefranklin/v7/jizDREVItHgc8qDIbSTKq4XkRiUQ2zcLig.woff2) format('woff2');unicode-range:U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;}
+@font-face{font-family:'Libre Franklin';font-style:normal;font-weight:700;src:url(https://fonts.gstatic.com/s/librefranklin/v7/jizDREVItHgc8qDIbSTKq4XkRiUR2zcLig.woff2) format('woff2');unicode-range:U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;}
+@font-face{font-family:'Libre Franklin';font-style:normal;font-weight:700;src:url(https://fonts.gstatic.com/s/librefranklin/v7/jizDREVItHgc8qDIbSTKq4XkRiUf2zc.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
+@font-face{font-family:GPC;font-weight:700;font-style:normal;font-display:swap;src:url(https://static.nd.edu/fonts/gp-min/gpc-bold.woff2) format("woff2"),url(https://static.nd.edu/fonts/gp-min/gpc-bold.woff) format("woff"),url(https://static.nd.edu/fonts/gp-min/gpc-bold.ttf) format("truetype");}

@@ -12,7 +12,8 @@
     "test": "echo \"No test specified\" && exit 0",
     "build": "quasar build",
     "build-ssr": "quasar build -m ssr",
-    "build-pwa": "quasar build -m pwa"
+    "build-pwa": "quasar build -m pwa",
+    "purge": "purgecss -c purgecss.config.js"
   },
   "dependencies": {
     "@quasar/extras": "^1.10.12",
