@@ -63,33 +63,6 @@ document.addEventListener('DOMContentLoaded', function(){
     table_wrapper.appendChild(table);
   });
 
-  // Link Tracking
-  forEach(document.querySelectorAll('a[href]'), function(index, item) {
-    var link = item;
-
-    // External Link Tracking
-    if(link.href.indexOf(location.hostname) == -1){
-      link.addEventListener('click', function(e){
-        if(has_gtag) {
-          try{ gtag('event', 'External Link', { 'event_category': 'UserAction', 'event_label': e.target.href, 'send_to': 'site' }); } catch(err){}
-        } else if(has_ga){
-          try{ ga( 'send', 'event', 'UserAction', 'External Link', e.target.href ); } catch(err){}
-        }
-      }, false);
-    }
-
-    // PDF Download tracking
-    if(link.href.indexOf('.pdf') != -1){
-      link.addEventListener('click', function(e){
-        if(has_gtag) {
-          try{ gtag('event', 'PDF Download', { 'event_category': 'UserAction', 'event_label': e.target.href, 'send_to': 'site' }); } catch(err){}
-        } else if(has_ga){
-          try{ ga( 'send', 'event', 'UserAction', 'PDF Download', e.target.href ); } catch(err){}
-        }
-      }, false);
-    }
-  });
-
 }, false);
 
 /*!
@@ -326,60 +299,3 @@ if (typeof WebFontConfig === 'undefined') {
   var s = document.getElementsByTagName('script')[0];
   s.parentNode.insertBefore(wf, s);
 })();
-
-/*!
- * Social Sharing
- * @author Erik Runyon, Shawn Maust
- * Updated 2020-10-15
- */
-document.addEventListener('DOMContentLoaded', function() {
-  if (!document.querySelector('article h1.entry-title')) return;
-
-  var containers = document.querySelectorAll('.social-share'),
-      url = encodeURIComponent(document.location.href),
-      title = encodeURIComponent(document.querySelector('article h1').innerText),
-      defaultServices = [{
-        name: 'Facebook',
-        html: '<svg class="icon" data-icon="facebook"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#icon-facebook"></use></svg>',
-        url: 'https://www.facebook.com/dialog/share?app_id=135465433914446&display=popup&href=' + url + '&title=' + title
-      }, {
-        name: 'Twitter',
-        html: '<svg class="icon" data-icon="twitter"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#icon-twitter"></use></svg>',
-        url: 'https://twitter.com/intent/tweet?text=' + title + '&url=' + url
-      }, {
-        name: 'Email',
-        html: '<svg class="icon" data-icon="envelope-o"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#icon-envelope-o"></use></svg>',
-        url: 'mailto:?subject=' + title + '&body=' + url
-      }],
-      services = (typeof window.NDT3SharingServices === "undefined") ? defaultServices : window.NDT3SharingServices,
-      content = '<ul class="no-bullets">';
-
-  for (i = 0; i < services.length; i++) {
-    var service = services[i];
-    content += '<li><a title="' + service.name + '" class="share-' + service.name.toLowerCase() + '" href="' + service.url + '">' + service.html + '</a></li>';
-  }
-  content += '</ul>';
-
-  var clickHandler = function(e) {
-    if (e.target.tagName.toLowerCase() !== 'a') return;
-
-    var service = e.target.protocol.indexOf('mailto') !== -1 ? 'email' : e.target.host,
-        has_gtag = (typeof(gtag) != 'undefined') ? true : false,
-        has_ga = (typeof(ga) != 'undefined') ? true : false;
-
-    if (has_gtag) {
-      try { gtag('event', service, { 'event_category': 'Social Share', 'event_label': title, 'send_to': 'site' }); } catch (err) {}
-    } else if (has_ga) {
-      try { ga('send', 'event', 'Social Share', service, title); } catch (err) {}
-    }
-
-    if (service === 'email') return;
-    e.preventDefault();
-    window.open(e.target.href, "_blank", "toolbar=no,menubar=no,location=yes,resizable=yes,scrollbars=yes,status=yes,width=600,height=400,modal=yes,alwaysRaised=yes");
-  };
-
-  forEach(containers, function(index, container) {
-    container.innerHTML = content;
-    container.addEventListener('click', clickHandler, false);
-  });
-});

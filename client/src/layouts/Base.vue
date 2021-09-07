@@ -26,7 +26,6 @@
 <script>
 import { openURL } from 'quasar'
 import { sync } from 'vuex-pathify'
-import { map as _map } from 'lodash'
 
 import Header from '@/components/edu.nd/Header.vue'
 
@@ -67,7 +66,7 @@ export default {
         query: readOrganizations
       })
 
-      this.centerOptions = _map(results.data.review_organization, (reviewOrg) => {
+      this.centerOptions = results.data.review_organization.map((reviewOrg) => {
         return {
           label: reviewOrg.comment,
           value: reviewOrg.value

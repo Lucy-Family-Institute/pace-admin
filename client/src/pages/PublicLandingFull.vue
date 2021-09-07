@@ -201,8 +201,8 @@ import { date } from 'quasar'
 export default {
   data () {
     return {
-      siteName: `PACE`,
-      title: `Publication Activity Collection Environment`,
+      siteName: 'PACE',
+      title: 'Publication Activity Collection Environment',
       description: `
         Providing high-confidence publication data for centers,
         institutes, and departments to measure impact and highlight
