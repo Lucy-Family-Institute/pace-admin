@@ -71,11 +71,17 @@ build/flags/.docker-build: $(ENV_PATH) $(SERVER_DIR) $(SERVER_FILES)
 	@mkdir -p build/flags
 	@touch build/flags/.docker-build
 
+DC_UP_FLAGS := -d
+ifeq ($(ENV), prod)
+ DC_UP_FLAGS := --scale express=2 $(DC_UP_FLAGS)
+endif
+
 .PHONY: docker
 #: Run docker containers in docker-compose in the background
 docker: $(addprefix env-, $(DOCKER_REQS)) $(BUILD_TEMPLATES_DIR) build/flags/.docker-build
 	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) ENV=$(ENV) UID=$(UID) GID=$(GID) \
-		docker-compose $(DC_$(ENV)) up -d
+		docker-compose $(DC_$(ENV)) \
+			up $(DC_UP_FLAGS)
 
 .PHONY: logs
 #: Tail docker logs; use make logs service=dockername to print specific logs
