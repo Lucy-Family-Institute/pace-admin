@@ -112,31 +112,30 @@
             <p class="page-title">{{ title }}</p>
             <div class="page-lede">
               <p>{{ description }}</p>
-              <p class="text-center buttons">
+              <p class="text-center btn-group">
                 <q-btn
                   type="a"
                   :href="`mailto:${email}`"
-                  color="secondary"
-                  size="lg"
-                  label="EXPLORE PARTNERSHIP" />&nbsp;
+                  size="md"
+                  label="EXPLORE PARTNERSHIP"
+                  class="btn" />
                 <q-btn
                   type="a"
                   href="/login"
-                  color="primary"
-                  size="lg"
-                  label="LOGIN" />
+                  size="md"
+                  label="LOGIN"
+                  class="btn" />
               </p>
             </div>
           </div>
           <p class="page-image full">
-            <img src="/statics/placeholder-graph-800x450.avif" :alt="hero.alt" width="800" height="400"
-              srcset="/statics/placeholder-graph-800x450.avif 800w,
-                      /statics/placeholder-graph-1200x675.avif 1200w,
-                      /statics/placeholder-graph-1600x900.avif 1600w,
-                      /statics/placeholder-graph-1920x1080.avif 1920w"
+            <img src="/statics/placeholder-graph-800x450.png" :alt="hero.alt" width="800" height="400"
+              srcset="/statics/placeholder-graph-800x450.png 800w,
+                      /statics/placeholder-graph-1200x675.png 1200w,
+                      /statics/placeholder-graph-1600x900.png 1600w,
+                      /statics/placeholder-graph-1920x1080.png 1920w"
               sizes="100vw">
           </p>
-
         </div>
 
         <main class="page-main block-center" role="main">
@@ -147,14 +146,14 @@
               <q-btn
                 type="a"
                 :href="`mailto:${email}`"
-                color="secondary"
-                size="lg"
+                size="md"
+                class="btn"
                 label="EXPLORE PARTNERSHIP" />&nbsp;
               <q-btn
                 type="a"
                 href="/login"
-                color="primary"
-                size="lg"
+                size="md"
+                class="btn"
                 label="LOGIN" />
             </p>
           </div>
