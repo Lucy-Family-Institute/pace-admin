@@ -6,7 +6,7 @@ if ! [ -x "$(command -v docker-compose)" ]; then
 fi
 
 domains=()
-domains+="paceadmin.zapto.org"
+domains+="pace.nd.edu"
 rsa_key_size=4096
 data_path="./build/certbot"
 email="rjohns14@nd.edu" # Adding a valid address is strongly recommended
