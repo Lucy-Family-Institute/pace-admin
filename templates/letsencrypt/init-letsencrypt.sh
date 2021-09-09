@@ -6,10 +6,10 @@ if ! [ -x "$(command -v docker-compose)" ]; then
 fi
 
 domains=()
-domains+="pace.nd.edu"
+domains+="{{ .Env.LETSENCRYPT_DOMAIN }}"
 rsa_key_size=4096
 data_path="./build/certbot"
-email="rjohns14@nd.edu" # Adding a valid address is strongly recommended
+email="{{ .Env.LETSENCRYPT_EMAIL }}" # Adding a valid address is strongly recommended
 staging={{ .Env.LETSENCRYPT_DEBUGGING }} # Set to 1 if you're testing your setup to avoid hitting request limits
 
 if [ -d "$data_path" ]; then
