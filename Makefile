@@ -141,7 +141,7 @@ certs: prod
 
 .PHONY: ssh
 ssh:
-	@ssh -i ~/.ssh/rick_johnson.pem ubuntu@paceadmin.zapto.org
+	@ssh -i ~/.ssh/rick_johnson.pem ubuntu@pace.nd.edu
 
 ##############################################################################
 # Epilogue
