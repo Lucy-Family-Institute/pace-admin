@@ -17,13 +17,13 @@ services:
     image: hasura/graphql-engine:v2.0.7
     ports:
       - ${HASURA_PORT}:${HASURA_DOCKER_PORT}
-    restart: unless-stopped
     environment:
       HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_SECRET}
       HASURA_GRAPHQL_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${HASURA_DATABASE}
       HASURA_GRAPHQL_ENABLE_CONSOLE: ${HASURA_ENABLE_CONSOLE}
       HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
-      HASURA_GRAPHQL_AUTH_HOOK: ${APP_BASE_URL}/${HASURA_WEBHOOK}
+      HASURA_GRAPHQL_AUTH_HOOK: http://${DOCKER_HOST_IP}:8000/${HASURA_WEBHOOK}
+    restart: unless-stopped
 
   keycloak:
     image: jboss/keycloak:15.0.2
@@ -48,19 +48,20 @@ services:
   redis:
     image: redis:6.2.5
     command: ["redis-server", "--appendonly", "yes"]
-    restart: unless-stopped
     ports:
       - ${REDIS_PORT}:${REDIS_DOCKER_PORT}
+    restart: unless-stopped
+
 
   search:
     image: getmeili/meilisearch:v0.11.0
     environment:
       MEILI_MASTER_KEY: ${MEILI_KEY}
-    restart: unless-stopped
     ports:
       - ${MEILI_PORT}:${MEILI_DOCKER_PORT}
     volumes:
       - search_data:/data.ms
+    restart: unless-stopped
   
   nginx:
     image: nginx:1.21.1
