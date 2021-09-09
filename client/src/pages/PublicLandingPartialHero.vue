@@ -65,20 +65,20 @@
           <p class="page-title" aria-hidden="true">{{ title }}</p>
           <div class="page-lede" aria-hidden="true">
             <p>{{ description }}</p>
-            <p class="text-center buttons">
-              <q-btn
-                type="a"
-                :href="`mailto:${email}`"
-                color="secondary"
-                size="lg"
-                label="EXPLORE PARTNERSHIP" />&nbsp;
-              <q-btn
-                type="a"
-                href="/login"
-                color="primary"
-                size="lg"
-                label="LOGIN" />
-            </p>
+            <p class="text-center btn-group">
+                <q-btn
+                  type="a"
+                  :href="`mailto:${email}`"
+                  size="md"
+                  label="EXPLORE PARTNERSHIP"
+                  class="btn btn-cta" />
+                <q-btn
+                  type="a"
+                  href="/login"
+                  size="md"
+                  label="LOGIN"
+                  class="btn btn-cta" />
+              </p>
           </div>
           <p class="page-image">
               <img :src="hero.imageUrl" width="947" height="533"
@@ -90,18 +90,18 @@
           <h1 class="page-title">{{ title }}</h1>
           <div class="page-lede">
             <p>{{ description }}</p>
-            <p class="text-center buttons">
+            <p class="text-center btn-group">
               <q-btn
                 type="a"
                 :href="`mailto:${email}`"
-                color="secondary"
-                size="lg"
+                size="md"
+                class="btn btn-cta"
                 label="EXPLORE PARTNERSHIP" />&nbsp;
               <q-btn
                 type="a"
                 href="/login"
-                color="primary"
-                size="lg"
+                size="md"
+                class="btn btn-cta"
                 label="LOGIN" />
             </p>
           </div>
@@ -260,7 +260,7 @@ export default {
         holderUrl: 'https://www.nd.edu'
       },
       hero: {
-        imageUrl: '/statics/graph16x9wVig.avif',
+        imageUrl: '/statics/graph16x9wVig.png',
         alt: `
           Network visualizatin of publication and funding activity 
           at the University of Notre Dame's Harper Cancer Reach 
@@ -323,7 +323,7 @@ export default {
         hero: {
           rel: 'preload',
           as: 'image',
-          href: '/statics/graph16x9wVig.avif'
+          href: '/statics/graph16x9wVig.png'
         }
       },
 
