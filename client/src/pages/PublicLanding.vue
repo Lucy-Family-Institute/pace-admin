@@ -129,11 +129,11 @@
             </div>
           </div>
           <p class="page-image full">
-            <img src="/statics/placeholder-graph-800x450.png" :alt="hero.alt" width="800" height="400"
-              srcset="/statics/placeholder-graph-800x450.png 800w,
-                      /statics/placeholder-graph-1200x675.png 1200w,
-                      /statics/placeholder-graph-1600x900.png 1600w,
-                      /statics/placeholder-graph-1920x1080.png 1920w"
+            <img src="/statics/placeholder-graph-800x450.jpg" :alt="hero.alt" width="800" height="400"
+              srcset="/statics/placeholder-graph-800x450.jpg 800w,
+                      /statics/placeholder-graph-1200x675.jpg 1200w,
+                      /statics/placeholder-graph-1600x900.jpg 1600w,
+                      /statics/placeholder-graph-1920x1080.jpg 1920w"
               sizes="100vw">
           </p>
         </div>
