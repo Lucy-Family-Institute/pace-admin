@@ -1,2 +1,3 @@
 version: 2
 metadata_directory: metadata
+endpoint: http://hasura:8080
