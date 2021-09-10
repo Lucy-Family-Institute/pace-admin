@@ -5,17 +5,15 @@ async function init (options) {
   const app = options.app
   app.get('/webhooks/hasura',
     (req: express.Request, res: express.Response) => {
-      console.log('here')
       if (_.get(req, 'session')) {
         if (_.get(req, 'session.passport.user.databaseId')) {
+          const sessionData = req['session']
           res.json({
-            'X-Hasura-Admin-Secret': options.secret,
-            'X-Hasura-Role': 'user',
-            'X-Hasura-User-Id': `${req['session'].passport.user.databaseId}`
+            'X-Hasura-Role': `admin`,// `${sessionData.passport.user.role}`,
+            'X-Hasura-User-Id': `${sessionData.passport.user.databaseId}`
           })
         } else {
           res.json({
-            'X-Hasura-Admin-Secret': options.secret,
             'X-Hasura-Role': 'anonymous_user'
           })
         }
