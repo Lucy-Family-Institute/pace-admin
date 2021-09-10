@@ -1,6 +1,0 @@
-- args:
-    sql: ALTER TABLE "public"."publications" ADD COLUMN "csl" text
-  type: run_sql
-- args:
-    sql: ALTER TABLE "public"."publications" ALTER COLUMN "csl" DROP NOT NULL
-  type: run_sql

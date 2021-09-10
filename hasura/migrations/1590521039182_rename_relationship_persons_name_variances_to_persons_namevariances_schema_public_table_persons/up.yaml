@@ -1,7 +1,0 @@
-- args:
-    name: persons_name_variances
-    new_name: persons_namevariances
-    table:
-      name: persons
-      schema: public
-  type: rename_relationship

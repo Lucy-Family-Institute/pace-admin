@@ -1,40 +1,8 @@
-import KcAdminClient from 'keycloak-admin'
-import gql from 'graphql-tag'
-import passport from 'passport'
-import _ from 'lodash'
-
+import { gql } from '@apollo/client/core'
 import { Request, Response, NextFunction } from 'express'
+import _ from 'lodash'
+import passport from 'passport'
 import { Strategy as KeycloakStrategy } from 'passport-keycloak-oauth2-oidc'
-
-const registerUserGql = gql`
-  mutation registerUser($authServerId: String!, $emailPrimary: String!) {
-    insert_users(objects: {
-      auth_serverx_id: $authServerId,
-      email_primary: $emailPrimary,
-    }) {
-      returning {
-        id
-        auth_server_id
-        email_primary
-        display_full_name
-      }
-    }
-  }
-`
-
-async function registerUser (client, authServerId: string, emailPrimary: string) {
-  const response = await client.mutate({
-    registerUserGql,
-    variables: {
-      authServerId,
-      emailPrimary
-    }
-  })
-  if (!response) {
-    return null
-  }
-  return response.data.insert_users.returning[0]
-}
 
 async function getUserByEmail (client, email: string) {
   const response = await client.query({
@@ -65,8 +33,7 @@ async function getUserByEmail (client, email: string) {
 async function init (options) {
   const app = options.app
   const client = options.client
-  const sessions = options.middleware.sessions
-
+  
   passport.use(
     'keycloak',
     new KeycloakStrategy({
@@ -78,29 +45,34 @@ async function init (options) {
       authServerURL: options.authServerUrl,
       callbackURL: options.callbackUrl
     }, async (accesseToken, refreshToken, profile, done) => {
-      const result = await getUserByEmail(client, profile.email)
-      profile.databaseId = result.id
+      try {
+        const result = await getUserByEmail(client, profile.email)
+        profile.databaseId = result.id
+      } catch (error) {
+        console.error ('Is your user in both keycloak and the hasura database?', error)
+      }
       done(null, profile)
     }
   ))
 
-  app.get('/auth/keycloak', passport.authenticate('keycloak')) //{ scope: ['profile'] }))
+  // passport.authenticate('keycloak')
+  app.get('/keycloak', (req, res) => res.redirect('/login')) //{ scope: ['profile'] }))
   app.get(
-    '/auth/keycloak/callback',
+    '/keycloak/callback',
     passport.authenticate('keycloak', { failureRedirect: '/login' }),
     (req: Request, res:Response) => {
-      // console.log(req.user)
       res.redirect('/')
     }
   )
-  app.get('/login', (req: Request, res: Response, next: NextFunction) => {
+  app.get('/login', async (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.redirect('/auth/keycloak')
+      const redirectUrl = `${options.baseUrl}/keycloak/callback`
+      return res.redirect(`${options.baseUrl}/auth/realms/pace/protocol/openid-connect/auth?response_type=code&redirect_uri=${encodeURIComponent(redirectUrl)}&client_id=${options.clientId}`)
     }
     res.redirect('/')
   })
   app.get('/logout', (req: Request, res: Response) => {
-    const url = `${options.authServerUrl}/realms/${options.realm}/protocol/openid-connect/logout?redirect_uri=${options.baseUrl}`
+    const url = `${options.baseUrl}/auth/realms/${options.realm}/protocol/openid-connect/logout?redirect_uri=${encodeURIComponent(options.baseUrl)}`
     req.logout()
     res.redirect(url)
   })

@@ -1,6 +1,0 @@
-- args:
-    relationship: journal
-    table:
-      name: journals_impactfactor
-      schema: public
-  type: drop_relationship

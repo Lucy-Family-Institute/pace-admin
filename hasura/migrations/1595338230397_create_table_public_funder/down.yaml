@@ -1,3 +1,0 @@
-- args:
-    sql: DROP TABLE "public"."funder"
-  type: run_sql

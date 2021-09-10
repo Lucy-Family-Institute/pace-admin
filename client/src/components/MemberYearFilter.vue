@@ -39,7 +39,6 @@ export default {
   },
   methods: {
     async fetchData () {
-      console.log('MEMBER ROUTE CHANGED')
       const memberResults = await this.$apollo.query({
         query: getMemberFilterYears
       })
@@ -53,7 +52,6 @@ export default {
           max: this.yearMemberStaticMax
         }
       }
-      console.log(`Initialized member year min: ${this.yearMemberStaticMin} max: ${this.yearMemberStaticMax}`)
     },
     async updateMemberYears () {
       this.changedMemberYears = this.selectedMemberYears

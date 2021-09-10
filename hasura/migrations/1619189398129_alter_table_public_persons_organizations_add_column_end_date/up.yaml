@@ -1,3 +1,0 @@
-- args:
-    sql: ALTER TABLE "public"."persons_organizations" ADD COLUMN "end_date" date NULL;
-  type: run_sql

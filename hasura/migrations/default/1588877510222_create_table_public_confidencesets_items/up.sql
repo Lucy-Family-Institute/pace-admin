@@ -1,0 +1,2 @@
+
+CREATE TABLE "public"."confidencesets_items"("id" serial NOT NULL, "confidenceset_id" integer NOT NULL, "comment" text, "confidence_type_id" integer NOT NULL, PRIMARY KEY ("id") , FOREIGN KEY ("confidenceset_id") REFERENCES "public"."confidencesets"("id") ON UPDATE no action ON DELETE restrict, FOREIGN KEY ("confidence_type_id") REFERENCES "public"."confidence_type"("id") ON UPDATE no action ON DELETE restrict, UNIQUE ("id"));

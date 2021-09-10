@@ -1,4 +1,0 @@
-- args:
-    cascade: false
-    sql: insert into review_organization_level values ('HCRI', 2);
-  type: run_sql

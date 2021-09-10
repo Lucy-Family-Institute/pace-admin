@@ -32,19 +32,5 @@ query MyQuery ($personId: Int!, $yearMin: Int!, $yearMax: Int!) {
       given_name
     }
     confidence
-    reviews_aggregate(where: {review_organization_value: {_eq: ND}}, limit: 1, order_by: {datetime: desc}) {
-      nodes {
-        review_type
-        id
-        datetime
-      }
-    }
-    confidencesets_aggregate(limit: 1, order_by: {datetime: desc}) {
-      nodes {
-        id
-        value
-        datetime
-      }
-    }
   }
 }

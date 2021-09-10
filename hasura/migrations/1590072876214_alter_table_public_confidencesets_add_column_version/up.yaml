@@ -1,3 +1,0 @@
-- args:
-    sql: ALTER TABLE "public"."confidencesets" ADD COLUMN "version" text NOT NULL;
-  type: run_sql
