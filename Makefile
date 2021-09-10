@@ -1,193 +1,150 @@
+##############################################################################
+# Includes
+##############################################################################
 include .env
 
-# TODO differentiate WSL Linux and Linux see:
-# https://stackoverflow.com/questions/38086185/how-to-check-if-a-program-is-run-in-bash-on-ubuntu-on-windows-and-not-just-plain
+##############################################################################
+# Prologue
+##############################################################################
+# MAKEFLAGS += --warn-undefined-variables
+
+ifndef ENV
+$(info Please set ENV to 'dev' or 'prod' in your .env file.)
+endif
+
+ifndef CONFIRM
+CONFIRM := 0
+endif
+
+ifndef UID
+UID := $(shell id -u)
+endif
+ifndef GID
+GID := $(shell id -g)
+endif
+
+ENV_PATH := .env
+
+NODE_DIRS := client server ingest dashboard-search node-admin-client
+
+TEMPLATES_DIR := templates
+TEMPLATES_FILES := $(shell find $(TEMPLATES_DIR) -type f)
+
+BUILD_TEMPLATES_DIR := build/templates
+
+SERVER_DIR := server
+SERVER_FILES := $(shell find $(SERVER_DIR) ! -path '*node_modules*' ! -path '*dist*' -type f)
+
+CLIENT_DIR := client
+CLIENT_FILES := $(shell find $(CLIENT_DIR) ! -path '*node_modules*' -type f)
+
+BUILD_SPA_DIR := build/spa
+
+CURRENT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+
+WSL := $(if $(shell command -v bash.exe 2> /dev/null),1,0)
 UNAME := $(shell uname -s)
-SYSTEM = Linux
-
+DOCKER_HOST_IP := host.docker.internal
 ifeq ($(UNAME),Linux)
-	ifeq ($(WSL),1)
-		SYSTEM = 'WSL'
-	endif
-	else
-	ifeq ($(UNAME),Darwin)
-		SYSTEM = 'Mac'
-	else
-		SYSTEM = 'Windows'
+	ifneq ($(WSL),1)
+		DOCKER_HOST_IP := $(shell ip -4 addr show docker0 | grep -Po 'inet \K[\d.]+')
 	endif
 endif
 
-DOCKER_HOST_IP = host.docker.internal
-ifeq ($(SYSTEM),Linux)
-	DOCKER_HOST_IP=$(shell ip -4 addr show docker0 | grep -Po 'inet \K[\d.]+')
+ifeq ($(NGINX_PORT),443)
+DC_prod := -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.prod.ssl.yml
+else
+DC_prod := -f docker-compose.yml -f docker-compose.prod.yml
 endif
+DC_dev := -f docker-compose.yml
 
-.PHONY: install client dashboard-client server
+RUN_MAKE := ENV=$(ENV) CONFIRM=$(CONFIRM) $(MAKE)
 
-info:
-	@echo $(UNAME), $(WSL), $(SYSTEM), $(DOCKER_HOST_IP)
+##############################################################################
+# Primary Commands
+##############################################################################
 
-install_hasura_cli:
-ifeq (,$(shell which hasura))
-	curl -L https://github.com/hasura/graphql-engine/raw/master/cli/get.sh | bash
-endif
+include makeparts/dependencies.mk
+include makeparts/ingest.mk
+include makeparts/hasura.mk
+include makeparts/docker.mk
+include makeparts/cleanup.mk
+include makeparts/aliases.mk
 
-install_docker_compose:
-ifeq (,$(shell which docker-compose))
-	sudo curl -L "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-	sudo chmod +x /usr/local/bin/docker-compose
-endif
+######################################
+### Client
 
-install_yarn:
-ifeq (,$(shell which yarn))
-	npm -g install yarn
-endif
+WEBAPP_REQS := \
+	GRAPHQL_END_POINT \
+	MEILI_PUBLIC_KEY
 
-install_quasar:
-ifeq (,$(shell which quasar))
-	npm -g install quasar
-	npm install -g @quasar/cli
-endif
-
-install_typescript:
-ifeq (,$(shell which tsc))
-	npm -g install tsc
-endif
-
-install_js:
-	cd client && yarn && cd ..
-	cd server && yarn && cd ..
-	cd ingest && yarn && cd ..
-	cd dashboard-search && yarn && cd ..
-	cd dashboard-client && yarn && cd ..
-
-install_ts_node:
-ifeq (,$(shell which ts-node))
-	npm -g install ts-node
-endif
-
-load_authors:
-	cd ingest && ts-node loadAuthors.ts && cd ..
-
-load_author_attributes:
-	cd ingest && ts-node loadAuthorAttributes.ts && cd ..
-
-ingest_metadata:
-	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
-
-load_new_confidence_sets:
-	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
-
-synchronize_reviews:
-	cd ingest && ts-node synchronizeReviewStates.ts && cd ..
-
-load_abstracts:
-	cd ingest && ts-node loadAbstracts.ts && cd ..
-
-load_awards:
-	cd ingest && ts-node loadAwards.ts && cd ..
-
-update_pub_journals:
-	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
-
-recheck_author_matches:
-	cd ingest && ts-node updatePersonPublicationsMatches.ts && cd ..
-
-cleardb:
-	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose down -v
-migrate:
-	cd hasura && hasura migrate apply && cd ..
-newdb:
-	cd ingest && ts-node loadAuthors.ts && cd ..
-	cd ingest && ts-node loadAuthorAttributes.ts && cd ..
-	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
-	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
-	cd ingest && ts-node loadAwards.ts && cd ..
-	cd ingest && ts-node loadFunders.ts && cd ..
-	cd ingest && ts-node loadAbstracts.ts && cd ..
-	cd ingest && ts-node loadJournals.ts && cd ..
-	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
-	cd ingest && ts-node loadJournalsImpactFactors.ts && cd ..
-
-reharvest:
-	cd ingest && ts-node loadAuthors.ts && cd ..
-	cd ingest && ts-node loadAuthorAttributes.ts && cd ..
-	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
-	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
-	cd ingest && ts-node synchronizeReviewStates.ts && cd ..
-	cd ingest && ts-node loadAwards.ts && cd ..
-	cd ingest && ts-node loadAbstracts.ts && cd ..
-	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
-
-update_crossref_data:
-	cd ingest && ts-node fetchCrossRefAuthorData.ts && cd ..
-
-update_semantic_scholar_data:
-	cd ingest && ts-node fetchSemanticScholarAuthorData.ts && cd ..
-
-update_wos_data:
-	cd ingest && ts-node fetchWoSAuthorDataNewModel.ts && cd ..
-
-update_pubmed_data:
-	cd ingest && ts-node fetchPubmedData.js && cd ..
-	cd ingest && ts-node joinAuthorAwards.js && cd ..
-	cd ingest && ts-node fetchPubmedDataByAuthor.ts && cd ..
-	cd ingest && ts-node joinAuthorPubmedPubs.js && cd ..
-
-update_scopus_data:
-	cd ingest && ts-node fetchScopusAuthorData.ts && cd ..
-
-update_scopus_full_text_data:
-	cd ingest && ts-node fetchScopusFullTextData.ts && cd ..
-
-load_journals:
-	cd ingest && ts-node loadJournals.ts && cd ..
-	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
-	cd ingest && ts-node loadJournalsImpactFactors.ts && cd ..
-
-load_impact_factors:
-	cd ingest && ts-node loadJournalsImpactFactors.ts && cd ..
-
-load_funders:
-	cd ingest && ts-node loadFunders.ts && cd ..
-
-update_awards_funders:
-	cd ingest && ts-node updateAwardsFunders.ts && cd ..
-
-scopus_author_data:
-	cd ingest && ts-node fetchScopusAuthorObjects.ts && cd ..
-
-dashboard-ingest:
-	cd dashboard-search && ts-node src/ingest.ts && cd ..
-
-mine_semantic_scholar_ids:
-	cd ingest && ts-node mineSemanticScholarAuthorIds.ts && cd ..
-
-install: install_docker_compose install_hasura_cli install_yarn install_quasar install_js install_ts_node install_typescript
-	echo 'Installing'
-
-start_docker:
-	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose up -d
-stop_docker:
-	docker-compose down
-
-client:
+.PHONY: webapp
+#: Start the client dev server
+webapp: $(addprefix env-, $(WEBAPP_REQS)) client/node_modules
 	cd client && quasar dev && cd ..
-server:
-	cd server && ts-node src/index.ts && cd ..
 
-dashboard-client:
-	cd dashboard-client && quasar dev && cd ..
+######################################
+### Server
+	
+.PHONY: express
+#: Start the express server
+express: server/node_modules
+	cd server && REDIS_HOST=localhost REDIS_DOCKER_PORT=6379 ts-node src/index.ts && cd ..
 
-docker:
-	DOCKER_HOST_IP=$(DOCKER_HOST_IP) docker-compose up
+ADD_DEV_USER_REQS := \
+	AUTH_SERVER_URL \
+	KEYCLOAK_USERNAME \
+	KEYCLOAK_PASSWORD \
+	KEYCLOAK_REALM \
+	GRAPHQL_END_POINT \
+	HASURA_SECRET \
+	DEV_USER_EMAIL \
+	DEV_USER_FIRST_NAME \
+	DEV_USER_LAST_NAME \
+	DEV_USER_PASSWORD
 
-update_pdfs:
-	cd ingest && ts-node downloadFile.ts && cd ..
+.PHONY: add-dev-user
+add-dev-user: node-admin-client/node_modules $(addprefix env-, $(ADD_DEV_USER_REQS))
+	@cd node-admin-client && yarn run add-users && cd ..
 
-clear_pdfs:
-	rm data/pdfs/*
-	rm data/thumbnails/*
+.PHONY=setup-restore
+setup-restore: docker-database-restore sleep-45 docker sleep-25 migrate add-dev-user dashboard-ingest
 
-migration_console:
-	cd hasura && hasura console && cd ..
+.PHONY=setup-new
+setup-new: docker sleep-15 migrate add-dev-user
+
+.PHONY: setup
+setup: 
+ifdef DUMP_PATH
+	@$(RUN_MAKE) setup-restore
+else
+	@$(RUN_MAKE) setup-new
+endif
+
+$(BUILD_SPA_DIR): $(ENV_PATH) $(CLIENT_DIR) $(CLIENT_FILES)
+	@cd client && yarn run build
+	@touch $(BUILD_SPA_DIR)
+
+.PHONY: prod
+#: Running production: build spa and then run docker
+prod: $(BUILD_TEMPLATES_DIR) $(BUILD_SPA_DIR) docker
+
+git-pull:
+	git pull
+
+.PHONY: prod-restart
+prod-restart: stop-docker git-pull prod
+
+.PHONY: certs
+certs: prod 
+	@bash $(BUILD_TEMPLATES_DIR)/letsencrypt/init-letsencrypt.sh
+
+.PHONY: ssh
+ssh:
+	@ssh -i ~/.ssh/rick_johnson.pem ubuntu@pace.nd.edu
+
+##############################################################################
+# Epilogue
+##############################################################################
+include makeparts/utilities.mk
+.DEFAULT_GOAL := help

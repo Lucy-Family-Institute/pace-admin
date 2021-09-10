@@ -17,8 +17,7 @@ dotenv.config({
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
 const meiliKey = process.env.MEILI_KEY
-const meiliUrl = process.env.MEILI_PRIVATE_URL
-const meiliCenterSearch = process.env.MEILI_CENTER_SEARCH
+const meiliUrl = `${process.env.APP_BASE_URL}/api/search/`
 
 const sleep = util.promisify(setTimeout)
 
@@ -121,6 +120,8 @@ async function main() {
     index = await searchClient.getIndex('publications')
   }
 
+  console.log(index)
+
   const results = await gqlClient.query({
     query: gql`
     query MyQuery {
@@ -215,6 +216,7 @@ async function main() {
       const impactFactor =  getImpactFactorValue(doc)
       //set range value for impact factor
       const impactFactorLevel = getImpactFactorRange(impactFactor)
+      console.log('here')
       return {
         id: `${doc.publication.id}`,
         type: 'publication',

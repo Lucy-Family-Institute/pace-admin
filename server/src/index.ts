@@ -1,7 +1,6 @@
 import express from 'express'
 import cors from 'cors'
 import bodyParser from 'body-parser'
-import proxy from 'express-http-proxy'
 import dotenv from 'dotenv'
 
 import { createAdminClient } from './graphqlClient'
@@ -11,7 +10,6 @@ import sessions from './modules/redisSessions/'
 import passportModule from './modules/passport/'
 import keycloakModule from './modules/keycloak/'
 import hasuraModule from './modules/hasura/'
-// import staticModule from './modules/static/'
 
 dotenv.config({ path: '../.env' })
 
@@ -35,7 +33,7 @@ async function main () {
       clientId: process.env.KEYCLOAK_CLIENT_ID,
       realm: process.env.KEYCLOAK_REALM,
       clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
-      authServerUrl: process.env.AUTH_SERVER_URL,
+      authServerUrl: `${process.env.AUTH_SERVER_URL}`,
       callbackUrl: process.env.AUTH_CALLBACK_URL,
       sessionName: process.env.SESSION_NAME,
       baseUrl: process.env.APP_BASE_URL
@@ -44,13 +42,9 @@ async function main () {
       secret: process.env.HASURA_SECRET
     })
 
-    app.use('/pdfs', express.static('../data/pdfs'))
-    app.use('/thumbnails', express.static('../data/thumbnails'))
-
-    app.use('/', proxy(process.env.APP_URL_PROXY))
-
-    app.listen({ port: process.env.APP_PORT }, () =>
-      console.log(`Server ready at ${process.env.APP_BASE_URL}`)
+    const port:number = parseInt(process.env.EXPRESS_PORT)
+    app.listen(port, '0.0.0.0', () =>
+      console.log(`Listening on ${process.env.EXPRESS_PORT}`)
     )
   } catch (err) {
     console.log(err)

@@ -1,3 +1,0 @@
-- args:
-    sql: ALTER TABLE "public"."publications" ADD COLUMN "year" integer NULL;
-  type: run_sql

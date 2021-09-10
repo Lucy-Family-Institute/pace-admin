@@ -1,8 +1,0 @@
-- args:
-    sql: CREATE TABLE "public"."type_review"("value" text NOT NULL, "comment" text
-      NOT NULL, PRIMARY KEY ("value") );
-  type: run_sql
-- args:
-    name: type_review
-    schema: public
-  type: add_existing_table_or_view

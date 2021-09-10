@@ -1,6 +1,0 @@
-- args:
-    relationship: type_review
-    table:
-      name: org_reviews
-      schema: public
-  type: drop_relationship

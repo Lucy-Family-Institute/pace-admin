@@ -125,13 +125,10 @@ export default {
       this.pubSearch = ''
     },
     async loadReviewStates () {
-      console.log('loading review states')
       const reviewStatesResult = await this.$apollo.query({
         query: readReviewTypes
       })
-      // console.log(`Review Type Results: ${JSON.stringify(reviewStatesResult.data, null, 2)}`)
       this.reviewStates = await _.map(reviewStatesResult.data.type_review, (typeReview) => {
-        // console.log(`Current type review is: ${JSON.stringify(typeReview, null, 2)}`)
         return typeReview.value
       })
     },

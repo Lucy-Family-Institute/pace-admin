@@ -1,0 +1,31 @@
+version: '3.7'
+services:
+  express:
+    build:
+      context: ./server/.
+      args:
+        EXPRESS_PORT: ${EXPRESS_DOCKER_PORT}
+        SESSION_NAME: ${SESSION_NAME}
+        SESSION_SECRET: ${SESSION_SECRET}
+        KEYCLOAK_PORT: ${KEYCLOAK_PORT}
+        KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
+        KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+        KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+        AUTH_SERVER_URL: "http://keycloak:${KEYCLOAK_DOCKER_PORT}/auth"
+        AUTH_CALLBACK_URL: ${AUTH_CALLBACK_URL}
+        APP_BASE_URL: ${APP_BASE_URL}
+        HASURA_SECRET: ${HASURA_SECRET}
+        NGINX_PORT: ${NGINX_PORT}
+        REDIS_HOST: redis
+        REDIS_PORT: ${REDIS_DOCKER_PORT}
+        DOCKER_HOST_IP: ${DOCKER_HOST_IP}
+        GRAPHQL_END_POINT: "http://hasura:${HASURA_DOCKER_PORT}/v1/graphql"
+    restart: unless-stopped
+  redis:
+    ports: []
+  hasura:
+    environment:
+      HASURA_GRAPHQL_AUTH_HOOK: http://express:${EXPRESS_DOCKER_PORT}/${HASURA_WEBHOOK}
+  nginx:
+    volumes:
+      - ./build/spa:/www

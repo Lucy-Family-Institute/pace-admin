@@ -38,7 +38,6 @@ export default {
   },
   methods: {
     async fetchData () {
-      console.log('YEAR ROUTE CHANGED')
       const results = await this.$apollo.query({
         query: getYearFilterYears
       })
@@ -50,7 +49,6 @@ export default {
           max: this.yearPubStaticMax
         }
       }
-      console.log(`Initialized pub year min: ${this.yearPubStaticMin} max: ${this.yearPubStaticMax}`)
     },
     async updatePubYears () {
       if (this.selectedPubYears.min < this.yearPubStaticMin) this.selectedPubYears.min = this.yearPubStaticMin

@@ -54,10 +54,6 @@ export default function readPersonPublicationsAllJS (institutionNames, organizat
             title
             doi
             source_name
-            scopus_eid: source_metadata(path: "eid")
-            pubmed_resource_identifiers: source_metadata(path: "resourceIdentifiers")
-            semantic_scholar_id: source_metadata(path: "paperId")
-            wos_id: source_metadata(path: "uid")
             journal_title: csl(path:"container-title")
             abstract
             year
