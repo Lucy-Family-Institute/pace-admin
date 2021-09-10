@@ -17,3 +17,4 @@ bak.env
 *.code-workspace
 dashboard-search/data.ms/*
 scratch/*
+build/*
