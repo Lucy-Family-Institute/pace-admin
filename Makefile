@@ -119,31 +119,56 @@ reharvest:
 	cd ingest && ts-node loadAbstracts.ts && cd ..
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
 
-update_crossref_data:
-	cd ingest && ts-node fetchCrossRefAuthorData.ts && cd ..
+######################################
+### Server
+	
+.PHONY: express
+#: Start the express server
+express: server/node_modules
+	cd server && REDIS_HOST=localhost REDIS_DOCKER_PORT=6379 ts-node src/index.ts && cd ..
 
-update_semantic_scholar_data:
-	cd ingest && ts-node fetchSemanticScholarAuthorData.ts && cd ..
+ADD_DEV_USER_REQS := \
+	AUTH_SERVER_URL \
+	KEYCLOAK_USERNAME \
+	KEYCLOAK_PASSWORD \
+	KEYCLOAK_REALM \
+	GRAPHQL_END_POINT \
+	HASURA_SECRET \
+	DEV_USER_EMAIL \
+	DEV_USER_FIRST_NAME \
+	DEV_USER_LAST_NAME \
+	DEV_USER_PASSWORD
 
-update_wos_data:
-	cd ingest && ts-node fetchWoSAuthorDataNewModel.ts && cd ..
+ADD_PROD_USER_REQS := \
+	AUTH_SERVER_URL \
+	KEYCLOAK_USERNAME \
+	KEYCLOAK_PASSWORD \
+	KEYCLOAK_REALM \
+	GRAPHQL_END_POINT \
+	HASURA_SECRET \
+	ADD_USER_CSV_PATH
 
-update_pubmed_data:
-	cd ingest && ts-node fetchPubmedData.js && cd ..
-	cd ingest && ts-node joinAuthorAwards.js && cd ..
-	cd ingest && ts-node fetchPubmedDataByAuthor.ts && cd ..
-	cd ingest && ts-node joinAuthorPubmedPubs.js && cd ..
+.PHONY: add-dev-user
+add-dev-user: node-admin-client/node_modules $(addprefix env-, $(ADD_DEV_USER_REQS))
+	@cd node-admin-client && yarn run add-users && cd ..
 
-update_scopus_data:
-	cd ingest && ts-node fetchScopusAuthorData.ts && cd ..
+.PHONY: add-csv-user
+add-csv-user: node-admin-client/node_modules $(addprefix env-, $(ADD_PROD_USER_REQS))
+	@cd node-admin-client && yarn run add-csv-users && cd ..
 
-update_scopus_full_text_data:
-	cd ingest && ts-node fetchScopusFullTextData.ts && cd ..
+.PHONY=setup-restore
+setup-restore: docker-database-restore sleep-45 docker sleep-25 migrate add-dev-user dashboard-ingest
 
-load_journals:
-	cd ingest && ts-node loadJournals.ts && cd ..
-	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
-	cd ingest && ts-node loadJournalsImpactFactors.ts && cd ..
+.PHONY=setup-new
+setup-new: docker sleep-15 migrate add-dev-user
+
+.PHONY: setup
+setup: 
+ifdef DUMP_PATH
+	@$(RUN_MAKE) setup-restore
+else
+	@$(RUN_MAKE) setup-new
+endif
 
 load_impact_factors:
 	cd ingest && ts-node loadJournalsImpactFactors.ts && cd ..
