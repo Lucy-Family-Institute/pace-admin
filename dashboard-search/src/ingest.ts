@@ -216,7 +216,6 @@ async function main() {
       const impactFactor =  getImpactFactorValue(doc)
       //set range value for impact factor
       const impactFactorLevel = getImpactFactorRange(impactFactor)
-      console.log('here')
       return {
         id: `${doc.publication.id}`,
         type: 'publication',
