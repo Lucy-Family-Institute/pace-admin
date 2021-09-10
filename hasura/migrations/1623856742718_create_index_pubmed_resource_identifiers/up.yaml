@@ -1,5 +1,0 @@
-- args:
-    cascade: false
-    sql: |
-      CREATE INDEX ON publications((source_metadata->>'resourceIdentifiers'));
-  type: run_sql

@@ -1,0 +1,2 @@
+
+CREATE TABLE "public"."persons_name_variances"("id" serial NOT NULL, "person_id" integer NOT NULL, "given_name" text NOT NULL, "family_name" text NOT NULL, PRIMARY KEY ("id") , FOREIGN KEY ("person_id") REFERENCES "public"."persons"("id") ON UPDATE no action ON DELETE restrict, UNIQUE ("id"));

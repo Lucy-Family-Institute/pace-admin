@@ -8,26 +8,29 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - ${POSTGRES_PORT}:5432
-    restart: always
+      - ${POSTGRES_PORT}:${POSTGRES_DOCKER_PORT}
     volumes:
-      - ./server/src/modules/keycloak/init.sql:/docker-entrypoint-initdb.d/1-init.sql
       - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
 
-  graphql-engine:
-    image: hasura/graphql-engine:v1.0.0-beta.10
+  hasura:
+    image: hasura/graphql-engine:v2.0.7.cli-migrations-v2
     ports:
-      - ${HASURA_PORT}:8080
-    restart: always
+      - ${HASURA_PORT}:${HASURA_DOCKER_PORT}
+      # - 9695:9695
+      # - 9693:9693
     environment:
       HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_SECRET}
       HASURA_GRAPHQL_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${HASURA_DATABASE}
       HASURA_GRAPHQL_ENABLE_CONSOLE: ${HASURA_ENABLE_CONSOLE}
       HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
       HASURA_GRAPHQL_AUTH_HOOK: http://${DOCKER_HOST_IP}:8000/${HASURA_WEBHOOK}
+    volumes:
+      - ./hasura:/hasura
+    restart: unless-stopped
 
   keycloak:
-    image: jboss/keycloak:6.0.1
+    image: jboss/keycloak:15.0.2
     environment:
       DB_VENDOR: POSTGRES
       DB_ADDR: postgres
@@ -35,35 +38,45 @@ services:
       DB_USER: ${POSTGRES_USER}
       DB_SCHEMA: public
       DB_PASSWORD: ${POSTGRES_PASSWORD}
+      PROXY_ADDRESS_FORWARDING: "true"
       KEYCLOAK_USER: ${KEYCLOAK_USERNAME}
       KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
-      KEYCLOAK_IMPORT: /opt/jboss/keycloak/realm-export.json
+      # KEYCLOAK_IMPORT: /opt/jbss/keycloak/realm-export.json
       # Uncomment the line below if you want to specify JDBC parameters. The parameter below is just an example, and it shouldn't be used in production without knowledge. It is highly recommended that you read the PostgreSQL JDBC driver documentation in order to use it.
       #JDBC_PARAMS: "ssl=true"
-    volumes: 
-      - ./server/src/modules/keycloak/realm-export.json:/opt/jboss/keycloak/realm-export.json
-    ports:
-      - ${KEYCLOAK_PORT}:8080
-    depends_on:
-      - postgres
-    restart: always
+    # volumes: 
+      # - ./build/templates/keycloak/realm-export.json:/opt/jboss/keycloak/realm-export.json
+      # - ./build/templates/keycloak/standalone.xml:/opt/jboss/keycloak/standalone/configuration/standalone.xml
+    restart: unless-stopped
   
   redis:
-    image: redis:alpine
-    ports:
-      - 9379:6379
+    image: redis:6.2.5
     command: ["redis-server", "--appendonly", "yes"]
-    restart: always
-  
+    ports:
+      - ${REDIS_PORT}:${REDIS_DOCKER_PORT}
+    restart: unless-stopped
+
+
   search:
     image: getmeili/meilisearch:v0.11.0
     environment:
       MEILI_MASTER_KEY: ${MEILI_KEY}
     ports:
-      - 7700:7700
-    restart: always
+      - ${MEILI_PORT}:${MEILI_DOCKER_PORT}
     volumes:
-      - ./dashboard-search/data.ms:/data.ms
-    
+      - search_data:/data.ms
+    restart: unless-stopped
+  
+  nginx:
+    image: nginx:1.21.1
+    volumes:
+      - ./build/templates/nginx/:/etc/nginx/conf.d
+      - ${PDFS_PATH}:/pdfs
+      - ${THUMBNAILS_PATH}:/thumbnails
+    ports:
+      - ${NGINX_PORT}:${NGINX_PORT}
+    restart: unless-stopped
+
 volumes:
   postgres_data:
+  search_data:

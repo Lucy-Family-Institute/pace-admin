@@ -1,6 +1,0 @@
-- args:
-    relationship: reviews
-    table:
-      name: reviewstates
-      schema: public
-  type: drop_relationship

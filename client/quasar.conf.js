@@ -1,6 +1,9 @@
 // Configuration for your app
 // https://quasar.dev/quasar-cli/quasar-conf-js
 
+var path = require('path')
+// var ImageMinimizerPlugin = require('image-minimizer-webpack-plugin')
+
 module.exports = function (ctx) {
   return {
     // app boot file (/src/boot)
@@ -8,8 +11,7 @@ module.exports = function (ctx) {
     // https://quasar.dev/quasar-cli/cli-documentation/boot-files
     boot: [
       'axios',
-      'graphql',
-      'iframes'
+      'graphql'
     ],
 
     // https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-css
@@ -26,7 +28,7 @@ module.exports = function (ctx) {
       // 'themify',
       // 'roboto-font-latin-ext', // this or either 'roboto-font', NEVER both!
 
-      'roboto-font', // optional, you are not bound to it
+      // 'roboto-font', // optional, you are not bound to it
       'material-icons' // optional, you are not bound to it
     ],
 
@@ -48,14 +50,27 @@ module.exports = function (ctx) {
       directives: [],
 
       // Quasar plugins
-      plugins: []
+      plugins: [
+        'Meta'
+      ]
     },
 
     // https://quasar.dev/quasar-cli/cli-documentation/supporting-ie
     supportIE: false,
 
+    vendor: {
+      disable: true
+      // remove: ['apexcharts/dist', 'citeproc', 'citation-js', 'moment', 'vue-d3-network/dist', 'lodash']
+    },
+
     // https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-build
     build: {
+      // env: {
+      //   ...require('dotenv').config({
+      //     path: path.resolve(__dirname, '../.env')
+      //   }).parsed,
+      //   ...process.env
+      // },
       scopeHoisting: true,
       // vueRouterMode: 'history',
       // showProgress: false,
@@ -63,9 +78,35 @@ module.exports = function (ctx) {
       // analyze: true,
       // preloadChunks: false,
       // extractCSS: false,
+      distDir: '../build/spa',
+      minify: true,
+      // analyze: true,
+
+      uglifyOptions: {
+        performance: {
+          hints: false
+        },
+        comments: false,
+        // mangle: true,
+        compress: {
+          // sequences: true,
+          // dead_code: true,
+          // conditionals: true,
+          // booleans: true,
+          // unused: true,
+          // if_return: true,
+          // join_vars: true,
+          // drop_console: true
+        }
+      },
 
       // https://quasar.dev/quasar-cli/cli-documentation/handling-webpack
       extendWebpack (cfg) {
+        cfg.resolve.alias = {
+          ...cfg.resolve.alias,
+          '@': path.resolve(__dirname, './src'),
+          '@gql': path.resolve(__dirname, '../gql')
+        }
         cfg.module.rules.push({
           enforce: 'pre',
           test: /\.(js|vue)$/,
@@ -79,6 +120,19 @@ module.exports = function (ctx) {
           test: /\.(graphql|gql)$/,
           use: ['graphql-tag/loader']
         })
+        // cfg.module.rules.push({
+        //   test: /\.(jpe?g|png)$/i,
+        //   use: [
+        //     new ImageMinimizerPlugin({
+        //       minimizerOptions: {
+        //         plugins: [
+        //           ['jpegtran', { progressive: true }],
+        //           ['optipng', { optimizationLevel: 5 }]
+        //         ]
+        //       }
+        //     })
+        //   ]
+        // })
       }
     },
 
