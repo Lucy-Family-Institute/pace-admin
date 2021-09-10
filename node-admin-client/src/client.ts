@@ -65,6 +65,15 @@ export class PaceClient {
     return null
   }
 
+  public async registerUsers (users: User[]) {
+    console.log(`Starting loop to add ${users.length} users`)
+    for (let index = 0; index < users.length; index++) {
+      const user = users[index];
+      await this.registerUser(user)
+      console.log(`Registered user: ${user.email}`)
+    }
+  }
+
   public async registerUser( user: User ): Promise<void> {
     console.log(`Trying to add`, user)
     await this.keycloak.getOrRegisterUser(user)

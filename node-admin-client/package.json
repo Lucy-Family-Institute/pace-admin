@@ -17,9 +17,11 @@
     "graphql": "^15.5.1",
     "keycloak-admin": "^1.14.22",
     "lodash": "^4.17.21",
+    "p-map": "2.1.0",
     "react": "^17.0.2"
   },
   "scripts": {
-    "add-users": "ts-node ./addUsers.ts"
+    "add-users": "ts-node ./addUsers.ts",
+    "add-csv-users": "ts-node ./addUsersByCsv.ts"
   }
 }
