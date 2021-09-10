@@ -103,9 +103,22 @@ ADD_DEV_USER_REQS := \
 	DEV_USER_LAST_NAME \
 	DEV_USER_PASSWORD
 
+ADD_PROD_USER_REQS := \
+	AUTH_SERVER_URL \
+	KEYCLOAK_USERNAME \
+	KEYCLOAK_PASSWORD \
+	KEYCLOAK_REALM \
+	GRAPHQL_END_POINT \
+	HASURA_SECRET \
+	ADD_USER_CSV_PATH
+
 .PHONY: add-dev-user
 add-dev-user: node-admin-client/node_modules $(addprefix env-, $(ADD_DEV_USER_REQS))
 	@cd node-admin-client && yarn run add-users && cd ..
+
+.PHONY: add-csv-user
+add-csv-user: node-admin-client/node_modules $(addprefix env-, $(ADD_PROD_USER_REQS))
+	@cd node-admin-client && yarn run add-csv-users && cd ..
 
 .PHONY=setup-restore
 setup-restore: docker-database-restore sleep-45 docker sleep-25 migrate add-dev-user dashboard-ingest

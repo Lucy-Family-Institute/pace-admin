@@ -15,6 +15,7 @@ data/
 *.code-workspace
 dashboard-search/data.ms/*
 scratch/*
+build/*
 
 # Ignore files and folders recursively
 /build/**
