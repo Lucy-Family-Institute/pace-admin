@@ -1,6 +1,0 @@
-- args:
-    relationship: awards
-    table:
-      name: persons_publications_metadata
-      schema: public
-  type: drop_relationship

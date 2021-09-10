@@ -1,3 +1,0 @@
-- args:
-    sql: alter table "public"."funder" rename to "funders";
-  type: run_sql

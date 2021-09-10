@@ -1,9 +1,0 @@
-- args:
-    sql: ALTER TABLE "public"."reviews" ALTER COLUMN "statelookup_id" TYPE integer;
-  type: run_sql
-- args:
-    sql: COMMENT ON COLUMN "public"."reviews"."statelookup_id" IS E'null'
-  type: run_sql
-- args:
-    sql: alter table "public"."reviews" rename column "reviewstates_id" to "statelookup_id";
-  type: run_sql

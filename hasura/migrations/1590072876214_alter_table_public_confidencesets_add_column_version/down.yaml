@@ -1,3 +1,0 @@
-- args:
-    sql: ALTER TABLE "public"."confidencesets" DROP COLUMN "version";
-  type: run_sql

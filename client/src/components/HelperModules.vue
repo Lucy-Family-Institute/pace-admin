@@ -12,9 +12,14 @@
 </template>
 
 <script>
+import VueFriendlyIframe from 'vue-friendly-iframe'
+
 export default {
   name: 'PageIndex',
   props: ['person', 'publication'],
+  components: {
+    'vue-friendly-iframe': VueFriendlyIframe
+  },
   data: () => ({
     links: [],
     url: undefined,

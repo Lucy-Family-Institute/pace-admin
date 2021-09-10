@@ -1,6 +1,0 @@
-- args:
-    role: user
-    table:
-      name: review_organization_level
-      schema: public
-  type: drop_update_permission
