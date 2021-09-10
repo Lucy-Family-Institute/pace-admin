@@ -71,7 +71,7 @@ build/flags/.docker-build: $(ENV_PATH) $(SERVER_DIR) $(SERVER_FILES)
 	@mkdir -p build/flags
 	@touch build/flags/.docker-build
 
-DC_UP_FLAGS := -d
+DC_UP_FLAGS := -d --remove-orphans
 ifeq ($(ENV), prod)
  DC_UP_FLAGS := --scale express=2 $(DC_UP_FLAGS)
 endif
@@ -82,6 +82,11 @@ docker: $(addprefix env-, $(DOCKER_REQS)) $(BUILD_TEMPLATES_DIR) build/flags/.do
 	@DOCKER_HOST_IP=$(DOCKER_HOST_IP) ENV=$(ENV) UID=$(UID) GID=$(GID) \
 		docker-compose $(DC_$(ENV)) \
 			up $(DC_UP_FLAGS)
+ifeq ($(ENV),dev)
+	@echo
+	@echo You may want to now run make express, webapp, and migration-console.
+	@echo
+endif
 
 .PHONY: logs
 #: Tail docker logs; use make logs service=dockername to print specific logs
