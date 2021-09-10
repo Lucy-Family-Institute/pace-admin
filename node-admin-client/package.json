@@ -1,0 +1,27 @@
+{
+  "name": "pace-node-admin-client",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/lodash": "^4.14.172",
+    "@types/node": "^16.7.1",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.3.5"
+  },
+  "dependencies": {
+    "@apollo/client": "^3.4.9",
+    "@keycloak/keycloak-admin-client": "^15.0.2",
+    "cross-fetch": "^3.1.4",
+    "dotenv": "^10.0.0",
+    "graphql": "^15.5.1",
+    "keycloak-admin": "^1.14.22",
+    "lodash": "^4.17.21",
+    "p-map": "2.1.0",
+    "react": "^17.0.2"
+  },
+  "scripts": {
+    "add-users": "ts-node ./addUsers.ts",
+    "add-csv-users": "ts-node ./addUsersByCsv.ts"
+  }
+}
