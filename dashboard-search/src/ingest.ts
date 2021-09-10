@@ -23,7 +23,7 @@ const meiliCenterSearch = process.env.MEILI_CENTER_SEARCH
 const sleep = util.promisify(setTimeout)
 
 const searchClient = new MeiliSearch({
-  host: meiliUrl,
+  host: `http://127.0.0.1:7700`, // todo fix this sometime
   apiKey: meiliKey
 })
 
