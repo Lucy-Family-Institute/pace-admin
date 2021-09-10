@@ -1,6 +1,0 @@
-- args:
-    sql: "\n           alter table \"public\".\"reviews\"\n           add constraint
-      \"reviews_reviewstate_abbrev_fkey\"\n           foreign key (\"reviewstate_abbrev\")\n
-      \          references \"public\".\"reviewstates\"\n           (\"abbrev\") on
-      update no action on delete no action;\n      "
-  type: run_sql

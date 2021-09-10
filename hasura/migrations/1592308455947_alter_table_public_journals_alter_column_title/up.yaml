@@ -1,7 +1,0 @@
-- args:
-    sql: ALTER TABLE "public"."journals" ADD CONSTRAINT "journals_title_key" UNIQUE
-      ("title")
-  type: run_sql
-- args:
-    sql: COMMENT ON COLUMN "public"."journals"."title" IS E''
-  type: run_sql

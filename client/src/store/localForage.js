@@ -12,18 +12,8 @@ localForageService
     localforage.WEBSQL,
     localforage.LOCALSTORAGE
   ]).then().catch(error => {
-    console.log('Error setting up storage cache: ' + error)
+    console.error('Error setting up storage cache: ' + error)
   })
-  //   () => {
-  //   // use this to test your db connection - delete later
-  //   localForageService.setItem("testkey", "testvalue", function() {
-  //     console.log(
-  //       "Of the driver options given, localforage is using:" +
-  //         localForageService.driver()
-  //     );
-  //   });
-  // }
-  // ()
 
 export default {
   localforage,

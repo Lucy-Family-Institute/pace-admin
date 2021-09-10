@@ -1,8 +1,0 @@
-- args:
-    name: publication
-    table:
-      name: awards
-      schema: public
-    using:
-      foreign_key_constraint_on: publication_id
-  type: create_object_relationship

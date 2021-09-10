@@ -1,6 +1,0 @@
-- args:
-    relationship: subfunder
-    table:
-      name: subfunders_namevariances
-      schema: public
-  type: drop_relationship

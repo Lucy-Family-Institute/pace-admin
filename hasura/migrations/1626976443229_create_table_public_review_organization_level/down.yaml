@@ -1,3 +1,0 @@
-- args:
-    sql: DROP TABLE "public"."review_organization_level"
-  type: run_sql

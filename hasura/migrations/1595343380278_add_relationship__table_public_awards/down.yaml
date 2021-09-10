@@ -1,6 +1,0 @@
-- args:
-    relationship: subfunder
-    table:
-      name: awards
-      schema: public
-  type: drop_relationship

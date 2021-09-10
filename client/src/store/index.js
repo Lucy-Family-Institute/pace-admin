@@ -9,6 +9,7 @@ import pathify from './pathify'
 import admin from './admin'
 import auth from './auth'
 import filter from './filter'
+import dashboard from './dashboard'
 
 Vue.use(Vuex)
 
@@ -39,7 +40,7 @@ Vue.use(Vuex)
 //     if (await data) {
 //       try {
 //       } catch (e) {
-//         console.log(e)
+//         console.error(e)
 //       }
 //     }
 //     return data
@@ -54,13 +55,14 @@ Vue.use(Vuex)
 export default function (/* { ssrContext } */) {
   const Store = new Vuex.Store({
     plugins: [ createPersistedState({
-      paths: ['filter']
+      paths: ['filter', 'dashboard']
     }), pathify.plugin ],
 
     modules: {
       admin,
       auth,
-      filter
+      filter,
+      dashboard
     },
 
     // enable strict mode (adds overhead!)
