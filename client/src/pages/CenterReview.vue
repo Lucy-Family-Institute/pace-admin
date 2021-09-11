@@ -22,6 +22,9 @@
               map-options
             />
           </q-item>
+          <!-- <q-item>
+            <CenterSelect v-if="isLoggedIn" />
+          </q-item> -->
         </div>
       </div>
           <MainFilter />
@@ -406,6 +409,7 @@ import readPersonsByInstitutionByYearByOrganization from '../gql/readPersonsByIn
 import readOrganizationsCenters from '../../../gql/readOrganizationsCenters.gql'
 
 import VueFriendlyIframe from 'vue-friendly-iframe'
+// import CenterSelect from '@/components/widgets/CenterSelect.vue'
 
 export default {
   name: 'PageIndex',
@@ -414,6 +418,7 @@ export default {
     MainFilter,
     'download-csv': JsonCSV,
     'vue-friendly-iframe': VueFriendlyIframe
+    // CenterSelect
   },
   data: () => ({
     centerOptions: null,
@@ -1788,7 +1793,7 @@ export default {
             selectedCenterValue = this.preferredSelectedCenter.value
           }
           const mutateResult = await this.$apollo.mutate(
-            insertReview(this.userId, personPub.id, reviewType, selectedCenterValue)
+            insertReview(personPub.id, reviewType, selectedCenterValue)
           )
           if (mutateResult && personPub.id === personPublication.id) {
             this.$refs[`personPub${index}`].hide()

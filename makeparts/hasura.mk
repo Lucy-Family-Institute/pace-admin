@@ -19,8 +19,7 @@ HASURA_CLI_FROM_DOCKER:=docker \
 .PHONY: migrate
 #: Run Hasura migrations against the database
 migrate:
-	$(HASURA_CLI) migrate apply
-	$(HASURA_CLI) metadata apply
+	$(HASURA_CLI) migrate apply && $(HASURA_CLI) metadata apply
 
 .PHONY: migration-console
 #: Start the Hasura migration console
