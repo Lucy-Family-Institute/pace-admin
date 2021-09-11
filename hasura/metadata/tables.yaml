@@ -640,12 +640,7 @@
       - start_date
       - end_date
       - semantic_scholar_ids
-      filter:
-        persons_organizations:
-          review_organization:
-            users_orginizations:
-              user_id:
-                _eq: X-Hasura-User-Id
+      filter: {}
       allow_aggregations: true
   - role: viewer
     permission:
@@ -661,12 +656,7 @@
       - start_date
       - end_date
       - semantic_scholar_ids
-      filter:
-        persons_organizations:
-          review_organization:
-            users_orginizations:
-              user_id:
-                _eq: X-Hasura-User-Id
+      filter: {}
       allow_aggregations: true
 - table:
     schema: public
@@ -713,11 +703,7 @@
       - organization_value
       - start_date
       - end_date
-      filter:
-        review_organization:
-          users_orginizations:
-            user_id:
-              _eq: X-Hasura-User-Id
+      filter: {}
       allow_aggregations: true
   - role: viewer
     permission:
@@ -727,11 +713,7 @@
       - organization_value
       - start_date
       - end_date
-      filter:
-        review_organization:
-          users_orginizations:
-            user_id:
-              _eq: X-Hasura-User-Id
+      filter: {}
       allow_aggregations: true
 - table:
     schema: public
@@ -798,13 +780,7 @@
       - confidence
       - provenance_id
       - data_id
-      filter:
-        person:
-          persons_organizations:
-            review_organization:
-              users_orginizations:
-                user_id:
-                  _eq: X-Hasura-User-Id
+      filter: {}
       allow_aggregations: true
   - role: viewer
     permission:
@@ -815,13 +791,7 @@
       - confidence
       - provenance_id
       - data_id
-      filter:
-        person:
-          persons_organizations:
-            review_organization:
-              users_orginizations:
-                user_id:
-                  _eq: X-Hasura-User-Id
+      filter: {}
       allow_aggregations: true
 - table:
     schema: public
@@ -987,14 +957,7 @@
       - abstract
       - journal_id
       - source_id
-      filter:
-        persons_publications:
-          person:
-            persons_organizations:
-              review_organization:
-                users_orginizations:
-                  user_id:
-                    _eq: X-Hasura-User-Id
+      filter: {}
       allow_aggregations: true
   - role: viewer
     permission:
@@ -1012,14 +975,7 @@
       - abstract
       - journal_id
       - source_id
-      filter:
-        persons_publications:
-          person:
-            persons_organizations:
-              review_organization:
-                users_orginizations:
-                  user_id:
-                    _eq: X-Hasura-User-Id
+      filter: {}
       allow_aggregations: true
 - table:
     schema: public
@@ -1254,14 +1210,7 @@
       - source_name
       - year
       - review_type
-      filter:
-        persons_publications:
-          person:
-            persons_organizations:
-              review_organization:
-                users_orginizations:
-                  user_id:
-                    _eq: X-Hasura-User-Id
+      filter: {}
       allow_aggregations: true
   - role: viewer
     permission:
@@ -1278,14 +1227,7 @@
       - source_name
       - year
       - review_type
-      filter:
-        persons_publications:
-          person:
-            persons_organizations:
-              review_organization:
-                users_orginizations:
-                  user_id:
-                    _eq: X-Hasura-User-Id
+      filter: {}
       allow_aggregations: true
 - table:
     schema: public
