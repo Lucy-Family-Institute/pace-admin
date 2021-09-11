@@ -1814,12 +1814,13 @@ export default {
         this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType].push(pubSet.mainPersonPub)
         if (this.reviewTypeFilter === 'pending' && this.selectedPersonTotal === 'Pending') {
           const currentPersonIndex = _.findIndex(this.people, (person) => {
-            return person.id === this.person.id
+            console.log('persons', person, this.person)
+            return person.id === this.person.id // todo Rick, this.person never defined, right?
           })
           this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
         } else if (this.selectedPersonTotal === 'Pending' && reviewType === 'pending') {
           const currentPersonIndex = _.findIndex(this.people, (person) => {
-            return person.id === this.person.id
+            return person.id === this.person.id // todo Rick, this.person never defined, right?
           })
           this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
         }
