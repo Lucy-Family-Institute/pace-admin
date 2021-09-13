@@ -47,9 +47,13 @@ export default {
       this.yearMemberStaticMax = Number.parseInt(moment().format('YYYY'))
 
       if (this.changedMemberYears === undefined) {
+        // set to current year minus - 1
+        const currentDate = new Date(Date.now())
+        const currentYear = currentDate.getFullYear()
+        const lastYear = currentYear - 1
         this.selectedMemberYears = {
-          min: this.yearMemberStaticMin,
-          max: this.yearMemberStaticMax
+          min: lastYear,
+          max: lastYear
         }
       }
     },
