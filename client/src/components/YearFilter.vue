@@ -44,9 +44,13 @@ export default {
       this.yearPubStaticMin = _.get(results, 'data.publications_aggregate.aggregate.min.year', 1800)
       this.yearPubStaticMax = _.get(results, 'data.publications_aggregate.aggregate.max.year', 2200)
       if (this.changedPubYears === undefined) {
+        // set to current year minus - 1
+        const currentDate = new Date(Date.now())
+        const currentYear = currentDate.getFullYear()
+        const lastYear = currentYear - 1
         this.selectedPubYears = {
-          min: this.yearPubStaticMin,
-          max: this.yearPubStaticMax
+          min: lastYear,
+          max: lastYear
         }
       }
     },

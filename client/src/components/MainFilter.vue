@@ -138,14 +138,18 @@ export default {
       this.selectedPersonSort = this.preferredPersonSort
       this.selectedPersonTotal = this.preferredPersonTotal
       this.selectedPersonConfidence = this.preferredPersonConfidence
+      // set to current year minus - 1
+      const currentDate = new Date(Date.now())
+      const currentYear = currentDate.getFullYear()
+      const lastYear = currentYear - 1
       this.selectedPubYears = {
-        min: this.yearPubStaticMin,
-        max: this.yearPubStaticMax
+        min: lastYear,
+        max: lastYear
       }
       this.selectedInstitutions = _.clone(this.institutionOptions)
       this.selectedMemberYears = {
-        min: this.yearMemberStaticMin,
-        max: this.yearMemberStaticMax
+        min: lastYear,
+        max: lastYear
       }
     }
   }
