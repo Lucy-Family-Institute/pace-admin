@@ -1503,7 +1503,7 @@ export default {
           fetchPolicy: 'network-only'
         })
         this.confSetsByPersonPubId = _.mapKeys(confSetsResult.data.confidencesets_persons_publications_aggregate, (nodes) => {
-          return nodes[0].persons_publications_id
+          return (nodes.length > 0 && nodes[0].persons_publications_id ? nodes[0].persons_publications_id : undefined)
         })
         const reviewsResult = await this.$apollo.query({
           query: readReviewsPersonPublications,
@@ -1516,7 +1516,7 @@ export default {
           fetchPolicy: 'network-only'
         })
         this.reviewsByPersonPubId = _.mapKeys(reviewsResult.data.reviews_persons_publications_aggregate, (nodes) => {
-          return nodes[0].persons_publications_id
+          return (nodes.length > 0 && nodes[0].persons_publications_id ? nodes[0].persons_publications_id : undefined)
         })
         // check if person selected changed when clicks happen rapidly and if so abort
         if (this.person.id === person.id) {
