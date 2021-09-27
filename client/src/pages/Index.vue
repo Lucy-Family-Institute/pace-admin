@@ -15,6 +15,7 @@
                 label="Review For:"
                 v-if="isLoggedIn"
                 map-options
+                style="width: 200px"
               />
             </q-item>
           </div>
@@ -182,7 +183,7 @@
                                 />
                               </q-item-section>
                             </template>
-                            <q-card v-if="item.publication !== undefined">
+                            <q-card v-if="item.publication !== undefined && (role === 'admin' || role === 'library-reviewer')">
                               <q-card-section dense class="text-center">
                                 <q-item-label align="left">Move To:</q-item-label>
                                 <q-btn dense v-if="reviewTypeFilter!=='pending'" color="purple" label="Pending" class="on-left" @click="clickReviewPending(index, person, personPublication);" />
@@ -1785,6 +1786,7 @@ export default {
   computed: {
     personSortKey: sync('filter/personSortKey'),
     userId: sync('auth/userId'),
+    role: sync('auth/role'),
     isLoggedIn: sync('auth/isLoggedIn'),
     selectedCenter: sync('filter/selectedCenter'),
     preferredPersonSort: get('filter/preferredPersonSort'),
