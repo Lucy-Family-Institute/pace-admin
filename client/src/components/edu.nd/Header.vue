@@ -104,7 +104,8 @@ export default {
   },
   computed: {
     isLoggedIn: get('auth/isLoggedIn'),
-    name: get('auth/name')
+    name: get('auth/name'),
+    role: get('auth/role')
   },
   methods: {
     buttonProps ({ href, route, isActive, isExactActive }) {
