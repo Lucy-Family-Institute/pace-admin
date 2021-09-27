@@ -16,7 +16,8 @@ async function getUserByEmail (client, email: string) {
           }
         ) {
           id
-          primaryEmail
+          primaryEmail,
+          role
         }
       }
     `,
@@ -48,6 +49,7 @@ async function init (options) {
       try {
         const result = await getUserByEmail(client, profile.email)
         profile.databaseId = result.id
+        profile.role = result.role
       } catch (error) {
         console.error ('Is your user in both keycloak and the hasura database?', error)
       }
@@ -77,12 +79,12 @@ async function init (options) {
     res.redirect(url)
   })
   app.get('/session', (req: Request, res: Response) => {
-    const response = {}
-    if (req.user) {
-      response['databaseId'] = _.get(req.user, 'databaseId')
-      response['name'] = _.get(req.user, 'name')
-      response['email'] = _.get(req.user, 'email')
-    }
+    const response = _.pick(req.user, [
+      'databaseId',
+      'name',
+      'email',
+      'role'
+    ])
     res.json(response)
   })
 }

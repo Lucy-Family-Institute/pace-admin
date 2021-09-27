@@ -1600,7 +1600,7 @@ export default {
         await _.each(personPubs, async (personPub) => {
           // const personPub = personPubs[0]
           const mutateResult = await this.$apollo.mutate(
-            insertReview(this.userId, personPub.id, reviewType, 'ND')
+            insertReview(personPub.id, reviewType, 'ND') // TODO Rick, is this right?
           )
           if (mutateResult && personPub.id === personPublication.id) {
             this.$refs[`personPub${index}`].hide()
