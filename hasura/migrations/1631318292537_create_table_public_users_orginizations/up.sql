@@ -1,0 +1,1 @@
+CREATE TABLE "public"."users_orginizations" ("id" serial NOT NULL, "user_id" integer NOT NULL, "organization_id" text NOT NULL, PRIMARY KEY ("id") , FOREIGN KEY ("organization_id") REFERENCES "public"."review_organization"("value") ON UPDATE no action ON DELETE no action);COMMENT ON TABLE "public"."users_orginizations" IS E'Mapping users to organizations';
