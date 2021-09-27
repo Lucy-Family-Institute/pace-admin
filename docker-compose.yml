@@ -56,7 +56,6 @@ services:
       - ${REDIS_PORT}:${REDIS_DOCKER_PORT}
     restart: unless-stopped
 
-
   search:
     image: getmeili/meilisearch:v0.11.0
     environment:
