@@ -13,6 +13,7 @@ query MyQuery ($personId: Int!, $yearMin: Int!, $yearMax: Int!) {
       }
   ) {
       nodes {
+        id
         persons_publications_id
         value
         datetime
