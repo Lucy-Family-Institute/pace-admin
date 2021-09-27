@@ -1,1 +1,1 @@
-alter table "public"."users_orginizations" drop constraint "users_orginizations_user_id_fkey";
+alter table "public"."users_organizations" drop constraint "users_organizations_user_id_fkey";
