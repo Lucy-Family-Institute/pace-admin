@@ -1164,10 +1164,8 @@ export default {
     async loadConfidenceSet (personPublication) {
       this.confidenceSetItems = []
       this.confidenceSet = undefined
-      if (personPublication.confidencesets_aggregate &&
-        personPublication.confidencesets_aggregate.nodes.length > 0) {
-        this.confidenceSet = personPublication.confidencesets_aggregate.nodes[0]
-        const result = await this.$apollo.query(readConfidenceSetItems(this.confidenceSet.id))
+      if (this.confSetsByPersonPubId[personPublication.id]) {
+        const result = await this.$apollo.query(readConfidenceSetItems(this.confSetsByPersonPubId[personPublication.id].id))
         this.confidenceSetItems = result.data.confidencesets_items
         this.confidenceSetItems = _.transform(this.confidenceSetItems, (result, setItem) => {
           _.set(setItem, 'confidence_type_name', setItem.confidence_type.name)
@@ -1234,8 +1232,8 @@ export default {
       this.publicationsGroupedByReview = _.groupBy(this.publications, function (pub) {
         if (!indexThis.personPublicationsById) indexThis.personPublicationsById = {}
         indexThis.personPublicationsById[pub.id] = pub
-        if (indexThis.reviewsByPersonPubId[pub.id] && indexThis.reviewsByPersonPubId[pub.id].nodes && indexThis.reviewsByPersonPubId[pub.id].nodes.length > 0) {
-          return indexThis.reviewsByPersonPubId[pub.id].nodes[0].review_type
+        if (indexThis.reviewsByPersonPubId[pub.id]) {
+          return indexThis.reviewsByPersonPubId[pub.id].review_type
         } else {
           return 'pending'
         }
@@ -1431,10 +1429,8 @@ export default {
       }
     },
     getPublicationConfidence (personPublication) {
-      if (this.confSetsByPersonPubId[personPublication.id] &&
-        this.confSetsByPersonPubId[personPublication.id].nodes &&
-        this.confSetsByPersonPubId[personPublication.id].nodes.length > 0) {
-        return this.confSetsByPersonPubId[personPublication.id].nodes[0].value
+      if (this.confSetsByPersonPubId[personPublication.id]) {
+        return this.confSetsByPersonPubId[personPublication.id].value
       } else {
         return personPublication.confidence
       }
@@ -1502,8 +1498,9 @@ export default {
           },
           fetchPolicy: 'network-only'
         })
-        this.confSetsByPersonPubId = _.mapKeys(confSetsResult.data.confidencesets_persons_publications_aggregate, (nodes) => {
-          return (nodes.length > 0 && nodes[0].persons_publications_id ? nodes[0].persons_publications_id : undefined)
+        this.confSetsByPersonPubId = {}
+        _.each(confSetsResult.data.confidencesets_persons_publications_aggregate.nodes, (node) => {
+          this.confSetsByPersonPubId[node.persons_publications_id] = node
         })
         const reviewsResult = await this.$apollo.query({
           query: readReviewsPersonPublications,
@@ -1515,8 +1512,9 @@ export default {
           },
           fetchPolicy: 'network-only'
         })
-        this.reviewsByPersonPubId = _.mapKeys(reviewsResult.data.reviews_persons_publications_aggregate, (nodes) => {
-          return (nodes.length > 0 && nodes[0].persons_publications_id ? nodes[0].persons_publications_id : undefined)
+        this.reviewsByPersonPubId = {}
+        _.each(reviewsResult.data.reviews_persons_publications_aggregate.nodes, (node) => {
+          this.reviewsByPersonPubId[node.persons_publications_id] = node
         })
         // check if person selected changed when clicks happen rapidly and if so abort
         if (this.person.id === person.id) {
