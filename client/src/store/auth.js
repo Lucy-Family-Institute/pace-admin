@@ -3,7 +3,8 @@ import { make } from 'vuex-pathify'
 const state = {
   userId: null,
   isLoggedIn: false,
-  name: null
+  name: null,
+  role: 'anonymous'
 }
 
 const getters = {
