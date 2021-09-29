@@ -1037,13 +1037,13 @@
         table:
           schema: public
           name: reviews
-  - name: users_orginizations
+  - name: users_organizations
     using:
       foreign_key_constraint_on:
         column: organization_id
         table:
           schema: public
-          name: users_orginizations
+          name: users_organizations
   select_permissions:
   - role: reviewer
     permission:
@@ -1051,7 +1051,7 @@
       - value
       - comment
       filter:
-        users_orginizations:
+        users_organizations:
           user_id:
             _eq: X-Hasura-User-Id
       allow_aggregations: true
@@ -1061,7 +1061,7 @@
       - value
       - comment
       filter:
-        users_orginizations:
+        users_organizations:
           user_id:
             _eq: X-Hasura-User-Id
       allow_aggregations: true
@@ -1111,7 +1111,7 @@
         - user_id:
             _eq: X-Hasura-User-Id
         - review_organization:
-            users_orginizations:
+            users_organizations:
               user_id:
                 _eq: X-Hasura-User-Id
       set:
@@ -1398,7 +1398,7 @@
       allow_aggregations: true
 - table:
     schema: public
-    name: users_orginizations
+    name: users_organizations
   object_relationships:
   - name: organization
     using:
