@@ -1297,8 +1297,6 @@
       - comment
       filter:
         users_organizations:
-<<<<<<< HEAD
-=======
           user_id:
             _eq: X-Hasura-User-Id
       allow_aggregations: true
@@ -1309,7 +1307,6 @@
       - comment
       filter:
         users_organizations:
->>>>>>> 39abccbf226d2cf0a153fb37465cd026db8553cb
           user_id:
             _eq: X-Hasura-User-Id
       allow_aggregations: true
@@ -1377,8 +1374,6 @@
             _eq: X-Hasura-User-Id
         - review_organization:
             users_organizations:
-<<<<<<< HEAD
-=======
               user_id:
                 _eq: X-Hasura-User-Id
       set:
@@ -1396,7 +1391,6 @@
             _eq: X-Hasura-User-Id
         - review_organization:
             users_organizations:
->>>>>>> 39abccbf226d2cf0a153fb37465cd026db8553cb
               user_id:
                 _eq: X-Hasura-User-Id
       set:
