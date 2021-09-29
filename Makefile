@@ -120,17 +120,19 @@ add-dev-user: node-admin-client/node_modules $(addprefix env-, $(ADD_DEV_USER_RE
 add-csv-user: node-admin-client/node_modules $(addprefix env-, $(ADD_PROD_USER_REQS))
 	@cd node-admin-client && yarn run add-csv-users && cd ..
 
-.PHONY=setup-restore
+.PHONY: setup-restore
 setup-restore: docker-database-restore sleep-45 docker sleep-25 migrate add-dev-user dashboard-ingest
 
-.PHONY=setup-new
+.PHONY: setup-new
 setup-new: docker sleep-15 migrate add-dev-user
 
 .PHONY: setup
-setup: 
-ifdef DUMP_PATH
+setup:
+ifdef HASURA_DUMP
+	$(info Restoring database from $(HASURA_DUMP))
 	@$(RUN_MAKE) setup-restore
 else
+	$(info Creating new database)
 	@$(RUN_MAKE) setup-new
 endif
 
