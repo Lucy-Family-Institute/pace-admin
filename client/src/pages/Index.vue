@@ -1733,7 +1733,7 @@ export default {
       years.push(_.get(csl, 'published-print.date-parts[0][0]', null))
       years.push(_.get(csl, 'published-online.date-parts[0][0]', null))
 
-      years = _.sortBy(years, (year) => { return year === null ? 0 : Number.parseInt(year) }).reverse()
+      years = _.sortBy(years, (year) => { return year === null ? 0 : Number.parseInt(year) }) // .reverse()
       if (years.length > 0 && years[0] > 0) {
         // return the most recent year
         return years[0]
@@ -1754,6 +1754,8 @@ export default {
       } catch (error) {
         console.warn(`Was unable to update publication year for citation with error: ${error}`)
       }
+
+      console.log(`Before citation csl is: ${JSON.stringify(csl, null, 2)}`)
 
       const citeObj = new Cite(csl)
       // create formatted citation as test
