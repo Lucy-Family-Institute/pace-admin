@@ -24,7 +24,7 @@ export default function readPersonsByYearAllCenters (year) {
               }
             ]
           }, 
-          order_by: {id: asc, persons_publications_aggregate: {count: desc}}){
+          order_by: {id: asc}){
           id
           given_name
           family_name
