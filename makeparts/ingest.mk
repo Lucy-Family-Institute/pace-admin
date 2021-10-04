@@ -91,6 +91,9 @@ scopus_author_data: ingest/node_modules
 mine_semantic_scholar_ids: ingest/node_modules
 	cd ingest && ts-node mineSemanticScholarAuthorIds.ts && cd ..
 
+update_publication_years: ingest/node_modules
+	cd ingest && ts-node updatePublicationsYear.ts && cd ..
+
 .PHONY: update-pdfs
 update-pdfs: ingest/node_modules
 	cd ingest && ts-node downloadFile.ts && cd ..
