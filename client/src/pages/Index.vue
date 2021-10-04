@@ -1755,8 +1755,6 @@ export default {
         console.warn(`Was unable to update publication year for citation with error: ${error}`)
       }
 
-      console.log(`Before citation csl is: ${JSON.stringify(csl, null, 2)}`)
-
       const citeObj = new Cite(csl)
       // create formatted citation as test
       const apaCitation = citeObj.format('bibliography', {
