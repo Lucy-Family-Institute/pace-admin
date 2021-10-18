@@ -133,9 +133,9 @@ export class CalculateConfidence {
     const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
       const names = []
       names.push({
-        lastName: person.family_name.toLowerCase(),
-        firstInitial: person.given_name[0].toLowerCase(),
-        firstName: person.given_name.toLowerCase(),
+        lastName: _.trim(person.family_name.toLowerCase()),
+        firstInitial: _.trim(person.given_name)[0].toLowerCase(),
+        firstName: _.trim(person.given_name.toLowerCase()),
       })
       // add all name variations
       if (person.persons_namevariances) {
@@ -325,7 +325,7 @@ export class CalculateConfidence {
 
   getAuthorLastNames (author) {
     const lastNames = _.transform(author['names'], function (result, value) {
-      result.push(value['lastName'])
+      result.push(_.trim(value['lastName']))
       return true
     }, [])
     return lastNames
@@ -608,11 +608,25 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
     }
   }
 
+  trimAuthorNames(author) {
+    let newAuthor = _.cloneDeep(author)
+    newAuthor.names = _.map(newAuthor.names, (name) => {
+      return {
+        lastName: _.trim(name.lastName),
+        firstName: _.trim(name.firstName),
+        firstInitial: _.trim(name.firstName)[0]
+      }
+    })
+    return newAuthor
+  }
+
   async performAuthorConfidenceTests (author, publicationCsl, confirmedAuthors, confidenceTypesByRank, sourceName, sourceMetadata?, pubAuthorMap?) {
     // array of arrays for each rank sorted 1 to highest number
     // iterate through each group by rank if no matches in one rank, do no execute the next rank
     const sortedRanks = _.sortBy(_.keys(confidenceTypesByRank), (value) => { return value })
     // now just push arrays in order into another array
+
+    const testAuthor = this.trimAuthorNames(author)
 
     //update to current matched authors before proceeding with next tests
     let publicationAuthorMap
@@ -631,13 +645,13 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
       if (!stopTesting){
         await pMap(confidenceTypesByRank[rank], async (confidenceType) => {
           // need to update to make publicationAuthorMap be only ones that matched last name for subsequent tests
-          let currentMatchedAuthors = this.performConfidenceTest(confidenceType, publicationCsl, author, publicationAuthorMap, confirmedAuthors, sourceName, sourceMetadata)
+          let currentMatchedAuthors = this.performConfidenceTest(confidenceType, publicationCsl, testAuthor, publicationAuthorMap, confirmedAuthors, sourceName, sourceMetadata)
           if (currentMatchedAuthors && _.keys(currentMatchedAuthors).length > 0){
             (passedConfidenceTests[rank] || (passedConfidenceTests[rank] = {}))[confidenceType['name']] = {
               confidenceTypeId: confidenceType['id'],
               confidenceTypeName : confidenceType['name'],
               confidenceTypeBaseValue: confidenceType['base_value'],
-              testAuthor : author,
+              testAuthor : testAuthor,
               matchedAuthors : currentMatchedAuthors
             }
             // union any authors that are there for each author last name
@@ -654,6 +668,8 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
             }
           }
         }, {concurrency: 3})
+
+        // console.log(`Matched authors are: ${JSON.stringify(matchedAuthors, null, 2)}`)
         if (_.keys(matchedAuthors).length <= 0 || stopTesting){
           // stop processing and skip next set of tests
           stopTesting = true
