@@ -11,7 +11,7 @@ import { command as loadCsv } from './units/loadCsv'
 import { CalculateConfidence } from './modules/calculateConfidence'
 
 import readAllPersonPublications from './gql/readAllPersonPublications'
-import readPublicationsCSL from './gql/readPublicationsCSL'
+import readPublicationsCSLByYear from './gql/readPublicationsCSLByYear'
 import readPersonPublications from './gql/readPersonPublications'
 import insertPersonPublications from './gql/insertPersonPublications'
 import { getNameKey } from './modules/queryNormalizedPeople'
@@ -189,37 +189,39 @@ async function matchPeopleToPaperAuthors(publicationCSL, simplifiedPersons, pers
   let matchedPersonMap = new Map()
 
   const confidenceTypesByRank = await calculateConfidence.getConfidenceTypesByRank()
-   await pMap(simplifiedPersons, async (person) => {
-    
-     //console.log(`Testing Author for match: ${author.family}, ${author.given}`)
+  await pMap(simplifiedPersons, async (person) => {
+  
+    // console.log(`Testing Author for match: ${person['names'][0]['lastName']}, ${person['names'][0]['firstName']}`)
 
-      const passedConfidenceTests = await calculateConfidence.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank, sourceName)
-      // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
-      // returns a new map of rank -> confidenceTestName -> calculatedValue
-      const passedConfidenceTestsWithConf = await calculateConfidence.calculateAuthorConfidence(passedConfidenceTests)
-      // calculate overall total and write the confidence set and comments to the DB
-      let confidenceTotal = 0.0
-      _.mapValues(passedConfidenceTestsWithConf, (confidenceTests, rank) => {
-        _.mapValues(confidenceTests, (confidenceTest) => {
-          confidenceTotal += confidenceTest['confidenceValue']
-        })
+
+    const passedConfidenceTests = await calculateConfidence.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank, sourceName)
+    // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
+    // returns a new map of rank -> confidenceTestName -> calculatedValue
+    const passedConfidenceTestsWithConf = await calculateConfidence.calculateAuthorConfidence(passedConfidenceTests)
+    // calculate overall total and write the confidence set and comments to the DB
+    let confidenceTotal = 0.0
+    _.mapValues(passedConfidenceTestsWithConf, (confidenceTests, rank) => {
+      _.mapValues(confidenceTests, (confidenceTest) => {
+        confidenceTotal += confidenceTest['confidenceValue']
       })
-      // set ceiling to 99%
-      if (confidenceTotal >= 1.0) confidenceTotal = 0.99
-      // have to do some weird conversion stuff to keep the decimals correct
-      confidenceTotal = Number.parseFloat(confidenceTotal.toFixed(3))
-      // console.log(`passed confidence tests are: ${JSON.stringify(passedConfidenceTestsWithConf, null, 2)}`)
-      //check if persons last name in author list, if so mark a match
-          //add person to map with confidence value > 0
-        if (confidenceTotal > 0 && confidenceTotal >= minConfidence) {
-          // console.log(`Match found for Author: ${author.family}, ${author.given}`)
-          let matchedPerson: MatchedPerson = { 'person': person, 'confidence': confidenceTotal }
-          matchedPersonMap[person['id']] = matchedPerson
-          //console.log(`After add matched persons map is: ${JSON.stringify(matchedPersonMap,null,2)}`)
-        }
+    })
+    // set ceiling to 99%
+    if (confidenceTotal >= 1.0) confidenceTotal = 0.99
+    // have to do some weird conversion stuff to keep the decimals correct
+    confidenceTotal = Number.parseFloat(confidenceTotal.toFixed(3))
+    // console.log(`passed confidence tests are: ${JSON.stringify(passedConfidenceTestsWithConf, null, 2)}`)
+    //check if persons last name in author list, if so mark a match
+    //add person to map with confidence value > 0
+    if (confidenceTotal > 0 && confidenceTotal >= minConfidence) {
+      // console.log(`Match found for Author: ${author.family}, ${author.given}`)
+      let matchedPerson: MatchedPerson = { 'person': person, 'confidence': confidenceTotal }
+      matchedPersonMap[person['id']] = matchedPerson
+      //console.log(`After add matched persons map is: ${JSON.stringify(matchedPersonMap,null,2)}`)
+      // console.log(`Match is found: ${person['names'][0]['lastName']}, ${person['names'][0]['firstName']}`)
+    }
    }, { concurrency: 1 })
 
-   //console.log(`After tests matchedPersonMap is: ${JSON.stringify(matchedPersonMap,null,2)}`)
+  //console.log(`After tests matchedPersonMap is: ${JSON.stringify(matchedPersonMap,null,2)}`)
   return matchedPersonMap
 }
 
@@ -317,8 +319,8 @@ async function findAuthorMatches(testAuthors, confirmedAuthors, doi, csl, source
   }
 }
 
-async function getPublicationsByDois(): Promise<{}> {
-  const queryResult = await client.query(readPublicationsCSL())
+async function getPublicationsByDois(year): Promise<{}> {
+  const queryResult = await client.query(readPublicationsCSLByYear(year))
   // console.log(`Publication person counts: ${JSON.stringify(queryResult.data.publications, null, 2)}`)
   return _.groupBy(queryResult.data.publications, (publication) => {
     return publication.doi
@@ -335,7 +337,8 @@ const getIngestFilePaths = require('./getIngestFilePaths');
 
 //returns status map of what was done
 async function main() {
-  const minConfidence = 0.45
+  const minConfidence = 0.30
+  const year = 2020
   //just get all simplified persons as will filter later
   const calculateConfidence: CalculateConfidence = new CalculateConfidence()
   console.log('Starting load person list...')
@@ -345,8 +348,8 @@ async function main() {
   await randomWait(1, 1000)
 
   // get current publication id w doi and group by doi
-  console.log('Starting get publications by doi...')
-  const pubsByDoi = await getPublicationsByDois()
+  console.log(`Starting get publications by doi for year ${year}...`)
+  const pubsByDoi = await getPublicationsByDois(year)
   console.log('Finished get publications by doi.')
 
   console.log('Starting load confirmed authors and bibtex...')
@@ -416,7 +419,7 @@ async function main() {
       }
     }, { concurrency: 1 }) 
     console.log(`#${index+1} of ${totalDois} - Checking doi: ${doi} for author matches. ${newAuthorsMatched} new matches of ${_.keys(authorsMatchedByDoi[doi]).length} matches found`)
-
+  
   }, { concurrency: 60 })
   
   console.log('Finished check publications for new author matches.')
