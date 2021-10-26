@@ -165,8 +165,8 @@ export class SemanticScholarDataSource implements DataSource {
   async getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): Promise<NormedPublication[]>{
     let normedPubs = []
     await pMap (sourcePublications, async (pub) => {
-      const authors = await this.getNormedAuthors(pub)
-      console.log(`Normed authors found: ${JSON.stringify(authors, null, 2)}`)
+      const authors = await SemanticScholarDataSource.getNormedAuthors(pub)
+      // console.log(`Normed authors found: ${JSON.stringify(authors, null, 2)}`)
       let normedPub: NormedPublication = {
         title: pub['title'],
         doi: pub['doi'],
@@ -174,7 +174,6 @@ export class SemanticScholarDataSource implements DataSource {
         publicationDate: `${pub['year']}`,  // force to be string
         datasourceName: this.getSourceName(),
         sourceId: pub['paperId'],
-        authors: authors,
         sourceMetadata: pub
       }
       // add optional properties
@@ -219,7 +218,7 @@ export class SemanticScholarDataSource implements DataSource {
   }
 
   // returns set of coauthors for a given publication metadata harvested from semantic scholar with attributes like names and ids
-  getCoauthors(sourceMetadata) {
+  public static getCoauthors(sourceMetadata) {
     if (sourceMetadata && sourceMetadata['authors']) {
       return sourceMetadata['authors']
     } else {
@@ -240,7 +239,7 @@ export class SemanticScholarDataSource implements DataSource {
     //   author['family'] = parsedName.last
     //   cslStyleAuthors.push(author)
     // }, { concurrency: 1 })
-    const normedAuthors: NormedAuthor[] = await this.getNormedAuthors(sourceMetadata)
+    const normedAuthors: NormedAuthor[] = await SemanticScholarDataSource.getNormedAuthors(sourceMetadata)
     return _.map(normedAuthors, (author) => {
       return {
         family: author.familyName,
@@ -249,8 +248,8 @@ export class SemanticScholarDataSource implements DataSource {
     })
   }
 
-  async getNormedAuthors(sourceMetadata): Promise<NormedAuthor[]> {
-    const sourceAuthors = this.getCoauthors(sourceMetadata)
+  public static async getNormedAuthors(sourceMetadata): Promise<NormedAuthor[]> {
+    const sourceAuthors = SemanticScholarDataSource.getCoauthors(sourceMetadata)
     const normedAuthors: NormedAuthor[] = []
     await pMap(sourceAuthors, async (sourceAuthor, index) => {
       const parsedName = await nameParser({

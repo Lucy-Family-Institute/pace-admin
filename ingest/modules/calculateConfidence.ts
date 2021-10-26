@@ -133,9 +133,9 @@ export class CalculateConfidence {
     const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
       const names = []
       names.push({
-        lastName: person.family_name.toLowerCase(),
-        firstInitial: person.given_name[0].toLowerCase(),
-        firstName: person.given_name.toLowerCase(),
+        lastName: _.trim(person.family_name.toLowerCase()),
+        firstInitial: _.trim(person.given_name)[0].toLowerCase(),
+        firstName: _.trim(person.given_name.toLowerCase()),
       })
       // add all name variations
       if (person.persons_namevariances) {
@@ -325,7 +325,7 @@ export class CalculateConfidence {
 
   getAuthorLastNames (author) {
     const lastNames = _.transform(author['names'], function (result, value) {
-      result.push(value['lastName'])
+      result.push(_.trim(value['lastName']))
       return true
     }, [])
     return lastNames
@@ -431,8 +431,17 @@ export class CalculateConfidence {
     return matchedAuthors
   }
 
+  testIsInitials(name) {
+    let testName = normalizeString(name, {removeSpaces: true, skipLower: true})
+    if (testName && testName.length <= 2) {
+      return true
+    } else {
+      return false
+    }
+  }
+
   // only call this method if last name matched
-  testAuthorGivenNamePart (author, publicationAuthorMap, initialOnly, failIfOnlyInitialInGivenName?) {
+  testAuthorGivenNamePart (author, publicationAuthorMap, initialOnly, failIfOnlyInitialInGivenName?, passIfInitialsOnlyInName?) {
     // really check for last name and given name intial match for one of the name variations
     // group name variations by last name
     const nameVariations = _.groupBy(author['names'], 'lastName')
@@ -450,24 +459,29 @@ export class CalculateConfidence {
             let matched = false
             const givenParts = _.split(pubAuthor['given'], ' ')
             let firstKey = 'firstName'
-            _.each(givenParts, (part) => {
-              if (initialOnly){
-                part = part[0]
-                firstKey = 'firstInitial'
-              }
-              if (part===undefined){
-                console.log(`splitting given parts pubAuthor is: ${JSON.stringify(pubAuthor, null, 2)}`)
-              }
-              if (part && this.nameMatchFuzzy(pubLastName, 'lastName', part.toLowerCase(), firstKey, nameVariations[nameLastName])) {
-                // console.log(`found match for author: ${JSON.stringify(pubAuthor, null, 2)}`)
-                const testPart = part.replace(/\./g,'')
-                // console.log(`part is '${part}' Test part is: '${testPart}' failIfOnlyInitialInGivenName is: ${failIfOnlyInitialInGivenName}`)
-                if (!failIfOnlyInitialInGivenName || testPart.length > 1){
-                  (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
-                  matched = true
+            if (passIfInitialsOnlyInName && this.testIsInitials(pubAuthor['given'])){
+              (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
+              matched = true
+            } else {
+              _.each(givenParts, (part) => {
+                if (initialOnly){
+                  part = part[0]
+                  firstKey = 'firstInitial'
                 }
-              }
-            })
+                if (part===undefined){
+                  console.log(`splitting given parts pubAuthor is: ${JSON.stringify(pubAuthor, null, 2)}`)
+                }
+                if (part && this.nameMatchFuzzy(pubLastName, 'lastName', part.toLowerCase(), firstKey, nameVariations[nameLastName])) {
+                  // console.log(`found match for author: ${JSON.stringify(pubAuthor, null, 2)}`)
+                  const testPart = part.replace(/\./g,'')
+                  // console.log(`part is '${part}' Test part is: '${testPart}' failIfOnlyInitialInGivenName is: ${failIfOnlyInitialInGivenName}`)
+                  if (!failIfOnlyInitialInGivenName || testPart.length > 1){
+                    (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
+                    matched = true
+                  }
+                }
+              })
+            }
             // if not matched try matching without breaking it into parts
             if (!matched && givenParts.length > 1) {
               if (this.nameMatchFuzzy(pubLastName, 'lastName', pubAuthor['given'], firstKey, nameVariations[nameLastName])) {
@@ -498,14 +512,15 @@ export class CalculateConfidence {
   // only call this method if last name and initials matched
   testAuthorGivenNameMismatch (author, publicationAuthorMap) {
     // check if initials passed, if initials do not pass then say it is a mismatch
+    //  -- if initials passed then check if only initials given, if so say no mismatch
     //  -- if initials passed then check given name. 
-    //  -- if given name length 1 char only or moret than not a match say there is a mismatch
+    //  -- if given name length 1 char only or more than not a match say there is a mismatch
     
     const testInitialsMatchedAuthors = this.testAuthorGivenNameInitial (author, publicationAuthorMap)
     const testInitialsMatch = (testInitialsMatchedAuthors && _.keys(testInitialsMatchedAuthors).length > 0)
     if (testInitialsMatch) {
       // check if passes with failIfOnlyInitialInGivenName to false so it allows matches if length = 1
-      const testInitialsAllowedMatchedAuthors = this.testAuthorGivenNamePart (author, publicationAuthorMap, false, false)
+      const testInitialsAllowedMatchedAuthors = this.testAuthorGivenNamePart (author, publicationAuthorMap, false, false, true)
       const testInitialsAllowed = (testInitialsAllowedMatchedAuthors && _.keys(testInitialsAllowedMatchedAuthors).length > 0)
       // const testInitialsNotAllowed = (testInitialsNotAllowedMatchedAuthors && _.keys(testInitialsNotAllowedMatchedAuthors).length > 0)
       if (testInitialsAllowed) {
@@ -608,11 +623,25 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
     }
   }
 
+  trimAuthorNames(author) {
+    let newAuthor = _.cloneDeep(author)
+    newAuthor.names = _.map(newAuthor.names, (name) => {
+      return {
+        lastName: _.trim(name.lastName),
+        firstName: _.trim(name.firstName),
+        firstInitial: _.trim(name.firstName)[0]
+      }
+    })
+    return newAuthor
+  }
+
   async performAuthorConfidenceTests (author, publicationCsl, confirmedAuthors, confidenceTypesByRank, sourceName, sourceMetadata?, pubAuthorMap?) {
     // array of arrays for each rank sorted 1 to highest number
     // iterate through each group by rank if no matches in one rank, do no execute the next rank
     const sortedRanks = _.sortBy(_.keys(confidenceTypesByRank), (value) => { return value })
     // now just push arrays in order into another array
+
+    const testAuthor = this.trimAuthorNames(author)
 
     //update to current matched authors before proceeding with next tests
     let publicationAuthorMap
@@ -631,13 +660,13 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
       if (!stopTesting){
         await pMap(confidenceTypesByRank[rank], async (confidenceType) => {
           // need to update to make publicationAuthorMap be only ones that matched last name for subsequent tests
-          let currentMatchedAuthors = this.performConfidenceTest(confidenceType, publicationCsl, author, publicationAuthorMap, confirmedAuthors, sourceName, sourceMetadata)
+          let currentMatchedAuthors = this.performConfidenceTest(confidenceType, publicationCsl, testAuthor, publicationAuthorMap, confirmedAuthors, sourceName, sourceMetadata)
           if (currentMatchedAuthors && _.keys(currentMatchedAuthors).length > 0){
             (passedConfidenceTests[rank] || (passedConfidenceTests[rank] = {}))[confidenceType['name']] = {
               confidenceTypeId: confidenceType['id'],
               confidenceTypeName : confidenceType['name'],
               confidenceTypeBaseValue: confidenceType['base_value'],
-              testAuthor : author,
+              testAuthor : testAuthor,
               matchedAuthors : currentMatchedAuthors
             }
             // union any authors that are there for each author last name
@@ -654,6 +683,8 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
             }
           }
         }, {concurrency: 3})
+
+        // console.log(`Matched authors are: ${JSON.stringify(matchedAuthors, null, 2)}`)
         if (_.keys(matchedAuthors).length <= 0 || stopTesting){
           // stop processing and skip next set of tests
           stopTesting = true
