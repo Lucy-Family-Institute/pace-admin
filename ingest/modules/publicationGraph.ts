@@ -12,8 +12,10 @@ export default class PublicationGraph {
   // the current index for personPubSets, will increment whenever adding a new one
   personPubSetIdIndex: Number
   personPublicationsById: {}
+  outputLogs: boolean
   
-  constructor () {
+  constructor (outputLogs= false) {
+    this.outputLogs = outputLogs
     this.personPubSetIdIndex = 0
     this.personPubSetPointer = {}
     this.personPubSetsById = {}
@@ -48,7 +50,9 @@ export default class PublicationGraph {
       return doiKey
     })
 
-    console.log(`Create publication graph...`)
+    if (this.outputLogs) {
+      console.log(`Create publication graph...`)
+    }
     // keep a map of personPubId to set id in order to find the set that something should be added to if found as same pub
     // merge personPubs together by title and then doi
     _.each(_.keys(publicationsGroupedByTitle), (titleKey) => {
@@ -66,7 +70,9 @@ export default class PublicationGraph {
     // now link together if same doi (if already found above will add to existing set)
     _.each(_.keys(publicationsGroupedByDoi), (doiKey) => {
       if (doiKey !== undefined && doiKey !== 'undefined' && doiKey !== null && this.removeSpaces(doiKey) !== '') {
-        console.log(`Linking person pubs by doiKey: '${doiKey}' personpubs: ${JSON.stringify(publicationsGroupedByDoi[doiKey], null, 2)}`)
+        if (this.outputLogs) {
+          console.log(`Linking person pubs by doiKey: '${doiKey}' personpubs: ${JSON.stringify(publicationsGroupedByDoi[doiKey], null, 2)}`)
+        }
         this.linkPersonPubs(publicationsGroupedByDoi[doiKey])
       } else {
         // do separate pubset for each doi
@@ -75,7 +81,9 @@ export default class PublicationGraph {
         })
       }
     })
-    console.log(`Finished publication graph.`)
+    if (this.outputLogs) {
+      console.log(`Finished publication graph.`)
+    }
   }
 
   getAllPublicationSets(): PublicationSet[] {
@@ -88,7 +96,9 @@ export default class PublicationGraph {
   }
 
   getPublicationDoiKey (publication) {
-    console.log(`Generating doi key for publication id: ${publication.id} doi: ${publication.doi}`)
+    if (this.outputLogs) {
+      console.log(`Generating doi key for publication id: ${publication.id} doi: ${publication.doi}`)
+    }
     let doiKey
     if (!publication.doi || publication.doi === null || this.removeSpaces(publication.doi) === '') {
       if (publication.source_name && publication.source_id) {
@@ -97,7 +107,9 @@ export default class PublicationGraph {
     } else {
       doiKey = publication.doi
     }
-    console.log(`Generated doi key for publication id: ${publication.id} doi: ${publication.doi} doi key: ${doiKey}`)    
+    if (this.outputLogs) {
+      console.log(`Generated doi key for publication id: ${publication.id} doi: ${publication.doi} doi key: ${doiKey}`)
+    }  
     return doiKey
   }
 

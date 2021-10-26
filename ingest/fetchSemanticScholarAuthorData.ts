@@ -15,6 +15,7 @@ import { getDateObject } from './units/dateRange'
 
 import DataSourceConfig from '../ingest/modules/dataSourceConfig'
 import { createEmitAndSemanticDiagnosticsBuilderProgram } from 'typescript'
+import NormedPublication from './modules/normedPublication'
 
 dotenv.config({
   path: '../.env'
@@ -64,75 +65,87 @@ async function main (): Promise<void> {
   const possibleAuthorIdsByPersonId: {} = await semanticScholarDS.loadPossibleAuthorIdsFromCSV(possibleAuthorIdsPath, 'person_id', 'matched_author_author_id')
   
   console.log(`Possible Author Ids by Person Id: ${JSON.stringify(possibleAuthorIdsByPersonId, null, 2)}`)
-  const years = [ 2020 ]
+  // const years = [ 2019, 2020, 2021 ]
+  const minYear = 2019
+  const maxYear = 2021
   let succeededPapers = []
   let failedPapers = []
   let succeededAuthors = []
   let failedAuthors = []
-  await pMap(years, async (year) => {
-    let skippedAuthors = 0
 
-    const normedPersons: NormedPerson[] = await getAllNormedPersonsByYear(year, client)
+  let normedPersonsById = {}
+  let skippedAuthors = 0
 
-    const resultsDir = `../data/${dsConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`
+  for (let index = 0; index <= maxYear - minYear; index++) {
+  //await pMap(years, async (year) => {
 
-    // console.log(`Person with harvest errors for ${year} are: ${JSON.stringify(personWithHarvestErrors,null,2)}`)
-    // console.log(`Normed persons for ${year} are: ${JSON.stringify(normedPersons,null,2)}`)
-    // console.log(`Normed persons for ${year} are: ${JSON.stringify(normedPersons.length,null,2)}`)
+    const normedPersonsByYear: NormedPerson[] = await getAllNormedPersonsByYear((minYear + index), client)
+    _.each (normedPersonsByYear, (normedPerson: NormedPerson) => {
+      normedPersonsById[`${normedPerson.id}`] = normedPerson 
+    })
+  } //, { concurrency: 1 })
 
 
-    let personCounter = 0
-    
-    // const normedPersons: NormedPerson[] = [person, person2]
-    const subset = _.chunk(normedPersons, 1)
-    // await pMap(personWithHarvestErrors, async (person) => {
-    await pMap(subset, async (persons) => {
-      try {
-        personCounter += 1
-        const person = persons[0]
-        const personId = person['id']
-        if (person.sourceIds && person.sourceIds.semanticScholarIds || possibleAuthorIdsByPersonId[`${personId}`]) {
-          console.log(`Getting papers for ${person.familyName}, ${person.givenName}`)
-          // run for each name plus name variance, put name variance second in case undefined
-          // let searchNames = _.concat([{given_name: person.firstName, family_name: person.lastName }], person.nameVariances)
-          // if (person.id === 2052) {
-          // do for each possible id
-          let semanticScholarIds = []
-          if (!person.sourceIds) {
-            person.sourceIds = {}
-          }
-          
-          if (person.sourceIds && person.sourceIds.semanticScholarIds) {
-            semanticScholarIds = person.sourceIds.semanticScholarIds
-          }
-          // } else if (possibleAuthorIdsByPersonId[`${personId}`]) {
-          //   semanticScholarIds = _.concat(semanticScholarIds, possibleAuthorIdsByPersonId[`${personId}`])
-          // }
-          let harvestPerson = _.clone(person)
-          harvestPerson.sourceIds.semanticScholarIds = semanticScholarIds
-          const harvestPersons = [harvestPerson]
-          await semanticScholarHarvester.harvestToCsv(resultsDir, harvestPersons, HarvestOperation.QUERY_BY_AUTHOR_ID, getDateObject(`${year}-01-01`), getDateObject(`${year}-12-31`), `${person.familyName}_${person.givenName}`)
-            // await pMap(searchNames, async (searchName) => {
-          await wait(1500)
-            
-          // }, { concurrency: 1})
-          succeededAuthors = _.concat(succeededAuthors, persons)
-          // } else {
-          //   console.log(`Skipping author ${person.familyName}, ${person.givenName} persons`)
-          // }
-        } else {
-          console.log(`Skipping author '${person.familyName}, ${person.givenName}' with no semantic scholar Id defined`)
-          skippedAuthors += 1
+  const resultsDir = `../data/${dsConfig.sourceName}_${minYear}-${maxYear}_${moment().format('YYYYMMDDHHmmss')}/`
+
+  // console.log(`Person with harvest errors for ${year} are: ${JSON.stringify(personWithHarvestErrors,null,2)}`)
+  // console.log(`Normed persons for ${year} are: ${JSON.stringify(normedPersons,null,2)}`)
+  // console.log(`Normed persons for ${year} are: ${JSON.stringify(normedPersons.length,null,2)}`)
+
+
+  let personCounter = 0
+  
+  // const normedPersons: NormedPerson[] = [person, person2]
+  const normedPersons: NormedPerson[] = _.values(normedPersonsById)
+  const subset = _.chunk(normedPersons, 1)
+  // await pMap(personWithHarvestErrors, async (person) => {
+  await pMap(subset, async (persons: NormedPerson[]) => {
+    try {
+      personCounter += 1
+      const person = persons[0]
+      const personId = person['id']
+      if (person.sourceIds && person.sourceIds.semanticScholarIds || possibleAuthorIdsByPersonId[`${personId}`]) {
+        // run for each name plus name variance, put name variance second in case undefined
+        // let searchNames = _.concat([{given_name: person.firstName, family_name: person.lastName }], person.nameVariances)
+        // if (person.id === 157) {
+        console.log(`Getting papers for ${person.familyName}, ${person.givenName}`)
+        // do for each possible id
+        let semanticScholarIds = []
+        if (!person.sourceIds) {
+          person.sourceIds = {}
         }
-      } catch (error) {
-        const errorMessage = `Error on get Semantic Scholar papers for authors: ${JSON.stringify(persons, null, 2)}: ${error}`
-        failedPapers.push(errorMessage)
-        _.concat(failedAuthors, persons)
-        console.log(errorMessage)
+        
+        if (person.sourceIds && person.sourceIds.semanticScholarIds) {
+          semanticScholarIds = person.sourceIds.semanticScholarIds
+        }
+        // } else if (possibleAuthorIdsByPersonId[`${personId}`]) {
+        //   semanticScholarIds = _.concat(semanticScholarIds, possibleAuthorIdsByPersonId[`${personId}`])
+        // }
+        let harvestPerson = _.clone(person)
+        harvestPerson.sourceIds.semanticScholarIds = semanticScholarIds
+        const harvestPersons = [harvestPerson]
+        await semanticScholarHarvester.harvestToCsv(resultsDir, harvestPersons, HarvestOperation.QUERY_BY_AUTHOR_ID, getDateObject(`${minYear}-01-01`), getDateObject(`${maxYear}-12-31`), `${person.familyName}_${person.givenName}`)
+          // await pMap(searchNames, async (searchName) => {
+        await wait(1500)
+          
+        // }, { concurrency: 1})
+        succeededAuthors = _.concat(succeededAuthors, persons)
+        // } else {
+        //   console.log(`Skipping author ${person.familyName}, ${person.givenName} persons`)
+        //   skippedAuthors += 1
+        // }
+      } else {
+        console.log(`Skipping author '${person.familyName}, ${person.givenName}' with no semantic scholar Id defined`)
+        skippedAuthors += 1
       }
-    }, {concurrency: 1})
-    console.log(`Retrieved papers for ${normedPersons.length - skippedAuthors} authors, skipped ${skippedAuthors} authors`)
-  }, { concurrency: 1 })
+    } catch (error) {
+      const errorMessage = `Error on get Semantic Scholar papers for authors: ${JSON.stringify(persons, null, 2)}: ${error}`
+      failedPapers.push(errorMessage)
+      _.concat(failedAuthors, persons)
+      console.log(errorMessage)
+    }
+  }, {concurrency: 1})
+  console.log(`Retrieved papers for ${normedPersons.length - skippedAuthors} authors, skipped ${skippedAuthors} authors`)
 }
 
 main();
