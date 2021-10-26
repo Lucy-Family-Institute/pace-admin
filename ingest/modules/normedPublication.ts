@@ -10,6 +10,7 @@ import NormedAuthor from './normedAuthor'
 import writeToJSONFile from '../units/writeToJSONFile'
 import { loadJSONFromFile } from '../units/loadJSONFromFile'
 import BibTex from './bibTex'
+import { SemanticScholarDataSource } from './semanticScholarDataSource'
 
 export default class NormedPublication {
   // ------ begin declare properties used when using NormedPublication like an interface
@@ -19,7 +20,7 @@ export default class NormedPublication {
   abstract?: string
   title: string
   journalTitle: string
-  authors: NormedAuthor[]
+  authors?: NormedAuthor[]
   journalIssn?: string
   journalEIssn?: string
   doi: string
@@ -278,14 +279,23 @@ export default class NormedPublication {
     return pub
   }
 
-  public static getBibTex (normedPub: NormedPublication): BibTex {
+  public static async getAuthors (normedPub: NormedPublication): Promise<NormedAuthor[]> {
+    if (normedPub.authors) {
+      return normedPub.authors
+    } else if (normedPub.datasourceName === 'SemanticScholar') {
+      return await SemanticScholarDataSource.getNormedAuthors(normedPub.sourceMetadata)
+    }
+  }
+
+  public static async getBibTex (normedPub: NormedPublication): Promise<BibTex> {
     const date: Date = getDateObject(normedPub.publicationDate)
     
+    const authors = await NormedPublication.getAuthors(normedPub)
     let bib: BibTex = {
       title: normedPub.title,
       journal: normedPub.journalTitle,
       year: `${date.getFullYear()}`,
-      author: BibTex.getBibTexAuthors(normedPub.authors),
+      author: BibTex.getBibTexAuthors(authors),
     }
     
     // optional properties

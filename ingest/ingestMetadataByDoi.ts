@@ -568,7 +568,7 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
           let bibTexStr = undefined
           let normedBibTex = undefined
           if (normedPub){
-            normedBibTex = NormedPublication.getBibTex(normedPub)
+            normedBibTex = await NormedPublication.getBibTex(normedPub)
             if (normedBibTex) bibTexStr = BibTex.toString(normedBibTex)
           } 
           if (!bibTexStr || bibTexByDoi[doi] && _.keys(bibTexByDoi[doi]).length > 0) {
@@ -583,8 +583,19 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
               csl = cslRecords[0]
               // console.log(`CSL constructed: ${JSON.stringify(csl, null, 2)}`)
             } catch (error) {
-              console.log(`Error on csl from bibtex: ${bibTexStr}`)
-              throw (error)
+              // try it without the abstract
+              let newBibTex
+              try {
+                if (normedBibTex) {
+                  console.log('Error encountered on bibTex, trying without abstract...')
+                  newBibTex = BibTex.toString(normedBibTex, true)
+                  cslRecords = await Cite.inputAsync(newBibTex)
+                  csl = cslRecords[0]
+                }
+              } catch (error) {
+                console.log(`Errored on csl from bibtex w/ or w/out abstract: ${bibTexStr}`)
+                throw (error)
+              }
             }
           } else {
             console.log(`Throwing the error for doi: ${doi}`)
