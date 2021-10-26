@@ -15,6 +15,7 @@ import readPublicationsCSLByYear from './gql/readPublicationsCSLByYear'
 import readPersonPublications from './gql/readPersonPublications'
 import insertPersonPublications from './gql/insertPersonPublications'
 import { getNameKey } from './modules/queryNormalizedPeople'
+import { command as writeCsv } from './units/writeCsv'
 
 dotenv.config({
   path: '../.env'
@@ -323,7 +324,11 @@ async function getPublicationsByDois(year): Promise<{}> {
   const queryResult = await client.query(readPublicationsCSLByYear(year))
   // console.log(`Publication person counts: ${JSON.stringify(queryResult.data.publications, null, 2)}`)
   return _.groupBy(queryResult.data.publications, (publication) => {
-    return publication.doi
+    if (!publication.doi){
+      return `${publication.source_name}_${publication.source_id}`
+    } else {
+      return publication.doi
+    }
   })
 }
 
@@ -337,7 +342,7 @@ const getIngestFilePaths = require('./getIngestFilePaths');
 
 //returns status map of what was done
 async function main() {
-  const minConfidence = 0.30
+  const minConfidence = 0.35
   const year = 2020
   //just get all simplified persons as will filter later
   const calculateConfidence: CalculateConfidence = new CalculateConfidence()
@@ -384,11 +389,13 @@ async function main() {
   console.log('Starting check publications for new author matches...')
 
   // put new person pub matches into map of person_id to array of publication_id's
-  const insertPersonPubs = {}
+  const insertPersonPubsByPersonId = {}
   const totalDois = _.keys(pubsByDoi).length
 
   // const subset = _.chunk(_.keys(pubsByDoi), 20)
   // await pMap(subset[0], async (doi, index) => {
+
+  let addPersonPubCount = 0
   await pMap(_.keys(pubsByDoi), async (doi, index) => {
     const bibTex = getBibTexByDoi(bibTexByDois, doi)
     const csl = pubsByDoi[doi][0]['csl']
@@ -403,14 +410,18 @@ async function main() {
         // console.log(`Pub ids by person id are: ${pubIdsByPersonId[personId]}, check for pub id: ${pub['id']}`)
         // const alreadyInDB = await isPersonPublicationAlreadyInDB(pub['id'], personId)
         // if (!alreadyInDB){
-        if (_.indexOf(pubIdsByPersonId[personId], pub['id'])< 0){
+        if (_.indexOf(pubIdsByPersonId[personId], pub['id']) < 0){
           const newPersonPub = {
             person_id: personId,
             publication_id: pub['id'],
             confidence: authorsMatchedByDoi[doi][personId]['confidence']
           }
           // set to key value pair so no duplicates added
-          insertPersonPubs[`${personId}_${pub['id']}`] = newPersonPub
+          if (!insertPersonPubsByPersonId[personId]) {
+            insertPersonPubsByPersonId[personId] = {}
+          }
+          insertPersonPubsByPersonId[personId][pub['id']] = newPersonPub
+          addPersonPubCount += 1
           matchedAuthor = true
         }
       }, { concurrency: 1 })
@@ -424,13 +435,23 @@ async function main() {
   
   console.log('Finished check publications for new author matches.')
   // console.log(`Insert Person Pubs to add: ${JSON.stringify(insertPersonPubs, null, 2)}`)
-  console.log(`Insert Person Pubs to add: ${JSON.stringify(_.keys(insertPersonPubs).length, null, 2)}`)
+  const totalAddPersons = _.keys(insertPersonPubsByPersonId).length
+  console.log(`Insert Person Pubs for ${totalAddPersons} people, total new personPubs: ${addPersonPubCount}`)
 
-  const mutateResult = await client.mutate(
-    insertPersonPublications(_.values(insertPersonPubs))
-  )
+  await pMap(_.keys(insertPersonPubsByPersonId), async (personId, index) => {
+    try {
+      console.log(`#${index+1} of ${totalAddPersons}: Insert '${_.keys(insertPersonPubsByPersonId[personId]).length}' personpubs for person id: ${personId}`)
+      const mutateResult = await client.mutate(
+        insertPersonPublications(_.values(insertPersonPubsByPersonId[personId]))
+      )
+    } catch (error) {
+      console.log(`Error on insert person pubs for person id: ${personId}`)
+    }
+  }, { concurrency: 10} )
+  console.log()
+  
 
-  console.log(`Inserted ${mutateResult.data.insert_persons_publications.returning.length} person publication matches.`)
+  // console.log(`Inserted ${mutateResult.data.insert_persons_publications.returning.length} person publication matches.`)
   
 }
 

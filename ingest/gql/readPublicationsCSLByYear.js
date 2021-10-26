@@ -11,6 +11,7 @@ export default function readPublicationsCSLByYear (year) {
           year
           csl
           source_name
+          source_id
         }
       }
     `,
