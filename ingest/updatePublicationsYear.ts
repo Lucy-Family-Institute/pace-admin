@@ -51,6 +51,7 @@ function getUpdatedPublicationYear (csl) {
   let years = []
   years.push(_.get(csl, 'journal-issue.published-print.date-parts[0][0]', null))
   years.push(_.get(csl, 'journal-issue.published-online.date-parts[0][0]', null))
+  years.push(_.get(csl, 'published.date-parts[0][0]', null))
   years.push(_.get(csl, 'issued.date-parts[0][0]', null))
   years.push(_.get(csl, 'published-print.date-parts[0][0]', null))
   years.push(_.get(csl, 'published-online.date-parts[0][0]', null))
