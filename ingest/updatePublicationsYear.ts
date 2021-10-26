@@ -107,16 +107,16 @@ async function main (): Promise<void> {
   })
   console.log('Done writing data to csv')
 
-  // console.log('Updating data in DB...')
-  // //insert single matches
-  // let loopCounter = 0
-  // await pMap(data, async (pub) => {
-  //   loopCounter += 1
-  //   await randomWait(loopCounter)
-  //   console.log(`Updating pub ${pub['id']} year: ${pub['expectedYear']}...`)
-  //   const resultUpdatePub = await client.mutate(updatePubYear(pub['id'], pub['expectedYear']))
-  // }, {concurrency: 10})
-  // console.log('Done Updating data in DB.')
+  console.log('Updating data in DB...')
+  //insert single matches
+  let loopCounter = 0
+  await pMap(data, async (pub) => {
+    loopCounter += 1
+    await randomWait(loopCounter)
+    console.log(`Updating pub ${pub['id']} year: ${pub['expectedYear']}...`)
+    const resultUpdatePub = await client.mutate(updatePubYear(pub['id'], pub['expectedYear']))
+  }, {concurrency: 10})
+  console.log('Done Updating data in DB.')
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
