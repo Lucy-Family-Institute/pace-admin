@@ -431,8 +431,17 @@ export class CalculateConfidence {
     return matchedAuthors
   }
 
+  testIsInitials(name) {
+    let testName = normalizeString(name, {removeSpaces: true, skipLower: true})
+    if (testName && testName.length <= 2) {
+      return true
+    } else {
+      return false
+    }
+  }
+
   // only call this method if last name matched
-  testAuthorGivenNamePart (author, publicationAuthorMap, initialOnly, failIfOnlyInitialInGivenName?) {
+  testAuthorGivenNamePart (author, publicationAuthorMap, initialOnly, failIfOnlyInitialInGivenName?, passIfInitialsOnlyInName?) {
     // really check for last name and given name intial match for one of the name variations
     // group name variations by last name
     const nameVariations = _.groupBy(author['names'], 'lastName')
@@ -450,24 +459,29 @@ export class CalculateConfidence {
             let matched = false
             const givenParts = _.split(pubAuthor['given'], ' ')
             let firstKey = 'firstName'
-            _.each(givenParts, (part) => {
-              if (initialOnly){
-                part = part[0]
-                firstKey = 'firstInitial'
-              }
-              if (part===undefined){
-                console.log(`splitting given parts pubAuthor is: ${JSON.stringify(pubAuthor, null, 2)}`)
-              }
-              if (part && this.nameMatchFuzzy(pubLastName, 'lastName', part.toLowerCase(), firstKey, nameVariations[nameLastName])) {
-                // console.log(`found match for author: ${JSON.stringify(pubAuthor, null, 2)}`)
-                const testPart = part.replace(/\./g,'')
-                // console.log(`part is '${part}' Test part is: '${testPart}' failIfOnlyInitialInGivenName is: ${failIfOnlyInitialInGivenName}`)
-                if (!failIfOnlyInitialInGivenName || testPart.length > 1){
-                  (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
-                  matched = true
+            if (passIfInitialsOnlyInName && this.testIsInitials(pubAuthor['given'])){
+              (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
+              matched = true
+            } else {
+              _.each(givenParts, (part) => {
+                if (initialOnly){
+                  part = part[0]
+                  firstKey = 'firstInitial'
                 }
-              }
-            })
+                if (part===undefined){
+                  console.log(`splitting given parts pubAuthor is: ${JSON.stringify(pubAuthor, null, 2)}`)
+                }
+                if (part && this.nameMatchFuzzy(pubLastName, 'lastName', part.toLowerCase(), firstKey, nameVariations[nameLastName])) {
+                  // console.log(`found match for author: ${JSON.stringify(pubAuthor, null, 2)}`)
+                  const testPart = part.replace(/\./g,'')
+                  // console.log(`part is '${part}' Test part is: '${testPart}' failIfOnlyInitialInGivenName is: ${failIfOnlyInitialInGivenName}`)
+                  if (!failIfOnlyInitialInGivenName || testPart.length > 1){
+                    (matchedAuthors[pubLastName] || (matchedAuthors[pubLastName] = [])).push(pubAuthor)
+                    matched = true
+                  }
+                }
+              })
+            }
             // if not matched try matching without breaking it into parts
             if (!matched && givenParts.length > 1) {
               if (this.nameMatchFuzzy(pubLastName, 'lastName', pubAuthor['given'], firstKey, nameVariations[nameLastName])) {
@@ -498,14 +512,15 @@ export class CalculateConfidence {
   // only call this method if last name and initials matched
   testAuthorGivenNameMismatch (author, publicationAuthorMap) {
     // check if initials passed, if initials do not pass then say it is a mismatch
+    //  -- if initials passed then check if only initials given, if so say no mismatch
     //  -- if initials passed then check given name. 
-    //  -- if given name length 1 char only or moret than not a match say there is a mismatch
+    //  -- if given name length 1 char only or more than not a match say there is a mismatch
     
     const testInitialsMatchedAuthors = this.testAuthorGivenNameInitial (author, publicationAuthorMap)
     const testInitialsMatch = (testInitialsMatchedAuthors && _.keys(testInitialsMatchedAuthors).length > 0)
     if (testInitialsMatch) {
       // check if passes with failIfOnlyInitialInGivenName to false so it allows matches if length = 1
-      const testInitialsAllowedMatchedAuthors = this.testAuthorGivenNamePart (author, publicationAuthorMap, false, false)
+      const testInitialsAllowedMatchedAuthors = this.testAuthorGivenNamePart (author, publicationAuthorMap, false, false, true)
       const testInitialsAllowed = (testInitialsAllowedMatchedAuthors && _.keys(testInitialsAllowedMatchedAuthors).length > 0)
       // const testInitialsNotAllowed = (testInitialsNotAllowedMatchedAuthors && _.keys(testInitialsNotAllowedMatchedAuthors).length > 0)
       if (testInitialsAllowed) {
