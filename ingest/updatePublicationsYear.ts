@@ -51,6 +51,7 @@ function getUpdatedPublicationYear (csl) {
   let years = []
   years.push(_.get(csl, 'journal-issue.published-print.date-parts[0][0]', null))
   years.push(_.get(csl, 'journal-issue.published-online.date-parts[0][0]', null))
+  years.push(_.get(csl, 'published.date-parts[0][0]', null))
   years.push(_.get(csl, 'issued.date-parts[0][0]', null))
   years.push(_.get(csl, 'published-print.date-parts[0][0]', null))
   years.push(_.get(csl, 'published-online.date-parts[0][0]', null))
@@ -106,16 +107,16 @@ async function main (): Promise<void> {
   })
   console.log('Done writing data to csv')
 
-  console.log('Updating data in DB...')
-  //insert single matches
-  let loopCounter = 0
-  await pMap(data, async (pub) => {
-    loopCounter += 1
-    await randomWait(loopCounter)
-    console.log(`Updating pub ${pub['id']} year: ${pub['expectedYear']}...`)
-    const resultUpdatePub = await client.mutate(updatePubYear(pub['id'], pub['expectedYear']))
-  }, {concurrency: 10})
-  console.log('Done Updating data in DB.')
+  // console.log('Updating data in DB...')
+  // //insert single matches
+  // let loopCounter = 0
+  // await pMap(data, async (pub) => {
+  //   loopCounter += 1
+  //   await randomWait(loopCounter)
+  //   console.log(`Updating pub ${pub['id']} year: ${pub['expectedYear']}...`)
+  //   const resultUpdatePub = await client.mutate(updatePubYear(pub['id'], pub['expectedYear']))
+  // }, {concurrency: 10})
+  // console.log('Done Updating data in DB.')
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises

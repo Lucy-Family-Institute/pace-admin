@@ -1,21 +1,22 @@
 import gql from 'graphql-tag'
 
-export default function readPublicationsFromStartYear (startYear) {
+export default function readPublicationsCSLByYear (year) {
   return {
     query: gql`
-      query MyQuery ($startYear: Int!){
-        publications (where: {year: {_gte: $startYear}}){
+      query MyQuery ($year: Int!){
+        publications (where: {year: {_gte: $year}}){
           id
           title
           doi
           year
           csl
           source_name
+          source_id
         }
       }
     `,
       variables: {
-        startYear
+        year
       }
   }
 }
