@@ -11,9 +11,20 @@ export interface User {
   password: string
 }
 
+export interface DBUser {
+  id: number,
+  email: string,
+  role: string
+}
+
 export interface UserRole {
   email: string,
   role: string
+}
+
+export interface UserOrg {
+  userId: number,
+  org: string
 }
 
 export interface PaceClientConfig {
@@ -141,5 +152,63 @@ export class PaceClient {
         throw error
       }
     }
+  }
+
+  public async registerUserOrgs (userOrgs: UserOrg[]) {
+    console.log(`Starting loop to add ${userOrgs.length} user orgs`)
+    for (let index = 0; index < userOrgs.length; index++) {
+      const userOrg = userOrgs[index];
+      await this.registerUserOrg(userOrg)
+    }
+  }
+
+
+  public async registerUserOrg ( userOrg: UserOrg ): Promise<void> {
+    console.log(`Trying to add user org`, userOrg)
+    try {
+      await this.apolloClient.mutate({
+        mutation: gql`
+          mutation MyMutation ($userId: Int!, $org: review_organization_enum!) {
+            insert_users_organizations_one(object: {user_id: $userId, organization_value: $org}) {
+              id
+            }
+          }
+        `,
+        variables: {
+          userId: userOrg.userId.valueOf(),
+          org: userOrg.org
+        }
+      })
+      console.log(`Added User Org user: '${userOrg.userId}' org: '${userOrg.org}'`)
+    } catch (error) {
+      const errorCode = _.get(error, ['graphQLErrors', 'extensions', 'code'])
+      console.log(`Error on register user '${userOrg.userId}' org '${userOrg.org}': error - ${JSON.stringify(error.message, null, 2)}`)
+      if (errorCode === 'constraint-violation') {
+        throw error
+      }
+    }
+  }
+
+  public async getDBUsers(): Promise <DBUser[]>{
+    const result = await this.apolloClient.query({
+      query: gql`
+      query MyQuery {
+        users {
+          id
+          primaryEmail
+          role
+        }
+      }`
+    })
+    let users: DBUser[] = []
+    _.each(result.data.users, (user) => {
+      const dbUser: DBUser = {
+        id: user.id,
+        email: user.primaryEmail,
+        role: user.role
+      }
+      users.push(dbUser)
+    })
+    return users
   }
 }
