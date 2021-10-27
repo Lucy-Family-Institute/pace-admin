@@ -127,7 +127,7 @@
                         />
                       </q-item-section>-->
                     </template>
-                    <q-card v-if="item.publication !== undefined && (role === 'admin' || role === 'center-reviewer')">
+                    <q-card v-if="item.publication !== undefined && (role === 'ADMIN_REVIEWER' || role === 'CENTER_REVIEWER')">
                       <q-card-section dense align="center" class="text-center">
                         <q-item-label align="left">Move To:</q-item-label>
                         <q-btn dense v-if="reviewTypeFilter!=='pending'" color="purple" label="Pending" class="on-left" @click="clickReviewPending(index, person, personPublication);" />
