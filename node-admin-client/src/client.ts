@@ -11,6 +11,11 @@ export interface User {
   password: string
 }
 
+export interface UserRole {
+  email: string,
+  role: string
+}
+
 export interface PaceClientConfig {
   keycloakServer: string
   keycloakUsername: string
@@ -65,6 +70,45 @@ export class PaceClient {
     return null
   }
 
+  public async registerUserRoles (userRoles: UserRole[]) {
+    console.log(`Starting loop to add ${userRoles.length} user roles`)
+    for (let index = 0; index < userRoles.length; index++) {
+      const userRole = userRoles[index];
+      await this.registerUserRole(userRole)
+    }
+  }
+
+
+  public async registerUserRole ( userRole: UserRole ): Promise<void> {
+    console.log(`Trying to add`, userRole)
+    try {
+      await this.apolloClient.mutate({
+        mutation: gql`
+          mutation MyMutation ($email: String!, $role: users_roles_enum!) {
+            update_users (where: {primaryEmail: {_eq: $email}}, _set: {role: $role}) {
+              returning {
+                primaryEmail
+                role
+              }
+            }
+
+          }
+        `,
+        variables: {
+          email: userRole.email,
+          role: userRole.role
+        }
+      })
+      console.log(`Added User Role user: '${userRole.email}' role: '${userRole.role}'`)
+    } catch (error) {
+      const errorCode = _.get(error, ['graphQLErrors', 'extensions', 'code'])
+      console.log(`Error on register user '${userRole.email}' role '${userRole.role}': error - ${JSON.stringify(error.message, null, 2)}`)
+      if (errorCode === 'constraint-violation') {
+        throw error
+      }
+    }
+  }
+
   public async registerUsers (users: User[]) {
     console.log(`Starting loop to add ${users.length} users`)
     for (let index = 0; index < users.length; index++) {
@@ -92,6 +136,7 @@ export class PaceClient {
       })
     } catch (error) {
       const errorCode = _.get(error, ['graphQLErrors', 'extensions', 'code'])
+      console.log(`User '${user.email}' not added: error message - ${JSON.stringify(error.message, null, 2)}`)
       if (errorCode === 'constraint-violation') {
         throw error
       }
