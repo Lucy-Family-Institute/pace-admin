@@ -1,5 +1,5 @@
 import dotenv from 'dotenv'
-import { User, PaceClient, PaceClientConfig } from './src/client'
+import { User, UserRole, PaceClient, PaceClientConfig } from './src/client'
 import { command as loadCsv } from '../ingest/units/loadCsv' 
 import _ from 'lodash'
 
@@ -30,6 +30,7 @@ import _ from 'lodash'
   
   if (addCsvUsers) {
     console.log(`Trying to add csv users ${JSON.stringify(addCsvUsers, null, 2)}...`)
+    let userRoles = []
     const users = _.map(addCsvUsers, (addUser) => {
       console.log(`Starting prep user ${addUser}`)
       let password = addUser['password']
@@ -43,8 +44,17 @@ import _ from 'lodash'
         password: password
       }
       console.log(`Prepping user: ${JSON.stringify(user, null, 2)}`)
+      const userRole: UserRole = {
+        email: addUser['email'],
+        role: addUser['role']
+      }
+      userRoles.push(userRole)
       return user
     })
     await client.registerUsers(users)
+
+    console.log(`Trying to add user roles...`)
+    await client.registerUserRoles(userRoles)    
+    console.log(`Finished adding users and roles.`)
   }
 })()
