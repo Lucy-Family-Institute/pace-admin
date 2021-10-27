@@ -1530,7 +1530,7 @@
   - name: users_organizations
     using:
       foreign_key_constraint_on:
-        column: organization_id
+        column: organization_value
         table:
           schema: public
           name: users_organizations
@@ -2101,7 +2101,7 @@
   object_relationships:
   - name: organization
     using:
-      foreign_key_constraint_on: organization_id
+      foreign_key_constraint_on: organization_value
   - name: user
     using:
       foreign_key_constraint_on: user_id
@@ -2111,7 +2111,7 @@
       check: {}
       columns:
       - id
-      - organization_id
+      - organization_value
       - user_id
       backend_only: false
   select_permissions:
@@ -2120,7 +2120,7 @@
       columns:
       - id
       - user_id
-      - organization_id
+      - organization_value
       filter: {}
       allow_aggregations: true
   - role: CENTER_REVIEWER
@@ -2128,7 +2128,7 @@
       columns:
       - id
       - user_id
-      - organization_id
+      - organization_value
       filter:
         user_id:
           _eq: X-Hasura-User-Id
@@ -2138,7 +2138,7 @@
       columns:
       - id
       - user_id
-      - organization_id
+      - organization_value
       filter:
         user_id:
           _eq: X-Hasura-User-Id
@@ -2148,7 +2148,7 @@
       columns:
       - id
       - user_id
-      - organization_id
+      - organization_value
       filter:
         user_id:
           _eq: X-Hasura-User-Id
@@ -2157,7 +2157,7 @@
   - role: ADMIN_REVIEWER
     permission:
       columns:
-      - organization_id
+      - organization_value
       - user_id
       filter: {}
       check: null
