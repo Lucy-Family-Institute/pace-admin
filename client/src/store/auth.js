@@ -4,7 +4,8 @@ const state = {
   userId: null,
   isLoggedIn: false,
   name: null,
-  role: 'anonymous'
+  role: 'anonymous',
+  orgs: []
 }
 
 const getters = {

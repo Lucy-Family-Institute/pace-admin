@@ -12,18 +12,21 @@ export function makeBeforeEach (store) {
       try {
         const response = await axios({ url: '/session', method: 'GET' })
         const userId = response.data ? response.data.databaseId : null
-        const name = response.data ? response.data.name : null
-        const role = response.data ? response.data.role : 'anonymous'
+        const name = (response.data && response.data.name) ? response.data.name : null
+        const role = (response.data && response.data.role) ? response.data.role : 'anonymous'
+        const orgs = (response.data && response.data.orgs) ? response.data.orgs : []
         if (userId) {
           store.set('auth/isLoggedIn', true)
           store.set('auth/userId', userId)
           store.set('auth/name', name)
           store.set('auth/role', role)
+          store.set('auth/orgs', orgs)
         } else {
           store.set('auth/isLoggedIn', false)
           store.set('auth/userId', null)
           store.set('auth/name', null)
           store.set('auth/role', 'anonymous')
+          store.set('auth/orgs', [])
           if (!['/'].includes(to.path)) {
             return next('/')
           }

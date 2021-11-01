@@ -18,6 +18,9 @@ async function getUserByEmail (client, email: string) {
           id
           primaryEmail,
           role
+          users_organizations {
+            organization_value
+          }
         }
       }
     `,
@@ -50,6 +53,9 @@ async function init (options) {
         const result = await getUserByEmail(client, profile.email)
         profile.databaseId = result.id
         profile.role = result.role
+        profile.orgs = _.map(result.users_organizations, (userOrg) => {
+          return userOrg['organization_value']
+        })
       } catch (error) {
         console.error ('Is your user in both keycloak and the hasura database?', error)
       }
@@ -83,7 +89,8 @@ async function init (options) {
       'databaseId',
       'name',
       'email',
-      'role'
+      'role',
+      'orgs'
     ])
     res.json(response)
   })
