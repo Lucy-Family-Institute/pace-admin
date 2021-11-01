@@ -64,6 +64,9 @@
                     />
                 </q-item-label>
               </q-item>
+              <q-item v-if="(isCenterReviewer && isVisibleCenterReviewer && !selectedCenterReviewer)">
+                Warning: Current Center/Institute View is Read-only.
+              </q-item>
               <q-separator/>
               <download-csv
                 v-if="publicationsLoaded && !publicationsLoadedError && publicationsCslLoaded"
