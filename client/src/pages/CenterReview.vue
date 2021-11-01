@@ -1,12 +1,15 @@
 <template>
   <div>
     <div class="q-pa-md">
-      <q-item v-if="(!centerReviewer || role !== 'REVIEWER')">
+      <q-item v-if="!isCenterReviewer">
         You are not authorized to view this page.  If this is an error, please contact your adminstrator.
+      </q-item>
+      <q-item v-if="(isCenterReviewer && !isVisibleCenterReviewer && !firstFetch)">
+        Warning: User not currently authorized to review any Centers/Institutues.  Contact your administrator to grant permissions.
       </q-item>
       <q-splitter
         v-model="firstModel"
-        v-if="(centerReviewer && role === 'REVIEWER')"
+        v-if="isCenterReviewer"
         unit="px"
         :style="{height: ($q.screen.height-56-16)+'px'}"
       >
@@ -131,7 +134,7 @@
                         />
                       </q-item-section>-->
                     </template>
-                    <q-card v-if="item.publication !== undefined && role === 'REVIEWER' && centerReviewer && selectedCenterReviewer">
+                    <q-card v-if="item.publication !== undefined && isCenterReviewer && selectedCenterReviewer">
                       <q-card-section dense align="center" class="text-center">
                         <q-item-label align="left">Move To:</q-item-label>
                         <q-btn dense v-if="reviewTypeFilter!=='pending'" color="purple" label="Pending" class="on-left" @click="clickReviewPending(index, person, personPublication);" />
@@ -431,7 +434,7 @@ export default {
     reviewStates: undefined,
     selectedReviewState: undefined,
     institutionReviewState: undefined,
-    centerReviewer: false,
+    isVisibleCenterReviewer: false,
     selectedCenterReviewer: false,
     dom,
     date,
@@ -527,7 +530,8 @@ export default {
     reviewTypeFilter: 'pending',
     publicationsReloadPending: false,
     drawer: false,
-    miniState: false
+    miniState: false,
+    firstFetch: true
   }),
   beforeDestroy () {
     clearInterval(this.interval)
@@ -1207,13 +1211,14 @@ export default {
 
       this.centerOptions = _.map(results.data.review_organization, (reviewOrg) => {
         if (_.includes(this.userOrgs, reviewOrg.value)) {
-          this.centerReviewer = true
+          this.isVisibleCenterReviewer = true
         }
         return {
           label: reviewOrg.comment,
           value: reviewOrg.value
         }
       })
+      this.firstFetch = false
 
       const centerValues = _.map(this.centerOptions, (option) => { return option.value })
       if (this.selectedCenter && this.selectedCenter.value && !_.includes(centerValues, this.selectedCenter.value)) {
@@ -1222,7 +1227,18 @@ export default {
       }
 
       if (!this.selectedCenter || !this.selectedCenter.value) {
-        this.selectedCenter = this.preferredSelectedCenter
+        if (this.userOrgs.length > 0) {
+          const curOrgs = this.userOrgs
+          // get first one in the list that is same and user list
+          const firstIndex = _.findIndex(this.centerOptions, function (option) { return _.includes(curOrgs, option.value) })
+          if (firstIndex >= 0) {
+            this.selectedCenter = this.centerOptions[firstIndex]
+          }
+        }
+        // if still not set, set to preferred center
+        if (!this.selectedCenter || !this.selectedCenter.value) {
+          this.selectedCenter = this.preferredSelectedCenter
+        }
       }
 
       this.selectedCenterReviewer = _.includes(this.userOrgs, this.selectedCenter.value)
@@ -1974,6 +1990,7 @@ export default {
     isLoggedIn: sync('auth/isLoggedIn'),
     role: sync('auth/role'),
     userOrgs: sync('auth/orgs'),
+    isCenterReviewer: sync('auth/isCenterReviewer'),
     selectedCenter: sync('filter/selectedCenter'),
     preferredSelectedCenter: sync('filter/preferredSelectedCenter'),
     preferredPersonSort: get('filter/preferredPersonSort'),

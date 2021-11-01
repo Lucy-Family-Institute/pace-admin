@@ -1,4 +1,5 @@
 import axios from 'axios'
+import _ from 'lodash'
 
 export function makeBeforeEach (store) {
   return async (to, from, next) => {
@@ -16,17 +17,33 @@ export function makeBeforeEach (store) {
         const role = (response.data && response.data.role) ? response.data.role : 'anonymous'
         const orgs = (response.data && response.data.orgs) ? response.data.orgs : []
         if (userId) {
+          const isAuthorReviewer = (role === 'REVIEWER' && _.findIndex(orgs, function (o) { return o === 'ND' }) >= 0)
+          const isCenterReviewer = (role === 'REVIEWER')
           store.set('auth/isLoggedIn', true)
           store.set('auth/userId', userId)
           store.set('auth/name', name)
           store.set('auth/role', role)
           store.set('auth/orgs', orgs)
+          store.set('auth/isAuthorReviewer', isAuthorReviewer)
+          store.set('auth/isCenterReviewer', isCenterReviewer)
+          console.log('Setting selected center to undefined')
+          store.set('filter/selectedCenter', undefined)
+          if (!isAuthorReviewer) {
+            if (isCenterReviewer) {
+              return next('/center-review')
+            } else {
+              return next('/dashboard')
+            }
+          }
         } else {
           store.set('auth/isLoggedIn', false)
           store.set('auth/userId', null)
           store.set('auth/name', null)
           store.set('auth/role', 'anonymous')
           store.set('auth/orgs', [])
+          store.set('auth/isAuthorReviewer', false)
+          store.set('auth/isCenterReviewer', false)
+          store.set('filter/selectedCenter', undefined)
           if (!['/'].includes(to.path)) {
             return next('/')
           }

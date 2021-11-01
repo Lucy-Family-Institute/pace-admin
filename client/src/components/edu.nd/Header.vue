@@ -12,6 +12,7 @@
       <q-space />
       <q-btn-group align="center" unelevated spread id="menu">
         <router-link
+          v-if="isAuthorReviewer"
           :to="{ name: 'review' }"
           custom
           v-slot:default="props"
@@ -19,6 +20,7 @@
           <q-btn icon="group" v-bind="buttonProps(props)" />
         </router-link>
         <router-link
+          v-if="isCenterReviewer"
           :to="{ name: 'center-review' }"
           custom
           v-slot:default="props"
@@ -105,7 +107,9 @@ export default {
   computed: {
     isLoggedIn: get('auth/isLoggedIn'),
     name: get('auth/name'),
-    role: get('auth/role')
+    role: get('auth/role'),
+    isCenterReviewer: get('auth/isCenterReviewer'),
+    isAuthorReviewer: get('auth/isAuthorReviewer')
   },
   methods: {
     buttonProps ({ href, route, isActive, isExactActive }) {

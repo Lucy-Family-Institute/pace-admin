@@ -5,6 +5,8 @@ const state = {
   isLoggedIn: false,
   name: null,
   role: 'anonymous',
+  isAuthorReviewer: false,
+  isCenterReviewer: false,
   orgs: []
 }
 
