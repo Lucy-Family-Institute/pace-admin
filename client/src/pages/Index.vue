@@ -35,8 +35,12 @@
           <div class="grid grid-md-3">
             <div class="page-primary span-md-2">-->
               <!-- Page Content -->
+              <q-item v-if="(!ndReviewer || role !== 'REVIEWER')">
+                You are not authorized to view this page.  If this is an error, please contact your adminstrator.
+              </q-item>
               <q-splitter
                 v-model="firstModel"
+                v-if="(ndReviewer && role === 'REVIEWER')"
                 unit="px"
                 :style="{height: ($q.screen.height-56-16-2)+'px'}"
               >
@@ -183,7 +187,7 @@
                                 />
                               </q-item-section>
                             </template>
-                            <q-card v-if="item.publication !== undefined && (role === 'ADMIN_REVIEWER' || role === 'LIBRARY_REVIEWER')">
+                            <q-card v-if="item.publication !== undefined && ndReviewer && role === 'REVIEWER'">
                               <q-card-section dense class="text-center">
                                 <q-item-label align="left">Move To:</q-item-label>
                                 <q-btn dense v-if="reviewTypeFilter!=='pending'" color="purple" label="Pending" class="on-left" @click="clickReviewPending(index, person, personPublication);" />
@@ -439,6 +443,7 @@ export default {
     'vue-friendly-iframe': VueFriendlyIframe
   },
   data: () => ({
+    ndReviewer: false,
     centerOptions: null,
     personLoadCount: 0,
     reviewStates: undefined,
@@ -1191,6 +1196,8 @@ export default {
       if (!this.selectedCenter) {
         this.selectedCenter = this.preferredSelectedCenter
       }
+
+      this.ndReviewer = _.includes(this.userOrgs, 'ND')
       await this.loadReviewStates()
       await this.loadPersonsWithFilter()
     },
@@ -1787,6 +1794,7 @@ export default {
     personSortKey: sync('filter/personSortKey'),
     userId: sync('auth/userId'),
     role: sync('auth/role'),
+    userOrgs: sync('auth/orgs'),
     isLoggedIn: sync('auth/isLoggedIn'),
     selectedCenter: sync('filter/selectedCenter'),
     preferredPersonSort: get('filter/preferredPersonSort'),

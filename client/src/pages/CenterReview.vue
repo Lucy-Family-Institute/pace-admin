@@ -1,8 +1,12 @@
 <template>
   <div>
     <div class="q-pa-md">
+      <q-item v-if="(!centerReviewer || role !== 'REVIEWER')">
+        You are not authorized to view this page.  If this is an error, please contact your adminstrator.
+      </q-item>
       <q-splitter
         v-model="firstModel"
+        v-if="(centerReviewer && role === 'REVIEWER')"
         unit="px"
         :style="{height: ($q.screen.height-56-16)+'px'}"
       >
@@ -127,7 +131,7 @@
                         />
                       </q-item-section>-->
                     </template>
-                    <q-card v-if="item.publication !== undefined && (role === 'ADMIN_REVIEWER' || role === 'CENTER_REVIEWER')">
+                    <q-card v-if="item.publication !== undefined && role === 'REVIEWER' && centerReviewer && selectedCenterReviewer">
                       <q-card-section dense align="center" class="text-center">
                         <q-item-label align="left">Move To:</q-item-label>
                         <q-btn dense v-if="reviewTypeFilter!=='pending'" color="purple" label="Pending" class="on-left" @click="clickReviewPending(index, person, personPublication);" />
@@ -427,6 +431,8 @@ export default {
     reviewStates: undefined,
     selectedReviewState: undefined,
     institutionReviewState: undefined,
+    centerReviewer: false,
+    selectedCenterReviewer: false,
     dom,
     date,
     firstModel: 750,
@@ -538,6 +544,7 @@ export default {
     selectedCenter: function () {
       this.selectedCenterAuthor = this.preferredSelectedCenterAuthor
       this.loadPublications()
+      this.selectedCenterReviewer = _.includes(this.userOrgs, this.selectedCenter.value)
     },
     changedPubYears: async function () {
       await this.loadPublications()
@@ -1199,6 +1206,9 @@ export default {
       })
 
       this.centerOptions = _.map(results.data.review_organization, (reviewOrg) => {
+        if (_.includes(this.userOrgs, reviewOrg.value)) {
+          this.centerReviewer = true
+        }
         return {
           label: reviewOrg.comment,
           value: reviewOrg.value
@@ -1214,6 +1224,8 @@ export default {
       if (!this.selectedCenter || !this.selectedCenter.value) {
         this.selectedCenter = this.preferredSelectedCenter
       }
+
+      this.selectedCenterReviewer = _.includes(this.userOrgs, this.selectedCenter.value)
       await this.loadReviewStates()
       await this.loadPublications()
     },
@@ -1813,18 +1825,18 @@ export default {
         // add to new lists
         this.personPublicationsCombinedMatchesByOrgReview[reviewType].push(pubSet.mainPersonPub)
         this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType].push(pubSet.mainPersonPub)
-        if (this.reviewTypeFilter === 'pending' && this.selectedPersonTotal === 'Pending') {
-          const currentPersonIndex = _.findIndex(this.people, (person) => {
-            console.log('persons', person, this.person)
-            return person.id === this.person.id // todo Rick, this.person never defined, right?
-          })
-          this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
-        } else if (this.selectedPersonTotal === 'Pending' && reviewType === 'pending') {
-          const currentPersonIndex = _.findIndex(this.people, (person) => {
-            return person.id === this.person.id // todo Rick, this.person never defined, right?
-          })
-          this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
-        }
+        // if (this.reviewTypeFilter === 'pending' && this.selectedPersonTotal === 'Pending') {
+        //   // const currentPersonIndex = _.findIndex(this.people, (person) => {
+        //   //   console.log('persons', person, this.person)
+        //   //   return person.id === this.person.id // todo Rick, this.person never defined, right?
+        //   // })
+        //   // this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
+        // } else if (this.selectedPersonTotal === 'Pending' && reviewType === 'pending') {
+        //   // const currentPersonIndex = _.findIndex(this.people, (person) => {
+        //   //   return person.id === this.person.id // todo Rick, this.person never defined, right?
+        //   // })
+        //   // this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
+        // }
         this.clearPublication()
         return mutateResults
       } catch (error) {
@@ -1961,6 +1973,7 @@ export default {
     userId: sync('auth/userId'),
     isLoggedIn: sync('auth/isLoggedIn'),
     role: sync('auth/role'),
+    userOrgs: sync('auth/orgs'),
     selectedCenter: sync('filter/selectedCenter'),
     preferredSelectedCenter: sync('filter/preferredSelectedCenter'),
     preferredPersonSort: get('filter/preferredPersonSort'),
