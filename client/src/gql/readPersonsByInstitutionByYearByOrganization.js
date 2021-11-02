@@ -102,9 +102,23 @@ export default function readPersonsByInstitutionByYearByOrganization (organizati
             family_name
             given_name
           }
-          persons_organizations {
+          persons_organizations (
+            where: {
+              _or: [
+                {
+                  start_date: {_lt: "${startDateLT}"},
+                  end_date: {_gt: "${endDateGT}"}
+              }, 
+                {
+                  start_date: {_lt: "${startDateLT}"},
+                  end_date: {_is_null: true}
+                }
+              ]
+            })
+          {
             id
             person_id
+            organization_value
             start_date
             end_date
           }
