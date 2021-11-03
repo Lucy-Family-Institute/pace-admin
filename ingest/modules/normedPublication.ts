@@ -32,6 +32,7 @@ export default class NormedPublication {
   number?: string
   volume?: string
   pages?: string
+  bibtex?: string
   sourceMetadata?: Object
   // ------- end declare properties used when using NormedPublication like an interface
 
@@ -65,9 +66,11 @@ export default class NormedPublication {
       return _.map(authorPapers, (paper) => {
         let pub: NormedPublication = NormedPublication.getNormedPublicationObjectFromCSVRow(paper, objectToCSVMap)
         if (dataDirPath) {
-          const sourceFileName = NormedPublication.getSourceMetadataFileName(pub)
-          const sourceFilePath = path.join(process.cwd(), NormedPublication.getSourceMetadataDirPath(dataDirPath), sourceFileName)
+          let sourceFileName
+          let sourceFilePath
           try {
+            sourceFileName = NormedPublication.getSourceMetadataFileName(pub)
+            sourceFilePath = path.join(process.cwd(), NormedPublication.getSourceMetadataDirPath(dataDirPath), sourceFileName)
             pub.sourceMetadata = NormedPublication.loadNormedPublicationSourceMetadata(sourceFilePath)
           } catch (error) {
             console.log(`Warning failed to load source metadata from JSON for filePath: ${sourceFilePath} with error: ${error}`)
@@ -106,8 +109,12 @@ export default class NormedPublication {
   }
 
   public static getSourceMetadataFileName(pub: NormedPublication): string {
-    const fileName = `${pub.datasourceName}_${pub.sourceId.replace(/\//g, '_')}.json`
-    return fileName
+    if (pub.datasourceName && pub.sourceId) {
+      const fileName = `${pub.datasourceName}_${pub.sourceId.replace(/\//g, '_')}.json`
+      return fileName
+    } else {
+      return undefined
+    }
   }
 
   public static async writeSourceMetadataToJSON(pubs: NormedPublication[], dataDir) {
@@ -269,6 +276,9 @@ export default class NormedPublication {
     }
     if (row[_.toLower(objectToCSVMap['pages'])]) {
       _.set(pub, 'pages', row[_.toLower(objectToCSVMap['pages'])])
+    }
+    if (row[_.toLower(objectToCSVMap['bibtex'])]) {
+      _.set(pub, 'bibtex', row[_.toLower(objectToCSVMap['bibtex'])])
     }
     if (row[_.toLower(objectToCSVMap['sourceMetadata'])]) {
       // parse and get rid of any escaped quote characters

@@ -593,7 +593,7 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
                   csl = cslRecords[0]
                 }
               } catch (error) {
-                console.log(`Errored on csl from bibtex w/ or w/out abstract: ${bibTexStr}`)
+                console.log(`Errored on csl from bibtex w/ or w/out abstract: ${bibTexStr}, error: ${error}`)
                 throw (error)
               }
             }
@@ -613,7 +613,7 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
         // default to the confirmed author list if no author list in the csl record
         // console.log(`Before check csl is: ${JSON.stringify(csl, null, 2)} for doi: ${doi}`)
         // console.log(`Before check authors are: ${JSON.stringify(authors, null, 2)} for doi: ${doi}`)
-        if (csl && confirmedAuthorsByDoiAuthorList[doi] && _.keys(confirmedAuthorsByDoiAuthorList[doi]).length > 0) {
+        if (authors.length <= 0 && csl && confirmedAuthorsByDoiAuthorList[doi] && _.keys(confirmedAuthorsByDoiAuthorList[doi]).length > 0) {
           authors = confirmedAuthorsByDoiAuthorList[doi][_.keys(confirmedAuthorsByDoiAuthorList[doi])[0]]
           csl.author = authors
         }
