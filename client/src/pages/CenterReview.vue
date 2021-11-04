@@ -1016,17 +1016,15 @@ export default {
       //     this.people = await _.flatten(sortedPersons)
       //     // this.reportDuplicatePublications()
       //   }
-      // await this.loadCenterAuthorOptions()
+      await this.loadCenterAuthorOptions()
     },
     async loadCenterAuthorOptions () {
       let obj = ['All']
+      // console.log(`Adding list for people count: ${this.people.length}`)
       _.each(this.people, (person) => {
         const authorString = this.getAuthorString(person)
-        this.centerMembershipByPerson[this.getSimpleFormatAuthorName(authorString)] = _.map(person.persons_organizations, (org) => {
-          return org.organization_value
-        })
         const pubCount = this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person)
-        console.log(`Adding person ${authorString} with count '${pubCount}' to center list`)
+        // console.log(`Adding person ${authorString} with count '${pubCount}' to center list`)
         obj.push(`${authorString} (${pubCount})`)
       })
       this.centerAuthorOptions = obj
@@ -1441,7 +1439,7 @@ export default {
         }
       })
 
-      // this.loadPersonsWithFilter()
+      await this.loadPersonsWithFilter()
       // need to make sure to reload the list once pub counts are set
       this.loadCenterAuthorOptions()
 
