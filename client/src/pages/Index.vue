@@ -15,6 +15,7 @@
                 label="Review For:"
                 v-if="isLoggedIn"
                 map-options
+                style="width: 200px"
               />
             </q-item>
           </div>
@@ -34,8 +35,12 @@
           <div class="grid grid-md-3">
             <div class="page-primary span-md-2">-->
               <!-- Page Content -->
+              <q-item v-if="!isAuthorReviewer">
+                You are not authorized to view this page.  If this is an error, please contact your adminstrator.
+              </q-item>
               <q-splitter
                 v-model="firstModel"
+                v-if="isAuthorReviewer"
                 unit="px"
                 :style="{height: ($q.screen.height-56-16-2)+'px'}"
               >
@@ -182,7 +187,7 @@
                                 />
                               </q-item-section>
                             </template>
-                            <q-card v-if="item.publication !== undefined">
+                            <q-card v-if="item.publication !== undefined && isAuthorReviewer">
                               <q-card-section dense class="text-center">
                                 <q-item-label align="left">Move To:</q-item-label>
                                 <q-btn dense v-if="reviewTypeFilter!=='pending'" color="purple" label="Pending" class="on-left" @click="clickReviewPending(index, person, personPublication);" />
@@ -1187,9 +1192,11 @@ export default {
         }
       })
 
-      if (!this.selectedCenter) {
-        this.selectedCenter = this.preferredSelectedCenter
+      if (!this.selectedCenter || !this.selectedCenter.value) {
+        this.selectedCenter = this.preferredSelectedAuthorReview
       }
+
+      // this.ndReviewer = _.includes(this.userOrgs, 'ND')
       await this.loadReviewStates()
       await this.loadPersonsWithFilter()
     },
@@ -1600,7 +1607,7 @@ export default {
         await _.each(personPubs, async (personPub) => {
           // const personPub = personPubs[0]
           const mutateResult = await this.$apollo.mutate(
-            insertReview(this.userId, personPub.id, reviewType, 'ND')
+            insertReview(personPub.id, reviewType, 'ND') // TODO Rick, is this right?
           )
           if (mutateResult && personPub.id === personPublication.id) {
             this.$refs[`personPub${index}`].hide()
@@ -1785,6 +1792,9 @@ export default {
   computed: {
     personSortKey: sync('filter/personSortKey'),
     userId: sync('auth/userId'),
+    role: sync('auth/role'),
+    userOrgs: sync('auth/orgs'),
+    isAuthorReviewer: sync('auth/isAuthorReviewer'),
     isLoggedIn: sync('auth/isLoggedIn'),
     selectedCenter: sync('filter/selectedCenter'),
     preferredPersonSort: get('filter/preferredPersonSort'),
@@ -1808,7 +1818,8 @@ export default {
     selectedMemberYears: sync('filter/selectedMemberYears'),
     changedPubYears: get('filter/changedPubYears'),
     changedMemberYears: get('filter/changedMemberYears'),
-    pubSearch: get('filter/pubSearch')
+    pubSearch: get('filter/pubSearch'),
+    preferredSelectedAuthorReview: get('filter/preferredSelectedAuthorReview')
   }
 }
 </script>

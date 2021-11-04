@@ -16,11 +16,22 @@ HASURA_CLI_FROM_DOCKER:=docker \
 	hasura/graphql-engine:v2.0.7.cli-migrations-v2 \
 	--project /hasura
 
+.PHONY: hasura-migrate
+hasura-migrate:
+	@$(HASURA_CLI) migrate apply --database-name default
+
+.PHONY: hasura-metadata
+hasura-metadata:
+	@$(HASURA_CLI) metadata apply
+
 .PHONY: migrate
 #: Run Hasura migrations against the database
-migrate:
-	$(HASURA_CLI) migrate apply
-	$(HASURA_CLI) metadata apply
+migrate: hasura-migrate hasura-metadata
+
+.PHONY: hasura-status
+#: Run Hasura migrations against the database
+hasura-status:
+	$(HASURA_CLI) migrate status --database-name default
 
 .PHONY: migration-console
 #: Start the Hasura migration console
