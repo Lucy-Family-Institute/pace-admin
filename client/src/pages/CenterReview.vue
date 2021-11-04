@@ -1016,7 +1016,7 @@ export default {
       //     this.people = await _.flatten(sortedPersons)
       //     // this.reportDuplicatePublications()
       //   }
-      await this.loadCenterAuthorOptions()
+      // await this.loadCenterAuthorOptions()
     },
     async loadCenterAuthorOptions () {
       let obj = ['All']
@@ -1441,7 +1441,7 @@ export default {
         }
       })
 
-      this.loadPersonsWithFilter()
+      // this.loadPersonsWithFilter()
       // need to make sure to reload the list once pub counts are set
       this.loadCenterAuthorOptions()
 
