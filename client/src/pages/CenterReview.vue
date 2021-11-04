@@ -128,7 +128,6 @@
                       <q-item-section top class="q-pa-xs">
                         <q-item-label style="width:100%" class="text-grey-9" lines="1"><strong>Title:</strong> {{ decode(item.publication.title) }}</q-item-label>
                         <q-item-label v-if="selectedInstitutionReviewState === 'Accepted'" style="width:100%" class="text-grey-9" lines="1"><strong>{{selectedInstitutionReviewState}} Authors:</strong> {{ sortAuthorsByTitle[selectedInstitutionReviewState.toLowerCase()][getPublicationTitleKey(item.publication.title)] }}</q-item-label>
-                        <q-item-label v-else style="width:100%" class="text-grey-9" lines="1"><strong>{{selectedInstitutionReviewState}} Authors:</strong> {{ sortAuthorsByTitle[selectedInstitutionReviewState.toLowerCase()][getPublicationTitleKey(item.publication.title)] }}</q-item-label>
                         <q-list class="q-pt-sm">
                           <q-btn
                             @click.capture.stop
@@ -1073,12 +1072,14 @@ export default {
     },
     loadCenterAuthorOptions () {
       let obj = ['All']
+      // console.log(`Adding list for people count: ${this.people.length}`)
       _.each(this.people, (person) => {
         const authorString = this.getAuthorString(person)
-        this.centerMembershipByPerson[this.getSimpleFormatAuthorName(authorString)] = _.map(person.persons_organizations, (org) => {
+        const pubCount = this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person)
+         this.centerMembershipByPerson[this.getSimpleFormatAuthorName(authorString)] = _.map(person.persons_organizations, (org) => {
           return org.organization_value
         })
-        obj.push(`${authorString} (${this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person)})`)
+        obj.push(`${authorString} (${pubCount})`)
       })
       this.centerAuthorOptions = obj
     },
@@ -1338,9 +1339,23 @@ export default {
         return this.getPubCSVResultObject(personPub)
       })
     },
+    getPublicationAcceptedAuthors (title) {
+      const titleKey = this.getPublicationTitleKey(title)
+      const personPublicationsByReview = this.getTitlePersonPublicationsByReview(titleKey)
+      const reviewedAuthors = []
+      _.map(personPublicationsByReview['accepted'], (personPub) => {
+        const reviewedAuthor = this.getReviewedAuthor(personPub)
+        reviewedAuthors.push(reviewedAuthor)
+        return reviewedAuthor
+      })
+      // console.log(`Reviewed authors for title '${title}' authors: '${JSON.stringify(reviewedAuthors, null, 2)}'`)
+      return reviewedAuthors
+    },
     getPublicationTitleKey (title) {
       // normalize the string and remove characters like dashes as well
-      return this.normalizeString(title, true, true)
+      const titleKey = this.normalizeString(title, true, true)
+      // console.log(`Got publication title key for title: ${title} key: ${titleKey}`)
+      return titleKey
     },
     getPublicationDoiKey (publication) {
       let doiKey
@@ -1481,7 +1496,7 @@ export default {
       // end add code for pubsets
       // initialize the pub author matches
       this.matchedPublicationAuthorsByTitle = _.mapValues(this.authorsByTitle, (cslAuthors, titleKey) => {
-        return this.getMatchedCslAuthors(cslAuthors, this.publicationsGroupedByTitleByInstitutionReview['accepted'][titleKey], true)
+        return this.getPublicationAcceptedAuthors(titleKey)
       })
       this.sortAuthorsByTitle = {}
       this.sortAuthorsByTitle['accepted'] = _.mapValues(this.matchedPublicationAuthorsByTitle, (matchedAuthors) => {
@@ -1507,6 +1522,10 @@ export default {
           this.personPublicationsCombinedMatchesByOrgReview[reviewState] = []
         }
       })
+
+      await this.loadPersonsWithFilter()
+      // need to make sure to reload the list once pub counts are set
+      this.loadCenterAuthorOptions()
 
       // initialize the list in view
       await this.setCurrentPersonPublicationsCombinedMatches()
