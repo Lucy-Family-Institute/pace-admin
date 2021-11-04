@@ -72,10 +72,6 @@ export default {
           value: reviewOrg.value
         }
       })
-
-      if (!this.selectedCenter) {
-        this.selectedCenter = this.preferredSelectedCenter
-      }
     }
   }
 }

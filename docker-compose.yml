@@ -5,7 +5,7 @@ services:
     image: postgres:9.6
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata
-      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_USER: ${POSTGRES_USER} 
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - ${POSTGRES_PORT}:${POSTGRES_DOCKER_PORT}
@@ -55,7 +55,6 @@ services:
     ports:
       - ${REDIS_PORT}:${REDIS_DOCKER_PORT}
     restart: unless-stopped
-
 
   search:
     image: getmeili/meilisearch:v0.11.0
