@@ -1076,7 +1076,7 @@ export default {
       _.each(this.people, (person) => {
         const authorString = this.getAuthorString(person)
         const pubCount = this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person)
-         this.centerMembershipByPerson[this.getSimpleFormatAuthorName(authorString)] = _.map(person.persons_organizations, (org) => {
+        this.centerMembershipByPerson[this.getSimpleFormatAuthorName(authorString)] = _.map(person.persons_organizations, (org) => {
           return org.organization_value
         })
         obj.push(`${authorString} (${pubCount})`)
