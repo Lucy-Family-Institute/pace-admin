@@ -21,6 +21,7 @@
   "journalEIssn": "journal_eissn",
   "abstract": "abstract",
   "authors": "authors",
+  "confirmedAuthors": "nd author (last, first)",
   "sourceUrl": "source_url",
   "publisher": "publisher",
   "number": "number",
