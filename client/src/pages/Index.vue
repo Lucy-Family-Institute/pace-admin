@@ -834,7 +834,7 @@ export default {
           return undefined
         }
       } else if (personPublication.publication.source_name.toLowerCase() === 'crossref') {
-        return personPublication.publication.doi
+        return (personPublication.publication.doi ? personPublication.publication.doi : personPublication.publication.source_id)
       } else if (personPublication.publication.source_name.toLowerCase() === 'webofscience') {
         return personPublication.publication.wos_id['_text']
       } else {
@@ -869,7 +869,7 @@ export default {
         } else if (personPublication.publication.source_name.toLowerCase() === 'pubmed') {
           return this.getPubMedUri(sourceId)
         } else if (personPublication.publication.source_name.toLowerCase() === 'crossref') {
-          return this.getDoiUrl(personPublication.publication.doi)
+          return this.getDoiUrl(sourceId)
         } else if (personPublication.publication.source_name.toLowerCase() === 'webofscience') {
           return this.getWebOfScienceUri(sourceId)
         } else if (personPublication.publication.source_name.toLowerCase() === 'semanticscholar') {
@@ -1544,6 +1544,10 @@ export default {
     async loadPublication (personPublication) {
       this.clearPublication()
       this.personPublication = personPublication
+      // if doi is not set, but present in source_id, pass it along
+      if (!personPublication.publication.doi && _.toLower(personPublication.publication.source_name) === 'crossref' && personPublication.publication.source_id) {
+        this.personPublication.publication.doi = personPublication.publication.source_id
+      }
       await this.loadPublicationAuthors(personPublication)
       await this.loadConfidenceSet(personPublication)
       // query separately for csl because slow to get more than one

@@ -224,15 +224,7 @@ async function getPapersByDoi (csvPath: string, dataDirPath?: string) {
 async function getConfirmedAuthorsByDoi (papersByDoi, csvColumn :string) {
   const confirmedAuthorsByDoi = _.mapValues(papersByDoi, function (papers) {
     return _.mapValues(papers, function (paper) {
-      const unparsedName = paper[csvColumn]
-      //console.log(`Parsing name: ${unparsedName}`)
-      if (unparsedName) {
-        const parsedName =  humanparser.parseName(unparsedName)
-        //console.log(`Parsed Name is: ${JSON.stringify(parsedName,null,2)}`)
-        return parsedName 
-      } else {
-        return undefined
-      }
+      return paper.confirmedAuthors
     })
   })
   return confirmedAuthorsByDoi
@@ -504,7 +496,7 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
     const confirmedPathsByYear = await getIngestFilePaths("../config/ingestConfidenceReviewFilePaths.json")
     const confirmedPapersByDoi: {} = await loadConfirmedPapersByDoi(confirmedPathsByYear)
 
-    const confirmedAuthorColumn = 'nd author (last, first)'
+    const confirmedAuthorColumn = 'confirmedAuthors'
     const confirmedAuthorListColumn = 'author(s)'
     const confirmedDois = _.keys(confirmedPapersByDoi)
    
