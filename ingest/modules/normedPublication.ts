@@ -21,6 +21,7 @@ export default class NormedPublication {
   title: string
   journalTitle: string
   authors?: NormedAuthor[]
+  confirmedAuthors?: NormedAuthor[]
   journalIssn?: string
   journalEIssn?: string
   doi: string
@@ -181,6 +182,9 @@ export default class NormedPublication {
     if (pub.authors) {
       row[objectToCSVMap['authors']] = JSON.stringify(pub.authors)      
     }
+    if (pub.confirmedAuthors) {
+      row[objectToCSVMap['confirmedAuthors']] = JSON.stringify(pub.confirmedAuthors)
+    }
     // if (pub.sourceMetadata) {
     //   // parse and get rid of any escaped quote characters
     //   row[objectToCSVMap['sourceMetadata']] = JSON.stringify(pub.sourceMetadata)
@@ -280,6 +284,9 @@ export default class NormedPublication {
     if (row[_.toLower(objectToCSVMap['bibtex'])]) {
       _.set(pub, 'bibtex', row[_.toLower(objectToCSVMap['bibtex'])])
     }
+    if (row[_.toLower(objectToCSVMap['confirmedAuthors'])]) {
+      _.set(pub, 'confirmedAuthors', NormedPublication.getConfirmedNormedAuthors(row[_.toLower(objectToCSVMap['confirmedAuthors'])]))
+    }
     if (row[_.toLower(objectToCSVMap['sourceMetadata'])]) {
       // parse and get rid of any escaped quote characters
       const sourceMetadata = JSON.parse(row[_.toLower(objectToCSVMap['sourceMetadata'])])
@@ -287,6 +294,25 @@ export default class NormedPublication {
     }
 
     return pub
+  }
+
+  // parse the format in the input csv file to be names separated by ';' and name of form 'family, given'
+  public static getConfirmedNormedAuthors(confirmedAuthorString: string): NormedAuthor[] {
+    //split by ; and then name by ,
+    const names = _.split(confirmedAuthorString, ';')
+    const normed: NormedAuthor[] = []
+    const confirmed = _.each(names, (name: string) => {
+      const obj = _.split(name, ',')
+      const author: NormedAuthor = {
+        familyName: name[0],
+        givenName: (name[1] ? name[1] : ''),
+        givenNameInitial: (name[1]&&name[1][0] ? name[1][0] : ''),
+        affiliations: [],
+        sourceIds: {}
+      }
+      normed.push(author)
+    })
+    return normed
   }
 
   public static async getAuthors (normedPub: NormedPublication): Promise<NormedAuthor[]> {
