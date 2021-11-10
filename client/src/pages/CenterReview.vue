@@ -85,13 +85,14 @@
                   <q-list top align="right" dense class="q-pt-sm q-pb-sm" v-if="(selectedPersonMembership && selectedPersonMembership.length > 0)">
                       Author Center Membership:
                       <q-btn
+                        outline
                         rounded
                         no-wrap
                         size="sm"
                         v-for="(memberCenter, index) in selectedPersonMembership"
                         :key="index"
-                        :color="getCenterColor(index)"
-                        text-color="white"
+                        text-color="black"
+                        style="background-color:white"
                         type="a"
                         :label="memberCenter"
                       />
@@ -902,20 +903,6 @@ export default {
       const textArea = document.createElement('textarea')
       textArea.innerHTML = str
       return textArea.value
-    },
-    getCenterColor (index) {
-      const mod = index % 4
-      if (mod === 4) {
-        return 'blue'
-      } else if (mod === 3) {
-        return 'orange'
-      } else if (mod === 2) {
-        return 'teal'
-      } else if (mod === 1) {
-        return 'purple'
-      } else if (mod === 0) {
-        return 'indigo'
-      }
     },
     getSourceNameChipColor (sourceName) {
       if (sourceName) {
