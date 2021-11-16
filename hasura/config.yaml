@@ -1,3 +1,5 @@
 version: 2
+migrations_directory: migrations
 metadata_directory: metadata
+seeds_directory: seeds
 endpoint: http://hasura:8080

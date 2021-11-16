@@ -14,6 +14,7 @@ const state = {
   preferredCenterPubSort: 'Authors',
   preferredInstitutionReviewState: 'Accepted',
   preferredSelectedCenterAuthor: 'All',
+  preferredSelectedAuthorReview: { label: 'University of Notre Dame', value: 'ND' },
   filterReviewStates: [],
   centerAuthorOptions: [
     'All'

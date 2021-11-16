@@ -341,7 +341,7 @@ export default {
           label: label,
           value: _.toUpper(reviewOrg.name)
         }
-      })
+      }) // todo is this working?
 
       this.sortFacets(['classifications', 'authors', 'journal', 'journal_type', 'publisher', 'funder', 'impact_factor_range', 'review_organization_value', 'review_organization_label'], this.facetsDistribution)
       // if (!this.selectedCenter) {

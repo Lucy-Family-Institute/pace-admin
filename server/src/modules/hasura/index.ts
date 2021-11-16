@@ -9,7 +9,7 @@ async function init (options) {
         if (_.get(req, 'session.passport.user.databaseId')) {
           const sessionData = req['session']
           res.json({
-            'X-Hasura-Role': `admin`,// `${sessionData.passport.user.role}`,
+            'X-Hasura-Role': `${sessionData.passport.user.role}`,
             'X-Hasura-User-Id': `${sessionData.passport.user.databaseId}`
           })
         } else {

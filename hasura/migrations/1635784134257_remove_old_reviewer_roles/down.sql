@@ -1,0 +1,3 @@
+-- Could not auto-generate a down migration.
+-- Please write an appropriate down migration for the SQL below:
+-- delete from users_roles where (value != 'VIEWER' and value != 'REVIEWER');
