@@ -122,62 +122,99 @@ async function main() {
 
   console.log(index)
 
-  const results = await gqlClient.query({
+  let lowerLimit = 0
+  const increment = 2500
+  const resultsCount = await gqlClient.query({
     query: gql`
-    query MyQuery {
-      persons_publications(where: {reviews: {review_type: {_eq: accepted}, review_organization_value: {_neq: ND}},
-        org_reviews: {review_type: {_eq: "accepted"}, review_organization_value: {_eq: "ND"}}}) {
-        id
-        org_reviews(where: {review_organization_value: {_eq: "ND"}}, order_by: {datetime: desc}, limit: 1) {
-          review_type
-          review_organization_value
-        }
-        reviews(where: {review_organization_value: {_neq: ND}}, order_by: {datetime: desc}, limit: 1) {
-          review_type
-          review_organization_value
-          review_organization {
-            comment
-          }
-        }
-        publication {
-          id
-          abstract
-          doi
-          title
-          year
-          csl_string
-          journal_title: csl(path:"container-title")
-          journal {
-            title
-            journal_type
-            journals_classifications {
-              classification {
-                identifier
-                name
-              }
+      query MyQuery {
+        persons_publications_aggregate {
+          aggregate {
+            max {
+              id
             }
-            journals_impactfactors {
-              year
-              impactfactor
-            }
-            publisher
           }
-          awards {
-            id
-            funder_award_identifier
-            funder_name
-            source_name
-          }
-        }
-        person {
-          family_name
-          given_name
-          id
         }
       }
-    }  
     `
   })
+  const maxId = resultsCount.data.persons_publications_aggregate.aggregate.max.id
+  console.log(`Max id found: ${maxId}`)
+  const times = maxId / increment
+  let loops = Number.parseInt(`${times}`)
+  const mod = maxId % increment
+  if (mod > 0) loops = loops + 1
+  console.log(`Will query '${loops}' times for max id: '${maxId}' and max result size: '${increment}'`)
+  const publications = []
+  for (let index = 0; index < loops; index++) {
+    console.log(`Query for personPublications ${lowerLimit+1} to ${lowerLimit + increment}...`)
+    const results = await gqlClient.query({
+      query: gql`
+      query MyQuery {
+        persons_publications(limit: ${increment}, order_by: {id: asc}, 
+          where: {
+            id: {_gt: ${lowerLimit}}, 
+            reviews: {review_type: {_eq: accepted},
+            review_organization_value: {_neq: ND}},
+            org_reviews: {review_type: {_eq: "accepted"}, 
+            review_organization_value: {_eq: "ND"}}}
+        ){
+          id
+          org_reviews(where: {review_organization_value: {_eq: "ND"}}, order_by: {datetime: desc}, limit: 1) {
+            review_type
+            review_organization_value
+          }
+          reviews(where: {review_organization_value: {_neq: ND}}, order_by: {datetime: desc}, limit: 1) {
+            review_type
+            review_organization_value
+            review_organization {
+              comment
+            }
+          }
+          publication {
+            id
+            abstract
+            doi
+            title
+            year
+            csl
+            journal_title: csl(path:"container-title")
+            journal {
+              title
+              journal_type
+              journals_classifications {
+                classification {
+                  identifier
+                  name
+                }
+              }
+              journals_impactfactors {
+                year
+                impactfactor
+              }
+              publisher
+            }
+            awards {
+              id
+              funder_award_identifier
+              funder_name
+              source_name
+            }
+          }
+          person {
+            family_name
+            given_name
+            id
+          }
+        }
+      }  
+      `
+    })
+    publications.push(results.data.persons_publications)
+    lowerLimit = lowerLimit + increment
+  }
+  
+  const flatPublications = _.flatten(publications)
+  console.log(`Found '${flatPublications.length}' personPubs`)
 
   const topLevelClassifications = {
     '10': 'Multidisciplinary',
@@ -209,7 +246,7 @@ async function main() {
     '36' : 'Health Professions'
   }
 
-  const documents = _.chain(results.data.persons_publications)
+  const documents = _.chain(flatPublications)
     .map((doc) => {
       if (doc.reviews[0].review_type !== 'accepted')
         return null
@@ -243,7 +280,7 @@ async function main() {
             return award.funder_name
           }
         )),
-        citation: getCitationApa(doc.publication.csl_string),
+        citation: getCitationApa(JSON.stringify(doc.publication.csl)),
         review_organization_value: _.get(doc.reviews[0], 'review_organization_value', null),
         review_organization_label: _.get(doc.reviews[0].review_organization, 'comment', null),
         wildcard: "*" // required for empty search (i.e., return all)
