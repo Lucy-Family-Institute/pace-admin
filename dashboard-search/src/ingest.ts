@@ -123,7 +123,7 @@ async function main() {
   console.log(index)
 
   let lowerLimit = 0
-  const increment = 2500
+  const increment = 400
   const resultsCount = await gqlClient.query({
     query: gql`
       query MyQuery {
@@ -176,7 +176,7 @@ async function main() {
             doi
             title
             year
-            csl
+            csl_string
             journal_title: csl(path:"container-title")
             journal {
               title
@@ -214,7 +214,13 @@ async function main() {
   }
   
   const flatPublications = _.flatten(publications)
-  console.log(`Found '${flatPublications.length}' personPubs`)
+
+  // now map them to person publication by id
+  const mapById = {}
+  _.each(flatPublications, (publication) => {
+    mapById[publication.id] = publication
+  })
+  console.log(`Found '${_.keys(mapById).length}' personPubs`)
 
   const topLevelClassifications = {
     '10': 'Multidisciplinary',
@@ -246,7 +252,7 @@ async function main() {
     '36' : 'Health Professions'
   }
 
-  const documents = _.chain(flatPublications)
+  const documents = _.chain(_.values(mapById))
     .map((doc) => {
       if (doc.reviews[0].review_type !== 'accepted')
         return null
@@ -280,7 +286,7 @@ async function main() {
             return award.funder_name
           }
         )),
-        citation: getCitationApa(JSON.stringify(doc.publication.csl)),
+        citation: getCitationApa(doc.publication.csl_string),
         review_organization_value: _.get(doc.reviews[0], 'review_organization_value', null),
         review_organization_label: _.get(doc.reviews[0].review_organization, 'comment', null),
         wildcard: "*" // required for empty search (i.e., return all)
