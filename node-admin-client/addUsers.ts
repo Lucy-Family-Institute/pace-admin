@@ -23,4 +23,9 @@ import { PaceClient, PaceClientConfig } from './src/client'
     lastName: process.env.DEV_USER_LAST_NAME,
     password: process.env.DEV_USER_PASSWORD
   })
+
+  await client.registerUserRole({
+    email: process.env.DEV_USER_EMAIL,
+    role: process.env.DEV_USER_ROLE
+  })
 })()
