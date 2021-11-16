@@ -905,31 +905,4 @@ testAuthorAffiliation (author, publicationAuthorMap, sourceName, sourceMetadata)
       throw `Failed to insert confidence set: ${JSON.stringify(confidenceTest, null, 2)} with ${error}`
     }
   }
-
-  async synchronizeReviews(doi, personId, newPersonPubId, index) {
-    // check if the publication is already in the DB
-    const personPubsInDB = await this.getDoiPersonPublications(doi, personId)
-    const reviews = {}
-    // assume reviews are ordered by datetime desc
-    _.each(personPubsInDB, (personPub) => {
-      // console.log(`Person Pub returned for review check is: ${JSON.stringify(personPub, null, 2)}`)
-      _.each(personPub.reviews_aggregate.nodes, (review) => {
-        if (!reviews[review.review_organization_value]) {
-          reviews[review.review_organization_value] = review
-        }
-      })
-    })
-
-    if (_.keys(reviews).length > 0) {
-      console.log(`Item #${index} New Person Pub Id: ${JSON.stringify(newPersonPubId, null, 2)} inserting reviews: ${_.keys(reviews).length}`)
-      await pMap(_.keys(reviews), async (reviewOrgValue) => {
-        // insert with same org value and most recent status to get in sync with other pubs in DB
-        const review = reviews[reviewOrgValue]
-        const mutateResult = await client.mutate(
-          insertReview(review.user_id, newPersonPubId, review.review_type, reviewOrgValue)
-        )
-      }, { concurrency: 1})
-    }
-  }
-  
 }

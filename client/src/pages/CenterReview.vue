@@ -1,8 +1,15 @@
 <template>
   <div>
     <div class="q-pa-md">
+      <q-item v-if="!isCenterReviewer">
+        You are not authorized to view this page.  If this is an error, please contact your adminstrator.
+      </q-item>
+      <q-item v-if="(isCenterReviewer && !isVisibleCenterReviewer && !firstFetch)">
+        Warning: User not currently authorized to review any Centers/Institutues.  Contact your administrator to grant permissions.
+      </q-item>
       <q-splitter
         v-model="firstModel"
+        v-if="isCenterReviewer"
         unit="px"
         :style="{height: ($q.screen.height-56-16)+'px'}"
       >
@@ -20,8 +27,12 @@
               label="Review For:"
               v-if="isLoggedIn"
               map-options
+              style="width: 250px"
             />
           </q-item>
+          <!-- <q-item>
+            <CenterSelect v-if="isLoggedIn" />
+          </q-item> -->
         </div>
       </div>
           <MainFilter />
@@ -45,28 +56,48 @@
               <q-item v-if="publicationsLoadedError">
                 <q-item-label>Error on Publication Data Load</q-item-label>
               </q-item>
-              <q-item v-if="!publicationsCslLoaded && !publicationsLoadedError && publicationsLoaded">
-                <q-item-label>Prepping Data for Download...
-                  <q-spinner-ios
-                    color="primary"
-                    size="2em"
-                    />
-                </q-item-label>
+              <q-item v-if="(isCenterReviewer && isVisibleCenterReviewer && !selectedCenterReviewer)">
+                Warning: Current center/institute view is read-only.
               </q-item>
               <q-separator/>
-              <download-csv
-                v-if="publicationsLoaded && !publicationsLoadedError && publicationsCslLoaded"
-                class="cursor-pointer"
-                :name="`${reviewTypeFilter}_center_institute_review_${getSimpleFormatAuthorName(selectedCenterAuthor)}.csv`"
-                :data="getPublicationsCSVResult(personPublicationsCombinedMatches)">
-                <q-btn flat
-                  style="align:left;width:100%"
-                  icon="cloud_download"
-                  color="primary"
-                >
-                  <q-item-section header align="left">&nbsp;Download Results</q-item-section>
-                </q-btn>
-              </download-csv>
+              <q-item align="left">
+                <download-csv
+                  v-if="publicationsLoaded && !publicationsLoadedError && publicationsCslLoaded"
+                  class="cursor-pointer"
+                  :name="`${reviewTypeFilter}_center_institute_review_${getSimpleFormatAuthorName(selectedCenterAuthor)}.csv`"
+                  :data="getPublicationsCSVResult(personPublicationsCombinedMatches)">
+                  <q-btn flat
+                    style="align:left;width:100%"
+                    icon="cloud_download"
+                    color="primary"
+                  >
+                    <q-item-section header align="left">&nbsp;Download Results</q-item-section>
+                  </q-btn>
+                </download-csv>
+                <q-item-section dense v-if="!publicationsCslLoaded && !publicationsLoadedError && publicationsLoaded">
+                  <q-item-label>Prepping Data for Download...
+                    <q-spinner-ios
+                      color="primary"
+                      size="2em"
+                      />
+                  </q-item-label>
+                </q-item-section>
+                  <q-list top align="right" dense class="q-pt-sm q-pb-sm" v-if="(selectedPersonMembership && selectedPersonMembership.length > 0)">
+                      Author Center Membership:
+                      <q-btn
+                        outline
+                        rounded
+                        no-wrap
+                        size="sm"
+                        v-for="(memberCenter, index) in selectedPersonMembership"
+                        :key="index"
+                        text-color="black"
+                        style="background-color:white"
+                        type="a"
+                        :label="memberCenter"
+                      />
+                  </q-list>
+              </q-item>
               <q-virtual-scroll
                 :items="personPublicationsCombinedMatches"
                 separator
@@ -122,7 +153,7 @@
                         />
                       </q-item-section>-->
                     </template>
-                    <q-card v-if="item.publication !== undefined">
+                    <q-card v-if="item.publication !== undefined && isCenterReviewer && selectedCenterReviewer">
                       <q-card-section dense align="center" class="text-center">
                         <q-item-label align="left">Move To:</q-item-label>
                         <q-btn dense v-if="reviewTypeFilter!=='pending'" color="purple" label="Pending" class="on-left" @click="clickReviewPending(index, person, personPublication);" />
@@ -405,6 +436,7 @@ import readPersonsByInstitutionByYearByOrganization from '../gql/readPersonsByIn
 import readOrganizationsCenters from '../../../gql/readOrganizationsCenters.gql'
 
 import VueFriendlyIframe from 'vue-friendly-iframe'
+// import CenterSelect from '@/components/widgets/CenterSelect.vue'
 
 export default {
   name: 'PageIndex',
@@ -413,6 +445,7 @@ export default {
     MainFilter,
     'download-csv': JsonCSV,
     'vue-friendly-iframe': VueFriendlyIframe
+    // CenterSelect
   },
   data: () => ({
     centerOptions: null,
@@ -420,6 +453,8 @@ export default {
     reviewStates: undefined,
     selectedReviewState: undefined,
     institutionReviewState: undefined,
+    isVisibleCenterReviewer: false,
+    selectedCenterReviewer: false,
     dom,
     date,
     firstModel: 750,
@@ -449,6 +484,8 @@ export default {
     publicationsGroupedByTitleByOrgReview: {},
     publicationsGroupedByDoiByInstitutionReview: {},
     publicationsGroupedByDoiByOrgReview: {},
+    centerMembershipByPerson: {},
+    selectedPersonMembership: [],
     sortAuthorsByTitle: {}, // map of title's to the matched author to sort by (i.e., the matched author with the lowest matched position)
     institutions: [],
     institutionGroup: [],
@@ -514,7 +551,8 @@ export default {
     reviewTypeFilter: 'pending',
     publicationsReloadPending: false,
     drawer: false,
-    miniState: false
+    miniState: false,
+    firstFetch: true
   }),
   beforeDestroy () {
     clearInterval(this.interval)
@@ -531,6 +569,7 @@ export default {
     selectedCenter: function () {
       this.selectedCenterAuthor = this.preferredSelectedCenterAuthor
       this.loadPublications()
+      this.selectedCenterReviewer = _.includes(this.userOrgs, this.selectedCenter.value)
     },
     changedPubYears: async function () {
       await this.loadPublications()
@@ -1016,15 +1055,17 @@ export default {
       //     this.people = await _.flatten(sortedPersons)
       //     // this.reportDuplicatePublications()
       //   }
-      await this.loadCenterAuthorOptions()
+      this.loadCenterAuthorOptions()
     },
-    async loadCenterAuthorOptions () {
+    loadCenterAuthorOptions () {
       let obj = ['All']
       // console.log(`Adding list for people count: ${this.people.length}`)
       _.each(this.people, (person) => {
         const authorString = this.getAuthorString(person)
         const pubCount = this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person)
-        // console.log(`Adding person ${authorString} with count '${pubCount}' to center list`)
+        this.centerMembershipByPerson[this.getSimpleFormatAuthorName(authorString)] = _.map(person.persons_organizations, (org) => {
+          return org.organization_value
+        })
         obj.push(`${authorString} (${pubCount})`)
       })
       this.centerAuthorOptions = obj
@@ -1196,11 +1237,15 @@ export default {
       })
 
       this.centerOptions = _.map(results.data.review_organization, (reviewOrg) => {
+        if (_.includes(this.userOrgs, reviewOrg.value)) {
+          this.isVisibleCenterReviewer = true
+        }
         return {
           label: reviewOrg.comment,
           value: reviewOrg.value
         }
       })
+      this.firstFetch = false
 
       const centerValues = _.map(this.centerOptions, (option) => { return option.value })
       if (this.selectedCenter && this.selectedCenter.value && !_.includes(centerValues, this.selectedCenter.value)) {
@@ -1209,17 +1254,30 @@ export default {
       }
 
       if (!this.selectedCenter || !this.selectedCenter.value) {
-        this.selectedCenter = this.preferredSelectedCenter
+        if (this.userOrgs.length > 0) {
+          const curOrgs = this.userOrgs
+          // get first one in the list that is same and user list
+          const firstIndex = _.findIndex(this.centerOptions, function (option) { return _.includes(curOrgs, option.value) })
+          if (firstIndex >= 0) {
+            this.selectedCenter = this.centerOptions[firstIndex]
+          }
+        }
+        // if still not set, set to preferred center
+        if (!this.selectedCenter || !this.selectedCenter.value) {
+          this.selectedCenter = this.preferredSelectedCenter
+        }
       }
+
+      this.selectedCenterReviewer = _.includes(this.userOrgs, this.selectedCenter.value)
       await this.loadReviewStates()
       await this.loadPublications()
     },
-    async clearPublications () {
+    clearPublications () {
       this.publications = []
       this.publicationsByIds = {}
       this.citationsByTitle = {}
       this.people = []
-      await this.loadCenterAuthorOptions()
+      this.loadCenterAuthorOptions()
       this.personPubSetsById = {}
       this.personPubSetPointer = {}
       this.personPubSetIdIndex = 0
@@ -1240,11 +1298,21 @@ export default {
       this.filteredPersonPubCounts = {}
       this.sortAuthorsByTitle = {}
     },
+    setCurrentPersonMembershipList () {
+      this.selectedPersonMembership = []
+      if (this.selectedCenterAuthor !== 'All') {
+        const simpleAuthorName = this.getSimpleFormatAuthorName(this.selectedCenterAuthor)
+        if (this.centerMembershipByPerson[simpleAuthorName]) {
+          this.selectedPersonMembership = this.centerMembershipByPerson[simpleAuthorName]
+        }
+      }
+    },
     async setCurrentPersonPublicationsCombinedMatches () {
       let reviewType = 'pending'
       if (this.reviewTypeFilter) {
         reviewType = this.reviewTypeFilter
       }
+      this.setCurrentPersonMembershipList()
       this.filterPublications()
       this.personPublicationsCombinedMatches = this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType]
 
@@ -1314,6 +1382,9 @@ export default {
       // group by institution (i.e., ND author) review and then by doi
       // let pubsByTitle = {}
       const thisVue = this
+
+      await this.loadPersonsWithFilter()
+
       this.publicationsGroupedByInstitutionReview = _.groupBy(thisVue.publications, function (personPub) {
         let reviewType = 'pending'
         if (!thisVue.personPublicationsById) thisVue.personPublicationsById = {}
@@ -1444,7 +1515,7 @@ export default {
       this.loadCenterAuthorOptions()
 
       // initialize the list in view
-      this.setCurrentPersonPublicationsCombinedMatches()
+      await this.setCurrentPersonPublicationsCombinedMatches()
     },
     getFilteredPersonPubCount (reviewType, person) {
       if (this.filteredPersonPubCounts[reviewType] && this.filteredPersonPubCounts[reviewType][person.id]) {
@@ -1811,7 +1882,7 @@ export default {
             selectedCenterValue = this.preferredSelectedCenter.value
           }
           const mutateResult = await this.$apollo.mutate(
-            insertReview(this.userId, personPub.id, reviewType, selectedCenterValue)
+            insertReview(personPub.id, reviewType, selectedCenterValue)
           )
           if (mutateResult && personPub.id === personPublication.id) {
             this.$refs[`personPub${index}`].hide()
@@ -1830,17 +1901,18 @@ export default {
         // add to new lists
         this.personPublicationsCombinedMatchesByOrgReview[reviewType].push(pubSet.mainPersonPub)
         this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType].push(pubSet.mainPersonPub)
-        if (this.reviewTypeFilter === 'pending' && this.selectedPersonTotal === 'Pending') {
-          const currentPersonIndex = _.findIndex(this.people, (person) => {
-            return person.id === this.person.id
-          })
-          this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
-        } else if (this.selectedPersonTotal === 'Pending' && reviewType === 'pending') {
-          const currentPersonIndex = _.findIndex(this.people, (person) => {
-            return person.id === this.person.id
-          })
-          this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
-        }
+        // if (this.reviewTypeFilter === 'pending' && this.selectedPersonTotal === 'Pending') {
+        //   // const currentPersonIndex = _.findIndex(this.people, (person) => {
+        //   //   console.log('persons', person, this.person)
+        //   //   return person.id === this.person.id // todo Rick, this.person never defined, right?
+        //   // })
+        //   // this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
+        // } else if (this.selectedPersonTotal === 'Pending' && reviewType === 'pending') {
+        //   // const currentPersonIndex = _.findIndex(this.people, (person) => {
+        //   //   return person.id === this.person.id // todo Rick, this.person never defined, right?
+        //   // })
+        //   // this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
+        // }
         this.clearPublication()
         return mutateResults
       } catch (error) {
@@ -1976,6 +2048,9 @@ export default {
   computed: {
     userId: sync('auth/userId'),
     isLoggedIn: sync('auth/isLoggedIn'),
+    role: sync('auth/role'),
+    userOrgs: sync('auth/orgs'),
+    isCenterReviewer: sync('auth/isCenterReviewer'),
     selectedCenter: sync('filter/selectedCenter'),
     preferredSelectedCenter: sync('filter/preferredSelectedCenter'),
     preferredPersonSort: get('filter/preferredPersonSort'),

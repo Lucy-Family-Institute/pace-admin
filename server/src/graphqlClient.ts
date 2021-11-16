@@ -16,6 +16,11 @@ export function createAdminClient (secret: string) {
       uri: process.env.GRAPHQL_END_POINT,
       fetch,
       headers
-    })
+    }),
+    defaultOptions: {
+      query: {
+        fetchPolicy: 'network-only',
+      },
+    },
   })
 }
