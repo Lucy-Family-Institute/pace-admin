@@ -45,6 +45,8 @@
                 :style="{height: ($q.screen.height-56-16-2)+'px'}"
               >
                 <template v-slot:before>
+                  <q-icon class="full-width" size="lg" name="group" />
+                  <q-separator/>
                   <PeopleAuthorSortFilter />
                   <q-linear-progress
                 v-if="!personsLoaded && !personsLoadedError"
@@ -106,11 +108,14 @@
                     </template>
                   </q-virtual-scroll>
                 </template>
-                <template v-slot:after v-if="person">
+                <template v-slot:after>
+                  <q-icon class="full-width" size="lg" name="history_edu" />
+                  <q-separator/>
                   <q-splitter
                     v-model="secondModel"
                     unit="px"
                     :style="{height: ($q.screen.height-56-16)+'px'}"
+                    v-if="person"
                   >
                     <template v-slot:before>
                       <PublicationFilter />
@@ -386,12 +391,20 @@
   </div>-->
 </template>
 
-<style>
+<style scoped>
   .vue-friendly-iframe iframe {
     padding: 0;
     margin: 0;
     width: 100%;
     height: var(--height);
+  }
+  .q-icon {
+    color: white;
+    --brand-blue: #0c2340;
+    --brand-gold: #ae9142;
+    --brand-blue-dark: #081629;
+    border-bottom: 5px solid var(--brand-blue-dark);
+    background: var(--brand-blue);
   }
 </style>
 
@@ -1118,6 +1131,13 @@ export default {
             return person.person_publication_count
           })
 
+          _.each(_.keys(peopleByCounts), (count) => {
+            _.each(peopleByCounts[count], (person) => {
+              console.log(`${count},${person.family_name},${person.given_name}`)
+            })
+          })
+          // console.log(`People by counts: ${JSON.stringify(peopleByCounts, null, 2)}`)
+
           // sort each person array by name for each count
           const peopleByCountsByName = await _.mapValues(peopleByCounts, (persons) => {
             return _.sortBy(persons, ['family_name', 'given_name'])
@@ -1235,6 +1255,7 @@ export default {
     },
     async loadPersonPublicationsCombinedMatches () {
       // this.fundersByDoi = {}
+      console.log('here')
       const indexThis = this
       this.publicationsGroupedByReview = _.groupBy(this.publications, function (pub) {
         if (!indexThis.personPublicationsById) indexThis.personPublicationsById = {}
@@ -1356,6 +1377,8 @@ export default {
       if (publicationTitlesOutOfSync.length > 0) {
         console.warn(`Titles found with reviews out of sync: ${JSON.stringify(publicationTitlesOutOfSync, null, 2)}`)
       }
+
+      console.log(`Person pub sets by review type: ${JSON.stringify(this.personPubSetsByReviewType, null, 2)}`)
 
       // initialize the list in view
       this.setCurrentPersonPublicationsCombinedMatches()

@@ -193,6 +193,15 @@
               </ul>
             </nav>
           </div>
+          <div>
+            Incorporates metadata retrieved from the following third-party Sources:
+            <ul>
+              <li><a href="https://www.semanticscholar.org/product/api" target="_blank">Semantic Scholar</a></li>
+              <li><a href="https://developer.clarivate.com/" target="_blank">Web of Science</a></li>
+              <li><a href="https://www.ncbi.nlm.nih.gov/home/develop/api/" target="_blank">PubMed</a></li>
+              <li><a href="https://api.crossref.org/swagger-ui/index.html" target="_blank">CrossRef</a></li>
+            </ul>
+          </div>
           <div property="logo" typeof="ImageObject">
             <meta property="url" content="https://static.nd.edu/images/webclips/default/webclip-60.png">
           </div>
@@ -287,7 +296,7 @@ export default {
         institutes, and departments to measure impact and highlight
         examples of research excellence.`,
       address: {
-        street1: '271C Hesburgh Library',
+        street1: '271A Hesburgh Library',
         city: 'Notre Dame',
         state: 'IN',
         zip: 46556,

@@ -208,7 +208,7 @@ export default {
         institutes, and departments to measure impact and highlight
         examples of research excellence.`,
       address: {
-        street1: '271C Hesburgh Library',
+        street1: '271A Hesburgh Library',
         city: 'Notre Dame',
         state: 'IN',
         zip: 46556,

@@ -4,21 +4,11 @@
       <q-item v-if="!isCenterReviewer">
         You are not authorized to view this page.  If this is an error, please contact your adminstrator.
       </q-item>
-      <q-item v-if="(isCenterReviewer && !isVisibleCenterReviewer && !firstFetch)">
-        Warning: User not currently authorized to review any Centers/Institutues.  Contact your administrator to grant permissions.
-      </q-item>
-      <q-splitter
-        v-model="firstModel"
-        v-if="isCenterReviewer"
-        unit="px"
-        :style="{height: ($q.screen.height-56-16)+'px'}"
-      >
-        <template v-slot:before>
       <div class="q-pa-md row" style="width:100%">
-        <div style="width:50%">
+        <div style="width:25%">
           <q-item-label class="text-h6" header>Center/Institute Review</q-item-label>
         </div>
-        <div style="width:50%;align:right">
+        <div style="width:25%;align:right">
           <q-item>
             <q-select
               v-model="selectedCenter"
@@ -34,9 +24,81 @@
             <CenterSelect v-if="isLoggedIn" />
           </q-item> -->
         </div>
-      </div>
+        <div style="width:50%;align:right">
           <MainFilter />
-              <CenterReviewPubFilter />
+        </div>
+      </div>
+      <q-splitter
+        v-model="firstModel"
+        v-if="isCenterReviewer"
+        unit="px"
+        :style="{height: ($q.screen.height-72-16)+'px'}"
+      >
+        <template v-slot:before>
+          <q-icon class="full-width" size="lg" name="group" />
+          <q-separator/>
+          <div class="q-pa-md row" style="width:100%">
+            <q-item v-if="(isCenterReviewer && !isVisibleCenterReviewer && !firstFetch)">
+              Warning: Current center/institute view is read-only for all centers/institutes.  Contact your administrator to grant permissions if this is in error.
+            </q-item>
+            <q-linear-progress
+                v-if="!personsLoaded && !personsLoadedError"
+                stripe
+                size="10px"
+                :value="personProgress"
+                :buffer="personBuffer"
+                :color="personsLoadedError ? 'red' : 'secondary'"/>
+            <q-item v-if="personsLoadedError">
+              <q-item-label>Error on Person Data Load</q-item-label>
+            </q-item>
+            <q-virtual-scroll
+              :style="{'max-height': ($q.screen.height-74)+'px'}"
+              :items="centerAuthorOptions"
+              bordered
+              separator
+              :visible="visibleScroll"
+              :key="peopleScrollKey"
+              :ref="`personScroll`"
+            >
+              <template v-slot="{ item, index }">
+                <q-expansion-item
+                    :key="index"
+                    clickable
+                    group="expansion_group_person"
+                    @click="resetReviewTypeFilter();startProgressBar();clearPublication();clearPublications();loadPublications(item); setNameVariants(item)"
+                    active-class="bg-teal-1 text-grey-8"
+                    expand-icon="keyboard_arrow_rights"
+                    :ref="`person${index}`"
+                  >
+                    <template v-slot:header>
+                      <q-item-section avatar top>
+                        <q-avatar icon="person" color="primary" text-color="white" />
+                      </q-item-section>
+
+                      <q-item-section>
+                        <q-item-label lines="1">{{ item }}</q-item-label>
+                        <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
+                      </q-item-section>
+
+                      <q-item-section side>
+                        <!-- <q-icon name="keyboard_arrow_right" color="green" /> -->
+                      </q-item-section>
+                    </template>
+                  </q-expansion-item>
+              </template>
+            </q-virtual-scroll>
+          </div>
+        </template>
+        <template v-slot:after>
+          <q-icon class="full-width" size="lg" name="history_edu" />
+          <q-separator/>
+          <CenterReviewPubFilter />
+          <q-splitter
+              v-model="secondModel"
+              unit="px"
+              :style="{height: ($q.screen.height-200-16)+'px'}"
+          >
+            <template v-slot:before>
               <q-tabs
                 v-model="reviewTypeFilter"
                 dense
@@ -381,17 +443,27 @@
                 </q-dialog>
               </div>
             </template>
+          </q-splitter>
+            </template>
         </q-splitter>
     </div>
   </div>
 </template>
 
-<style>
+<style scoped>
   .vue-friendly-iframe iframe {
     padding: 0;
     margin: 0;
     width: 100%;
     height: var(--height);
+  }
+  .q-icon {
+    color: white;
+    --brand-blue: #0c2340;
+    --brand-gold: #ae9142;
+    --brand-blue-dark: #081629;
+    border-bottom: 5px solid var(--brand-blue-dark);
+    background: var(--brand-blue);
   }
 </style>
 
@@ -457,10 +529,12 @@ export default {
     selectedCenterReviewer: false,
     dom,
     date,
-    firstModel: 750,
+    firstModel: 400,
     secondModel: 500,
     people: [],
     publications: [],
+    personsLoaded: false,
+    personsLoadedError: false,
     citationsByTitle: {},
 
     // these are helper objects to connect personPubSets together
@@ -524,10 +598,13 @@ export default {
     // for progress bar
     progress: 0,
     buffer: 0,
+    personProgress: 0,
+    personBuffer: 0,
     publicationsLoaded: false,
     publicationsCslLoaded: false,
     publicationsLoadedError: false,
     showProgressBar: false,
+    showPersonProgressBar: false,
     reviewedAuthorColumns: [
       { name: 'confidence', align: 'left', label: 'Confidence', field: 'confidenceset_value', sortable: true },
       { name: 'family_name', align: 'left', label: 'Family Name', field: 'family_name', sortable: true },
@@ -557,6 +634,8 @@ export default {
   beforeDestroy () {
     clearInterval(this.interval)
     clearInterval(this.bufferInterval)
+    clearInterval(this.personInterval)
+    clearInterval(this.personBufferInterval)
   },
   async created () {
     await this.fetchData()
@@ -586,6 +665,7 @@ export default {
     },
     selectedInstitutionReviewState: async function () {
       this.selectedCenterAuthor = this.preferredSelectedCenterAuthor
+      this.loadPersonsWithFilter()
       this.loadPersonPublicationsCombinedMatches()
     },
     selectedCenterPubSort: async function () {
@@ -941,6 +1021,44 @@ export default {
     async resetReviewTypeFilter () {
       this.reviewTypeFilter = 'pending'
     },
+    async startPersonProgressBar () {
+      this.personsLoaded = false
+      this.personsLoadedError = false
+      this.resetPersonProgressBar()
+      await this.runPersonProgressBar()
+    },
+    async resetPersonProgressBar () {
+      this.personBuffer = 0
+      this.personProgress = 0
+      this.showPersonProgressBar = true
+      clearInterval(this.personInterval)
+      clearInterval(this.personBufferInterval)
+    },
+    async runPersonProgressBar () {
+      this.personInterval = setInterval(() => {
+        if (this.personsLoaded && this.personProgress > 0) {
+          if (this.personProgress === 1) {
+            // set show progress bar to false the second time called so bar completes before hiding
+            this.showPersonProgressBar = false
+          } else {
+            this.personProgress = 1
+          }
+          return
+        } else if (this.personProgress >= 1) {
+          this.personProgress = 0.01
+          this.personBuffer = 0.01
+          return
+        }
+
+        this.personProgress = Math.min(1, this.personBuffer, this.personProgress + 0.1)
+      }, 700 + Math.random() * 1000)
+
+      this.personBufferInterval = setInterval(() => {
+        if (this.personBuffer < 1) {
+          this.personBuffer = Math.min(1, this.personBuffer + Math.random() * 0.2)
+        }
+      }, 700)
+    },
     async startProgressBar () {
       this.publicationsLoaded = false
       this.publicationsLoadedError = false
@@ -1025,6 +1143,9 @@ export default {
     },
     async loadPersonsWithFilter () {
       this.people = []
+      this.personsLoaded = false
+      this.personsLoadedError = false
+      this.startPersonProgressBar()
       const personResult = await this.$apollo.query(readPersonsByInstitutionByYearByOrganization(this.selectedCenter.value, this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, 0.0))
       this.people = personResult.data.persons
 
@@ -1069,6 +1190,7 @@ export default {
         obj.push(`${authorString} (${pubCount})`)
       })
       this.centerAuthorOptions = obj
+      this.personsLoaded = true
     },
     async loadReviewStates () {
       const reviewStatesResult = await this.$apollo.query({
@@ -1358,17 +1480,34 @@ export default {
     getPubCSVResultObject (personPublication) {
       const titleKey = this.getPublicationTitleKey(personPublication.publication.title)
       const citation = (this.citationsByTitle[titleKey] ? this.citationsByTitle[titleKey] : undefined)
-      return {
-        authors: this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][titleKey],
-        title: personPublication.publication.title.replace(/\n/g, ' '),
-        doi: this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi)),
-        journal: (personPublication.publication.journal_title) ? personPublication.publication.journal_title : '',
-        year: personPublication.publication.year,
-        source_names: JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications), (pub) => { return pub.publication.source_name })),
-        sources: this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications)),
-        abstract: personPublication.publication.abstract,
-        citation: citation
+      const obj = new Map()
+      if (this.selectedPersonMembership && this.selectedPersonMembership.length > 0) {
+        _.each(this.selectedPersonMembership, (center) => {
+          obj[center] = ''
+        })
       }
+      obj['authors'] = this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][titleKey]
+      obj['title'] = personPublication.publication.title.replace(/\n/g, ' ')
+      obj['doi'] = this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi))
+      obj['journal'] = (personPublication.publication.journal_title) ? personPublication.publication.journal_title : ''
+      obj['year'] = personPublication.publication.year
+      obj['source_names'] = JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications), (pub) => { return pub.publication.source_name }))
+      obj['sources'] = this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications))
+      obj['abstract'] = personPublication.publication.abstract
+      obj['citation'] = citation
+      // const obj = {
+      //   centers: (this.selectedPersonMembership ? _.mapKeys(this.selectedPersonMembership, (center) => { return center }) : []),
+      //   authors: this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][titleKey],
+      //   title: personPublication.publication.title.replace(/\n/g, ' '),
+      //   doi: this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi)),
+      //   journal: (personPublication.publication.journal_title) ? personPublication.publication.journal_title : '',
+      //   year: personPublication.publication.year,
+      //   source_names: JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications), (pub) => { return pub.publication.source_name })),
+      //   sources: this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications)),
+      //   abstract: personPublication.publication.abstract,
+      //   citation: citation
+      // }
+      return obj
     },
     getCSVHyperLinkString (showText, url) {
       return `${url}`
@@ -1382,9 +1521,6 @@ export default {
       // group by institution (i.e., ND author) review and then by doi
       // let pubsByTitle = {}
       const thisVue = this
-
-      await this.loadPersonsWithFilter()
-
       this.publicationsGroupedByInstitutionReview = _.groupBy(thisVue.publications, function (personPub) {
         let reviewType = 'pending'
         if (!thisVue.personPublicationsById) thisVue.personPublicationsById = {}
@@ -1510,7 +1646,7 @@ export default {
         }
       })
 
-      await this.loadPersonsWithFilter()
+      // await this.loadPersonsWithFilter()
       // need to make sure to reload the list once pub counts are set
       this.loadCenterAuthorOptions()
 
@@ -1641,6 +1777,7 @@ export default {
       this.clearPublication()
       this.clearPublications()
       this.startProgressBar()
+      this.startPersonProgressBar()
       this.publicationsLoaded = false
       this.publicationsLoadedError = false
       this.publicationsCslLoaded = false
@@ -1649,6 +1786,7 @@ export default {
       // const result = await this.$apollo.query(readPublicationsByPerson(item.id))
       // this.publications = result.data.publications
       try {
+        await this.loadPersonsWithFilter()
         // for now assume only one review, needs to be fixed later
         const pubsWithReviewResult = await this.$apollo.query({
           query: readPersonPublicationsAll(this.selectedInstitutions, this.selectedCenter.value, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max),
