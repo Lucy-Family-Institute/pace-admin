@@ -1,10 +1,10 @@
 <template>
   <div>
-    <div class="q-pa-md">
+    <div class="q-pa-sm">
       <q-item v-if="!isCenterReviewer">
         You are not authorized to view this page.  If this is an error, please contact your adminstrator.
       </q-item>
-      <div class="q-pa-md row" style="width:100%">
+      <div class="row" style="width:100%">
         <div style="width:25%">
           <q-item-label class="text-h6" header>Center/Institute Review</q-item-label>
         </div>
@@ -37,6 +37,20 @@
         <template v-slot:before>
           <q-icon class="full-width" size="lg" name="group" />
           <q-separator/>
+          <download-csv
+              v-if="personsLoaded && !personsLoadedError"
+              class="cursor-pointer"
+              :name="`center_members_${selectedCenter.value}.csv`"
+              :data="getCenterMembersCSVResult(people)">
+              <q-btn flat
+                style="align:left;width:100%"
+                bottom
+                icon="cloud_download"
+                color="primary"
+              >
+                <q-item-section header align="left">&nbsp;Download Member List</q-item-section>
+              </q-btn>
+            </download-csv>
           <div class="q-pa-md row" style="width:100%">
             <q-item v-if="(isCenterReviewer && !isVisibleCenterReviewer && !firstFetch)">
               Warning: Current center/institute view is read-only for all centers/institutes.  Contact your administrator to grant permissions if this is in error.
@@ -64,27 +78,47 @@
                 <q-expansion-item
                     :key="index"
                     clickable
+                    :active="selectedCenterAuthor===item"
                     group="expansion_group_person"
-                    @click="resetReviewTypeFilter();startProgressBar();clearPublication();clearPublications();loadPublications(item); setNameVariants(item)"
+                    @click="(selectedCenterAuthor===item ? selectedCenterAuthor = preferredSelectedCenterAuthor : selectedCenterAuthor = item)"
                     active-class="bg-teal-1 text-grey-8"
                     expand-icon="keyboard_arrow_rights"
                     :ref="`person${index}`"
                   >
-                    <template v-slot:header>
-                      <q-item-section avatar top>
-                        <q-avatar icon="person" color="primary" text-color="white" />
-                      </q-item-section>
+                  <template v-slot:header>
+                    <q-item-section avatar top>
+                      <q-avatar icon="person" color="primary" text-color="white" />
+                    </q-item-section>
 
-                      <q-item-section>
-                        <q-item-label lines="1">{{ item }}</q-item-label>
-                        <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
-                      </q-item-section>
+                    <q-item-section>
+                      <q-item-label lines="1">{{ item }}</q-item-label>
+                      <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
+                    </q-item-section>
 
-                      <q-item-section side>
-                        <!-- <q-icon name="keyboard_arrow_right" color="green" /> -->
-                      </q-item-section>
-                    </template>
-                  </q-expansion-item>
+                    <q-item-section side>
+                      <!-- <q-icon name="keyboard_arrow_right" color="green" /> -->
+                    </q-item-section>
+                  </template>
+                  <q-card side>
+                    <q-card-section>
+                      <q-list top align="left" dense class="q-pt-sm q-pb-sm" v-if="(selectedPersonMembership && selectedPersonMembership.length > 0)">
+                        Cross-Center Membership:
+                        <q-btn
+                          outline
+                          rounded
+                          no-wrap
+                          size="sm"
+                          v-for="(memberCenter, index) in selectedPersonMembership"
+                          :key="index"
+                          text-color="black"
+                          style="background-color:white"
+                          type="a"
+                          :label="memberCenter"
+                        />
+                      </q-list>
+                    </q-card-section>
+                  </q-card>
+                </q-expansion-item>
               </template>
             </q-virtual-scroll>
           </div>
@@ -92,7 +126,33 @@
         <template v-slot:after>
           <q-icon class="full-width" size="lg" name="history_edu" />
           <q-separator/>
-          <CenterReviewPubFilter />
+          <q-item align="left" class="items-center">
+            <download-csv
+              v-if="publicationsLoaded && !publicationsLoadedError && publicationsCslLoaded"
+              class="cursor-pointer"
+              :name="`${reviewTypeFilter}_center_institute_review_${getSimpleFormatAuthorName(selectedCenterAuthor)}.csv`"
+              :data="getPublicationsCSVResult(personPublicationsCombinedMatches)">
+              <q-btn flat
+                style="align:left;width:100%"
+                bottom
+                icon="cloud_download"
+                color="primary"
+              >
+                <q-item-section header align="left">&nbsp;Download Results</q-item-section>
+              </q-btn>
+            </download-csv>
+            <q-item-section dense v-if="!publicationsCslLoaded && !publicationsLoadedError && publicationsLoaded">
+              <q-item-label>Prepping Data for Download...
+                <q-spinner-ios
+                  color="primary"
+                  size="2em"
+                  />
+              </q-item-label>
+            </q-item-section>
+            <q-item-section>
+              <CenterReviewPubFilter />
+            </q-item-section>
+          </q-item>
           <q-splitter
               v-model="secondModel"
               unit="px"
@@ -122,44 +182,6 @@
                 Warning: Current center/institute view is read-only.
               </q-item>
               <q-separator/>
-              <q-item align="left">
-                <download-csv
-                  v-if="publicationsLoaded && !publicationsLoadedError && publicationsCslLoaded"
-                  class="cursor-pointer"
-                  :name="`${reviewTypeFilter}_center_institute_review_${getSimpleFormatAuthorName(selectedCenterAuthor)}.csv`"
-                  :data="getPublicationsCSVResult(personPublicationsCombinedMatches)">
-                  <q-btn flat
-                    style="align:left;width:100%"
-                    icon="cloud_download"
-                    color="primary"
-                  >
-                    <q-item-section header align="left">&nbsp;Download Results</q-item-section>
-                  </q-btn>
-                </download-csv>
-                <q-item-section dense v-if="!publicationsCslLoaded && !publicationsLoadedError && publicationsLoaded">
-                  <q-item-label>Prepping Data for Download...
-                    <q-spinner-ios
-                      color="primary"
-                      size="2em"
-                      />
-                  </q-item-label>
-                </q-item-section>
-                  <q-list top align="right" dense class="q-pt-sm q-pb-sm" v-if="(selectedPersonMembership && selectedPersonMembership.length > 0)">
-                      Author Center Membership:
-                      <q-btn
-                        outline
-                        rounded
-                        no-wrap
-                        size="sm"
-                        v-for="(memberCenter, index) in selectedPersonMembership"
-                        :key="index"
-                        text-color="black"
-                        style="background-color:white"
-                        type="a"
-                        :label="memberCenter"
-                      />
-                  </q-list>
-              </q-item>
               <q-virtual-scroll
                 :items="personPublicationsCombinedMatches"
                 separator
@@ -1180,16 +1202,19 @@ export default {
     },
     loadCenterAuthorOptions () {
       let obj = ['All']
+      let centersMap = {}
       // console.log(`Adding list for people count: ${this.people.length}`)
       _.each(this.people, (person) => {
         const authorString = this.getAuthorString(person)
         const pubCount = this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person)
         this.centerMembershipByPerson[this.getSimpleFormatAuthorName(authorString)] = _.map(person.persons_organizations, (org) => {
+          centersMap[org.organization_value] = 0
           return org.organization_value
         })
         obj.push(`${authorString} (${pubCount})`)
       })
       this.centerAuthorOptions = obj
+      this.centerMembershipByPerson[this.getSimpleFormatAuthorName('All')] = _.keys(centersMap)
       this.personsLoaded = true
     },
     async loadReviewStates () {
@@ -1354,6 +1379,7 @@ export default {
     //   }
     // },
     async fetchData () {
+      this.selectedCenterAuthor = this.preferredSelectedCenterAuthor
       const results = await this.$apollo.query({
         query: readOrganizationsCenters
       })
@@ -1422,12 +1448,12 @@ export default {
     },
     setCurrentPersonMembershipList () {
       this.selectedPersonMembership = []
-      if (this.selectedCenterAuthor !== 'All') {
-        const simpleAuthorName = this.getSimpleFormatAuthorName(this.selectedCenterAuthor)
-        if (this.centerMembershipByPerson[simpleAuthorName]) {
-          this.selectedPersonMembership = this.centerMembershipByPerson[simpleAuthorName]
-        }
+      // if (this.selectedCenterAuthor !== 'All') {
+      const simpleAuthorName = this.getSimpleFormatAuthorName(this.selectedCenterAuthor)
+      if (this.centerMembershipByPerson[simpleAuthorName]) {
+        this.selectedPersonMembership = this.centerMembershipByPerson[simpleAuthorName]
       }
+      // }
     },
     async setCurrentPersonPublicationsCombinedMatches () {
       let reviewType = 'pending'
@@ -1446,6 +1472,11 @@ export default {
     getPublicationsCSVResult (personPublications) {
       return _.map(personPublications, (personPub) => {
         return this.getPubCSVResultObject(personPub)
+      })
+    },
+    getCenterMembersCSVResult (centerMembers) {
+      return _.map(centerMembers, (member) => {
+        return this.getCenterMemberCSVResultObject(member)
       })
     },
     getPublicationAcceptedAuthors (title) {
@@ -1476,6 +1507,22 @@ export default {
         doiKey = publication.doi
       }
       return doiKey
+    },
+    getCenterMemberCSVResultObject (person) {
+      const obj = new Map()
+      const authorString = this.getAuthorString(person)
+      const simpleName = this.getSimpleFormatAuthorName(authorString)
+      obj['name'] = authorString
+      let centerStr = ''
+      const centers = this.centerMembershipByPerson[simpleName]
+      _.each(centers, (center, index) => {
+        if (index > 0) {
+          centerStr = `${centerStr}; `
+        }
+        centerStr = `${centerStr}${center}`
+      })
+      obj['cross_center_membership'] = centerStr
+      return obj
     },
     getPubCSVResultObject (personPublication) {
       const titleKey = this.getPublicationTitleKey(personPublication.publication.title)
