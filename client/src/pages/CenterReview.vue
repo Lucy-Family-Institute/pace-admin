@@ -32,7 +32,7 @@
         v-model="firstModel"
         v-if="isCenterReviewer"
         unit="px"
-        :style="{height: ($q.screen.height-72-16)+'px'}"
+        :style="{height: ($q.screen.height-1000-16)+'px'}"
       >
         <template v-slot:before>
           <q-icon class="full-width" size="lg" name="group" />
@@ -51,6 +51,7 @@
                 <q-item-section header align="left">&nbsp;Download Member List</q-item-section>
               </q-btn>
             </download-csv>
+            <PeopleAuthorSortFilter />
           <div class="q-pa-md row" style="width:100%">
             <q-item v-if="(isCenterReviewer && !isVisibleCenterReviewer && !firstFetch)">
               Warning: Current center/institute view is read-only for all centers/institutes.  Contact your administrator to grant permissions if this is in error.
@@ -126,39 +127,35 @@
         <template v-slot:after>
           <q-icon class="full-width" size="lg" name="history_edu" />
           <q-separator/>
-          <q-item align="left" class="items-center">
-            <download-csv
-              v-if="publicationsLoaded && !publicationsLoadedError && publicationsCslLoaded"
-              class="cursor-pointer"
-              :name="`${reviewTypeFilter}_center_institute_review_${getSimpleFormatAuthorName(selectedCenterAuthor)}.csv`"
-              :data="getPublicationsCSVResult(personPublicationsCombinedMatches)">
-              <q-btn flat
-                style="align:left;width:100%"
-                bottom
-                icon="cloud_download"
-                color="primary"
-              >
-                <q-item-section header align="left">&nbsp;Download Results</q-item-section>
-              </q-btn>
-            </download-csv>
-            <q-item-section dense v-if="!publicationsCslLoaded && !publicationsLoadedError && publicationsLoaded">
-              <q-item-label>Prepping Data for Download...
-                <q-spinner-ios
-                  color="primary"
-                  size="2em"
-                  />
-              </q-item-label>
-            </q-item-section>
-            <q-item-section>
-              <CenterReviewPubFilter />
-            </q-item-section>
-          </q-item>
           <q-splitter
               v-model="secondModel"
               unit="px"
-              :style="{height: ($q.screen.height-200-16)+'px'}"
+              :style="{height: ($q.screen.height-2-16)+'px'}"
           >
             <template v-slot:before>
+                <download-csv
+                  v-if="publicationsLoaded && !publicationsLoadedError && publicationsCslLoaded"
+                  class="cursor-pointer"
+                  :name="`${reviewTypeFilter}_center_institute_review_${getSimpleFormatAuthorName(selectedCenterAuthor)}.csv`"
+                  :data="getPublicationsCSVResult(personPublicationsCombinedMatches)">
+                  <q-btn flat
+                    style="align:left;width:100%"
+                    bottom
+                    icon="cloud_download"
+                    color="primary"
+                  >
+                    <q-item-section header align="left">&nbsp;Download Results</q-item-section>
+                  </q-btn>
+                </download-csv>
+                <q-item-section dense v-if="!publicationsCslLoaded && !publicationsLoadedError && publicationsLoaded">
+                  <q-item-label>Prepping Data for Download...
+                    <q-spinner-ios
+                      color="primary"
+                      size="2em"
+                      />
+                  </q-item-label>
+                </q-item-section>
+                  <CenterReviewPubFilter />
               <q-tabs
                 v-model="reviewTypeFilter"
                 dense
@@ -524,6 +521,7 @@ import readPublication from '../../../gql/readPublication.gql'
 
 import CenterReviewPubFilter from '../components/CenterReviewPubFilter.vue'
 import MainFilter from '../components/MainFilter.vue'
+import PeopleAuthorSortFilter from '../components/PeopleAuthorSortFilter.vue'
 import sanitize from 'sanitize-filename'
 import pMap from 'p-map'
 import readPersonsByInstitutionByYearByOrganization from '../gql/readPersonsByInstitutionByYearByOrganization'
@@ -537,6 +535,7 @@ export default {
   components: {
     CenterReviewPubFilter,
     MainFilter,
+    PeopleAuthorSortFilter,
     'download-csv': JsonCSV,
     'vue-friendly-iframe': VueFriendlyIframe
     // CenterSelect
@@ -551,8 +550,8 @@ export default {
     selectedCenterReviewer: false,
     dom,
     date,
-    firstModel: 400,
-    secondModel: 500,
+    firstModel: 380,
+    secondModel: 520,
     people: [],
     publications: [],
     personsLoaded: false,
