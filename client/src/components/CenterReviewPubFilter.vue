@@ -1,5 +1,4 @@
 <template>
-  <div>
     <!--<q-item dense>
       <q-select
         filled
@@ -38,7 +37,7 @@
         label="Sort By:"
         class="fullSelect"
       />
-      <q-select
+      <!--<q-select
         name="selected_authors"
         v-model="selectedCenterAuthor"
         :options="centerAuthorOptions"
@@ -47,9 +46,8 @@
         style="width:400px"
         label="Author:"
         class="fullSelect"
-      />
+      />-->
     </q-item>
-  </div>
 </template>
 
 <script>
@@ -76,10 +74,10 @@ export default {
     preferredInstitutionReviewState: sync('filter/preferredInstitutionReviewState'),
     selectedInstitutionReviewState: sync('filter/selectedInstitutionReviewState'),
     preferredCenterPubSort: sync('filter/preferredCenterPubSort'),
-    preferredSelectedCenterAuthor: sync('filter/preferredSelectedCenterAuthor'),
+    // preferredSelectedCenterAuthor: sync('filter/preferredSelectedCenterAuthor'),
     selectedCenterPubSort: sync('filter/selectedCenterPubSort'),
-    selectedCenterAuthor: sync('filter/selectedCenterAuthor'),
-    centerAuthorOptions: sync('filter/centerAuthorOptions'),
+    // selectedCenterAuthor: sync('filter/selectedCenterAuthor'),
+    // centerAuthorOptions: sync('filter/centerAuthorOptions'),
     pubSearch: sync('filter/pubSearch')
   },
   async created () {
@@ -93,7 +91,7 @@ export default {
       await this.loadReviewStates()
       this.selectedinstitutionReviewState = (this.selectedInstitutionReviewState) ? this.selectedinstitutionReviewState : this.preferredInstitutionReviewState
       this.selectedCenterPubSort = (this.selectedCenterPubSort) ? this.selectedCenterPubSort : this.preferredCenterPubSort
-      this.selectedCenterAuthor = (this.selectedCenterAuthor) ? this.selectedCenterAuthor : this.preferredSelectedCenterAuthor
+      // this.selectedCenterAuthor = (this.selectedCenterAuthor) ? this.selectedCenterAuthor : this.preferredSelectedCenterAuthor
       this.pubSearch = ''
     },
     async loadReviewStates () {
