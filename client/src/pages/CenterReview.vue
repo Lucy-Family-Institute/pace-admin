@@ -40,7 +40,7 @@
           <download-csv
               v-if="personsLoaded && !personsLoadedError"
               class="cursor-pointer"
-              :name="`center_members_${selectedCenter.value}.csv`"
+              :name="`center_members_${selectedCenter.value.toLowerCase()}.csv`"
               :data="getCenterMembersCSVResult(people)">
               <q-btn flat
                 style="align:left;width:100%"
