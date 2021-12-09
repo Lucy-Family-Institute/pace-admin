@@ -612,6 +612,7 @@ export default {
     publicationJournalClassifications: [],
     showReviewStates: [],
     filteredPersonPubCounts: {},
+    filteredPersonPubPendingCounts: {},
     // fundersByDoi: {},
     // pubMedFundersByDoi: {},
     // combinedFundersByDoi: {},
@@ -1162,6 +1163,36 @@ export default {
         }
       }
     },
+    async resortPeople () {
+      // apply any sorting applied
+      if (this.selectedPersonSort === 'Name') {
+        this.people = await _.sortBy(this.people, ['family_name', 'given_name'])
+      } else {
+        // need to sort by total and then name, not guaranteed to be in order from what is returned from DB
+        // first group items by count
+        const showPending = (this.selectedPersonTotal && _.startsWith(this.selectedPersonTotal.toLowerCase(), 'pending'))
+        const peopleByCounts = await _.groupBy(this.people, (person) => {
+          return this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person, showPending)
+        })
+
+        // sort each person array by name for each count
+        const peopleByCountsByName = await _.mapValues(peopleByCounts, (persons) => {
+          return _.sortBy(persons, ['family_name', 'given_name'])
+        })
+
+        // get array of counts (i.e., keys) sorted in reverse
+        const sortedCounts = await _.sortBy(_.keys(peopleByCountsByName), (count) => { return Number.parseInt(count) }).reverse()
+
+        // now push values into array in desc order of count and flatten
+        let sortedPersons = []
+        await _.each(sortedCounts, (key) => {
+          sortedPersons.push(peopleByCountsByName[key])
+        })
+
+        this.people = await _.flatten(sortedPersons)
+        // this.reportDuplicatePublications()
+      }
+    },
     async loadPersonsWithFilter () {
       this.people = []
       this.personsLoaded = false
@@ -1169,43 +1200,17 @@ export default {
       this.startPersonProgressBar()
       const personResult = await this.$apollo.query(readPersonsByInstitutionByYearByOrganization(this.selectedCenter.value, this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, 0.0))
       this.people = personResult.data.persons
-
-      // apply any sorting applied
-      // if (this.selectedPersonSort === 'Name') {
-      this.people = await _.sortBy(this.people, ['family_name', 'given_name'])
-      //   } else {
-      //     // need to sort by total and then name, not guaranteed to be in order from what is returned from DB
-      //     // first group items by count
-      //     const peopleByCounts = await _.groupBy(this.people, (person) => {
-      //       return this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person)
-      //     })
-
-      //     // sort each person array by name for each count
-      //     const peopleByCountsByName = await _.mapValues(peopleByCounts, (persons) => {
-      //       return _.sortBy(persons, ['family_name', 'given_name'])
-      //     })
-
-      //     // get array of counts (i.e., keys) sorted in reverse
-      //     const sortedCounts = await _.sortBy(_.keys(peopleByCountsByName), (count) => { return Number.parseInt(count) }).reverse()
-
-      //     // now push values into array in desc order of count and flatten
-      //     let sortedPersons = []
-      //     await _.each(sortedCounts, (key) => {
-      //       sortedPersons.push(peopleByCountsByName[key])
-      //     })
-
-      //     this.people = await _.flatten(sortedPersons)
-      //     // this.reportDuplicatePublications()
-      //   }
-      this.loadCenterAuthorOptions()
+      await this.loadCenterAuthorOptions()
     },
-    loadCenterAuthorOptions () {
+    async loadCenterAuthorOptions () {
+      await this.resortPeople()
       let obj = ['All']
       let centersMap = {}
       // console.log(`Adding list for people count: ${this.people.length}`)
       _.each(this.people, (person) => {
         const authorString = this.getAuthorString(person)
-        const pubCount = this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person)
+        const showPending = (this.selectedPersonTotal && _.startsWith(this.selectedPersonTotal.toLowerCase(), 'pending'))
+        const pubCount = this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person, showPending)
         this.centerMembershipByPerson[this.getSimpleFormatAuthorName(authorString)] = _.map(person.persons_organizations, (org) => {
           centersMap[org.organization_value] = 0
           return org.organization_value
@@ -1419,12 +1424,12 @@ export default {
       await this.loadReviewStates()
       await this.loadPublications()
     },
-    clearPublications () {
+    async clearPublications () {
       this.publications = []
       this.publicationsByIds = {}
       this.citationsByTitle = {}
       this.people = []
-      this.loadCenterAuthorOptions()
+      await this.loadCenterAuthorOptions()
       this.personPubSetsById = {}
       this.personPubSetPointer = {}
       this.personPubSetIdIndex = 0
@@ -1443,6 +1448,7 @@ export default {
       this.confidenceSetItems = []
       this.confidenceSet = undefined
       this.filteredPersonPubCounts = {}
+      this.filteredPersonPubPendingCounts = {}
       this.sortAuthorsByTitle = {}
     },
     setCurrentPersonMembershipList () {
@@ -1564,6 +1570,7 @@ export default {
       // this.combinedFundersByDoi = {}
       // this.uniqueFunders = {}
       this.filteredPersonPubCounts = {}
+      this.filteredPersonPubPendingCounts = {}
       // group by institution (i.e., ND author) review and then by doi
       // let pubsByTitle = {}
       const thisVue = this
@@ -1677,10 +1684,20 @@ export default {
       if (!this.selectedInstitutionReviewState) {
         this.selectedInstitutionReviewState = 'Accepted'
       }
+      // have to alias 'this' since changes in scope below
+      const thisPage = this
       this.personPublicationsCombinedMatchesByOrgReview = _.groupBy(this.personPublicationsCombinedMatchesByReview[this.selectedInstitutionReviewState.toLowerCase()], function (pub) {
+        // if (this.matchedPublicationAuthorsByTitle) console.log(`Matched pub titles are: ${JSON.stringify(_.keys(this.matchedPublicationAuthorsByTitle), null, 2)}`)
+        const titleKey = thisPage.getPublicationTitleKey(pub.publication.title)
+        const matchedAuthors = (titleKey && thisPage.matchedPublicationAuthorsByTitle && thisPage.matchedPublicationAuthorsByTitle[titleKey] ? thisPage.matchedPublicationAuthorsByTitle[titleKey] : [])
         if (pub.org_reviews && pub.org_reviews.length > 0) {
-          return pub.org_reviews[0].review_type
+          const reviewType = pub.org_reviews[0].review_type
+          if (reviewType.toLowerCase() === 'pending') {
+            thisPage.updateFilteredPersonPubPendingCounts('accepted', matchedAuthors)
+          }
+          return reviewType
         } else {
+          thisPage.updateFilteredPersonPubPendingCounts('accepted', matchedAuthors)
           return 'pending'
         }
       })
@@ -1694,13 +1711,15 @@ export default {
 
       // await this.loadPersonsWithFilter()
       // need to make sure to reload the list once pub counts are set
-      this.loadCenterAuthorOptions()
+      await this.loadCenterAuthorOptions()
 
       // initialize the list in view
       await this.setCurrentPersonPublicationsCombinedMatches()
     },
-    getFilteredPersonPubCount (reviewType, person) {
-      if (this.filteredPersonPubCounts[reviewType] && this.filteredPersonPubCounts[reviewType][person.id]) {
+    getFilteredPersonPubCount (reviewType, person, pending) {
+      if (pending && this.filteredPersonPubPendingCounts[reviewType] && this.filteredPersonPubPendingCounts[reviewType][person.id]) {
+        return this.filteredPersonPubPendingCounts[reviewType][person.id]
+      } else if (!pending && this.filteredPersonPubCounts[reviewType] && this.filteredPersonPubCounts[reviewType][person.id]) {
         return this.filteredPersonPubCounts[reviewType][person.id]
       } else {
         return 0
@@ -1715,6 +1734,25 @@ export default {
           this.filteredPersonPubCounts[reviewType][author.id] += 1
         } else {
           this.filteredPersonPubCounts[reviewType][author.id] = 1
+        }
+      })
+    },
+    updateFilteredPersonPubPendingCounts (reviewType, authors) {
+      _.each(authors, (author) => {
+        if (!this.filteredPersonPubPendingCounts[reviewType]) {
+          this.filteredPersonPubPendingCounts[reviewType] = {}
+        }
+        if (this.filteredPersonPubPendingCounts[reviewType][author.id]) {
+          this.filteredPersonPubPendingCounts[reviewType][author.id] += 1
+        } else {
+          this.filteredPersonPubPendingCounts[reviewType][author.id] = 1
+        }
+      })
+    },
+    removeFilteredPersonPubPendingCounts (reviewType, authors) {
+      _.each(authors, (author) => {
+        if (this.filteredPersonPubPendingCounts[reviewType][author.id]) {
+          this.filteredPersonPubPendingCounts[reviewType][author.id] -= 1
         }
       })
     },
@@ -1821,14 +1859,12 @@ export default {
       const currentLoadCount = this.pubLoadCount + 1
       this.pubLoadCount += 1
       this.clearPublication()
-      this.clearPublications()
+      await this.clearPublications()
       this.startProgressBar()
       this.startPersonProgressBar()
       this.publicationsLoaded = false
       this.publicationsLoadedError = false
       this.publicationsCslLoaded = false
-      // clear any previous publications in list
-      this.clearPublications()
       // const result = await this.$apollo.query(readPublicationsByPerson(item.id))
       // this.publications = result.data.publications
       try {
@@ -2097,6 +2133,11 @@ export default {
         //   // })
         //   // this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
         // }
+        // reload in case any pending counts changed
+        const titleKey = this.getPublicationTitleKey(pubSet.mainPersonPub.publication.title)
+        const matchedAuthors = (this.authorsByTitle[titleKey] ? this.authorsByTitle[titleKey] : [])
+        this.removeFilteredPersonPubPendingCounts('accepted', matchedAuthors)
+        await this.loadCenterAuthorOptions()
         this.clearPublication()
         return mutateResults
       } catch (error) {
