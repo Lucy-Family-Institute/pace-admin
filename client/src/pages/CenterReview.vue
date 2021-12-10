@@ -1533,11 +1533,11 @@ export default {
       const titleKey = this.getPublicationTitleKey(personPublication.publication.title)
       const citation = (this.citationsByTitle[titleKey] ? this.citationsByTitle[titleKey] : undefined)
       const obj = new Map()
-      if (this.selectedPersonMembership && this.selectedPersonMembership.length > 0) {
-        _.each(this.selectedPersonMembership, (center) => {
-          obj[center] = ''
-        })
-      }
+      // if (this.selectedPersonMembership && this.selectedPersonMembership.length > 0) {
+      //   _.each(this.selectedPersonMembership, (center) => {
+      //     obj[center] = ''
+      //   })
+      // }
       obj['authors'] = this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][titleKey]
       obj['title'] = personPublication.publication.title.replace(/\n/g, ' ')
       obj['doi'] = this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi))
