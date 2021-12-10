@@ -17,7 +17,7 @@
           custom
           v-slot:default="props"
         >
-          <q-btn icon="group" v-bind="buttonProps(props)" />
+          <q-btn icon="how_to_reg" v-bind="buttonProps(props)" />
         </router-link>
         <router-link
           v-if="isCenterReviewer"

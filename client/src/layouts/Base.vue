@@ -3,7 +3,7 @@
     <q-header>
       <Header />
     </q-header>
-    <q-page-container style="padding-top: 98px;">
+    <q-page-container style="padding-top: 80px;">
       <q-page>
         <router-view />
       </q-page>
