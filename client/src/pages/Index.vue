@@ -6,7 +6,7 @@
         </q-item>
         <div class="row" style="width:100%">
           <div style="width:25%">
-            <q-item-label class="text-h6" header>Notre Dame Author Review ({{ (people ? people.length : 0) }} Authors Shown)                  </q-item-label>
+            <q-item-label class="text-h6" header>Notre Dame Author Review<br>({{ (people ? people.length : 0) }} Authors Shown)                  </q-item-label>
           </div>
           <div style="width:25%;align:right">
             <q-item>
@@ -42,7 +42,6 @@
           v-model="firstModel"
           v-if="isAuthorReviewer"
           unit="px"
-          :style="{height: ($q.screen.height-50-16-2)+'px'}"
         >
           <template v-slot:before>
             <q-icon class="full-width" size="lg" name="group" />
@@ -58,6 +57,19 @@
             <q-item v-if="personsLoadedError">
               <q-item-label>Error on Person Data Load</q-item-label>
             </q-item>
+          </template>
+          <template v-slot:after>
+            <q-icon class="full-width" size="lg" name="history_edu" />
+            <PublicationFilter />
+          </template>
+        </q-splitter>
+        <q-splitter
+          v-model="firstModel"
+          v-if="isAuthorReviewer"
+          unit="px"
+          :style="{height: ($q.screen.height-50-16-2)+'px'}"
+        >
+          <template v-slot:before>
             <q-virtual-scroll
               :style="{'max-height': ($q.screen.height-74)+'px'}"
               :items="people"
@@ -109,16 +121,14 @@
             </q-virtual-scroll>
           </template>
           <template v-slot:after>
-            <q-icon class="full-width" size="lg" name="history_edu" />
             <q-separator/>
             <q-splitter
               v-model="secondModel"
               unit="px"
-              :style="{height: ($q.screen.height-110-16)+'px'}"
+              :style="{height: ($q.screen.height-74)+'px'}"
               v-if="person"
             >
               <template v-slot:before>
-                <PublicationFilter />
                 <q-tabs
                   v-model="reviewTypeFilter"
                   dense
@@ -142,7 +152,7 @@
                   :items="personPublicationsCombinedMatches"
                   separator
                   bordered
-                  :style="{'max-height': ($q.screen.height-50-88-36-8)+'px'}"
+                  :style="{'max-height': ($q.screen.height-74)+'px'}"
                   :ref="`pubScroll`"
                 >
                   <template v-slot="{ item, index }">
@@ -460,8 +470,8 @@ export default {
     personScrollIndex: 0,
     dom,
     date,
-    firstModel: 400,
-    secondModel: 500,
+    firstModel: 360,
+    secondModel: 540,
     people: [],
     publications: [],
     personsLoaded: false,

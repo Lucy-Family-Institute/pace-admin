@@ -6,7 +6,7 @@
       </q-item>
       <div class="row" style="width:100%">
         <div style="width:25%">
-          <q-item-label class="text-h6" header>Center/Institute Review</q-item-label>
+          <q-item-label class="text-h6" header>Center/Institute Review<br>({{ (people ? people.length : 0) }} Members Shown)</q-item-label>
         </div>
         <div style="width:25%;align:right">
           <q-item>
@@ -32,42 +32,89 @@
         v-model="firstModel"
         v-if="isCenterReviewer"
         unit="px"
-        :style="{height: ($q.screen.height-1000-16)+'px'}"
       >
         <template v-slot:before>
-          <q-icon class="full-width" size="lg" name="group" />
-          <q-separator/>
-          <download-csv
+          <q-icon class="full-width" align="right" size="lg" name="group">
+            <download-csv
               v-if="personsLoaded && !personsLoadedError"
               class="cursor-pointer"
               :name="`center_members_${selectedCenter.value.toLowerCase()}.csv`"
               :data="getCenterMembersCSVResult(people)">
               <q-btn flat
-                style="align:left;width:100%"
-                bottom
+                style="align:right;width:100%"
+                dense
                 icon="cloud_download"
-                color="primary"
+                color="grey"
               >
-                <q-item-section header align="left">&nbsp;Download Member List</q-item-section>
+              <br>
               </q-btn>
             </download-csv>
-            <PeopleAuthorSortFilter />
-          <div class="q-pa-md row" style="width:100%">
-            <q-item v-if="(isCenterReviewer && !isVisibleCenterReviewer && !firstFetch)">
-              Warning: Current center/institute view is read-only for all centers/institutes.  Contact your administrator to grant permissions if this is in error.
-            </q-item>
-            <q-linear-progress
-                v-if="!personsLoaded && !personsLoadedError"
-                stripe
-                size="10px"
-                :value="personProgress"
-                :buffer="personBuffer"
-                :color="personsLoadedError ? 'red' : 'secondary'"/>
-            <q-item v-if="personsLoadedError">
-              <q-item-label>Error on Person Data Load</q-item-label>
-            </q-item>
+          </q-icon>
+          <q-separator/>
+          <PeopleAuthorSortFilter />
+          <q-item v-if="(isCenterReviewer && !isVisibleCenterReviewer && !firstFetch)">
+            Warning: Current center/institute view is read-only for all centers/institutes.  Contact your administrator to grant permissions if this is in error.
+          </q-item>
+          <q-linear-progress
+            v-if="!personsLoaded && !personsLoadedError"
+            stripe
+            size="10px"
+            :value="personProgress"
+            :buffer="personBuffer"
+            :color="personsLoadedError ? 'red' : 'secondary'"/>
+          <q-item v-if="personsLoadedError">
+            <q-item-label>Error on Person Data Load</q-item-label>
+          </q-item>
+        </template>
+        <template v-slot:after>
+          <q-icon style="text-align:left;" class="full-width" size="lg" name="history_edu">
+          <download-csv
+            v-if="publicationsLoaded && !publicationsLoadedError && publicationsCslLoaded"
+            class="cursor-pointer"
+            :name="`${reviewTypeFilter}_center_institute_review_${getSimpleFormatAuthorName(selectedCenterAuthor)}.csv`"
+            :data="getPublicationsCSVResult(personPublicationsCombinedMatches)">
+            <q-btn flat
+              dense
+              style="align:right;width:100%"
+              icon="cloud_download"
+              color="grey"
+            />
+          </download-csv>
+          </q-icon>
+          <q-item-section dense v-if="!publicationsCslLoaded && !publicationsLoadedError && publicationsLoaded">
+            <q-item-label>&nbsp;Prepping Data for Download...
+              <q-spinner-ios
+                color="primary"
+                size="2em"
+                />
+            </q-item-label>
+          </q-item-section>
+          <CenterReviewPubFilter />
+          <q-linear-progress
+            v-if="!publicationsLoaded && !publicationsLoadedError"
+            stripe
+            size="10px"
+            :value="progress"
+            :buffer="buffer"
+            :color="publicationsLoadedError ? 'red' : 'secondary'"/>
+          <q-item v-if="publicationsLoadedError">
+            <q-item-label>Error on Publication Data Load</q-item-label>
+          </q-item>
+          <q-item v-if="(isCenterReviewer && isVisibleCenterReviewer && !selectedCenterReviewer)">
+            Warning: Current center/institute view is read-only.
+          </q-item>
+        </template>
+      </q-splitter>
+      <q-splitter
+        v-model="firstModel"
+        v-if="isCenterReviewer"
+        unit="px"
+        :style="{height: ($q.screen.height-50-16-2)+'px'}"
+      >
+        <template v-slot:before>
+          <q-separator/>
             <q-virtual-scroll
-              :style="{'max-height': ($q.screen.height-74)+'px'}"
+              :style="{'max-height': ($q.screen.height-1600)+'px'}"
               :items="centerAuthorOptions"
               bordered
               separator
@@ -122,40 +169,15 @@
                 </q-expansion-item>
               </template>
             </q-virtual-scroll>
-          </div>
         </template>
         <template v-slot:after>
-          <q-icon class="full-width" size="lg" name="history_edu" />
           <q-separator/>
           <q-splitter
               v-model="secondModel"
               unit="px"
-              :style="{height: ($q.screen.height-2-16)+'px'}"
+              :style="{height: ($q.screen.height-74)+'px'}"
           >
             <template v-slot:before>
-                <download-csv
-                  v-if="publicationsLoaded && !publicationsLoadedError && publicationsCslLoaded"
-                  class="cursor-pointer"
-                  :name="`${reviewTypeFilter}_center_institute_review_${getSimpleFormatAuthorName(selectedCenterAuthor)}.csv`"
-                  :data="getPublicationsCSVResult(personPublicationsCombinedMatches)">
-                  <q-btn flat
-                    style="align:left;width:100%"
-                    bottom
-                    icon="cloud_download"
-                    color="primary"
-                  >
-                    <q-item-section header align="left">&nbsp;Download Results</q-item-section>
-                  </q-btn>
-                </download-csv>
-                <q-item-section dense v-if="!publicationsCslLoaded && !publicationsLoadedError && publicationsLoaded">
-                  <q-item-label>Prepping Data for Download...
-                    <q-spinner-ios
-                      color="primary"
-                      size="2em"
-                      />
-                  </q-item-label>
-                </q-item-section>
-                  <CenterReviewPubFilter />
               <q-tabs
                 v-model="reviewTypeFilter"
                 dense
@@ -165,26 +187,13 @@
                 <q-tab name="rejected" :label="`Rejected (${getPublicationsGroupedByTitleByOrgReviewCount('rejected')})`" />
                 <q-tab name="unsure" :label="`Unsure (${getPublicationsGroupedByTitleByOrgReviewCount('unsure')})`" />
               </q-tabs>
-              <q-linear-progress
-                v-if="!publicationsLoaded && !publicationsLoadedError"
-                stripe
-                size="10px"
-                :value="progress"
-                :buffer="buffer"
-                :color="publicationsLoadedError ? 'red' : 'secondary'"/>
-              <q-item v-if="publicationsLoadedError">
-                <q-item-label>Error on Publication Data Load</q-item-label>
-              </q-item>
-              <q-item v-if="(isCenterReviewer && isVisibleCenterReviewer && !selectedCenterReviewer)">
-                Warning: Current center/institute view is read-only.
-              </q-item>
               <q-separator/>
               <q-virtual-scroll
                 :items="personPublicationsCombinedMatches"
                 separator
                 bordered
                 :virtual-scroll-item-size="50"
-                :style="{'max-height': ($q.screen.height-50-88-36-8)+'px'}"
+                :style="{'max-height': ($q.screen.height-74)+'px'}"
                 :ref="`pubScroll`"
               >
                 <template v-slot="{ item, index }">
@@ -250,7 +259,7 @@
             <template v-slot:after v-if="personPublication">
               <div
                 v-if="personPublication"
-                :style="{height: ($q.screen.height-56-16)+'px'}"
+                :style="{height: ($q.screen.height-74)+'px'}"
               >
                 <div class="q-pa-md row items-start q-gutter-md">
                   <q-card>
@@ -550,8 +559,8 @@ export default {
     selectedCenterReviewer: false,
     dom,
     date,
-    firstModel: 380,
-    secondModel: 520,
+    firstModel: 360,
+    secondModel: 540,
     people: [],
     publications: [],
     personsLoaded: false,
