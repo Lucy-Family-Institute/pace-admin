@@ -10,7 +10,7 @@
       />
       <q-route-tab name="person"
         v-if="isLoggedIn"
-        icon="group"
+        icon="how_to_reg"
         to="/"
         class="tab"
         exact
