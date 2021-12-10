@@ -11,12 +11,7 @@
         class="fullSelect"
       />
     </q-item>-->
-    <q-item header>
-      <q-input v-model="pubSearch" label="" style="width:100%">
-        <template v-slot:append>
-          <q-icon name="search" />
-        </template>
-      </q-input>
+    <q-item style="padding-top: 10px;padding-right: 16px;padding-bottom: 14px;padding-left: 16px;" header>
       <!--<q-select
         name="institution_review"
         v-model="selectedInstitutionReviewState"
@@ -47,6 +42,11 @@
         label="Author:"
         class="fullSelect"
       />-->
+      <q-input v-model="pubSearch" label="" style="max-width:70%; padding-left: 8px; width:100%">
+        <template v-slot:append>
+          <q-icon name="search" />
+        </template>
+      </q-input>
     </q-item>
 </template>
 
