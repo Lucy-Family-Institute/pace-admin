@@ -46,26 +46,33 @@ const client = new ApolloClient({
 
 async function main (): Promise<void> {
 
+  const harvestYearStr = process.env.WOS_HARVEST_YEARS
+  const harvestYearStrArr = _.split(harvestYearStr, ',')
+  const harvestYears = _.map(harvestYearStrArr, (yearStr) => {
+    return Number.parseInt(yearStr)
+  })
+
   const dsConfig: DataSourceConfig = {
     baseUrl: process.env.WOS_BASE_URL,
     queryUrl: process.env.WOS_QUERY_URL,
     userName: process.env.WOS_USERNAME,
     password: process.env.WOS_PASSWORD,
     sourceName: process.env.WOS_SOURCE_NAME,
-    pageSize: process.env.WOS_PAGE_SIZE,  // page size must be a string for the request to work
+    pageSize: process.env.WOS_PAGE_SIZE,  // page size must be a string for the request to work,
+    harvestYears: harvestYears,
     requestInterval: Number.parseInt(process.env.WOS_REQUEST_INTERVAL)
   }
 
   const ds: WosDataSource = new WosDataSource(dsConfig)
   const harvester: Harvester = new Harvester(ds)
   
-  const years = [ 2020 ]
+  const years = dsConfig.harvestYears
   let succeededPapers = []
   let failedPapers = []
   let succeededAuthors = []
   let failedAuthors = []
   await pMap(years, async (year) => {
-    const normedPersons: NormedPerson[] = await getAllNormedPersonsByYear(year, client)
+    const normedPersons: NormedPerson[] = await getAllNormedPersonsByYear(year.valueOf(), client)
 
     const resultsDir = `../data/${dsConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`
 
