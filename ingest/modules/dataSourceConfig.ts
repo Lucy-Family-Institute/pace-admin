@@ -8,5 +8,6 @@ export default interface DataSourceConfig {
   password?: string
   sourceName: string
   pageSize: string
+  harvestYears?: Number[]
   requestInterval: Number
 }
