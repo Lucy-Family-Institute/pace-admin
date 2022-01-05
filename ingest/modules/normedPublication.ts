@@ -10,6 +10,7 @@ import NormedAuthor from './normedAuthor'
 import writeToJSONFile from '../units/writeToJSONFile'
 import { loadJSONFromFile } from '../units/loadJSONFromFile'
 import BibTex from './bibTex'
+import Csl from './csl'
 import { SemanticScholarDataSource } from './semanticScholarDataSource'
 
 export default class NormedPublication {
@@ -321,6 +322,42 @@ export default class NormedPublication {
     } else if (normedPub.datasourceName === 'SemanticScholar') {
       return await SemanticScholarDataSource.getNormedAuthors(normedPub.sourceMetadata)
     }
+  }
+
+  public static async getCsl (normedPub: NormedPublication): Promise<Csl> {
+    let cslRecords = undefined
+    let csl: Csl = undefined
+    try {
+      csl = await Csl.getCsl(normedPub.doi)
+    } catch (error) {
+      let bibTexStr = undefined
+      let normedBibTex = undefined
+      normedBibTex = await NormedPublication.getBibTex(normedPub)
+      if (normedBibTex) bibTexStr = BibTex.toString(normedBibTex)           
+      if (bibTexStr) {
+        // console.log(`Trying to get csl from bibtex str doi: ${doi}, for bibtex str ${bibTexStr} found...`)
+        try {
+          csl = await Csl.getCsl(bibTexStr)
+        } catch (error) {
+          // try it without the abstract
+          let newBibTex
+          try {
+            if (normedBibTex) {
+              console.log('Error encountered on bibTex, trying without abstract...')
+              newBibTex = BibTex.toString(normedBibTex, true)
+              csl = await Csl.getCsl(newBibTex)
+            }
+          } catch (error) {
+            console.log(`Errored on csl from bibtex w/ or w/out abstract: ${bibTexStr}, error: ${error}`)
+            throw (error)
+          }
+        }
+      } else {
+        console.log(`Throwing the error for doi: ${normedPub.doi}`)
+        throw (error)
+      }
+    }
+    return csl 
   }
 
   public static async getBibTex (normedPub: NormedPublication): Promise<BibTex> {

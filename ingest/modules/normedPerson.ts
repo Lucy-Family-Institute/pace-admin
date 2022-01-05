@@ -10,7 +10,8 @@ export default class NormedPerson {
   givenName: string
   startDate: Date
   endDate: Date
-  nameVariances?: []
+  nameVariances?: any[]
+  names?: any[] // includes main name and name variances in one array
   sourceIds: {
     scopusAffiliationId?: string,
     semanticScholarIds?: string[]
