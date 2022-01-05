@@ -38,6 +38,22 @@ interface NormedCenterMember {
 
 function mapToNormedPersons(people: Array<any>) : Array<NormedPerson> {
   const normedPersons = _.map(people, (person) => {
+    const names = []
+    names.push({
+      familyName: _.trim(person.family_name.toLowerCase()),
+      givenNameInitial: _.trim(person.given_name)[0].toLowerCase(),
+      givenName: _.trim(person.given_name.toLowerCase()),
+    })
+    // add all name variations
+    if (person.persons_namevariances) {
+      _.each (person.persons_namevariances, (nameVariance) => {
+        names.push({
+          familyName: nameVariance.family_name.toLowerCase(),
+          givenNameInitial: (nameVariance.given_name ? nameVariance.given_name[0].toLowerCase() : ''),
+          givenName: (nameVariance.given_name ? nameVariance.given_name.toLowerCase() : '')
+        })
+      })
+    }
     let np: NormedPerson = {
       id: person.id,
       familyName: _.toLower(person.family_name),
@@ -45,6 +61,7 @@ function mapToNormedPersons(people: Array<any>) : Array<NormedPerson> {
       givenName: _.toLower(person.given_name),
       startDate: getDateObject(person.start_date),
       endDate: getDateObject(person.end_date),
+      names: names,
       nameVariances: person.persons_namevariances,
       sourceIds: { semanticScholarIds: JSON.parse(person.semantic_scholar_ids) }
     }
@@ -109,5 +126,10 @@ export async function getAllCenterMembers(client: ApolloClient<NormalizedCacheOb
 
 export async function getAllNormedPersonsByYear (year: number, client: ApolloClient<NormalizedCacheObject>) : Promise<Array<NormedPerson>> {
   const queryResult = await client.query(readPersonsByYearAllCenters(year))
+  return mapToNormedPersons(queryResult.data.persons)
+}
+
+export async function getAllNormedPersons (client: ApolloClient<NormalizedCacheObject>) : Promise<Array<NormedPerson>> {
+  const queryResult = await client.query(readPersons())
   return mapToNormedPersons(queryResult.data.persons)
 }

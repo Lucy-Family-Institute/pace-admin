@@ -31,6 +31,7 @@ const getIngestFilePaths = require('../getIngestFilePaths');
 import readPersonPublicationsByYear from '../gql/readPersonPublicationsByYear'
 import { normalizeString, normalizeObjectProperties } from '../units/normalizer'
 import { command as writeCsv } from '../units/writeCsv'
+import NormedPublication from './normedPublication'
 import moment from 'moment'
 
 dotenv.config({
@@ -188,9 +189,8 @@ export class CalculateConfidence {
   async getConfirmedAuthorsByDoi (papersByDoi, csvColumn) {
     const confirmedAuthorsByDoi = _.mapValues(papersByDoi, function (papers) {
       return _.mapValues(papers, function (paper) {
-        const unparsedName = paper[csvColumn]
-        const parsedName =  humanparser.parseName(unparsedName)
-        return parsedName
+        const unparsedNames = paper[csvColumn]
+        return NormedPublication.getConfirmedNormedAuthors(unparsedNames)
       })
     })
     return confirmedAuthorsByDoi
