@@ -33,7 +33,7 @@ const client = new ApolloClient({
 
 async function main (): Promise<void> {
   const authorsWithVariances: any = await loadCsv({
-    path: '../data/input/researchers_2017-2020_attributes.csv'
+    path: '../data/input/researchers_2017-2021_attributes.csv'
   })
 
   // get the set of persons to add variances to

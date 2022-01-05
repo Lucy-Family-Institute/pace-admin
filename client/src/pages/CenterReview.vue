@@ -1,24 +1,14 @@
 <template>
   <div>
-    <div class="q-pa-md">
+    <div class="q-pa-sm">
       <q-item v-if="!isCenterReviewer">
         You are not authorized to view this page.  If this is an error, please contact your adminstrator.
       </q-item>
-      <q-item v-if="(isCenterReviewer && !isVisibleCenterReviewer && !firstFetch)">
-        Warning: User not currently authorized to review any Centers/Institutues.  Contact your administrator to grant permissions.
-      </q-item>
-      <q-splitter
-        v-model="firstModel"
-        v-if="isCenterReviewer"
-        unit="px"
-        :style="{height: ($q.screen.height-56-16)+'px'}"
-      >
-        <template v-slot:before>
-      <div class="q-pa-md row" style="width:100%">
-        <div style="width:50%">
-          <q-item-label class="text-h6" header>Center/Institute Review</q-item-label>
+      <div class="row" style="width:100%">
+        <div style="width:25%">
+          <q-item-label class="text-h6" header>Center/Institute Review<br>({{ (people ? people.length : 0) }} Members Shown)</q-item-label>
         </div>
-        <div style="width:50%;align:right">
+        <div style="width:25%;align:right">
           <q-item>
             <q-select
               v-model="selectedCenter"
@@ -34,9 +24,160 @@
             <CenterSelect v-if="isLoggedIn" />
           </q-item> -->
         </div>
-      </div>
+        <div style="width:50%;align:right">
           <MainFilter />
-              <CenterReviewPubFilter />
+        </div>
+      </div>
+      <q-splitter
+        v-model="firstModel"
+        v-if="isCenterReviewer"
+        unit="px"
+      >
+        <template v-slot:before>
+          <q-icon class="full-width" align="right" size="lg" name="group">
+            <download-csv
+              v-if="personsLoaded && !personsLoadedError"
+              class="cursor-pointer"
+              :name="`center_members_${selectedCenter.value.toLowerCase()}.csv`"
+              :data="getCenterMembersCSVResult(people)">
+              <q-btn flat
+                style="align:right;width:100%"
+                dense
+                icon="cloud_download"
+                color="grey"
+              >
+              <br>
+              </q-btn>
+            </download-csv>
+          </q-icon>
+          <q-separator/>
+          <PeopleAuthorSortFilter />
+          <q-item v-if="(isCenterReviewer && !isVisibleCenterReviewer && !firstFetch)">
+            Warning: Current center/institute view is read-only for all centers/institutes.  Contact your administrator to grant permissions if this is in error.
+          </q-item>
+          <q-linear-progress
+            v-if="!personsLoaded && !personsLoadedError"
+            stripe
+            size="10px"
+            :value="personProgress"
+            :buffer="personBuffer"
+            :color="personsLoadedError ? 'red' : 'secondary'"/>
+          <q-item v-if="personsLoadedError">
+            <q-item-label>Error on Person Data Load</q-item-label>
+          </q-item>
+        </template>
+        <template v-slot:after>
+          <q-icon style="text-align:left;" class="full-width" size="lg" name="history_edu">
+          <download-csv
+            v-if="publicationsLoaded && !publicationsLoadedError && publicationsCslLoaded"
+            class="cursor-pointer"
+            :name="`${reviewTypeFilter}_center_institute_review_${getSimpleFormatAuthorName(selectedCenterAuthor)}.csv`"
+            :data="getPublicationsCSVResult(personPublicationsCombinedMatches)">
+            <q-btn flat
+              dense
+              style="align:right;width:100%"
+              icon="cloud_download"
+              color="grey"
+            />
+          </download-csv>
+          </q-icon>
+          <q-item-section dense v-if="!publicationsCslLoaded && !publicationsLoadedError && publicationsLoaded">
+            <q-item-label>&nbsp;Prepping Data for Download...
+              <q-spinner-ios
+                color="primary"
+                size="2em"
+                />
+            </q-item-label>
+          </q-item-section>
+          <CenterReviewPubFilter />
+          <q-linear-progress
+            v-if="!publicationsLoaded && !publicationsLoadedError"
+            stripe
+            size="10px"
+            :value="progress"
+            :buffer="buffer"
+            :color="publicationsLoadedError ? 'red' : 'secondary'"/>
+          <q-item v-if="publicationsLoadedError">
+            <q-item-label>Error on Publication Data Load</q-item-label>
+          </q-item>
+          <q-item v-if="(isCenterReviewer && isVisibleCenterReviewer && !selectedCenterReviewer)">
+            Warning: Current center/institute view is read-only.
+          </q-item>
+        </template>
+      </q-splitter>
+      <q-splitter
+        v-model="firstModel"
+        v-if="isCenterReviewer"
+        unit="px"
+        :style="{height: ($q.screen.height-50-16-2)+'px'}"
+      >
+        <template v-slot:before>
+          <q-separator/>
+            <q-virtual-scroll
+              :style="{'max-height': ($q.screen.height-1600)+'px'}"
+              :items="centerAuthorOptions"
+              bordered
+              separator
+              :visible="visibleScroll"
+              :key="peopleScrollKey"
+              :ref="`personScroll`"
+            >
+              <template v-slot="{ item, index }">
+                <q-expansion-item
+                    :key="index"
+                    clickable
+                    :active="selectedCenterAuthor===item"
+                    group="expansion_group_person"
+                    @click="(selectedCenterAuthor===item ? selectedCenterAuthor = preferredSelectedCenterAuthor : selectedCenterAuthor = item)"
+                    active-class="bg-teal-1 text-grey-8"
+                    expand-icon="keyboard_arrow_rights"
+                    :ref="`person${index}`"
+                  >
+                  <template v-slot:header>
+                    <q-item-section avatar top>
+                      <q-avatar icon="person" color="primary" text-color="white" />
+                    </q-item-section>
+
+                    <q-item-section>
+                      <q-item-label lines="1">{{ item }}</q-item-label>
+                      <!-- <q-item-label caption>{{date.formatDate(new Date(item.dateModified), 'YYYY-MM-DD')}}</q-item-label> -->
+                    </q-item-section>
+
+                    <q-item-section side>
+                      <!-- <q-icon name="keyboard_arrow_right" color="green" /> -->
+                    </q-item-section>
+                  </template>
+                  <q-card side>
+                    <q-card-section>
+                      <q-list top align="left" dense class="q-pt-sm q-pb-sm" v-if="(selectedPersonMembership && selectedPersonMembership.length > 0)">
+                        Cross-Center Membership:
+                        <q-btn
+                          outline
+                          rounded
+                          no-wrap
+                          size="sm"
+                          v-for="(memberCenter, index) in selectedPersonMembership"
+                          :key="index"
+                          text-color="black"
+                          style="background-color:white"
+                          type="a"
+                          :label="memberCenter"
+                        />
+                      </q-list>
+                    </q-card-section>
+                  </q-card>
+                </q-expansion-item>
+              </template>
+            </q-virtual-scroll>
+        </template>
+        <template v-slot:after>
+          <q-separator/>
+          <q-splitter
+              v-model="secondModel"
+              unit="px"
+              :style="{height: ($q.screen.height-74)+'px'}"
+          >
+            <template v-slot:before>
               <q-tabs
                 v-model="reviewTypeFilter"
                 dense
@@ -46,64 +187,13 @@
                 <q-tab name="rejected" :label="`Rejected (${getPublicationsGroupedByTitleByOrgReviewCount('rejected')})`" />
                 <q-tab name="unsure" :label="`Unsure (${getPublicationsGroupedByTitleByOrgReviewCount('unsure')})`" />
               </q-tabs>
-              <q-linear-progress
-                v-if="!publicationsLoaded && !publicationsLoadedError"
-                stripe
-                size="10px"
-                :value="progress"
-                :buffer="buffer"
-                :color="publicationsLoadedError ? 'red' : 'secondary'"/>
-              <q-item v-if="publicationsLoadedError">
-                <q-item-label>Error on Publication Data Load</q-item-label>
-              </q-item>
-              <q-item v-if="(isCenterReviewer && isVisibleCenterReviewer && !selectedCenterReviewer)">
-                Warning: Current center/institute view is read-only.
-              </q-item>
               <q-separator/>
-              <q-item align="left">
-                <download-csv
-                  v-if="publicationsLoaded && !publicationsLoadedError && publicationsCslLoaded"
-                  class="cursor-pointer"
-                  :name="`${reviewTypeFilter}_center_institute_review_${getSimpleFormatAuthorName(selectedCenterAuthor)}.csv`"
-                  :data="getPublicationsCSVResult(personPublicationsCombinedMatches)">
-                  <q-btn flat
-                    style="align:left;width:100%"
-                    icon="cloud_download"
-                    color="primary"
-                  >
-                    <q-item-section header align="left">&nbsp;Download Results</q-item-section>
-                  </q-btn>
-                </download-csv>
-                <q-item-section dense v-if="!publicationsCslLoaded && !publicationsLoadedError && publicationsLoaded">
-                  <q-item-label>Prepping Data for Download...
-                    <q-spinner-ios
-                      color="primary"
-                      size="2em"
-                      />
-                  </q-item-label>
-                </q-item-section>
-                  <q-list top align="right" dense class="q-pt-sm q-pb-sm" v-if="(selectedPersonMembership && selectedPersonMembership.length > 0)">
-                      Author Center Membership:
-                      <q-btn
-                        outline
-                        rounded
-                        no-wrap
-                        size="sm"
-                        v-for="(memberCenter, index) in selectedPersonMembership"
-                        :key="index"
-                        text-color="black"
-                        style="background-color:white"
-                        type="a"
-                        :label="memberCenter"
-                      />
-                  </q-list>
-              </q-item>
               <q-virtual-scroll
                 :items="personPublicationsCombinedMatches"
                 separator
                 bordered
                 :virtual-scroll-item-size="50"
-                :style="{'max-height': ($q.screen.height-50-88-36-8)+'px'}"
+                :style="{'max-height': ($q.screen.height-74)+'px'}"
                 :ref="`pubScroll`"
               >
                 <template v-slot="{ item, index }">
@@ -169,7 +259,7 @@
             <template v-slot:after v-if="personPublication">
               <div
                 v-if="personPublication"
-                :style="{height: ($q.screen.height-56-16)+'px'}"
+                :style="{height: ($q.screen.height-74)+'px'}"
               >
                 <div class="q-pa-md row items-start q-gutter-md">
                   <q-card>
@@ -381,17 +471,27 @@
                 </q-dialog>
               </div>
             </template>
+          </q-splitter>
+            </template>
         </q-splitter>
     </div>
   </div>
 </template>
 
-<style>
+<style scoped>
   .vue-friendly-iframe iframe {
     padding: 0;
     margin: 0;
     width: 100%;
     height: var(--height);
+  }
+  .q-icon {
+    color: white;
+    --brand-blue: #0c2340;
+    --brand-gold: #ae9142;
+    --brand-blue-dark: #081629;
+    border-bottom: 5px solid var(--brand-blue-dark);
+    background: var(--brand-blue);
   }
 </style>
 
@@ -430,6 +530,7 @@ import readPublication from '../../../gql/readPublication.gql'
 
 import CenterReviewPubFilter from '../components/CenterReviewPubFilter.vue'
 import MainFilter from '../components/MainFilter.vue'
+import PeopleAuthorSortFilter from '../components/PeopleAuthorSortFilter.vue'
 import sanitize from 'sanitize-filename'
 import pMap from 'p-map'
 import readPersonsByInstitutionByYearByOrganization from '../gql/readPersonsByInstitutionByYearByOrganization'
@@ -443,6 +544,7 @@ export default {
   components: {
     CenterReviewPubFilter,
     MainFilter,
+    PeopleAuthorSortFilter,
     'download-csv': JsonCSV,
     'vue-friendly-iframe': VueFriendlyIframe
     // CenterSelect
@@ -457,10 +559,12 @@ export default {
     selectedCenterReviewer: false,
     dom,
     date,
-    firstModel: 750,
-    secondModel: 500,
+    firstModel: 360,
+    secondModel: 540,
     people: [],
     publications: [],
+    personsLoaded: false,
+    personsLoadedError: false,
     citationsByTitle: {},
 
     // these are helper objects to connect personPubSets together
@@ -517,6 +621,7 @@ export default {
     publicationJournalClassifications: [],
     showReviewStates: [],
     filteredPersonPubCounts: {},
+    filteredPersonPubPendingCounts: {},
     // fundersByDoi: {},
     // pubMedFundersByDoi: {},
     // combinedFundersByDoi: {},
@@ -524,10 +629,13 @@ export default {
     // for progress bar
     progress: 0,
     buffer: 0,
+    personProgress: 0,
+    personBuffer: 0,
     publicationsLoaded: false,
     publicationsCslLoaded: false,
     publicationsLoadedError: false,
     showProgressBar: false,
+    showPersonProgressBar: false,
     reviewedAuthorColumns: [
       { name: 'confidence', align: 'left', label: 'Confidence', field: 'confidenceset_value', sortable: true },
       { name: 'family_name', align: 'left', label: 'Family Name', field: 'family_name', sortable: true },
@@ -557,6 +665,8 @@ export default {
   beforeDestroy () {
     clearInterval(this.interval)
     clearInterval(this.bufferInterval)
+    clearInterval(this.personInterval)
+    clearInterval(this.personBufferInterval)
   },
   async created () {
     await this.fetchData()
@@ -586,6 +696,7 @@ export default {
     },
     selectedInstitutionReviewState: async function () {
       this.selectedCenterAuthor = this.preferredSelectedCenterAuthor
+      this.loadPersonsWithFilter()
       this.loadPersonPublicationsCombinedMatches()
     },
     selectedCenterPubSort: async function () {
@@ -941,6 +1052,44 @@ export default {
     async resetReviewTypeFilter () {
       this.reviewTypeFilter = 'pending'
     },
+    async startPersonProgressBar () {
+      this.personsLoaded = false
+      this.personsLoadedError = false
+      this.resetPersonProgressBar()
+      await this.runPersonProgressBar()
+    },
+    async resetPersonProgressBar () {
+      this.personBuffer = 0
+      this.personProgress = 0
+      this.showPersonProgressBar = true
+      clearInterval(this.personInterval)
+      clearInterval(this.personBufferInterval)
+    },
+    async runPersonProgressBar () {
+      this.personInterval = setInterval(() => {
+        if (this.personsLoaded && this.personProgress > 0) {
+          if (this.personProgress === 1) {
+            // set show progress bar to false the second time called so bar completes before hiding
+            this.showPersonProgressBar = false
+          } else {
+            this.personProgress = 1
+          }
+          return
+        } else if (this.personProgress >= 1) {
+          this.personProgress = 0.01
+          this.personBuffer = 0.01
+          return
+        }
+
+        this.personProgress = Math.min(1, this.personBuffer, this.personProgress + 0.1)
+      }, 700 + Math.random() * 1000)
+
+      this.personBufferInterval = setInterval(() => {
+        if (this.personBuffer < 1) {
+          this.personBuffer = Math.min(1, this.personBuffer + Math.random() * 0.2)
+        }
+      }, 700)
+    },
     async startProgressBar () {
       this.publicationsLoaded = false
       this.publicationsLoadedError = false
@@ -1023,52 +1172,63 @@ export default {
         }
       }
     },
+    async resortPeople () {
+      // apply any sorting applied
+      if (this.selectedPersonSort === 'Name') {
+        this.people = await _.sortBy(this.people, ['family_name', 'given_name'])
+      } else {
+        // need to sort by total and then name, not guaranteed to be in order from what is returned from DB
+        // first group items by count
+        const showPending = (this.selectedPersonTotal && _.startsWith(this.selectedPersonTotal.toLowerCase(), 'pending'))
+        const peopleByCounts = await _.groupBy(this.people, (person) => {
+          return this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person, showPending)
+        })
+
+        // sort each person array by name for each count
+        const peopleByCountsByName = await _.mapValues(peopleByCounts, (persons) => {
+          return _.sortBy(persons, ['family_name', 'given_name'])
+        })
+
+        // get array of counts (i.e., keys) sorted in reverse
+        const sortedCounts = await _.sortBy(_.keys(peopleByCountsByName), (count) => { return Number.parseInt(count) }).reverse()
+
+        // now push values into array in desc order of count and flatten
+        let sortedPersons = []
+        await _.each(sortedCounts, (key) => {
+          sortedPersons.push(peopleByCountsByName[key])
+        })
+
+        this.people = await _.flatten(sortedPersons)
+        // this.reportDuplicatePublications()
+      }
+    },
     async loadPersonsWithFilter () {
       this.people = []
+      this.personsLoaded = false
+      this.personsLoadedError = false
+      this.startPersonProgressBar()
       const personResult = await this.$apollo.query(readPersonsByInstitutionByYearByOrganization(this.selectedCenter.value, this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, 0.0))
       this.people = personResult.data.persons
-
-      // apply any sorting applied
-      // if (this.selectedPersonSort === 'Name') {
-      this.people = await _.sortBy(this.people, ['family_name', 'given_name'])
-      //   } else {
-      //     // need to sort by total and then name, not guaranteed to be in order from what is returned from DB
-      //     // first group items by count
-      //     const peopleByCounts = await _.groupBy(this.people, (person) => {
-      //       return this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person)
-      //     })
-
-      //     // sort each person array by name for each count
-      //     const peopleByCountsByName = await _.mapValues(peopleByCounts, (persons) => {
-      //       return _.sortBy(persons, ['family_name', 'given_name'])
-      //     })
-
-      //     // get array of counts (i.e., keys) sorted in reverse
-      //     const sortedCounts = await _.sortBy(_.keys(peopleByCountsByName), (count) => { return Number.parseInt(count) }).reverse()
-
-      //     // now push values into array in desc order of count and flatten
-      //     let sortedPersons = []
-      //     await _.each(sortedCounts, (key) => {
-      //       sortedPersons.push(peopleByCountsByName[key])
-      //     })
-
-      //     this.people = await _.flatten(sortedPersons)
-      //     // this.reportDuplicatePublications()
-      //   }
-      this.loadCenterAuthorOptions()
+      await this.loadCenterAuthorOptions()
     },
-    loadCenterAuthorOptions () {
+    async loadCenterAuthorOptions () {
+      await this.resortPeople()
       let obj = ['All']
+      let centersMap = {}
       // console.log(`Adding list for people count: ${this.people.length}`)
       _.each(this.people, (person) => {
         const authorString = this.getAuthorString(person)
-        const pubCount = this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person)
+        const showPending = (this.selectedPersonTotal && _.startsWith(this.selectedPersonTotal.toLowerCase(), 'pending'))
+        const pubCount = this.getFilteredPersonPubCount(this.selectedInstitutionReviewState.toLowerCase(), person, showPending)
         this.centerMembershipByPerson[this.getSimpleFormatAuthorName(authorString)] = _.map(person.persons_organizations, (org) => {
+          centersMap[org.organization_value] = 0
           return org.organization_value
         })
         obj.push(`${authorString} (${pubCount})`)
       })
       this.centerAuthorOptions = obj
+      this.centerMembershipByPerson[this.getSimpleFormatAuthorName('All')] = _.keys(centersMap)
+      this.personsLoaded = true
     },
     async loadReviewStates () {
       const reviewStatesResult = await this.$apollo.query({
@@ -1232,6 +1392,7 @@ export default {
     //   }
     // },
     async fetchData () {
+      this.selectedCenterAuthor = this.preferredSelectedCenterAuthor
       const results = await this.$apollo.query({
         query: readOrganizationsCenters
       })
@@ -1272,12 +1433,12 @@ export default {
       await this.loadReviewStates()
       await this.loadPublications()
     },
-    clearPublications () {
+    async clearPublications () {
       this.publications = []
       this.publicationsByIds = {}
       this.citationsByTitle = {}
       this.people = []
-      this.loadCenterAuthorOptions()
+      await this.loadCenterAuthorOptions()
       this.personPubSetsById = {}
       this.personPubSetPointer = {}
       this.personPubSetIdIndex = 0
@@ -1296,16 +1457,17 @@ export default {
       this.confidenceSetItems = []
       this.confidenceSet = undefined
       this.filteredPersonPubCounts = {}
+      this.filteredPersonPubPendingCounts = {}
       this.sortAuthorsByTitle = {}
     },
     setCurrentPersonMembershipList () {
       this.selectedPersonMembership = []
-      if (this.selectedCenterAuthor !== 'All') {
-        const simpleAuthorName = this.getSimpleFormatAuthorName(this.selectedCenterAuthor)
-        if (this.centerMembershipByPerson[simpleAuthorName]) {
-          this.selectedPersonMembership = this.centerMembershipByPerson[simpleAuthorName]
-        }
+      // if (this.selectedCenterAuthor !== 'All') {
+      const simpleAuthorName = this.getSimpleFormatAuthorName(this.selectedCenterAuthor)
+      if (this.centerMembershipByPerson[simpleAuthorName]) {
+        this.selectedPersonMembership = this.centerMembershipByPerson[simpleAuthorName]
       }
+      // }
     },
     async setCurrentPersonPublicationsCombinedMatches () {
       let reviewType = 'pending'
@@ -1324,6 +1486,11 @@ export default {
     getPublicationsCSVResult (personPublications) {
       return _.map(personPublications, (personPub) => {
         return this.getPubCSVResultObject(personPub)
+      })
+    },
+    getCenterMembersCSVResult (centerMembers) {
+      return _.map(centerMembers, (member) => {
+        return this.getCenterMemberCSVResultObject(member)
       })
     },
     getPublicationAcceptedAuthors (title) {
@@ -1355,20 +1522,53 @@ export default {
       }
       return doiKey
     },
+    getCenterMemberCSVResultObject (person) {
+      const obj = new Map()
+      const authorString = this.getAuthorString(person)
+      const simpleName = this.getSimpleFormatAuthorName(authorString)
+      obj['name'] = authorString
+      let centerStr = ''
+      const centers = this.centerMembershipByPerson[simpleName]
+      _.each(centers, (center, index) => {
+        if (index > 0) {
+          centerStr = `${centerStr}; `
+        }
+        centerStr = `${centerStr}${center}`
+      })
+      obj['cross_center_membership'] = centerStr
+      return obj
+    },
     getPubCSVResultObject (personPublication) {
       const titleKey = this.getPublicationTitleKey(personPublication.publication.title)
       const citation = (this.citationsByTitle[titleKey] ? this.citationsByTitle[titleKey] : undefined)
-      return {
-        authors: this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][titleKey],
-        title: personPublication.publication.title.replace(/\n/g, ' '),
-        doi: this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi)),
-        journal: (personPublication.publication.journal_title) ? personPublication.publication.journal_title : '',
-        year: personPublication.publication.year,
-        source_names: JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications), (pub) => { return pub.publication.source_name })),
-        sources: this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications)),
-        abstract: personPublication.publication.abstract,
-        citation: citation
+      const obj = new Map()
+      if (this.selectedPersonMembership && this.selectedPersonMembership.length > 0) {
+        _.each(this.selectedPersonMembership, (center) => {
+          obj[center] = ''
+        })
       }
+      obj['authors'] = this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][titleKey]
+      obj['title'] = personPublication.publication.title.replace(/\n/g, ' ')
+      obj['doi'] = this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi))
+      obj['journal'] = (personPublication.publication.journal_title) ? personPublication.publication.journal_title : ''
+      obj['year'] = personPublication.publication.year
+      obj['source_names'] = JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications), (pub) => { return pub.publication.source_name }))
+      obj['sources'] = this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications))
+      obj['abstract'] = personPublication.publication.abstract
+      obj['citation'] = citation
+      // const obj = {
+      //   centers: (this.selectedPersonMembership ? _.mapKeys(this.selectedPersonMembership, (center) => { return center }) : []),
+      //   authors: this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][titleKey],
+      //   title: personPublication.publication.title.replace(/\n/g, ' '),
+      //   doi: this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi)),
+      //   journal: (personPublication.publication.journal_title) ? personPublication.publication.journal_title : '',
+      //   year: personPublication.publication.year,
+      //   source_names: JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications), (pub) => { return pub.publication.source_name })),
+      //   sources: this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications)),
+      //   abstract: personPublication.publication.abstract,
+      //   citation: citation
+      // }
+      return obj
     },
     getCSVHyperLinkString (showText, url) {
       return `${url}`
@@ -1379,12 +1579,10 @@ export default {
       // this.combinedFundersByDoi = {}
       // this.uniqueFunders = {}
       this.filteredPersonPubCounts = {}
+      this.filteredPersonPubPendingCounts = {}
       // group by institution (i.e., ND author) review and then by doi
       // let pubsByTitle = {}
       const thisVue = this
-
-      await this.loadPersonsWithFilter()
-
       this.publicationsGroupedByInstitutionReview = _.groupBy(thisVue.publications, function (personPub) {
         let reviewType = 'pending'
         if (!thisVue.personPublicationsById) thisVue.personPublicationsById = {}
@@ -1495,10 +1693,20 @@ export default {
       if (!this.selectedInstitutionReviewState) {
         this.selectedInstitutionReviewState = 'Accepted'
       }
+      // have to alias 'this' since changes in scope below
+      const thisPage = this
       this.personPublicationsCombinedMatchesByOrgReview = _.groupBy(this.personPublicationsCombinedMatchesByReview[this.selectedInstitutionReviewState.toLowerCase()], function (pub) {
+        // if (this.matchedPublicationAuthorsByTitle) console.log(`Matched pub titles are: ${JSON.stringify(_.keys(this.matchedPublicationAuthorsByTitle), null, 2)}`)
+        const titleKey = thisPage.getPublicationTitleKey(pub.publication.title)
+        const matchedAuthors = (titleKey && thisPage.matchedPublicationAuthorsByTitle && thisPage.matchedPublicationAuthorsByTitle[titleKey] ? thisPage.matchedPublicationAuthorsByTitle[titleKey] : [])
         if (pub.org_reviews && pub.org_reviews.length > 0) {
-          return pub.org_reviews[0].review_type
+          const reviewType = pub.org_reviews[0].review_type
+          if (reviewType.toLowerCase() === 'pending') {
+            thisPage.updateFilteredPersonPubPendingCounts('accepted', matchedAuthors)
+          }
+          return reviewType
         } else {
+          thisPage.updateFilteredPersonPubPendingCounts('accepted', matchedAuthors)
           return 'pending'
         }
       })
@@ -1510,15 +1718,17 @@ export default {
         }
       })
 
-      await this.loadPersonsWithFilter()
+      // await this.loadPersonsWithFilter()
       // need to make sure to reload the list once pub counts are set
-      this.loadCenterAuthorOptions()
+      await this.loadCenterAuthorOptions()
 
       // initialize the list in view
       await this.setCurrentPersonPublicationsCombinedMatches()
     },
-    getFilteredPersonPubCount (reviewType, person) {
-      if (this.filteredPersonPubCounts[reviewType] && this.filteredPersonPubCounts[reviewType][person.id]) {
+    getFilteredPersonPubCount (reviewType, person, pending) {
+      if (pending && this.filteredPersonPubPendingCounts[reviewType] && this.filteredPersonPubPendingCounts[reviewType][person.id]) {
+        return this.filteredPersonPubPendingCounts[reviewType][person.id]
+      } else if (!pending && this.filteredPersonPubCounts[reviewType] && this.filteredPersonPubCounts[reviewType][person.id]) {
         return this.filteredPersonPubCounts[reviewType][person.id]
       } else {
         return 0
@@ -1533,6 +1743,25 @@ export default {
           this.filteredPersonPubCounts[reviewType][author.id] += 1
         } else {
           this.filteredPersonPubCounts[reviewType][author.id] = 1
+        }
+      })
+    },
+    updateFilteredPersonPubPendingCounts (reviewType, authors) {
+      _.each(authors, (author) => {
+        if (!this.filteredPersonPubPendingCounts[reviewType]) {
+          this.filteredPersonPubPendingCounts[reviewType] = {}
+        }
+        if (this.filteredPersonPubPendingCounts[reviewType][author.id]) {
+          this.filteredPersonPubPendingCounts[reviewType][author.id] += 1
+        } else {
+          this.filteredPersonPubPendingCounts[reviewType][author.id] = 1
+        }
+      })
+    },
+    removeFilteredPersonPubPendingCounts (reviewType, authors) {
+      _.each(authors, (author) => {
+        if (this.filteredPersonPubPendingCounts[reviewType][author.id]) {
+          this.filteredPersonPubPendingCounts[reviewType][author.id] -= 1
         }
       })
     },
@@ -1639,16 +1868,16 @@ export default {
       const currentLoadCount = this.pubLoadCount + 1
       this.pubLoadCount += 1
       this.clearPublication()
-      this.clearPublications()
+      await this.clearPublications()
       this.startProgressBar()
+      this.startPersonProgressBar()
       this.publicationsLoaded = false
       this.publicationsLoadedError = false
       this.publicationsCslLoaded = false
-      // clear any previous publications in list
-      this.clearPublications()
       // const result = await this.$apollo.query(readPublicationsByPerson(item.id))
       // this.publications = result.data.publications
       try {
+        await this.loadPersonsWithFilter()
         // for now assume only one review, needs to be fixed later
         const pubsWithReviewResult = await this.$apollo.query({
           query: readPersonPublicationsAll(this.selectedInstitutions, this.selectedCenter.value, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max),
@@ -1913,6 +2142,11 @@ export default {
         //   // })
         //   // this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
         // }
+        // reload in case any pending counts changed
+        const titleKey = this.getPublicationTitleKey(pubSet.mainPersonPub.publication.title)
+        const matchedAuthors = (this.authorsByTitle[titleKey] ? this.authorsByTitle[titleKey] : [])
+        this.removeFilteredPersonPubPendingCounts('accepted', matchedAuthors)
+        await this.loadCenterAuthorOptions()
         this.clearPublication()
         return mutateResults
       } catch (error) {
