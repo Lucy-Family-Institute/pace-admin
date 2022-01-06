@@ -10,8 +10,6 @@ const xmlToJson = require('xml-js');
 
 const getIds = require('./units/joinCsvs').command;
 
-const dataFolderPath = "../data";
-
 import { ApolloClient, MutationOptions } from 'apollo-client'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { createHttpLink } from 'apollo-link-http'
@@ -28,6 +26,18 @@ dotenv.config({
 
 // environment variables
 process.env.NODE_ENV = 'development';
+
+const pubmedConfig = {
+  baseUrl: process.env.PUBMED_BASE_URL,
+  queryUrl: process.env.PUBMED_QUERY_URL,
+  sourceName: process.env.PUBMED_SOURCE_NAME,
+  publicationUrl: process.env.PUBMED_PUBLICATION_URL,
+  pageSize: process.env.PUBMED_PAGE_SIZE,
+  requestInterval: Number.parseInt(process.env.PUBMED_REQUEST_INTERVAL),
+  memberFilePath: process.env.PUBMED_CENTER_MEMBER_FILE_PATH,
+  awardFilePath: process.env.PUBMED_AWARD_FILE_PATH,
+  dataFolderPath: process.env.PUBMED_DATA_FOLDER_PATH
+}
 
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
@@ -123,7 +133,7 @@ async function getPersonPublications(person){
 
 async function getESearch(term){
   await wait(1000)
-  const url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi'
+  const url = pubmedConfig.queryUrl
   const response = await axios.get(url, {
     params: {
       db: 'pubmed',
@@ -137,7 +147,7 @@ async function getESearch(term){
 
 async function getEFetch(ids){
   await wait(1000)
-  const url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi'
+  const url = pubmedConfig.publicationUrl
   const commaSeparatedIds = _.join(ids, ',')
   const response = await axios.get(url, {
     responseType: 'text',
@@ -156,7 +166,7 @@ async function getPersonESearch(person){
   const personString = `${person['lastName']}, ${person['firstName']}`
   const term = `(Notre Dame[Affiliation]) AND (${person['lastName']}, ${person['firstName']}[Author] OR ${person['lastName']}, ${person['firstName']}[Investigator])` // OR ${person['lastName']} ${person['firstName']}[Author] OR ${person['lastName']} ${person['firstName']}[Investigator]`
   console.log(`Term is: ${term}`)
-  const url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
+  const url = pubmedConfig.queryUrl;
   const response = await axios.get(url, {
     params: {
       db: 'pubmed',
@@ -222,7 +232,15 @@ async function main(): Promise<void> {
   // const result = await pMap(uniqueAwardIds, mapper, {concurrency: 2});
 
   // now search by author list in the center
-  const years = [ 2020 ]
+
+
+  const harvestYearStr = process.env.PUBMED_HARVEST_YEARS
+  const harvestYearStrArr = _.split(harvestYearStr, ',')
+  const harvestYears = _.map(harvestYearStrArr, (yearStr) => {
+    return Number.parseInt(yearStr)
+  })
+
+  const years = harvestYears
   // const years = [ 2020 ]
   await pMap(years, async (year) => {
     const simplifiedPersons = await getSimplifiedPersons(year)
@@ -261,7 +279,12 @@ async function main(): Promise<void> {
         console.log(`Working on Pubmed papers for ${person['lastName']}, ${person['firstName']}`)
         const response = await getPersonPublications(person)
         // console.log(`Response is: ${JSON.stringify(response, null, 2)}`)
-        const filename = path.join(process.cwd(), dataFolderPath, 'pubmedByAuthor', `${_.lowerCase(person['lastName'])}_${_.lowerCase(person['firstName'])}.json`)
+        const pubmedByAuthorDir = path.join(process.cwd(), pubmedConfig.dataFolderPath, 'pubmedByAuthor')
+        if (!fs.existsSync(pubmedByAuthorDir)){
+          fs.mkdirSync(pubmedByAuthorDir);
+        }
+
+        const filename = path.join(process.cwd(), pubmedConfig.dataFolderPath, 'pubmedByAuthor', `${_.lowerCase(person['lastName'])}_${_.lowerCase(person['firstName'])}.json`)
         if (response) {
           console.log(`Writing ${filename}`)
           await pify(fs.writeFile)(filename, JSON.stringify(response))
