@@ -6,11 +6,32 @@ const pMap = require('p-map');
 const moment = require('moment');
 const { default: readPersonPublicationsByYear } = require('./gql/readPersonPublicationsByYear');
 
+import dotenv from 'dotenv'
+
 const writeCsv = require('./units/writeCsv').command;
 const loadCsv = require('./units/loadCsv').command;
 const fuzzyMatchName = require('./units/fuzzyMatchName').command;
 const nameParser = require('./units/nameParser').command;
 const { default: NormedPublication } = require('./modules/normedPublication');
+
+dotenv.config({
+  path: '../.env'
+})
+
+// environment variables
+process.env.NODE_ENV = 'development';
+
+const pubmedConfig = {
+  baseUrl: process.env.PUBMED_BASE_URL,
+  queryUrl: process.env.PUBMED_QUERY_URL,
+  sourceName: process.env.PUBMED_SOURCE_NAME,
+  publicationUrl: process.env.PUBMED_PUBLICATION_URL,
+  pageSize: process.env.PUBMED_PAGE_SIZE,
+  requestInterval: Number.parseInt(process.env.PUBMED_REQUEST_INTERVAL),
+  memberFilePath: process.env.PUBMED_CENTER_MEMBER_FILE_PATH,
+  awardFilePath: process.env.PUBMED_AWARD_FILE_PATH,
+  dataFolderPath: process.env.PUBMED_DATA_FOLDER_PATH
+}
 
 // return map of identifier type to id
 function getResourceIdentifiers (resourceIdentifiers) {
@@ -20,7 +41,7 @@ function getResourceIdentifiers (resourceIdentifiers) {
 
 async function mapAuthorFiles (filename) {
   if(!_.endsWith(filename, '.json')) return;
-  const data = await pify(fs.readFile)(path.join('../data', 'pubmedByAuthor', filename));
+  const data = await pify(fs.readFile)(path.join(pubmedConfig.dataFolderPath, 'pubmedByAuthor', filename));
   const author = filename.replace('.json', '');
 
   console.log(`Processing Author: ${author}`)
@@ -92,7 +113,8 @@ async function go() {
 
   console.log('Processing PubMed Author harvests load')
   console.log('Reading awards')
-  const files = await pify(fs.readdir)('../data/pubmedByAuthor');
+  const filenamePath = path.join(process.cwd(), pubmedConfig.dataFolderPath, 'pubmedByAuthor')
+  const files = await pify(fs.readdir)(filenamePath);
 
   console.log ('Mapping grant files')
   const authorsByPub = await pMap(files, mapAuthorFiles, { concurrency: 1 });
@@ -107,9 +129,10 @@ async function go() {
   // const data = leftOuterJoin(authors, 'grantId', nih, 'grantId');
 
   console.log('Writing Author data to disk')
-  const pubmedDataDir = '../data/PubMed/'
-  if (!fs.existsSync(pubmedDataDir)){
-    fs.mkdirSync(pubmedDataDir);
+  const pubmedDataDir = path.join(pubmedConfig.dataFolderPath, `PubMed_${moment().format('YYYYMMDDHHmmss')}`)
+  const pubmedDataDirPath = path.join(process.cwd(), pubmedDataDir)
+  if (!fs.existsSync(pubmedDataDirPath)){
+    fs.mkdirSync(pubmedDataDirPath);
   }
 
   await pMap(batches, async (batch, index) => {
@@ -132,7 +155,7 @@ async function go() {
       csvBatch.push(_.omit(pub, 'source_metadata'))
     })
 
-    const csvFilePath = `${pubmedDataDir}pubmedPubsByAuthor.${moment().format('YYYYMMDDHHmmss')}_${index}.csv`
+    const csvFilePath = path.join(pubmedDataDir, `pubmedPubsByAuthor.${moment().format('YYYYMMDDHHmmss')}_${index}.csv`)
     console.log(`Writing csv of pub list to: ${csvFilePath}`)
     await writeCsv({
       path: csvFilePath,
