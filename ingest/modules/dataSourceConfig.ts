@@ -10,4 +10,5 @@ export default interface DataSourceConfig {
   pageSize: string
   harvestYears?: Number[]
   requestInterval: Number
+  memberFilePath?: string
 }

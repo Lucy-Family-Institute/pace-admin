@@ -6,6 +6,27 @@ const Fuse = require('fuse.js');
 const loadCsv = require('./loadCsv').command;
 const nameParser = require('./nameParser').command;
 
+import dotenv from 'dotenv'
+
+dotenv.config({
+  path: '../.env'
+})
+
+// environment variables
+process.env.NODE_ENV = 'development';
+
+const pubmedConfig = {
+  baseUrl: process.env.PUBMED_BASE_URL,
+  queryUrl: process.env.PUBMED_QUERY_URL,
+  sourceName: process.env.PUBMED_SOURCE_NAME,
+  publicationUrl: process.env.PUBMED_PUBLICATION_URL,
+  pageSize: process.env.PUBMED_PAGE_SIZE,
+  requestInterval: Number.parseInt(process.env.PUBMED_REQUEST_INTERVAL),
+  memberFilePath: process.env.PUBMED_CENTER_MEMBER_FILE_PATH,
+  awardFilePath: process.env.PUBMED_AWARD_FILE_PATH,
+  dataFolderPath: process.env.PUBMED_DATA_FOLDER_PATH
+}
+
 function normalizeName(name) {
   return name.toLowerCase().replace(/\W/g, ' ');
 }
@@ -52,7 +73,7 @@ async function returnNihIds() {
   // Load names from the Center/Institute
   try {
     const centerMembers = await loadCsv({
-      path: '../data/input/researchers_2017-2020_attributes.csv',
+      path: pubmedConfig.memberFilePath,
     });
 
     console.log('here2')
@@ -69,7 +90,7 @@ async function returnNihIds() {
 
     // Load award data
     const awards = await loadCsv({
-      path: '../data/input/Awards_for_2009Jan01-thru-2021Feb02.csv',
+      path: pubmedConfig.awardFilePath
     });
 
     // For every award in the award data
