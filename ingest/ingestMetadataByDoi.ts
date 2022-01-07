@@ -22,7 +22,8 @@ import readPublicationsByDoi from './gql/readPublicationsByDoi'
 import readPublicationsBySourceId from './gql/readPublicationsBySourceId'
 import readPublicationsByTitle from './gql/readPublicationsByTitle'
 
-import { getAllSimplifiedPersons } from './modules/queryNormalizedPeople'
+import { getAllNormedPersons } from './modules/queryNormalizedPeople'
+import NormedPerson from './modules/normedPerson'
 import { CalculateConfidence } from './modules/calculateConfidence'
 import { SemanticScholarDataSource } from './modules/semanticScholarDataSource'
 import { WosDataSource } from './modules/wosDataSource'
@@ -297,56 +298,6 @@ async function getCSLAuthors(paperCsl){
   return authors
 }
 
-interface MatchedPerson {
-  person: any; // TODO: What is this creature?
-  confidence: number;
-}
-// person map assumed to be a map of simplename to simpleperson object
-// author map assumed to be doi mapped to two arrays: first authors and other authors
-// returns a map of person ids to the person object and confidence value for any persons that matched coauthor attributes
-// example: {1: {person: simplepersonObject, confidence: 0.5}, 51: {person: simplepersonObject, confidence: 0.8}}
-async function matchPeopleToPaperAuthors(publicationCSL, simplifiedPersons, personMap, authors, confirmedAuthors, sourceName, sourceMetadata, minConfidence?) : Promise<Map<number,MatchedPerson>> {
-
-  const calculateConfidence: CalculateConfidence = new CalculateConfidence()
-  //match to last name
-  //match to first initial (increase confidence)
-  let matchedPersonMap = new Map()
-
-  const confidenceTypesByRank = await calculateConfidence.getConfidenceTypesByRank()
-   await pMap(simplifiedPersons, async (person) => {
-    
-     //console.log(`Testing Author for match: ${author.family}, ${author.given}`)
-
-      const passedConfidenceTests = await calculateConfidence.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank, sourceName, sourceMetadata)
-      // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
-      // returns a new map of rank -> confidenceTestName -> calculatedValue
-      const passedConfidenceTestsWithConf = await calculateConfidence.calculateAuthorConfidence(passedConfidenceTests)
-      // calculate overall total and write the confidence set and comments to the DB
-      let confidenceTotal = 0.0
-      _.mapValues(passedConfidenceTestsWithConf, (confidenceTests, rank) => {
-        _.mapValues(confidenceTests, (confidenceTest) => {
-          confidenceTotal += confidenceTest['confidenceValue']
-        })
-      })
-      // set ceiling to 99%
-      if (confidenceTotal >= 1.0) confidenceTotal = 0.99
-      // have to do some weird conversion stuff to keep the decimals correct
-      confidenceTotal = Number.parseFloat(confidenceTotal.toFixed(3))
-      // console.log(`passed confidence tests are: ${JSON.stringify(passedConfidenceTestsWithConf, null, 2)}`)
-      //check if persons last name in author list, if so mark a match
-      //add person to map with confidence value > 0
-      if (confidenceTotal > 0 && (!minConfidence || confidenceTotal >= minConfidence)) {
-        // console.log(`Match found for Author: ${author.family}, ${author.given}`)
-        let matchedPerson: MatchedPerson = { 'person': person, 'confidence': confidenceTotal }
-        matchedPersonMap[person['id']] = matchedPerson
-        //console.log(`After add matched persons map is: ${JSON.stringify(matchedPersonMap,null,2)}`)
-      }
-   }, { concurrency: 1 })
-
-   //console.log(`After tests matchedPersonMap is: ${JSON.stringify(matchedPersonMap,null,2)}`)
-  return matchedPersonMap
-}
-
 async function isPublicationAlreadyInDB (doi, sourceId, csl, sourceName) : Promise<boolean> {
   let foundPub = false
   const title = csl.title
@@ -460,7 +411,7 @@ async function getCSLAuthorsFromSourceMetadata(sourceName, sourceMetadata) {
 }
 
 //returns a map of three arrays: 'addedDOIs','failedDOIs', 'errorMessages'
-async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear?) : Promise<DoiStatus> {
+async function loadPersonPapersFromCSV (testPersons: NormedPerson[], paperPath, minPublicationYear?) : Promise<DoiStatus> {
   let count = 0
   let doiStatus: DoiStatus = {
     sourceName: 'CrossRef',
@@ -472,16 +423,7 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
   }
   try {
     const minConfidence = 0.40
-    const calculateConfidence: CalculateConfidence = new CalculateConfidence()
-    // get the set of persons to test
-    const testAuthors = await calculateConfidence.getAllSimplifiedPersons()
-    // const testAuthors = []
-    //create map of last name to array of related persons with same last name
-    const testPersonMap = _.transform(testAuthors, function (result, value) {
-      _.each(value.names, (name) => {
-        (result[name['lastName']] || (result[name['lastName']] = [])).push(value)
-      })
-    }, {})
+    const calculateConfidence: CalculateConfidence = new CalculateConfidence(minConfidence)
     let dataDir = paperPath
     if (!isDir(paperPath)) {
       dataDir = path.dirname(paperPath)
@@ -673,7 +615,7 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
 
           //match paper authors to people
           //console.log(`Testing for Author Matches for DOI: ${doi}`)
-          let matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthorsByDoi[doi], doiStatus.sourceName, sourceMetadata, minConfidence)
+          let matchedPersons = await calculateConfidence.matchPeopleToPaperAuthors(csl, testPersons, confirmedAuthorsByDoi[doi], doiStatus.sourceName)
           //console.log(`Person to Paper Matches: ${JSON.stringify(matchedPersons,null,2)}`)
 
           if (_.keys(matchedPersons).length <= 0){
@@ -682,7 +624,7 @@ async function loadPersonPapersFromCSV (personMap, paperPath, minPublicationYear
             authors = csl.author
             // console.log(`After check from source metadata if needed authors are: ${JSON.stringify(csl.author, null, 2)}`)
             if (csl.author && csl.author.length > 0){
-              matchedPersons = await matchPeopleToPaperAuthors(csl, testAuthors, personMap, authors, confirmedAuthorsByDoi[doi], doiStatus.sourceName, sourceMetadata, minConfidence)
+              matchedPersons = await calculateConfidence.matchPeopleToPaperAuthors(csl, testPersons, confirmedAuthorsByDoi[doi], doiStatus.sourceName)
             }
           }
 
@@ -866,7 +808,7 @@ async function main() {
 const pathsByYear = await getIngestFilePaths('../config/ingestFilePaths.json')
 
   //just get all simplified persons as will filter later
-  const simplifiedPersons = await getAllSimplifiedPersons(client)
+  const normedPersons = await getAllNormedPersons(client)
 
   let doiStatus = new Map()
   let doiFailed = new Map()
@@ -875,12 +817,7 @@ const pathsByYear = await getIngestFilePaths('../config/ingestFilePaths.json')
   let sourceName = undefined
 
   await pMap(_.keys(pathsByYear), async (year) => {
-    console.log(`Simplified persons for ${year} are: ${JSON.stringify(simplifiedPersons,null,2)}`)
-
-    //create map of last name to array of related persons with same last name
-    const personMap = _.transform(simplifiedPersons, function (result, value) {
-      (result[value.lastName] || (result[value.lastName] = [])).push(value)
-    }, {})
+    console.log(`Normed persons for ${year} are: ${JSON.stringify(normedPersons,null,2)}`)
 
     console.log(`Loading ${year} Publication Data`)
     //load data
@@ -894,7 +831,7 @@ const pathsByYear = await getIngestFilePaths('../config/ingestFilePaths.json')
       await pMap(loadPaths, async (filePath) => {
         // skip any subdirectories
         if (!isDir(filePath)){
-          const doiStatusByYear = await loadPersonPapersFromCSV(personMap, filePath, year)
+          const doiStatusByYear = await loadPersonPapersFromCSV(normedPersons, filePath, year)
           doiStatus[year] = doiStatusByYear
           sourceName = doiStatusByYear.sourceName
           combinedFailed = _.merge(combinedFailed, doiStatusByYear.combinedFailedRecords)

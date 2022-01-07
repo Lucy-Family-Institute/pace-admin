@@ -13,6 +13,8 @@ import readAllNewPersonPublications from './gql/readAllNewPersonPublications'
 const getIngestFilePaths = require('./getIngestFilePaths');
 import { command as writeCsv } from './units/writeCsv'
 import moment from 'moment'
+import ConfidenceTest from './modules/confidenceTest'
+import { getAllNormedPersons } from './modules/queryNormalizedPeople'
 
 dotenv.config({
   path: '../.env'
@@ -36,7 +38,8 @@ import { CalculateConfidence } from './modules/calculateConfidence'
 
 async function main() {
 
-  const calculateConfidence = new CalculateConfidence()
+  const minConfidence = 0.40
+  const calculateConfidence = new CalculateConfidence(minConfidence)
 
   // use related github commit hash for the version when algorithm last completed
   // @todo: Extract to ENV?
@@ -45,13 +48,7 @@ async function main() {
   const pathsByYear = await getIngestFilePaths("../config/ingestConfidenceReviewFilePaths.json")
 
   // get the set of persons to test
-  const testAuthors = await calculateConfidence.getAllSimplifiedPersons()
-  //create map of last name to array of related persons with same last name
-  const personMap = _.transform(testAuthors, function (result, value) {
-    _.each(value.names, (name) => {
-      (result[name['lastName']] || (result[name['lastName']] = [])).push(value)
-    })
-  }, {})
+  const testAuthors = await getAllNormedPersons(client)
 
   let confirmedAuthors = new Map()
   let confirmedAuthorsByDoiByYear = new Map()
@@ -98,7 +95,7 @@ async function main() {
   // break up authors into groups of 20
   const testAuthorGroups = _.chunk(testAuthors, 10)
   await pMap (testAuthorGroups, async (authors, index) => {
-    const confidenceTests = await calculateConfidence.calculateConfidence (authors, (confirmedAuthorsByDoi || {}), overWriteExisting, publicationYear)
+    const confidenceTests: Map<string, ConfidenceTest[]> = await calculateConfidence.calculateConfidence (authors, (confirmedAuthorsByDoi || {}), overWriteExisting, publicationYear)
 
     // next need to write checks found to DB and then calculate confidence accordingly
     let errorsInsert = []
@@ -162,15 +159,15 @@ async function main() {
       // console.log(`trying to insert confidence values ${testStatus}`)
       let loopCounter = 1
       // console.log(`Inserting Author Confidence Sets ${testStatus} ${confidenceTests[testStatus].length}...`)
-      await pMap (confidenceTests[testStatus], async (confidenceTest) => {
+      await pMap (confidenceTests[testStatus], async (confidenceTest: ConfidenceTest) => {
         // console.log('trying to insert confidence values')
         await randomWait(loopCounter)
         loopCounter += 1
         try {
           // console.log(`Tabulating total for ${JSON.stringify(confidenceTest, null, 2)}`)
           totalConfidenceSets += 1
-          _.each(_.keys(confidenceTest['confidenceItems']), (rank) => {
-            _.each(_.keys(confidenceTest['confidenceItems'][rank]), (confidenceType) => {
+          _.each(confidenceTest.confidenceTestSets, (confidenceTestSet) => {
+            _.each(confidenceTestSet.confidenceTestItems, (confidenceTestItem) => {
               totalSetItems += 1
             })
           })
