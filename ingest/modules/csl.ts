@@ -18,6 +18,20 @@ export default class Csl {
     this.cslJson['author'] = authors
   }
 
+  public static cslToNormedAuthors (cslAuthors): NormedAuthor[] {
+    let normedAuthors: NormedAuthor[] = []
+    _.each(cslAuthors, (author) => {
+      const normedAuthor: NormedAuthor = {
+        familyName: author['family'],
+        givenName: author['given'],
+        givenNameInitial: (author['given'] && author['given'].length > 0 ? author['given'][0] : ''),
+        affiliations: [],
+        sourceIds: {}
+      }
+    })
+    return normedAuthors
+  }
+
   public static normedToCslAuthors (normedAuthors: NormedAuthor[]) {
     let authorPosition = 0
     let cslAuthors = []

@@ -4,7 +4,7 @@ import { command as loadCsv } from '../units/loadCsv'
 
 export default class NormedPerson {
   // ------ begin declare properties used when using NormedPerson like an interface
-  id: Number
+  id: number
   familyName: string
   givenNameInitial: string
   givenName: string

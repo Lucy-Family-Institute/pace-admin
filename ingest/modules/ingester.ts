@@ -17,6 +17,7 @@ import insertPubAuthor from '../gql/insertPubAuthor'
 import readPublicationsByDoi from '../gql/readPublicationsByDoi'
 import readPublicationsBySourceId from '../gql/readPublicationsBySourceId'
 import readPublicationsByTitle from '../gql/readPublicationsByTitle'
+import ConfidenceTest from './confidenceTest'
 import { randomWait } from '../units/randomWait'
 
 import _ from 'lodash'
@@ -27,17 +28,14 @@ import { SemanticScholarDataSource } from './semanticScholarDataSource'
 import { WosDataSource } from './wosDataSource'
 const getIngestFilePaths = require('../getIngestFilePaths');
 
-interface MatchedPerson {
-  person: any; // TODO: What is this creature?
-  confidence: number;
-}
-
 export class Ingester {
     client: ApolloClient<NormalizedCacheObject>
     normedPersons: Array<NormedPerson>
     confirmedAuthorsByDoi: {}
     calculateConfidence: CalculateConfidence
-    mutex: Mutex
+    normedPersonMutex: Mutex
+    confirmedAuthorMutex: Mutex
+    pubExistsMutex: Mutex
     config: IngesterConfig
     pubmedDS: PubMedDataSource
     semanticScholarDS: SemanticScholarDataSource
@@ -46,8 +44,10 @@ export class Ingester {
     constructor (config: IngesterConfig, client: ApolloClient<NormalizedCacheObject>) {
       this.config = config
       this.client = client
-      this.calculateConfidence = new CalculateConfidence()
-      this.mutex = new Mutex()
+      this.calculateConfidence = new CalculateConfidence(config.minConfidence.valueOf())
+      this.normedPersonMutex = new Mutex()
+      this.confirmedAuthorMutex = new Mutex()
+      this.pubExistsMutex = new Mutex()
       const pubmedConfig : DataSourceConfig = {
         baseUrl: process.env.PUBMED_BASE_URL,
         queryUrl: process.env.PUBMED_QUERY_URL,
@@ -84,7 +84,7 @@ export class Ingester {
 
     async initializeNormedPersons() {
       // include mutex to make sure this is thread-safe and not initialized simultaneously by multiple threads
-      await this.mutex.dispatch( async () => {
+      await this.normedPersonMutex.dispatch( async () => {
         if (!this.normedPersons) {
           this.normedPersons = await getAllNormedPersons(this.client)
         }
@@ -92,7 +92,7 @@ export class Ingester {
     }
 
     async initializeConfirmedAuthors() {
-      await this.mutex.dispatch( async () => {
+      await this.confirmedAuthorMutex.dispatch( async () => {
         if (!this.confirmedAuthorsByDoi) {
           let confirmedAuthorsByDoiByYear = new Map()
           const pathsByYear = await getIngestFilePaths("../config/ingestConfidenceReviewFilePaths.json")
@@ -180,9 +180,14 @@ export class Ingester {
         throw error
       }
     }
+    async getPersonPublicationIdIfAlreadyInDB (personId, publicationId) : Promise<number> {
+      return 0
+    }
 
-    async isPublicationAlreadyInDB (doi, sourceId, csl, sourceName) : Promise<boolean> {
+    // returns publication id if exists, otherwise undefined
+    async getPublicationIdIfAlreadyInDB (doi, sourceId, csl, sourceName) : Promise<number> {
       let foundPub = false
+      let publicationId
       const title = csl.title
       const publicationYear = Csl.getPublicationYear(csl)
       if (doi !== null){
@@ -192,6 +197,7 @@ export class Ingester {
           _.each(queryResult.data.publications, (publication) => {
             if (publication.doi && publication.doi !== null && _.toLower(publication.doi) === _.toLower(doi) && _.toLower(publication.source_name) === _.toLower(sourceName)) {
               foundPub = true
+              publicationId = publication.id
             }
           })
         }
@@ -204,6 +210,7 @@ export class Ingester {
           // console.log(`checking publication for source id: ${sourceId}, publication: ${JSON.stringify(publication, null, 2)}`)
           if (_.toLower(publication.source_id) === _.toLower(sourceId) && _.toLower(publication.source_name) === _.toLower(sourceName)) {
             foundPub = true
+            publicationId = publication.id
           }
         })
       }
@@ -214,70 +221,35 @@ export class Ingester {
           // check for something with same title and publication year as well
           if (publication.title === title && publication.year === publicationYear) { //} && authors.length === publication.publications_authors.length) {
             foundPub = true
+            publicationId = publication.id
           }
           // console.log(`Checking existing publication title: '${publication.title}' year: '${JSON.stringify(publication.year)}' against title: '${title}' year: '${JSON.stringify(publicationYear)}' foundPub after is: ${foundPub}`)
         })
       }
-      return foundPub
-    }
-
-    // person map assumed to be a map of simplename to simpleperson object
-    // author map assumed to be doi mapped to two arrays: first authors and other authors
-    // returns a map of person ids to the person object and confidence value for any persons that matched coauthor attributes
-    // example: {1: {person: simplepersonObject, confidence: 0.5}, 51: {person: simplepersonObject, confidence: 0.8}}
-    async matchPeopleToPaperAuthors(publicationCSL, normedPersons, authors, confirmedAuthors, sourceName, sourceMetadata, minConfidence?) : Promise<Map<number,MatchedPerson>> {
-    
-      const calculateConfidence: CalculateConfidence = new CalculateConfidence()
-      //match to last name
-      //match to first initial (increase confidence)
-      let matchedPersonMap = new Map()
-    
-      const confidenceTypesByRank = await calculateConfidence.getConfidenceTypesByRank()
-       await pMap(normedPersons, async (normedPerson) => {
-        
-         //console.log(`Testing Author for match: ${author.family}, ${author.given}`)
-    
-          const passedConfidenceTests = await calculateConfidence.performAuthorConfidenceTests (normedPerson, publicationCSL.valueOf(), confirmedAuthors, confidenceTypesByRank, sourceName, sourceMetadata)
-          // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
-          // returns a new map of rank -> confidenceTestName -> calculatedValue
-          const passedConfidenceTestsWithConf = await calculateConfidence.calculateAuthorConfidence(passedConfidenceTests)
-          // calculate overall total and write the confidence set and comments to the DB
-          let confidenceTotal = 0.0
-          _.mapValues(passedConfidenceTestsWithConf, (confidenceTests, rank) => {
-            _.mapValues(confidenceTests, (confidenceTest) => {
-              confidenceTotal += confidenceTest['confidenceValue']
-            })
-          })
-          // set ceiling to 99%
-          if (confidenceTotal >= 1.0) confidenceTotal = 0.99
-          // have to do some weird conversion stuff to keep the decimals correct
-          confidenceTotal = Number.parseFloat(confidenceTotal.toFixed(3))
-          // console.log(`passed confidence tests are: ${JSON.stringify(passedConfidenceTestsWithConf, null, 2)}`)
-          //check if persons last name in author list, if so mark a match
-          //add person to map with confidence value > 0
-          if (confidenceTotal > 0 && (!minConfidence || confidenceTotal >= minConfidence)) {
-            // console.log(`Match found for Author: ${author.family}, ${author.given}`)
-            let matchedPerson: MatchedPerson = { 'person': normedPerson, 'confidence': confidenceTotal }
-            matchedPersonMap[normedPerson['id']] = matchedPerson
-            //console.log(`After add matched persons map is: ${JSON.stringify(matchedPersonMap,null,2)}`)
-          }
-       }, { concurrency: 1 })
-    
-       //console.log(`After tests matchedPersonMap is: ${JSON.stringify(matchedPersonMap,null,2)}`)
-      return matchedPersonMap
+      return publicationId
     }
 
     async ingest (publications: NormedPublication[], threadCount: number = 1, waitInterval: number = 1000) {
         // do for loop
         await pMap(publications, async (publication, index) => {
-          await this.ingestNormedPublication(publication)
+          try {
+            const publicationId = await this.ingestNormedPublication(publication)
+            if (publicationId) {
+              // now create and write confidence sets
+              this.updateConfidenceMeasures(publicationId)
+            }
+          } catch (error) {
+            console.log(`Error encountered on ingest of publication title: ${publication.title}, error: ${error}`)
+          }
         }, { concurrency: 1 })
     }
 
-    async ingestNormedPublication (normedPub: NormedPublication) {
+    // returns the publication id of the ingested publication
+    async ingestNormedPublication (normedPub: NormedPublication): Promise<number> {
       // only do something if the first call on this object
       await this.initializeNormedPersons()
       const testAuthors = this.normedPersons
+      let publicationId: number
 
       let csl: Csl = undefined
       try {
@@ -334,7 +306,7 @@ export class Ingester {
 
         //match paper authors to people
         //console.log(`Testing for Author Matches for DOI: ${doi}`)
-        let matchedPersons = await this.matchPeopleToPaperAuthors(csl, testAuthors, authors, this.confirmedAuthorsByDoi[normedPub.doi], normedPub.datasourceName, sourceMetadata, this.config.minConfidence)
+        let matchedPersons: Map<number,ConfidenceTest> = await this.calculateConfidence.matchPeopleToPaperAuthors(csl, testAuthors, this.confirmedAuthorsByDoi[normedPub.doi], normedPub.datasourceName)
         //console.log(`Person to Paper Matches: ${JSON.stringify(matchedPersons,null,2)}`)
 
         if (_.keys(matchedPersons).length <= 0){
@@ -343,49 +315,56 @@ export class Ingester {
           authors = csl.valueOf()['author']
           // console.log(`After check from source metadata if needed authors are: ${JSON.stringify(csl.author, null, 2)}`)
           if (csl.valueOf()['author'] && csl.valueOf()['author'].length > 0){
-            matchedPersons = await this.matchPeopleToPaperAuthors(csl, testAuthors, authors, this.confirmedAuthorsByDoi[normedPub.doi], normedPub.datasourceName, sourceMetadata, this.config.minConfidence)
+            matchedPersons = await this.calculateConfidence.matchPeopleToPaperAuthors(csl, testAuthors, this.confirmedAuthorsByDoi[normedPub.doi], normedPub.datasourceName)
           }
         }
 
         if (_.keys(matchedPersons).length > 0){
-          const publicationYear = Csl.getPublicationYear (csl)
-          await this.mutex.dispatch( async () => {
-            const sourceId = normedPub.sourceId
-            // reset doi if it is a placeholder
-            let checkDoi = normedPub.doi
-            if (_.toLower(normedPub.doi) === _.toLower(`${normedPub.datasourceName}_${sourceId}`)){
-              checkDoi = null
-            }
-            const pubFound = await this.isPublicationAlreadyInDB(checkDoi, sourceId, csl, normedPub.datasourceName)
-            if (!pubFound) {
+          const publicationYear = Csl.getPublicationYear(csl)
+          const sourceId = normedPub.sourceId
+          // reset doi if it is a placeholder
+          let checkDoi = normedPub.doi
+          if (_.toLower(normedPub.doi) === _.toLower(`${normedPub.datasourceName}_${sourceId}`)){
+            checkDoi = null
+          }
+          await this.pubExistsMutex.dispatch( async () => {
+            publicationId = await this.getPublicationIdIfAlreadyInDB(checkDoi, sourceId, csl, normedPub.datasourceName)
+            if (!publicationId) {
               // console.log(`Inserting Publication #${processedCount} of total ${count} DOI: ${doi} from source: ${doiStatus.sourceName}`)
-              const publicationId = await this.insertPublicationAndAuthors(csl.valueOf()['title'], checkDoi, csl, authors, normedPub.datasourceName, sourceId, sourceMetadata)
-              // console.log('Finished Running Insert and starting next thread')
-              //console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
-
-              //console.log(`Publication Id: ${publicationId} Matched Persons count: ${_.keys(matchedPersons).length}`)
-              // now insert a person publication record for each matched Person
-              let loopCounter2 = 0
-              await pMap(_.keys(matchedPersons), async function (personId){
-                try {
-                  const person = matchedPersons[personId]
-                  loopCounter2 += 1
-                  //have each wait a pseudo-random amount of time between 1-5 seconds
-                  await randomWait(loopCounter2)
+              publicationId = await this.insertPublicationAndAuthors(csl.valueOf()['title'], checkDoi, csl, authors, normedPub.datasourceName, sourceId, sourceMetadata)
+            }
+          })
+          await pMap(_.keys(matchedPersons), async function (personId){
+            try {
+              const person = matchedPersons[personId]
+              loopCounter2 += 1
+              //have each wait a pseudo-random amount of time between 1-5 seconds
+              await randomWait(loopCounter2)
+              let newPersonPubId
+              await this.personPubExistsMutex.dispatch( async () => {
+                // returns 
+                newPersonPubId = this.getPersonPublicationIdIfAlreadyInDB(personId, publicationId)
+                if (!newPersonPubId) {
                   const mutateResult = await this.client.mutate(
                     insertPersonPublication(personId, publicationId, person['confidence'])
                   )
-
-                  const newPersonPubId = await mutateResult.data.insert_persons_publications.returning[0]['id']
-                } catch (error) {
-                  const errorMessage = `Error on add person id ${JSON.stringify(personId,null,2)} to publication id: ${publicationId}`
-                  throw (error)
+                  newPersonPubId = await mutateResult.data.insert_persons_publications.returning[0]['id']
                 }
-              }, { concurrency: 1 })
-            } else {
-              console.log(`Skipping doi already in DB: ${normedPub.doi} for source: ${normedPub.datasourceName}`)
+              })
+              // now insert confidence sets
+              // use personpubid and matched person from above to insert 
+            } catch (error) {
+              const errorMessage = `Error on add person id ${JSON.stringify(personId,null,2)} to publication id: ${publicationId}`
+              throw (error)
             }
-          })
+          }, { concurrency: 1 })
+
+          // console.log('Finished Running Insert and starting next thread')
+          //console.log(`Inserted pub: ${JSON.stringify(publicationId,null,2)}`)
+
+          //console.log(`Publication Id: ${publicationId} Matched Persons count: ${_.keys(matchedPersons).length}`)
+          // now insert a person publication record for each matched Person
+          let loopCounter2 = 0
         } else {
           if (_.keys(matchedPersons).length <= 0){
             errorMessage = `No author match found for ${normedPub.doi} and not added to DB`
@@ -395,139 +374,115 @@ export class Ingester {
         errorMessage = `${normedPub.doi} and not added to DB with unknown type ${csl.valueOf()['type']} or no title defined in DOI csl record` //, csl is: ${JSON.stringify(csl, null, 2)}`
         console.log(errorMessage)
       }
+      return publicationId
     }
 
-    // async updateConfidenceMeasures(normedPub: NormedPublication) {
-    //   const calculateConfidence = new CalculateConfidence()
+    async updateConfidenceMeasures(publicationId: number) {
+      // const calculateConfidence = new CalculateConfidence(this.config.minConfidence.valueOf())
 
-    //   // get the set of persons to test
-    //   await this.initializeNormedPersons()
+      // // get the set of persons to test
+      // await this.initializeNormedPersons()
 
-    //   // now make sure confirmed authors are loaded
-    //   await this.initializeConfirmedAuthors()
+      // // now make sure confirmed authors are loaded
+      // await this.initializeConfirmedAuthors()
 
-    //   // first do against current values and then have updated based on what is found
-    //   // run against all pubs in DB and confirm have same confidence value calculation
-    //   // calculate confidence for publications
-    //   const testAuthors2 = []
-    //   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===53}))
-    //   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===17}))
-    //   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===94}))
-    //   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===78}))
-    //   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===48}))
-    //   // testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===61}))
-    //   testAuthors2.push(_.find(testAuthors, (testAuthor) => { return testAuthor['id']===120}))
-    //   // console.log(`Test authors: ${JSON.stringify(testAuthors2, null, 2)}`)
+      // // break up authors into groups of 20
+      // const testAuthorGroups = _.chunk(testAuthors, 10)
+      // await pMap (testAuthorGroups, async (authors, index) => {
+      //   const confidenceTests = await calculateConfidence.calculateConfidence (authors, (this.confirmedAuthorsByDoi || {}), overWriteExisting, publicationYear)
 
-    //   // get where last confidence test left off
-    //   // get all person publications without a confidence set
+      //   // next need to write checks found to DB and then calculate confidence accordingly
+      //   let errorsInsert = []
+      //   let passedInsert = []
+      //   let totalConfidenceSets = 0
+      //   let totalSetItems = 0
+      //   let totalSetItemsInserted = 0
 
-    //   // const lastConfidenceSet = await calculateConfidence.getLastPersonPubConfidenceSet()
-    //   const overWriteExisting = false
+      //   console.log(`Exporting results to csv if any warnings or failures...`)
+      //   if (confidenceTests['failed'] && confidenceTests['failed'].length>0){
+      //     const outputFailed = _.map(confidenceTests['failed'], test => {
+      //       test['author'] = JSON.stringify(test['author'])
+      //       test['confirmedAuthors'] = JSON.stringify(test['confirmedAuthors'])
+      //       test['confidenceItems'] = JSON.stringify(test['confidenceItems'])
+      //       return test
+      //     })
 
-    //   console.log(`Overwrite existing confidence sets: ${overWriteExisting}`)
-    //   // const publicationYear = 2020
-    //   const publicationYear = undefined
+      //     //write data out to csv
+      //     await writeCsv({
+      //       path: `../data/failed_confidence.${moment().format('YYYYMMDDHHmmss')}.csv`,
+      //       data: outputFailed,
+      //     });
+      //   } else {
+      //     console.log('No failures to output.')
+      //   }
 
-    //   // break up authors into groups of 20
-    //   const testAuthorGroups = _.chunk(testAuthors, 10)
-    //   await pMap (testAuthorGroups, async (authors, index) => {
-    //     const confidenceTests = await calculateConfidence.calculateConfidence (authors, (confirmedAuthorsByDoi || {}), overWriteExisting, publicationYear)
+      //   if (confidenceTests['warning'] && confidenceTests['warning'].length>0){
+      //     const outputWarning = _.map(confidenceTests['warning'], test => {
+      //       test['author'] = JSON.stringify(test['author'])
+      //       test['confirmedAuthors'] = JSON.stringify(test['confirmedAuthors'])
+      //       test['confidenceItems'] = JSON.stringify(test['confidenceItems'])
+      //       return test
+      //     })
 
-    //     // next need to write checks found to DB and then calculate confidence accordingly
-    //     let errorsInsert = []
-    //     let passedInsert = []
-    //     let totalConfidenceSets = 0
-    //     let totalSetItems = 0
-    //     let totalSetItemsInserted = 0
+      //     await writeCsv({
+      //       path: `../data/warning_confidence.${moment().format('YYYYMMDDHHmmss')}.csv`,
+      //       data: outputWarning,
+      //     });
+      //   } else {
+      //     console.log('No warnings to output.')
+      //   }
 
-    //     console.log(`Exporting results to csv if any warnings or failures...`)
-    //     if (confidenceTests['failed'] && confidenceTests['failed'].length>0){
-    //       const outputFailed = _.map(confidenceTests['failed'], test => {
-    //         test['author'] = JSON.stringify(test['author'])
-    //         test['confirmedAuthors'] = JSON.stringify(test['confirmedAuthors'])
-    //         test['confidenceItems'] = JSON.stringify(test['confidenceItems'])
-    //         return test
-    //       })
+      //   // const outputPassed = _.map(confidenceTests['passed'], test => {
+      //   //   let obj = {}
+      //   //   obj['author'] = JSON.stringify(test['author'])
+      //   //   obj['author_id'] = test['author']['id']
+      //   //   obj['author_names'] = test['author']['names']
+      //   //   obj['confirmedAuthors'] = JSON.stringify(test['confirmedAuthors'])
+      //   //   obj['confidenceItems'] = JSON.stringify(test['confidenceItems'])
+      //   //   return obj
+      //   // })
 
-    //       //write data out to csv
-    //       await writeCsv({
-    //         path: `../data/failed_confidence.${moment().format('YYYYMMDDHHmmss')}.csv`,
-    //         data: outputFailed,
-    //       });
-    //     } else {
-    //       console.log('No failures to output.')
-    //     }
+      //   // await writeCsv({
+      //   //   path: `../data/passed_confidence.${moment().format('YYYYMMDDHHmmss')}.csv`,
+      //   //   data: outputPassed,
+      //   // });
 
-    //     if (confidenceTests['warning'] && confidenceTests['warning'].length>0){
-    //       const outputWarning = _.map(confidenceTests['warning'], test => {
-    //         test['author'] = JSON.stringify(test['author'])
-    //         test['confirmedAuthors'] = JSON.stringify(test['confirmedAuthors'])
-    //         test['confidenceItems'] = JSON.stringify(test['confidenceItems'])
-    //         return test
-    //       })
-
-    //       await writeCsv({
-    //         path: `../data/warning_confidence.${moment().format('YYYYMMDDHHmmss')}.csv`,
-    //         data: outputWarning,
-    //       });
-    //     } else {
-    //       console.log('No warnings to output.')
-    //     }
-
-    //     // const outputPassed = _.map(confidenceTests['passed'], test => {
-    //     //   let obj = {}
-    //     //   obj['author'] = JSON.stringify(test['author'])
-    //     //   obj['author_id'] = test['author']['id']
-    //     //   obj['author_names'] = test['author']['names']
-    //     //   obj['confirmedAuthors'] = JSON.stringify(test['confirmedAuthors'])
-    //     //   obj['confidenceItems'] = JSON.stringify(test['confidenceItems'])
-    //     //   return obj
-    //     // })
-
-    //     // await writeCsv({
-    //     //   path: `../data/passed_confidence.${moment().format('YYYYMMDDHHmmss')}.csv`,
-    //     //   data: outputPassed,
-    //     // });
-
-    //     console.log('Beginning insert of confidence sets...')
-    //     console.log(`Inserting Author Confidence Sets Batch (${(index + 1)} of ${testAuthorGroups.length})...`)
-    //     await pMap (_.keys(confidenceTests), async (testStatus) => {
-    //       // console.log(`trying to insert confidence values ${testStatus}`)
-    //       let loopCounter = 1
-    //       // console.log(`Inserting Author Confidence Sets ${testStatus} ${confidenceTests[testStatus].length}...`)
-    //       await pMap (confidenceTests[testStatus], async (confidenceTest) => {
-    //         // console.log('trying to insert confidence values')
-    //         await randomWait(loopCounter)
-    //         loopCounter += 1
-    //         try {
-    //           // console.log(`Tabulating total for ${JSON.stringify(confidenceTest, null, 2)}`)
-    //           totalConfidenceSets += 1
-    //           _.each(_.keys(confidenceTest['confidenceItems']), (rank) => {
-    //             _.each(_.keys(confidenceTest['confidenceItems'][rank]), (confidenceType) => {
-    //               totalSetItems += 1
-    //             })
-    //           })
-    //           // console.log(`Starting to insert confidence set ${JSON.stringify(confidenceTest, null, 2)}`)
-    //           const insertedConfidenceSetItems = await calculateConfidence.insertConfidenceTestToDB(confidenceTest, confidenceAlgorithmVersion)
-    //           passedInsert.push(confidenceTest)
-    //           totalSetItemsInserted += insertedConfidenceSetItems.length
-    //         } catch (error) {
-    //           errorsInsert.push(error)
-    //           throw error
-    //         }
-    //       }, {concurrency: 1})
-    //     }, {concurrency: 1})
-    //     console.log('Done inserting confidence Sets...')
-    //     console.log(`Errors on insert of confidence sets: ${JSON.stringify(errorsInsert, null, 2)}`)
-    //     console.log(`Total Errors on insert of confidence sets: ${errorsInsert.length}`)
-    //     console.log(`Total Sets Tried: ${totalConfidenceSets} Passed: ${passedInsert.length} Failed: ${errorsInsert.length}`)
-    //     console.log(`Total Set Items Tried: ${totalSetItems} Passed: ${totalSetItemsInserted}`)
-    //     console.log(`Passed tests: ${confidenceTests['passed'].length} Warning tests: ${confidenceTests['warning'].length} Failed Tests: ${confidenceTests['failed'].length}`)
-    //   }, { concurrency: 1} )
-    // }
-    //   // 
-    // }
+      //   console.log('Beginning insert of confidence sets...')
+      //   console.log(`Inserting Author Confidence Sets Batch (${(index + 1)} of ${testAuthorGroups.length})...`)
+      //   await pMap (_.keys(confidenceTests), async (testStatus) => {
+      //     // console.log(`trying to insert confidence values ${testStatus}`)
+      //     let loopCounter = 1
+      //     // console.log(`Inserting Author Confidence Sets ${testStatus} ${confidenceTests[testStatus].length}...`)
+      //     await pMap (confidenceTests[testStatus], async (confidenceTest) => {
+      //       // console.log('trying to insert confidence values')
+      //       await randomWait(loopCounter)
+      //       loopCounter += 1
+      //       try {
+      //         // console.log(`Tabulating total for ${JSON.stringify(confidenceTest, null, 2)}`)
+      //         totalConfidenceSets += 1
+      //         _.each(_.keys(confidenceTest['confidenceItems']), (rank) => {
+      //           _.each(_.keys(confidenceTest['confidenceItems'][rank]), (confidenceType) => {
+      //             totalSetItems += 1
+      //           })
+      //         })
+      //         // console.log(`Starting to insert confidence set ${JSON.stringify(confidenceTest, null, 2)}`)
+      //         const insertedConfidenceSetItems = await calculateConfidence.insertConfidenceTestToDB(confidenceTest, confidenceAlgorithmVersion)
+      //         passedInsert.push(confidenceTest)
+      //         totalSetItemsInserted += insertedConfidenceSetItems.length
+      //       } catch (error) {
+      //         errorsInsert.push(error)
+      //         throw error
+      //       }
+      //     }, {concurrency: 1})
+      //   }, {concurrency: 1})
+      //   console.log('Done inserting confidence Sets...')
+      //   console.log(`Errors on insert of confidence sets: ${JSON.stringify(errorsInsert, null, 2)}`)
+      //   console.log(`Total Errors on insert of confidence sets: ${errorsInsert.length}`)
+      //   console.log(`Total Sets Tried: ${totalConfidenceSets} Passed: ${passedInsert.length} Failed: ${errorsInsert.length}`)
+      //   console.log(`Total Set Items Tried: ${totalSetItems} Passed: ${totalSetItemsInserted}`)
+      //   console.log(`Passed tests: ${confidenceTests['passed'].length} Warning tests: ${confidenceTests['warning'].length} Failed Tests: ${confidenceTests['failed'].length}`)
+      // }, { concurrency: 1} )
+    }
 
     async ingestFromFiles (jsonFileDir, manifestFilePath) {
       // create master manifest of unique publications
