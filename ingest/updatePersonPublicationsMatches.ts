@@ -233,9 +233,9 @@ function getBibTexByDoi(bibTexByDoi, doi) {
 }
 
 //returns an array of author matches for the given doi, test authors, and confirmed authors
-async function findAuthorMatches(testAuthors, confirmedAuthors, doi, csl, sourceName, minConfidence, bibTex?) {
+async function findAuthorMatches(testAuthors, confirmedAuthors, doi, csl, sourceName, minConfidence, confidenceAlgorithmVersion, bibTex?) {
   
-  const calculateConfidence: CalculateConfidence = new CalculateConfidence(minConfidence)
+  const calculateConfidence: CalculateConfidence = new CalculateConfidence(minConfidence, confidenceAlgorithmVersion)
   // populate with array of person id's mapped person object
   let authorMatchesFound = {}
 
@@ -292,9 +292,10 @@ const getIngestFilePaths = require('./getIngestFilePaths');
 //returns status map of what was done
 async function main() {
   const minConfidence = 0.35
+  const confidenceAlgorithmVersion = '82aa835eff3da48e497c6eb6b56dafc087c86958'
   const year = 2020
   //just get all simplified persons as will filter later
-  const calculateConfidence: CalculateConfidence = new CalculateConfidence(minConfidence)
+  const calculateConfidence: CalculateConfidence = new CalculateConfidence(minConfidence, confidenceAlgorithmVersion)
   console.log('Starting load person list...')
   const simplifiedPersons = await calculateConfidence.getAllSimplifiedPersons()
   console.log('Finished load person list.')
@@ -349,7 +350,7 @@ async function main() {
     const bibTex = getBibTexByDoi(bibTexByDois, doi)
     const csl = pubsByDoi[doi][0]['csl']
     const sourceName = pubsByDoi[doi][0].source_name
-    authorsMatchedByDoi[doi] = await findAuthorMatches(simplifiedPersons, confirmedAuthorsByDoi[doi], doi, csl, sourceName, minConfidence, bibTex)
+    authorsMatchedByDoi[doi] = await findAuthorMatches(simplifiedPersons, confirmedAuthorsByDoi[doi], doi, csl, sourceName, minConfidence, confidenceAlgorithmVersion, bibTex)
     // console.log(`#${index+1} of ${totalDois} - Checking doi: ${doi} for author matches. ${authorsMatchedByDoi[doi].length} matches found`)
     // check for new author matches
     let newAuthorsMatched = 0

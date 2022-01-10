@@ -13,7 +13,7 @@ import readAllNewPersonPublications from './gql/readAllNewPersonPublications'
 const getIngestFilePaths = require('./getIngestFilePaths');
 import { command as writeCsv } from './units/writeCsv'
 import moment from 'moment'
-import ConfidenceTest from './modules/confidenceTest'
+import ConfidenceSet from './modules/confidenceSet'
 import { getAllNormedPersons } from './modules/queryNormalizedPeople'
 
 dotenv.config({
@@ -39,11 +39,11 @@ import { CalculateConfidence } from './modules/calculateConfidence'
 async function main() {
 
   const minConfidence = 0.40
-  const calculateConfidence = new CalculateConfidence(minConfidence)
+  const confidenceAlgorithmVersion = '82aa835eff3da48e497c6eb6b56dafc087c86958'
+  const calculateConfidence = new CalculateConfidence(minConfidence, confidenceAlgorithmVersion)
 
   // use related github commit hash for the version when algorithm last completed
   // @todo: Extract to ENV?
-  const confidenceAlgorithmVersion = '82aa835eff3da48e497c6eb6b56dafc087c86958'
   // get confirmed author lists to papers
   const pathsByYear = await getIngestFilePaths("../config/ingestConfidenceReviewFilePaths.json")
 
@@ -95,7 +95,7 @@ async function main() {
   // break up authors into groups of 20
   const testAuthorGroups = _.chunk(testAuthors, 10)
   await pMap (testAuthorGroups, async (authors, index) => {
-    const confidenceTests: Map<string, ConfidenceTest[]> = await calculateConfidence.calculateConfidence (authors, (confirmedAuthorsByDoi || {}), overWriteExisting, publicationYear)
+    const confidenceSets: Map<string, ConfidenceSet[]> = await calculateConfidence.calculateConfidence (authors, (confirmedAuthorsByDoi || {}), overWriteExisting, publicationYear)
 
     // next need to write checks found to DB and then calculate confidence accordingly
     let errorsInsert = []
@@ -105,8 +105,8 @@ async function main() {
     let totalSetItemsInserted = 0
 
     console.log(`Exporting results to csv if any warnings or failures...`)
-    if (confidenceTests['failed'] && confidenceTests['failed'].length>0){
-      const outputFailed = _.map(confidenceTests['failed'], test => {
+    if (confidenceSets['failed'] && confidenceSets['failed'].length>0){
+      const outputFailed = _.map(confidenceSets['failed'], test => {
         test['author'] = JSON.stringify(test['author'])
         test['confirmedAuthors'] = JSON.stringify(test['confirmedAuthors'])
         test['confidenceItems'] = JSON.stringify(test['confidenceItems'])
@@ -122,8 +122,8 @@ async function main() {
       console.log('No failures to output.')
     }
 
-    if (confidenceTests['warning'] && confidenceTests['warning'].length>0){
-      const outputWarning = _.map(confidenceTests['warning'], test => {
+    if (confidenceSets['warning'] && confidenceSets['warning'].length>0){
+      const outputWarning = _.map(confidenceSets['warning'], test => {
         test['author'] = JSON.stringify(test['author'])
         test['confirmedAuthors'] = JSON.stringify(test['confirmedAuthors'])
         test['confidenceItems'] = JSON.stringify(test['confidenceItems'])
@@ -155,25 +155,25 @@ async function main() {
 
     console.log('Beginning insert of confidence sets...')
     console.log(`Inserting Author Confidence Sets Batch (${(index + 1)} of ${testAuthorGroups.length})...`)
-    await pMap (_.keys(confidenceTests), async (testStatus) => {
+    await pMap (_.keys(confidenceSets), async (testStatus) => {
       // console.log(`trying to insert confidence values ${testStatus}`)
       let loopCounter = 1
       // console.log(`Inserting Author Confidence Sets ${testStatus} ${confidenceTests[testStatus].length}...`)
-      await pMap (confidenceTests[testStatus], async (confidenceTest: ConfidenceTest) => {
+      await pMap (confidenceSets[testStatus], async (confidenceSet: ConfidenceSet) => {
         // console.log('trying to insert confidence values')
         await randomWait(loopCounter)
         loopCounter += 1
         try {
-          // console.log(`Tabulating total for ${JSON.stringify(confidenceTest, null, 2)}`)
+          // console.log(`Tabulating total for ${JSON.stringify(confidenceSet, null, 2)}`)
           totalConfidenceSets += 1
-          _.each(confidenceTest.confidenceTestSets, (confidenceTestSet) => {
-            _.each(confidenceTestSet.confidenceTestItems, (confidenceTestItem) => {
+          _.each(confidenceSet.confidenceTests, (confidenceTest) => {
+            _.each(confidenceTest.confidenceTestItems, (confidenceTestItem) => {
               totalSetItems += 1
             })
           })
           // console.log(`Starting to insert confidence set ${JSON.stringify(confidenceTest, null, 2)}`)
-          const insertedConfidenceSetItems = await calculateConfidence.insertConfidenceTestToDB(confidenceTest, confidenceAlgorithmVersion)
-          passedInsert.push(confidenceTest)
+          const insertedConfidenceSetItems = await calculateConfidence.insertConfidenceSetToDB(confidenceSet)
+          passedInsert.push(confidenceSet)
           totalSetItemsInserted += insertedConfidenceSetItems.length
         } catch (error) {
           errorsInsert.push(error)
@@ -186,7 +186,7 @@ async function main() {
     console.log(`Total Errors on insert of confidence sets: ${errorsInsert.length}`)
     console.log(`Total Sets Tried: ${totalConfidenceSets} Passed: ${passedInsert.length} Failed: ${errorsInsert.length}`)
     console.log(`Total Set Items Tried: ${totalSetItems} Passed: ${totalSetItemsInserted}`)
-    console.log(`Passed tests: ${confidenceTests['passed'].length} Warning tests: ${confidenceTests['warning'].length} Failed Tests: ${confidenceTests['failed'].length}`)
+    console.log(`Passed tests: ${confidenceSets['passed'].length} Warning tests: ${confidenceSets['warning'].length} Failed Tests: ${confidenceSets['failed'].length}`)
   }, { concurrency: 1} )
 }
 

@@ -34,10 +34,10 @@ import { command as writeCsv } from '../units/writeCsv'
 import NormedPublication from './normedPublication'
 import moment from 'moment'
 import ConfidenceTestItem from './confidenceTestItem'
-import ConfidenceTest from './confidenceTest'
+import ConfidenceSet from './confidenceSet'
 import NormedPerson from './normedPerson'
 import NormedAuthor from './normedAuthor'
-import ConfidenceTestSet from './confidenceTestSet'
+import ConfidenceTest from './confidenceTest'
 import Csl from './csl'
 
 dotenv.config({
@@ -71,9 +71,11 @@ interface MatchedPerson {
 export class CalculateConfidence {
 
   minConfidence: number
+  confidenceAlgorithmVersion: string
 
-  constructor (minConfidence: number) {
+  constructor (minConfidence: number, confidenceAlgorithmVersion: string) {
     this.minConfidence = minConfidence
+    this.confidenceAlgorithmVersion = confidenceAlgorithmVersion
   }
 
   async getPersonPublicationsWithoutConfidenceSet (personId) {
@@ -234,7 +236,7 @@ export class CalculateConfidence {
   // author map assumed to be doi mapped to two arrays: first authors and other authors
   // returns a map of person ids to the person object and confidence value for any persons that matched coauthor attributes
   // example: {1: {person: simplepersonObject, confidence: 0.5}, 51: {person: simplepersonObject, confidence: 0.8}}
-  async matchPeopleToPaperAuthors(publicationCSL, normedPersons: NormedPerson[], confirmedAuthors, sourceName) : Promise<Map<number,ConfidenceTest>> {
+  async matchPeopleToPaperAuthors(publicationCSL, normedPersons: NormedPerson[], confirmedAuthors, sourceName) : Promise<Map<number,ConfidenceSet>> {
 
     //match to last name
     //match to first initial (increase confidence)
@@ -245,13 +247,13 @@ export class CalculateConfidence {
       
       //console.log(`Testing Author for match: ${author.family}, ${author.given}`)
 
-        const passedConfidenceTests: ConfidenceTestSet[] = await this.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank, sourceName)
+        const passedConfidenceTests: ConfidenceTest[] = await this.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank, sourceName)
         // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
         // returns a new map of rank -> confidenceTestName -> calculatedValue
         const passedConfidenceTestsWithConf = await this.calculateAuthorConfidence(passedConfidenceTests)
         // calculate overall total and write the confidence set and comments to the DB
         let confidenceTotal = 0.0
-        _.each(passedConfidenceTestsWithConf, (confTestSet: ConfidenceTestSet) => {
+        _.each(passedConfidenceTestsWithConf, (confTestSet: ConfidenceTest) => {
           _.each(confTestSet.confidenceTestItems, (confTestItem: ConfidenceTestItem) => {
             confidenceTotal += confTestItem.confidenceValue
           })
@@ -265,13 +267,13 @@ export class CalculateConfidence {
         //add person to map with confidence value > 0
         if (confidenceTotal > 0) {
           // console.log(`Match found for Author: ${author.family}, ${author.given}`)
-          const newTest: ConfidenceTest = {
+          const newConfSet: ConfidenceSet = {
             person: person,
-            confidenceTestSets: passedConfidenceTestsWithConf,
+            confidenceTests: passedConfidenceTestsWithConf,
             confirmedAuthors: confirmedAuthors,
             confidenceTotal: confidenceTotal,
           };
-          matchedPersonMap[person.id] = newTest
+          matchedPersonMap[person.id] = newConfSet
           //console.log(`After add matched persons map is: ${JSON.stringify(matchedPersonMap,null,2)}`)
         }
     }, { concurrency: 1 })
@@ -654,7 +656,7 @@ testAuthorAffiliation (author: NormedPerson, publicationAuthorMap: Map<string, N
     return newAuthor
   }
 
-  async performAuthorConfidenceTests (person: NormedPerson, publicationCsl, confirmedAuthors: NormedAuthor[], confidenceTypesByRank, sourceName, sourceMetadata?, pubAuthorMap?): Promise<ConfidenceTestSet[]> {
+  async performAuthorConfidenceTests (person: NormedPerson, publicationCsl, confirmedAuthors: NormedAuthor[], confidenceTypesByRank, sourceName, sourceMetadata?, pubAuthorMap?): Promise<ConfidenceTest[]> {
     // array of arrays for each rank sorted 1 to highest number
     // iterate through each group by rank if no matches in one rank, do no execute the next rank
     const sortedRanks = _.sortBy(_.keys(confidenceTypesByRank), (value) => { return value })
@@ -670,11 +672,10 @@ testAuthorAffiliation (author: NormedPerson, publicationAuthorMap: Map<string, N
       publicationAuthorMap = this.getPublicationAuthorMap(publicationCsl)
     }
     // initialize map to store passed tests by rank
-    let passedConfidenceTestSets: ConfidenceTestSet[] = []
+    let passedConfidenceTests: ConfidenceTest[] = []
     let stopTesting = false
     await pMap (sortedRanks, async (rank) => {
       let matchFound = false
-      let passedConfidenceTestSet: ConfidenceTestSet
       let confidenceTestItems: ConfidenceTestItem[]
       // after each test need to union the set of authors matched before moving to next level
       let matchedAuthors = new Map()
@@ -719,15 +720,15 @@ testAuthorAffiliation (author: NormedPerson, publicationAuthorMap: Map<string, N
         }
       }
       if (confidenceTestItems && confidenceTestItems.length > 0){
-        const confTestSet: ConfidenceTestSet = {
+        const confTestSet: ConfidenceTest = {
           rank: rank,
           testPerson: testPerson,
           confidenceTestItems: confidenceTestItems
         }
-        passedConfidenceTestSets.push(confTestSet)
+        passedConfidenceTests.push(confTestSet)
       }
     }, {concurrency: 1})
-    return passedConfidenceTestSets
+    return passedConfidenceTests
   }
 
   private confidenceMetrics = {
@@ -776,11 +777,11 @@ testAuthorAffiliation (author: NormedPerson, publicationAuthorMap: Map<string, N
   }
 
   //returns a new map of rank -> test name -> with property calculatedValue and comment added
-  async calculateAuthorConfidence (passedConfidenceTests: ConfidenceTestSet[]): Promise<ConfidenceTestSet[]> {
+  async calculateAuthorConfidence (passedConfidenceTests: ConfidenceTest[]): Promise<ConfidenceTest[]> {
     // calculate the confidence for each where first uses full value and each add'l uses
     // partial increment to increase confidence slightly for this category of tests
-    let newConfidenceTestSets: ConfidenceTestSet[] = []
-    _.each(passedConfidenceTests, async (confTestSet: ConfidenceTestSet) => {
+    let newConfidenceTests: ConfidenceTest[] = []
+    _.each(passedConfidenceTests, async (confTestSet: ConfidenceTest) => {
       let index = 0
       let newConfidenceTestItems = []
       _.each(confTestSet.confidenceTestItems, (confidenceTestItem: ConfidenceTestItem) => {
@@ -790,23 +791,23 @@ testAuthorAffiliation (author: NormedPerson, publicationAuthorMap: Map<string, N
         newConfidenceTestItems.push(newConfTestItem)
         index += 1
       })
-      const newConfidenceTestSet: ConfidenceTestSet = {
+      const newConfidenceTest: ConfidenceTest = {
         rank: confTestSet.rank,
         testPerson: confTestSet.testPerson,
         confidenceTestItems: newConfidenceTestItems
       }
-      newConfidenceTestSets.push(newConfidenceTestSet)
+      newConfidenceTests.push(newConfidenceTest)
     })
-    return newConfidenceTestSets
+    return newConfidenceTests
   }
 
-  async calculateConfidence (testPersons: NormedPerson[], confirmedAuthors, overWriteExisting, publicationYear?): Promise<Map<string, ConfidenceTest[]>> {
+  async calculateConfidence (testPersons: NormedPerson[], confirmedAuthors, overWriteExisting, publicationYear?): Promise<Map<string, ConfidenceSet[]>> {
     // get the set of tests to run
     const confidenceTypesByRank = await this.getConfidenceTypesByRank()
 
-    const passedTests: ConfidenceTest[] = []
-    const failedTests: ConfidenceTest[] = []
-    const warningTests: ConfidenceTest[] = []
+    const passedTests: ConfidenceSet[] = []
+    const failedTests: ConfidenceSet[] = []
+    const warningTests: ConfidenceSet[] = []
 
     console.log('Entering loop 1...')
 
@@ -823,13 +824,13 @@ testAuthorAffiliation (author: NormedPerson, publicationAuthorMap: Map<string, N
         const sourceMetadata = currentPersonPublication['publication']['source_metadata']
         const sourceName = currentPersonPublication['publication']['source_name']
         // console.log(`Source metadata is: ${JSON.stringify(sourceMetadata, null, 2)}`)
-        const passedConfidenceTests: ConfidenceTestSet[] = await thisConf.performAuthorConfidenceTests (testPerson, publicationCsl, confirmedAuthors[personPublication['publication']['doi']], confidenceTypesByRank, sourceName, sourceMetadata)
+        const passedConfidenceTests: ConfidenceTest[] = await thisConf.performAuthorConfidenceTests (testPerson, publicationCsl, confirmedAuthors[personPublication['publication']['doi']], confidenceTypesByRank, sourceName, sourceMetadata)
 
         // returns a new map of rank -> confidenceTestName -> calculatedValue
         const passedConfidenceTestsWithConf = await thisConf.calculateAuthorConfidence(passedConfidenceTests)
         // calculate overall total and write the confidence set and comments to the DB
         let confidenceTotal = 0.0
-        _.each(passedConfidenceTestsWithConf, (confTestSet: ConfidenceTestSet) => {
+        _.each(passedConfidenceTestsWithConf, (confTestSet: ConfidenceTest) => {
           _.each(confTestSet.confidenceTestItems, (confTestItem: ConfidenceTestItem) => {
             confidenceTotal += confTestItem.confidenceValue
           })
@@ -840,9 +841,9 @@ testAuthorAffiliation (author: NormedPerson, publicationAuthorMap: Map<string, N
         confidenceTotal = Number.parseFloat(confidenceTotal.toFixed(3))
         //update to current matched authors before proceeding with next tests
         let publicationAuthorMap: Map<string, NormedAuthor[]> = thisConf.getPublicationAuthorMap(publicationCsl)
-        const newTest: ConfidenceTest = {
+        const newConfSet: ConfidenceSet = {
           person: testPerson,
-          confidenceTestSets: passedConfidenceTestsWithConf,
+          confidenceTests: passedConfidenceTestsWithConf,
           confirmedAuthors: confirmedAuthors[personPublication['publication']['doi']],
           confidenceTotal: confidenceTotal,
           doi: personPublication['publication']['doi'],
@@ -850,11 +851,11 @@ testAuthorAffiliation (author: NormedPerson, publicationAuthorMap: Map<string, N
           prevConfidenceTotal: personPublication['confidence']
         };
         if (confidenceTotal === personPublication['confidence']) {
-          passedTests.push(newTest)
+          passedTests.push(newConfSet)
         } else if (confidenceTotal > personPublication['confidence']) {
-          warningTests.push(newTest)
+          warningTests.push(newConfSet)
         } else {
-          failedTests.push(newTest)
+          failedTests.push(newConfSet)
         }
       }, {concurrency: 10})
       console.log(`Exiting loop 2 Test Author: ${testPerson.names[0]['familyName']}`)
@@ -888,29 +889,31 @@ testAuthorAffiliation (author: NormedPerson, publicationAuthorMap: Map<string, N
   }
 
   // returns an array confidence set items that were inserted
-  async insertConfidenceTestToDB (confidenceTest: ConfidenceTest, confidenceAlgorithmVersion) {
+  async insertConfidenceSetToDB (newConfidenceSet: ConfidenceSet, personPublicationId?: number) {
     // create confidence set
-    const confidenceSet = {
-      persons_publications_id: confidenceTest.personsPublicationId,
-      value: confidenceTest.confidenceTotal,
-      version: confidenceAlgorithmVersion
+    // if a person pub id is passed in use that, otherwise look to object
+    const personPubId = (personPublicationId ? personPublicationId : newConfidenceSet.personsPublicationId)
+    const insertConfidenceSet = {
+      persons_publications_id: personPubId,
+      value: newConfidenceSet.confidenceTotal,
+      version: this.confidenceAlgorithmVersion
     }
     //insert confidence set
-    const resultInsertConfidenceSet = await client.mutate(insertConfidenceSets([confidenceSet]))
+    const resultInsertConfidenceSet = await client.mutate(insertConfidenceSets([newConfidenceSet]))
     try {
       if (resultInsertConfidenceSet.data.insert_confidencesets.returning.length > 0) {
         const confidenceSetId = 0+parseInt(`${ resultInsertConfidenceSet.data.insert_confidencesets.returning[0].id }`)
         // insert confidence set items
         let confidenceSetItems = []
         let loopCounter = 0
-        let confidenceTestSets: ConfidenceTestSet[] = confidenceTest.confidenceTestSets
+        let confidenceTests: ConfidenceTest[] = newConfidenceSet.confidenceTests
         // if (_.isString(confidenceItems)) {
         //   confidenceItems = JSON.parse(confidenceTest['confidenceItems'])
         // }
-        await pMap(confidenceTestSets, async (confidenceTestSet: ConfidenceTestSet) => {
+        await pMap(confidenceTests, async (confidenceTest: ConfidenceTest) => {
           await randomWait(loopCounter)
           loopCounter += 1
-          _.each(confidenceTestSet.confidenceTestItems, (confidenceTestItem: ConfidenceTestItem) => {
+          _.each(confidenceTest.confidenceTestItems, (confidenceTestItem: ConfidenceTestItem) => {
             const obj = {
               'confidenceset_id': confidenceSetId,
               'confidence_type_id': confidenceTestItem.confidenceTypeId,
@@ -928,10 +931,10 @@ testAuthorAffiliation (author: NormedPerson, publicationAuthorMap: Map<string, N
         const resultInsertConfidenceSetItems = await client.mutate(insertConfidenceSetItems(confidenceSetItems))
         return resultInsertConfidenceSetItems.data.insert_confidencesets_items.returning
       } else {
-        throw `Failed to insert confidence set no result returned for set: ${JSON.stringify(confidenceTest, null, 2)}`
+        throw `Failed to insert confidence set no result returned for set: ${JSON.stringify(newConfidenceSet, null, 2)}`
       }
     } catch (error) {
-      throw `Failed to insert confidence set: ${JSON.stringify(confidenceTest, null, 2)} with ${error}`
+      throw `Failed to insert confidence set: ${JSON.stringify(newConfidenceSet, null, 2)} with ${error}`
     }
   }
 }

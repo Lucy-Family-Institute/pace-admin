@@ -423,7 +423,8 @@ async function loadPersonPapersFromCSV (testPersons: NormedPerson[], paperPath, 
   }
   try {
     const minConfidence = 0.40
-    const calculateConfidence: CalculateConfidence = new CalculateConfidence(minConfidence)
+    const confidenceAlgorithmVersion = '82aa835eff3da48e497c6eb6b56dafc087c86958'
+    const calculateConfidence: CalculateConfidence = new CalculateConfidence(minConfidence, confidenceAlgorithmVersion)
     let dataDir = paperPath
     if (!isDir(paperPath)) {
       dataDir = path.dirname(paperPath)
@@ -836,7 +837,7 @@ const pathsByYear = await getIngestFilePaths('../config/ingestFilePaths.json')
           sourceName = doiStatusByYear.sourceName
           combinedFailed = _.merge(combinedFailed, doiStatusByYear.combinedFailedRecords)
         }
-        }, { concurrency: 1 })
+      }, { concurrency: 1 })
     }, { concurrency: 1})
   }, { concurrency: 1 }) // these all need to be 1 thread so no collisions on checking if pub already exists if present in multiple files
 

@@ -10,6 +10,9 @@ load_author_attributes: ingest/node_modules
 ingest_metadata: ingest/node_modules
 	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
 
+ingest_metadata_new_model: ingest/node_modules
+	cd ingest && ts-node ingestMetadataNewModel.ts && cd ..
+
 load_new_confidence_sets: ingest/node_modules
 	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
 

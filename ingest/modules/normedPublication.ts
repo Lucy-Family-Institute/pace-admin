@@ -383,4 +383,16 @@ export default class NormedPublication {
 
     return bib
   }
+
+  public static getDoiKey (normedPub: NormedPublication): string {
+    if (!normedPub.doi || normedPub.doi.length <= 0){
+      return NormedPublication.getSourceKey(normedPub)
+    } else {
+      return normedPub.doi
+    }
+  }
+
+  public static getSourceKey (normedPub: NormedPublication): string {
+    return `${normedPub.datasourceName}_${normedPub.sourceId}`
+  }
 }
