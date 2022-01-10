@@ -99,10 +99,13 @@ async function returnNihIds() {
       const awardName = award['Award Investigator Full Name'];
 
       // Parse both names
-      const parsedLeadName = await nameParser({
-        name: leadName,
-        reduceMethod: 'majority',
-      });
+      let parsedLeadName
+      if (leadName) {
+        parsedLeadName = await nameParser({
+          name: leadName,
+          reduceMethod: 'majority',
+        });
+      }
       const parsedAwardName = await nameParser({
         name: awardName,
         reduceMethod: 'majority',
@@ -111,18 +114,21 @@ async function returnNihIds() {
       // console.log(`Looking at award ${JSON.stringify(award, null, 2)} Parsed Lead Name: ${JSON.stringify(parsedLeadName, null, 2)}`)// Fuzzy : ${JSON.stringify(fuzzyLast, null, 2)}`)
 
       // Run the fuzzy name match on the first one that matches, if a match, continue
-      if(nameMatchFuzzy(parsedLeadName.last, parsedLeadName.first, fuzzyLast)
-        || nameMatchFuzzy(parsedAwardName.last, parsedAwardName.first, fuzzyLast)) {
+      if (nameMatchFuzzy(parsedAwardName.last, parsedAwardName.first, fuzzyLast) ||
+          (leadName && nameMatchFuzzy(parsedLeadName.last, parsedLeadName.first, fuzzyLast))){
+
         
         // console.log (`Found a match for ${fuzzyLast}`)
         // Filter by NIH
         if(_.startsWith(award['Prime Sponsor'], 'National Institutes of Health')) {
           // console.log('found NIH match')
           const awardId = award['Award Sponsor Award Number'];
+          console.log(`Award id is: ${awardId}`)
           // Search for the form we know works in PMC (i.e., XY123456)--note the grouping below (parens)
           const reResult = /\w{4}([a-z]{2}[0-9]{6})-?.{2,4}.*/i.exec(awardId);
           if(reResult) {
             // Return the first group from the above regex (i.e., XY123456)
+            // console.log(`Found award: ${reResult}`)
             return reResult[1];
           }
           return null;
