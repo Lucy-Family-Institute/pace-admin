@@ -1,3 +1,4 @@
 export default interface IngesterConfig {
-  minConfidence: Number
+  minConfidence: Number,
+  confidenceAlgorithmVersion: string
 }
