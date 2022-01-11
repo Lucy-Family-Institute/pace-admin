@@ -13,6 +13,7 @@ import moment from 'moment'
 import { PublicationStatus } from './modules/publicationStatus'
 import { command as writeCsv } from './units/writeCsv'
 import IngesterConfig from './modules/ingesterConfig'
+import IngestStatus from './modules/ingestStatus'
 
 dotenv.config({
   path: '../.env'
@@ -55,6 +56,7 @@ async function main() {
   }
   const ingester = new Ingester(config, client)
   let ingestStatusByYear = new Map()
+  let ingestStatusMain = new IngestStatus()
   let doiFailed = new Map()
   let combinedFailed: PublicationStatus[] = []
 
@@ -74,12 +76,17 @@ async function main() {
         // skip any subdirectories
         if (!isDir(filePath)){
           let dataDir = filePath
+          let fileName = path.basename(filePath)
           if (!isDir(filePath)) {
             // go to parent folder if needed
             dataDir = path.dirname(filePath)
           } 
           const ingestStatus = await ingester.ingestFromFiles(dataDir, filePath, false)
-          ingestStatusByYear[year] = ingestStatus
+          if (!ingestStatusByYear[year]) {
+            ingestStatusByYear[year] = new Map()
+          }
+          ingestStatusByYear[year][fileName] = ingestStatus
+          ingestStatusMain = IngestStatus.merge(ingestStatusMain, ingestStatus)
           combinedFailed = _.concat(combinedFailed, ingestStatus.failed)
         }
       }, { concurrency: 1 })
@@ -92,7 +99,7 @@ async function main() {
      if (combinedFailed && _.keys(combinedFailed).length > 0){
       const sourceName = combinedFailed[0].sourceName
       const combinedFailedValues = _.values(combinedFailed)
-      const failedCSVFile = `../data/${sourceName}_combined_failed.${moment().format('YYYYMMDDHHmmss')}.csv`
+      const failedCSVFile = `../data/${sourceName}_${year}_combined_failed.${moment().format('YYYYMMDDHHmmss')}.csv`
 
       console.log(`Write failed doi's to csv file: ${failedCSVFile}`)
       // console.log(`Failed records are: ${JSON.stringify(failedRecords[sourceName], null, 2)}`)
@@ -103,11 +110,34 @@ async function main() {
       })
 
     }
-    console.log(`DOIs errors for year ${year}: ${JSON.stringify(ingestStatusByYear[year].errorMessages, null, 2)}`)
-    console.log(`DOIs failed: ${ingestStatusByYear[year].failed.length} for year: ${year}`)
-    console.log(`DOIs added: ${ingestStatusByYear[year].added.length} for year: ${year}`)
-    console.log(`DOIs skipped: ${ingestStatusByYear[year].skipped.length} for year: ${year}`)
+    _.each(_.keys(ingestStatusByYear[year]), (fileName) => {
+      console.log(`DOIs errors for year - '${year}' and file - '${fileName}':\n${JSON.stringify(ingestStatusByYear[year][fileName].errorMessages, null, 2)}`)
+      console.log(`DOIs failed for year - '${year}' and file - '${fileName}': ${ingestStatusByYear[year][fileName].failed.length}`)
+      console.log(`DOIs added for year - '${year}' and file - '${fileName}': ${ingestStatusByYear[year][fileName].added.length}`)
+      console.log(`DOIs skipped for year - '${year}' and file - '${fileName}': ${ingestStatusByYear[year][fileName].skipped.length}`)
+    })
   }, { concurrency: 1})
+  // now output main ingest status
+
+  // write combined failure results limited to 1 per doi
+  if (ingestStatusMain && ingestStatusMain.failed.length > 0){
+    const sourceName = ingestStatusMain.failed[0].sourceName
+    const combinedFailedValues = ingestStatusMain.failed
+    const failedCSVFile = `../data/${sourceName}_all_combined_failed.${moment().format('YYYYMMDDHHmmss')}.csv`
+
+    console.log(`Write all failed doi's to csv file: ${failedCSVFile}`)
+    // console.log(`Failed records are: ${JSON.stringify(failedRecords[sourceName], null, 2)}`)
+    //write data out to csv
+    await writeCsv({
+      path: failedCSVFile,
+      data: combinedFailedValues,
+    })
+
+  }
+  console.log(`DOIs errors all':\n${JSON.stringify(ingestStatusMain.errorMessages, null, 2)}`)
+  console.log(`DOIs failed all: ${ingestStatusMain.failed.length}`)
+  console.log(`DOIs added all: ${ingestStatusMain.added.length}`)
+  console.log(`DOIs skipped all: ${ingestStatusMain.skipped.length}`)
 }
 
 main()
