@@ -28,6 +28,7 @@ export default class Csl {
         affiliations: [],
         sourceIds: {}
       }
+      normedAuthors.push(normedAuthor)
     })
     return normedAuthors
   }

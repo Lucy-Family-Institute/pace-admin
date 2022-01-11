@@ -291,15 +291,16 @@ export class CalculateConfidence {
     return confidenceTypesByRank
   }
 
-  getCSLAuthors(paperCsl){
+  getCSLAuthors(paperCsl: Csl){
 
+    const cslJson = paperCsl.valueOf()
     const authMap = {
       firstAuthors : [],
       otherAuthors : []
     }
 
     let authorCount = 0
-    _.each(paperCsl.author, async (author) => {
+    _.each(cslJson['author'], async (author) => {
       // skip if family_name undefined
       if (author.family != undefined){
         authorCount += 1
@@ -330,12 +331,14 @@ export class CalculateConfidence {
     return authors
   }
 
-  getPublicationAuthorMap (publicationCsl): Map<string,NormedAuthor[]> {
+  getPublicationAuthorMap (publicationCsl: Csl): Map<string,NormedAuthor[]> {
     //retrieve the authors from the record and put in a map, returned above in array, but really just one element
-    const authors = this.getCSLAuthors(publicationCsl)
+    const authors = Csl.getCslAuthors(publicationCsl)
     const normedAuthors = Csl.cslToNormedAuthors(authors)
     // group authors by last name
     //create map of last name to array of related persons with same last name
+    // console.log(`Csl authors for for author map: ${JSON.stringify(authors, null, 2)}`)
+    // console.log(`Normed authors for for author map: ${JSON.stringify(normedAuthors, null, 2)}`)
     const authorMap = _.transform(normedAuthors, function (result, value: NormedAuthor) {
       const familyName = _.toLower(value.familyName)
       return (result[familyName] || (result[familyName] = [])).push(value)
@@ -416,7 +419,7 @@ export class CalculateConfidence {
     // get array of author last names
     const familyNames = this.getAuthorFamilyNames(testPerson)
     // console.log(`Publication author map is: ${JSON.stringify(publicationAuthorMap, null, 2)}`)
-    // console.log(`last names are: ${JSON.stringify(lastNames, null, 2)}`)
+    // console.log(`family names are: ${JSON.stringify(familyNames, null, 2)}`)
     let matchedAuthors = new Map()
     _.each(_.keys(publicationAuthorMap), (pubFamilyName) => {
       _.each(familyNames, (familyName) => {
@@ -682,6 +685,7 @@ testAuthorAffiliation (author: NormedPerson, publicationAuthorMap: Map<string, N
       let matchedAuthors = new Map()
       if (!stopTesting){
         await pMap(confidenceTypesByRank[rank], async (confidenceType) => {
+          // console.log(`Performing confidence test rank: ${rank}, confidence type: ${JSON.stringify(confidenceType)}, testPerson: ${testPerson.familyName}, ${testPerson.givenName} pub title: ${publicationCsl.valueOf()['title']}`)
           // need to update to make publicationAuthorMap be only ones that matched last name for subsequent tests
           let currentMatchedAuthors: Map<string, NormedAuthor[]> = this.performConfidenceTest(confidenceType, publicationCsl, testPerson, publicationAuthorMap, confirmedAuthors, sourceName, sourceMetadata)
           if (currentMatchedAuthors && _.keys(currentMatchedAuthors).length > 0){
