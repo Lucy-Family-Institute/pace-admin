@@ -11,14 +11,6 @@ export default function readPersonPublicationByPersonIdPubId (personId, publicat
           },
           order_by: {confidence: asc}
         ) {
-          publication {
-            id
-            title
-            doi
-            csl_string
-            source_name
-            source_metadata
-          }
           confidence,
           id
         }
