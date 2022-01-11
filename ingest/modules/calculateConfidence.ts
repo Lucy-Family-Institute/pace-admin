@@ -203,6 +203,7 @@ export class CalculateConfidence {
     const confirmedAuthorsByDoi = _.mapValues(papersByDoi, function (papers) {
       return _.mapValues(papers, function (paper) {
         const unparsedNames = paper[csvColumn]
+        // console.log(`Unparsed names are: ${unparsedNames}`)
         return NormedPublication.getConfirmedNormedAuthors(unparsedNames)
       })
     })

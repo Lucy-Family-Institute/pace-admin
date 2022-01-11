@@ -304,10 +304,12 @@ export default class NormedPublication {
     const normed: NormedAuthor[] = []
     const confirmed = _.each(names, (name: string) => {
       const obj = _.split(name, ',')
+      const familyName = (obj[0] ? obj[0].trim() : '')
+      const givenName = (obj[1] ? obj[1].trim() : '')
       const author: NormedAuthor = {
-        familyName: name[0],
-        givenName: (name[1] ? name[1] : ''),
-        givenNameInitial: (name[1]&&name[1][0] ? name[1][0] : ''),
+        familyName: familyName,
+        givenName: givenName,
+        givenNameInitial: (givenName && givenName[0] ? givenName[0] : ''),
         affiliations: [],
         sourceIds: {}
       }

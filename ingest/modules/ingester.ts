@@ -90,6 +90,8 @@ export class Ingester {
     await this.normedPersonMutex.dispatch( async () => {
       if (!this.normedPersons) {
         this.normedPersons = await getAllNormedPersons(this.client)
+        // console.log(`Initialized Normed Persons: ${JSON.stringify(this.normedPersons, null, 2)}`)
+        console.log(`Initialized ${this.normedPersons.length} Normed Persons`)
       }
     })
   }
@@ -115,6 +117,8 @@ export class Ingester {
             this.confirmedAuthorsByDoi[doi] = _.concat((this.confirmedAuthorsByDoi[doi] || []), _.values(confirmedAuthorsByDoiByYear[year][doi]))
           })
         })
+        // console.log(`Initialized Confirmed authors: ${JSON.stringify(this.confirmedAuthorsByDoi, null, 2)}`)
+        console.log(`Initialized confirmed authors for ${_.keys(this.confirmedAuthorsByDoi).length} DOIs`)
       }
     })
   }
