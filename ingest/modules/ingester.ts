@@ -450,6 +450,7 @@ export class Ingester {
       // get normed publications from filedir and manifest
       const normedPubs: NormedPublication[] = await NormedPublication.loadFromCSV(manifestFilePath, dataDirPath)
       ingestStatus = await this.ingest(normedPubs, dedupByDoi)
+      // console.log(`Ingest status is: ${JSON.stringify(ingestStatus)}`)
     } catch (error) {
       console.log(`Error encountered on ingest publication with paths manifest: '${manifestFilePath}' data dir path: '${dataDirPath}'`)
       throw (error)
