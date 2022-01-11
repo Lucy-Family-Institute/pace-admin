@@ -43,6 +43,7 @@ const getIngestFilePaths = require('./getIngestFilePaths');
 
 const minConfidence = process.env.INGESTER_MIN_CONFIDENCE
 const confidenceAlgorithmVersion = process.env.INGESTER_CONFIDENCE_ALGORITHM
+const defaultWaitInterval = process.env.INGESTER_DEFAULT_WAIT_INTERVAL
 
 //returns status map of what was done
 async function main() {
@@ -52,7 +53,8 @@ async function main() {
   
   const config: IngesterConfig = {
     minConfidence: Number.parseInt(minConfidence),
-    confidenceAlgorithmVersion: confidenceAlgorithmVersion
+    confidenceAlgorithmVersion: confidenceAlgorithmVersion,
+    defaultWaitInterval: Number.parseInt(defaultWaitInterval)
   }
   const ingester = new Ingester(config, client)
   let ingestStatusByYear = new Map()

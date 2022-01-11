@@ -1,4 +1,5 @@
 export default interface IngesterConfig {
   minConfidence: Number,
-  confidenceAlgorithmVersion: string
+  confidenceAlgorithmVersion: string,
+  defaultWaitInterval: number
 }

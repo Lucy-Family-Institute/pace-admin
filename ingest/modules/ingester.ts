@@ -39,6 +39,7 @@ export class Ingester {
   normedPersonMutex: Mutex
   confirmedAuthorMutex: Mutex
   pubExistsMutex: Mutex
+  personPubExistsMutex: Mutex
   config: IngesterConfig
   pubmedDS: PubMedDataSource
   semanticScholarDS: SemanticScholarDataSource
@@ -51,6 +52,7 @@ export class Ingester {
     this.normedPersonMutex = new Mutex()
     this.confirmedAuthorMutex = new Mutex()
     this.pubExistsMutex = new Mutex()
+    this.personPubExistsMutex = new Mutex()
     const pubmedConfig : DataSourceConfig = {
       baseUrl: process.env.PUBMED_BASE_URL,
       queryUrl: process.env.PUBMED_QUERY_URL,
@@ -135,10 +137,10 @@ export class Ingester {
     }
   }
 
-  async insertPublicationAndAuthors (title, doi, csl, authors, sourceName, sourceId, sourceMetadata, minPublicationYear?) {
+  async insertPublicationAndAuthors (title, doi, csl: Csl, authors, sourceName, sourceId, sourceMetadata, minPublicationYear?) {
     //console.log(`trying to insert pub: ${JSON.stringify(title,null,2)}, ${JSON.stringify(doi,null,2)}`)
     try  {
-      const publicationYear = Csl.getPublicationYear (csl)
+      const publicationYear = Csl.getPublicationYear(csl)
       if (minPublicationYear != undefined && publicationYear < minPublicationYear) {
         console.log(`Skipping adding publication from year: ${publicationYear}`)
         return
@@ -148,11 +150,11 @@ export class Ingester {
         title: title,
         doi: doi,
         year: publicationYear,
-        csl: csl,  // put these in as JSONB
+        csl: csl.valueOf(),  // put these in as JSONB
         source_name: sourceName,
         source_id: sourceId,
         source_metadata: sourceMetadata, // put these in as JSONB,
-        csl_string: JSON.stringify(csl)
+        csl_string: JSON.stringify(csl.valueOf())
       }
       // console.log(`Writing publication: ${JSON.stringify(publication, null, 2)}`)
       const mutatePubResult = await this.client.mutate(
@@ -187,9 +189,11 @@ export class Ingester {
       throw error
     }
   }
+
   async getPersonPublicationIdIfAlreadyInDB (personId, publicationId) : Promise<number> {
     const queryResult = await this.client.query(readPersonPublicationByPersonIdPubId(personId, publicationId))
     if (queryResult.data.persons_publications.length > 0) {
+      // console.log(`Person pubs found: ${JSON.stringify(queryResult.data.persons_publications, null, 2)}`)
       return queryResult.data.persons_publications[0].id
     } else {
       return undefined
@@ -197,10 +201,10 @@ export class Ingester {
   }
 
   // returns publication id if exists, otherwise undefined
-  async getPublicationIdIfAlreadyInDB (doi, sourceId, csl, sourceName) : Promise<number> {
+  async getPublicationIdIfAlreadyInDB (doi, sourceId, csl: Csl, sourceName) : Promise<number> {
     let foundPub = false
     let publicationId
-    const title = csl.title
+    const title = csl.valueOf()['title']
     const publicationYear = Csl.getPublicationYear(csl)
     if (doi !== null){
       const queryResult = await this.client.query(readPublicationsByDoi(doi))
@@ -295,6 +299,7 @@ export class Ingester {
     // only do something if the first call on this object
     await this.initializeNormedPersons()
     const testAuthors = this.normedPersons
+    const thisIngester = this
     let publicationId: number
     let pubStatus: PublicationStatus
 
@@ -380,7 +385,7 @@ export class Ingester {
           publicationId = await this.getPublicationIdIfAlreadyInDB(checkDoi, sourceId, csl, normedPub.datasourceName)
           if (!publicationId) {
             console.log(`Inserting Publication DOI: ${normedPub.doi} from source: ${normedPub.datasourceName}`)
-            publicationId = await this.insertPublicationAndAuthors(csl.valueOf()['title'], checkDoi, csl, authors, normedPub.datasourceName, sourceId, sourceMetadata)
+            publicationId = await this.insertPublicationAndAuthors(normedPub.title, checkDoi, csl, authors, normedPub.datasourceName, sourceId, sourceMetadata)
           } else {
             pubStatus = new PublicationStatus(normedPub,PublicationStatusValue.SKIPPED,publicationId)
           }
@@ -390,28 +395,34 @@ export class Ingester {
           return pubStatus
         }
 
+        let loopCounter2 = 0
+        const defaultWaitInterval = this.config.defaultWaitInterval
         await pMap(_.keys(matchedPersons), async function (personId){
           try {
             const confidenceSet: ConfidenceSet = matchedPersons[personId]
             loopCounter2 += 1
             //have each wait a pseudo-random amount of time between 1-5 seconds
-            await randomWait(loopCounter2)
+            await randomWait(defaultWaitInterval)
             let newPersonPubId
-            await this.personPubExistsMutex.dispatch( async () => {
+            await thisIngester.personPubExistsMutex.dispatch( async () => {
               // returns 
-              newPersonPubId = this.getPersonPublicationIdIfAlreadyInDB(personId, publicationId)
+              // console.log(`Checking if person publication person id: ${personId} publication id: ${publicationId} already exists...`)
+              newPersonPubId = await thisIngester.getPersonPublicationIdIfAlreadyInDB(personId, publicationId)
               if (!newPersonPubId) {
-                const mutateResult = await this.client.mutate(
+                // sconsole.log(`Inserting person publication person id: ${personId} publication id: ${publicationId}`)
+                const mutateResult = await thisIngester.client.mutate(
                   insertPersonPublication(personId, publicationId, confidenceSet.confidenceTotal)
                 )
                 newPersonPubId = await mutateResult.data.insert_persons_publications.returning[0]['id']
+              } else {
+                console.log(`Warning: Person publication already found for person id: ${personId} publication id: ${publicationId} person Pub id: ${newPersonPubId}`)
               }
             })
 
             if (newPersonPubId) {
               // now insert confidence sets
               // use personpubid and matched person from above to insert
-              await this.calculateConfidence.insertConfidenceSetToDB(confidenceSet, newPersonPubId)
+              await thisIngester.calculateConfidence.insertConfidenceSetToDB(confidenceSet, newPersonPubId)
             }
           } catch (error) {
             const errorMessage = `Error on add person id ${JSON.stringify(personId,null,2)} to publication id: ${publicationId}`
@@ -424,7 +435,6 @@ export class Ingester {
 
         //console.log(`Publication Id: ${publicationId} Matched Persons count: ${_.keys(matchedPersons).length}`)
         // now insert a person publication record for each matched Person
-        let loopCounter2 = 0
         pubStatus = new PublicationStatus(normedPub, PublicationStatusValue.ADDED, publicationId)
       } else {
         if (_.keys(matchedPersons).length <= 0){
