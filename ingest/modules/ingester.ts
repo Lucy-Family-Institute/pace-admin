@@ -30,7 +30,8 @@ import readPersonPublication from '../gql/readPersonPublication'
 import readPersonPublicationByPersonIdPubId from '../gql/readPersonPublicationByPersonIdPubId'
 const getIngestFilePaths = require('../getIngestFilePaths');
 import IngestStatus from './ingestStatus'
-import { PublicationStatus, PublicationStatusValue } from './publicationStatus'
+import { ConfidenceSetStatusValue, PersonPublicationStatusValue, PublicationStatus, PublicationStatusValue } from './publicationStatus'
+import { getTsBuildInfoEmitOutputFilePath, isArrayBindingPattern } from 'typescript'
 export class Ingester {
   client: ApolloClient<NormalizedCacheObject>
   normedPersons: Array<NormedPerson>
@@ -269,7 +270,7 @@ export class Ingester {
     return _.values(pubsByKey)
   }
 
-  async ingest (publications: NormedPublication[], dedupByDoi: boolean = false, threadCount: number = 1, waitInterval: number = 1000): Promise<IngestStatus> {
+  async ingest (publications: NormedPublication[], checkNewPersonMatches: boolean, overwriteConfidenceSets: boolean, dedupByDoi: boolean = false, threadCount: number = 1, waitInterval: number = 1000): Promise<IngestStatus> {
     let ingestStatus = new IngestStatus()
     // do for loop
     let dedupedPubs: NormedPublication[]
@@ -282,11 +283,14 @@ export class Ingester {
     await pMap(dedupedPubs, async (publication, index) => {
       try {
         console.log(`Ingesting publication count: ${index+1} of ${dedupedPubs.length}`)
-        const pubStatus: PublicationStatus = await this.ingestNormedPublication(publication)
+        const pubStatus: PublicationStatus = await this.ingestNormedPublication(publication, checkNewPersonMatches, overwriteConfidenceSets)
         ingestStatus.log(pubStatus)
       } catch (error) {
         const errorMessage = `Error encountered on ingest of publication title: ${publication.title}, error: ${error}`
-        const pubStatus = new PublicationStatus(publication, PublicationStatusValue.FAILED, -1, errorMessage)
+        const publicationStatusValue = PublicationStatusValue.FAILED_ADD_PUBLICATION
+        const publicationId = -1
+        // only create object when want to halt execution
+        const pubStatus = new PublicationStatus(publication, publicationId, errorMessage, publicationStatusValue)
         ingestStatus.log(pubStatus)
         console.log(errorMessage)
       }
@@ -295,13 +299,16 @@ export class Ingester {
   }
 
   // returns the publication id of the ingested publication
-  async ingestNormedPublication (normedPub: NormedPublication): Promise<PublicationStatus> {
+  async ingestNormedPublication (normedPub: NormedPublication, checkNewPersonMatches: boolean, overwriteConfidenceSets: boolean): Promise<PublicationStatus> {
     // only do something if the first call on this object
     await this.initializeNormedPersons()
     const testAuthors = this.normedPersons
     const thisIngester = this
     let publicationId: number
     let pubStatus: PublicationStatus
+    let publicationStatusValue: PublicationStatusValue
+    let personPublicationStatusValue: PersonPublicationStatusValue
+    let confidenceSetStatusValue: ConfidenceSetStatusValue
 
     let csl: Csl = undefined
     try {
@@ -381,15 +388,27 @@ export class Ingester {
           checkDoi = null
         }
 
-        await this.pubExistsMutex.dispatch( async () => {
-          publicationId = await this.getPublicationIdIfAlreadyInDB(checkDoi, sourceId, csl, normedPub.datasourceName)
-          if (!publicationId) {
-            console.log(`Inserting Publication DOI: ${normedPub.doi} from source: ${normedPub.datasourceName}`)
-            publicationId = await this.insertPublicationAndAuthors(normedPub.title, checkDoi, csl, authors, normedPub.datasourceName, sourceId, sourceMetadata)
-          } else {
-            pubStatus = new PublicationStatus(normedPub,PublicationStatusValue.SKIPPED,publicationId)
-          }
-        })
+        try {
+          await this.pubExistsMutex.dispatch( async () => {
+            publicationId = await this.getPublicationIdIfAlreadyInDB(checkDoi, sourceId, csl, normedPub.datasourceName)
+            if (!publicationId) {
+              console.log(`Inserting Publication DOI: ${normedPub.doi} from source: ${normedPub.datasourceName}`)
+              publicationId = await this.insertPublicationAndAuthors(normedPub.title, checkDoi, csl, authors, normedPub.datasourceName, sourceId, sourceMetadata)
+              publicationStatusValue = PublicationStatusValue.ADDED_PUBLICATION
+            } else {
+              const warningMessage = `Warning skipping add existing publication for DOI: ${normedPub.doi} from source: ${normedPub.datasourceName} title: ${normedPub.title}`
+              publicationStatusValue = PublicationStatusValue.SKIPPED_ADD_PUBLICATION
+              if (!checkNewPersonMatches && !overwriteConfidenceSets) {
+                pubStatus = new PublicationStatus(normedPub, publicationId, warningMessage, publicationStatusValue, personPublicationStatusValue, confidenceSetStatusValue)
+              }
+            }
+          })
+        } catch (error) {
+          const errorMessage = `Failed to insert publication title: ${normedPub.title} error: ${error}`
+          publicationStatusValue = PublicationStatusValue.FAILED_ADD_PUBLICATION
+          // only create object when want to halt execution
+          pubStatus = new PublicationStatus(normedPub, publicationId, errorMessage, publicationStatusValue, personPublicationStatusValue, confidenceSetStatusValue)
+        }
 
         if (pubStatus) {
           return pubStatus
@@ -404,26 +423,43 @@ export class Ingester {
             //have each wait a pseudo-random amount of time between 1-5 seconds
             await randomWait(defaultWaitInterval)
             let newPersonPubId
-            await thisIngester.personPubExistsMutex.dispatch( async () => {
-              // returns 
-              // console.log(`Checking if person publication person id: ${personId} publication id: ${publicationId} already exists...`)
-              newPersonPubId = await thisIngester.getPersonPublicationIdIfAlreadyInDB(personId, publicationId)
-              if (!newPersonPubId) {
-                // sconsole.log(`Inserting person publication person id: ${personId} publication id: ${publicationId}`)
-                const mutateResult = await thisIngester.client.mutate(
-                  insertPersonPublication(personId, publicationId, confidenceSet.confidenceTotal)
-                )
-                newPersonPubId = await mutateResult.data.insert_persons_publications.returning[0]['id']
-              } else {
-                console.log(`Warning: Person publication already found for person id: ${personId} publication id: ${publicationId} person Pub id: ${newPersonPubId}`)
-              }
-            })
-
-            if (newPersonPubId) {
-              // now insert confidence sets
-              // use personpubid and matched person from above to insert
-              await thisIngester.calculateConfidence.insertConfidenceSetToDB(confidenceSet, newPersonPubId)
+            try {
+              await thisIngester.personPubExistsMutex.dispatch( async () => {
+                // returns 
+                // console.log(`Checking if person publication person id: ${personId} publication id: ${publicationId} already exists...`)
+                newPersonPubId = await thisIngester.getPersonPublicationIdIfAlreadyInDB(personId, publicationId)
+                if (!newPersonPubId) {
+                  // sconsole.log(`Inserting person publication person id: ${personId} publication id: ${publicationId}`)
+                  const mutateResult = await thisIngester.client.mutate(
+                    insertPersonPublication(personId, publicationId, confidenceSet.confidenceTotal)
+                  )
+                  newPersonPubId = await mutateResult.data.insert_persons_publications.returning[0]['id']
+                  personPublicationStatusValue = PersonPublicationStatusValue.ADDED_PERSON_PUBLICATIONS
+                } else {
+                  console.log(`Warning: Person publication already found for person id: ${personId} publication id: ${publicationId} person Pub id: ${newPersonPubId}`)
+                }
+              })
+            } catch (error) {
+              personPublicationStatusValue = PersonPublicationStatusValue.FAILED_ADD_PERSON_PUBLICATIONS
+              pubStatus = new PublicationStatus(normedPub, publicationId, errorMessage, publicationStatusValue, personPublicationStatusValue, confidenceSetStatusValue)
             }
+            if (!personPublicationStatusValue) {
+              const warningMessage = `Warning: No new person publications added for publication id: ${publicationId}`
+              personPublicationStatusValue = PersonPublicationStatusValue.SKIPPED_ADD_PERSON_PUBLICATIONS
+              if (!overwriteConfidenceSets) {
+                pubStatus = new PublicationStatus(normedPub, publicationId, warningMessage, publicationStatusValue, personPublicationStatusValue, confidenceSetStatusValue)
+              }
+            }
+
+            if (pubStatus) {
+              return pubStatus
+            }
+
+            // if (newPersonPubId) {
+            //   // now insert confidence sets
+            //   // use personpubid and matched person from above to insert
+            //   await thisIngester.calculateConfidence.insertConfidenceSetToDB(confidenceSet, newPersonPubId)
+            // }
           } catch (error) {
             const errorMessage = `Error on add person id ${JSON.stringify(personId,null,2)} to publication id: ${publicationId}`
             throw (error)
@@ -435,16 +471,20 @@ export class Ingester {
 
         //console.log(`Publication Id: ${publicationId} Matched Persons count: ${_.keys(matchedPersons).length}`)
         // now insert a person publication record for each matched Person
-        pubStatus = new PublicationStatus(normedPub, PublicationStatusValue.ADDED, publicationId)
+        pubStatus = new PublicationStatus(normedPub, publicationId, undefined, publicationStatusValue, personPublicationStatusValue, confidenceSetStatusValue)
       } else {
         if (_.keys(matchedPersons).length <= 0){
           errorMessage = `No author match found for ${normedPub.doi} and not added to DB`
-          pubStatus = new PublicationStatus(normedPub, PublicationStatusValue.FAILED, -1, errorMessage)
+          publicationStatusValue = PublicationStatusValue.FAILED_ADD_PUBLICATION_NO_PERSON_MATCH
+          publicationId = -1
+          pubStatus = new PublicationStatus(normedPub, publicationId, errorMessage, publicationStatusValue, personPublicationStatusValue, confidenceSetStatusValue)
         }
       }
     } else {
       errorMessage = `${normedPub.doi} and not added to DB with unknown type ${csl.valueOf()['type']} or no title defined in DOI csl record` //, csl is: ${JSON.stringify(csl, null, 2)}`
-      pubStatus = new PublicationStatus(normedPub, PublicationStatusValue.FAILED, -1, errorMessage)
+      publicationStatusValue = PublicationStatusValue.FAILED_ADD_PUBLICATION_UNKNOWN_PUB_TYPE
+      publicationId = -1
+      pubStatus = new PublicationStatus(normedPub, publicationId, errorMessage, publicationStatusValue, personPublicationStatusValue, confidenceSetStatusValue)
       console.log(errorMessage)
     }
     if (!pubStatus) {
@@ -453,14 +493,14 @@ export class Ingester {
     return pubStatus
   }
 
-  async ingestFromFiles (dataDirPath: string, manifestFilePath: string, dedupByDoi: boolean): Promise<IngestStatus> {
+  async ingestFromFiles (dataDirPath: string, manifestFilePath: string, checkNewPersonMatches: boolean, overwriteConfidenceSets: boolean, dedupByDoi: boolean): Promise<IngestStatus> {
     // create master manifest of unique publications
     let count = 0
     let ingestStatus: IngestStatus
     try {
       // get normed publications from filedir and manifest
       const normedPubs: NormedPublication[] = await NormedPublication.loadFromCSV(manifestFilePath, dataDirPath)
-      ingestStatus = await this.ingest(normedPubs, dedupByDoi)
+      ingestStatus = await this.ingest(normedPubs, checkNewPersonMatches, overwriteConfidenceSets, dedupByDoi)
       // console.log(`Ingest status is: ${JSON.stringify(ingestStatus)}`)
     } catch (error) {
       console.log(`Error encountered on ingest publication with paths manifest: '${manifestFilePath}' data dir path: '${dataDirPath}'`)

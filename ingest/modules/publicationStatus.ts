@@ -1,9 +1,23 @@
 import NormedPublication from "./normedPublication"
 
 export enum PublicationStatusValue {
-  ADDED,
-  SKIPPED,
-  FAILED
+  ADDED_PUBLICATION,
+  SKIPPED_ADD_PUBLICATION,
+  FAILED_ADD_PUBLICATION,
+  FAILED_ADD_PUBLICATION_NO_PERSON_MATCH,
+  FAILED_ADD_PUBLICATION_UNKNOWN_PUB_TYPE
+}
+
+export enum PersonPublicationStatusValue {
+  ADDED_PERSON_PUBLICATIONS,
+  SKIPPED_ADD_PERSON_PUBLICATIONS,
+  FAILED_ADD_PERSON_PUBLICATIONS
+}
+
+export enum ConfidenceSetStatusValue {
+  ADDED_CONFIDENCE_SETS,
+  SKIPPED_ADD_CONFIDENCE_SETS,
+  FAILED_ADD_CONFIDENCE_SETS
 }
 
 export class PublicationStatus {
@@ -18,10 +32,14 @@ export class PublicationStatus {
   bibTex?: string			
   publicationId?: number
   errorMessage?: string
-  statusValue: number
-  status: string
+  publicationStatusValue: number
+  publicationStatus: string
+  personPublicationStatusValue?: number
+  personPublicationStatus?: string
+  confidenceSetStatusValue?: number
+  confidenceSetStatus?: string
       
-  constructor (normedPub: NormedPublication, value: PublicationStatusValue, publicationId: number, errorMessage?: string) {
+  constructor (normedPub: NormedPublication, publicationId: number, errorMessage: string, publicationStatusValue: PublicationStatusValue, personPublicationStatusValue?: PersonPublicationStatusValue, confidenceSetStatusValue?: ConfidenceSetStatusValue) {
     this.sourceName = normedPub.datasourceName
     this.sourceId = normedPub.sourceId
     this.doi = normedPub.doi
@@ -37,7 +55,23 @@ export class PublicationStatus {
     if (errorMessage) {
       this.errorMessage = errorMessage
     }
-    this.statusValue = value
-    this.status = PublicationStatusValue[value]
+    this.publicationStatusValue = publicationStatusValue
+    this.publicationStatus = PublicationStatusValue[publicationStatusValue]
+
+    if (personPublicationStatusValue) {
+      this.personPublicationStatusValue = personPublicationStatusValue
+      this.personPublicationStatus = PersonPublicationStatusValue[personPublicationStatusValue]
+    } else {
+      this.personPublicationStatusValue = undefined
+      this.personPublicationStatus = undefined
+    }
+
+    if (confidenceSetStatusValue) {
+      this.confidenceSetStatusValue = confidenceSetStatusValue
+      this.confidenceSetStatus = ConfidenceSetStatusValue[confidenceSetStatusValue]
+    } else {
+      this.confidenceSetStatusValue = undefined
+      this.confidenceSetStatus = undefined
+    }
   }
 }

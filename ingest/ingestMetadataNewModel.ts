@@ -1,4 +1,4 @@
-import _, { min } from 'lodash'
+import _, { min, truncate } from 'lodash'
 import pMap from 'p-map'
 import dotenv from 'dotenv'
 import path from 'path'
@@ -44,6 +44,32 @@ const getIngestFilePaths = require('./getIngestFilePaths');
 const minConfidence = process.env.INGESTER_MIN_CONFIDENCE
 const confidenceAlgorithmVersion = process.env.INGESTER_CONFIDENCE_ALGORITHM
 const defaultWaitInterval = process.env.INGESTER_DEFAULT_WAIT_INTERVAL
+const checkForNewPersonMatches = process.env.INGESTER_CHECK_FOR_NEW_PERSON_MATCHES
+const overwriteConfidenceSets = process.env.INGESTER_OVERWRITE_CONFIDENCE_SETS
+const outputWarnings = process.env.INGESTER_OUTPUT_WARNINGS
+
+function stringToBoolean(value: string): boolean{
+  let returnVal
+  try {
+    const num = Number.parseInt(value)
+    if (num === 1) {
+      return true
+    } else if (num === 0) {
+      return false
+    } else {
+      throw(`Unknown boolean value encountered, unable to convert value: ${value}.  The value should be formatted as '1', '0', 'true', or 'false'`)
+    }
+  } catch (error) {
+    // try string values of 'false' and 'true' instead
+    if (value && value.toLowerCase() === 'true') {
+      return true
+    } else if (value && value.toLowerCase() === 'false') {
+      return false
+    } else {
+      throw(`Unknown boolean value encountered, unable to convert value: ${value}.  The value should be formatted as '1', '0', 'true', or 'false'`)
+    }
+  }
+}
 
 //returns status map of what was done
 async function main() {
@@ -54,10 +80,13 @@ async function main() {
   const config: IngesterConfig = {
     minConfidence: Number.parseInt(minConfidence),
     confidenceAlgorithmVersion: confidenceAlgorithmVersion,
+    checkForNewPersonMatches: stringToBoolean(checkForNewPersonMatches),
+    overwriteConfidenceSets: stringToBoolean(overwriteConfidenceSets),
+    outputWarnings: stringToBoolean(outputWarnings),
     defaultWaitInterval: Number.parseInt(defaultWaitInterval)
   }
   const ingester = new Ingester(config, client)
-  let ingestStatusByYear = new Map()
+  let ingestStatusByYear: Map<number,IngestStatus> = new Map()
   let ingestStatusMain = new IngestStatus()
   let doiFailed = new Map()
   let combinedFailed: PublicationStatus[] = []
@@ -83,13 +112,20 @@ async function main() {
             // go to parent folder if needed
             dataDir = path.dirname(filePath)
           } 
-          const ingestStatus = await ingester.ingestFromFiles(dataDir, filePath, false)
+          const ingestStatus = await ingester.ingestFromFiles(dataDir, filePath, config.checkForNewPersonMatches, config.overwriteConfidenceSets, false)
           if (!ingestStatusByYear[year]) {
             ingestStatusByYear[year] = new Map()
           }
           ingestStatusByYear[year][fileName] = ingestStatus
           ingestStatusMain = IngestStatus.merge(ingestStatusMain, ingestStatus)
-          combinedFailed = _.concat(combinedFailed, ingestStatus.failed)
+          combinedFailed = _.concat(combinedFailed, ingestStatus.failedAddPublications)
+          combinedFailed = _.concat(combinedFailed, ingestStatus.failedAddPersonPublications)
+          combinedFailed = _.concat(combinedFailed, ingestStatus.failedAddConfidenceSets)
+          if (config.outputWarnings) {
+            combinedFailed = _.concat(combinedFailed, ingestStatus.skippedAddPublications)
+            combinedFailed = _.concat(combinedFailed, ingestStatus.skippedAddPersonPublications)
+            combinedFailed = _.concat(combinedFailed, ingestStatus.skippedAddConfidenceSets)
+          }    
         }
       }, { concurrency: 1 })
     }, { concurrency: 1})
@@ -114,17 +150,46 @@ async function main() {
     }
     _.each(_.keys(ingestStatusByYear[year]), (fileName) => {
       console.log(`DOIs errors for year - '${year}' and file - '${fileName}':\n${JSON.stringify(ingestStatusByYear[year][fileName].errorMessages, null, 2)}`)
-      console.log(`DOIs failed for year - '${year}' and file - '${fileName}': ${ingestStatusByYear[year][fileName].failed.length}`)
-      console.log(`DOIs added for year - '${year}' and file - '${fileName}': ${ingestStatusByYear[year][fileName].added.length}`)
-      console.log(`DOIs skipped for year - '${year}' and file - '${fileName}': ${ingestStatusByYear[year][fileName].skipped.length}`)
+      console.log(`DOIs warnings for year - '${year}' and file - '${fileName}':\n${JSON.stringify(ingestStatusByYear[year][fileName].warningMessages, null, 2)}`)
+      console.log(`DOIs failed add publications for year - '${year}' and file - '${fileName}': ${ingestStatusByYear[year][fileName].failedAddPublications.length}`)
+      console.log(`DOIs added publications for year - '${year}' and file - '${fileName}': ${ingestStatusByYear[year][fileName].addedPublications.length}`)
+      console.log(`DOIs skipped add publications for year - '${year}' and file - '${fileName}': ${ingestStatusByYear[year][fileName].skippedAddPublications.length}`)
+      console.log(`DOIs failed add person publications for year - '${year}' and file - '${fileName}': ${ingestStatusByYear[year][fileName].failedAddPersonPublications.length}`)
+      console.log(`DOIs added person publications for year - '${year}' and file - '${fileName}': ${ingestStatusByYear[year][fileName].addedPersonPublications.length}`)
+      console.log(`DOIs skipped add person publications for year - '${year}' and file - '${fileName}': ${ingestStatusByYear[year][fileName].skippedAddPersonPublications.length}`)
+      console.log(`DOIs failed add confidence sets for year - '${year}' and file - '${fileName}': ${ingestStatusByYear[year][fileName].failedAddConfidenceSets.length}`)
+      console.log(`DOIs added confidence sets for year - '${year}' and file - '${fileName}': ${ingestStatusByYear[year][fileName].addedConfidenceSets.length}`)
+      console.log(`DOIs skipped add confidence sets for year - '${year}' and file - '${fileName}': ${ingestStatusByYear[year][fileName].skippedAddConfidenceSets.length}`)
     })
   }, { concurrency: 1})
   // now output main ingest status
 
   // write combined failure results limited to 1 per doi
-  if (ingestStatusMain && ingestStatusMain.failed.length > 0){
-    const sourceName = ingestStatusMain.failed[0].sourceName
-    const combinedFailedValues = ingestStatusMain.failed
+  if (ingestStatusMain && 
+    (ingestStatusMain.failedAddPublications.length > 0 || 
+    ingestStatusMain.failedAddPersonPublications.length > 0 || 
+    ingestStatusMain.failedAddConfidenceSets.length > 0) ||
+    (outputWarnings && 
+      (ingestStatusMain.skippedAddPublications.length > 0 || 
+      ingestStatusMain.skippedAddPersonPublications.length > 0 || 
+      ingestStatusMain.skippedAddConfidenceSets.length > 0))){
+    let sourceName
+    if (ingestStatusMain.failedAddPublications.length > 0) {
+      sourceName = ingestStatusMain.failedAddPublications[0].sourceName
+    } else if (ingestStatusMain.failedAddPersonPublications.length > 0) {
+      sourceName = ingestStatusMain.failedAddPersonPublications[0].sourceName
+    } else {
+      sourceName = ingestStatusMain.failedAddConfidenceSets[0].sourceName
+    }
+    let combinedFailedValues = []
+    combinedFailedValues = _.concat(combinedFailedValues, ingestStatusMain.failedAddPublications)
+    combinedFailedValues = _.concat(combinedFailedValues, ingestStatusMain.failedAddPersonPublications)
+    combinedFailedValues = _.concat(combinedFailedValues, ingestStatusMain.failedAddConfidenceSets)
+    if (config.outputWarnings) {
+      combinedFailedValues = _.concat(combinedFailedValues, ingestStatusMain.skippedAddPublications)
+      combinedFailedValues = _.concat(combinedFailedValues, ingestStatusMain.skippedAddPersonPublications)
+      combinedFailedValues = _.concat(combinedFailedValues, ingestStatusMain.skippedAddConfidenceSets)
+    }      
     const failedCSVFile = `../data/${sourceName}_all_combined_failed.${moment().format('YYYYMMDDHHmmss')}.csv`
 
     console.log(`Write all failed doi's to csv file: ${failedCSVFile}`)
@@ -136,10 +201,17 @@ async function main() {
     })
 
   }
-  console.log(`DOIs errors all':\n${JSON.stringify(ingestStatusMain.errorMessages, null, 2)}`)
-  console.log(`DOIs failed all: ${ingestStatusMain.failed.length}`)
-  console.log(`DOIs added all: ${ingestStatusMain.added.length}`)
-  console.log(`DOIs skipped all: ${ingestStatusMain.skipped.length}`)
+  console.log(`DOIs errors for all':\n${JSON.stringify(ingestStatusMain.errorMessages, null, 2)}`)
+  console.log(`DOIs warnings for all':\n${JSON.stringify(ingestStatusMain.warningMessages, null, 2)}`)
+  console.log(`DOIs failed add publications for all': ${ingestStatusMain.failedAddPublications.length}`)
+  console.log(`DOIs added publications for all': ${ingestStatusMain.addedPublications.length}`)
+  console.log(`DOIs skipped add publications for all': ${ingestStatusMain.skippedAddPublications.length}`)
+  console.log(`DOIs failed add person publications for all': ${ingestStatusMain.failedAddPersonPublications.length}`)
+  console.log(`DOIs added person publications for all': ${ingestStatusMain.addedPersonPublications.length}`)
+  console.log(`DOIs skipped add person publications for all': ${ingestStatusMain.skippedAddPersonPublications.length}`)
+  console.log(`DOIs failed add confidence sets for all': ${ingestStatusMain.failedAddConfidenceSets.length}`)
+  console.log(`DOIs added confidence sets for all': ${ingestStatusMain.addedConfidenceSets.length}`)
+  console.log(`DOIs skipped add confidence sets for all': ${ingestStatusMain.skippedAddConfidenceSets.length}`)
 }
 
 main()

@@ -28,6 +28,7 @@ import { CalculateConfidence } from './modules/calculateConfidence'
 import { SemanticScholarDataSource } from './modules/semanticScholarDataSource'
 import { WosDataSource } from './modules/wosDataSource'
 import { PubMedDataSource } from './modules/pubmedDataSource'
+import ConfidenceSet from './modules/confidenceSet'
 
 import DataSourceConfig from './modules/dataSourceConfig'
 
@@ -616,7 +617,7 @@ async function loadPersonPapersFromCSV (testPersons: NormedPerson[], paperPath, 
 
           //match paper authors to people
           //console.log(`Testing for Author Matches for DOI: ${doi}`)
-          let matchedPersons = await calculateConfidence.matchPeopleToPaperAuthors(csl, testPersons, confirmedAuthorsByDoi[doi], doiStatus.sourceName)
+          let matchedPersons: Map<number,ConfidenceSet> = await calculateConfidence.matchPeopleToPaperAuthors(csl, testPersons, confirmedAuthorsByDoi[doi], doiStatus.sourceName)
           //console.log(`Person to Paper Matches: ${JSON.stringify(matchedPersons,null,2)}`)
 
           if (_.keys(matchedPersons).length <= 0){
@@ -654,17 +655,17 @@ async function loadPersonPapersFromCSV (testPersons: NormedPerson[], paperPath, 
                   let loopCounter2 = 0
                   await pMap(_.keys(matchedPersons), async function (personId){
                     try {
-                      const person = matchedPersons[personId]
+                      const confSet: ConfidenceSet = matchedPersons[personId]
                       loopCounter2 += 1
                       //have each wait a pseudo-random amount of time between 1-5 seconds
                       await randomWait(loopCounter2)
                       const mutateResult = await client.mutate(
-                        insertPersonPublication(personId, publicationId, person['confidence'])
+                        insertPersonPublication(personId, publicationId, confSet.confidenceTotal)
                       )
 
                       const newPersonPubId = await mutateResult.data.insert_persons_publications.returning[0]['id']
                     } catch (error) {
-                      const errorMessage = `Error on add person id ${JSON.stringify(personId,null,2)} to publication id: ${publicationId}`
+                      const errorMessage = `Error on add person id ${JSON.stringify(personId,null,2)} to publication id: ${publicationId} error: ${error}`
                       if (!failedRecords[doiStatus.sourceName]) failedRecords[doiStatus.sourceName] = []
                       _.each(papersByDoi[doi], (paper) => {
                         if (lessThanMinPublicationYear(paper, doi, minPublicationYear)) {
