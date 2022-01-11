@@ -358,6 +358,7 @@ export class Ingester {
 
       if (_.keys(matchedPersons).length <= 0){
         // try to match against authors from source if nothing found yet
+        // console.log(`No matching authors found from csl, doi: ${normedPub.doi} checking source metadata...`)
         csl.setAuthors(await this.getCSLAuthorsFromSourceMetadata(normedPub.datasourceName, sourceMetadata))
         authors = csl.valueOf()['author']
         // console.log(`After check from source metadata if needed authors are: ${JSON.stringify(csl.author, null, 2)}`)
