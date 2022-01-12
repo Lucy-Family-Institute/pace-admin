@@ -47,6 +47,7 @@ const defaultWaitInterval = process.env.INGESTER_DEFAULT_WAIT_INTERVAL
 const checkForNewPersonMatches = process.env.INGESTER_CHECK_FOR_NEW_PERSON_MATCHES
 const overwriteConfidenceSets = process.env.INGESTER_OVERWRITE_CONFIDENCE_SETS
 const outputWarnings = process.env.INGESTER_OUTPUT_WARNINGS
+const outputPassed = process.env.INGESTER_OUTPUT_PASSED
 
 function stringToBoolean(value: string): boolean{
   let returnVal
@@ -83,13 +84,14 @@ async function main() {
     checkForNewPersonMatches: stringToBoolean(checkForNewPersonMatches),
     overwriteConfidenceSets: stringToBoolean(overwriteConfidenceSets),
     outputWarnings: stringToBoolean(outputWarnings),
+    outputPassed: stringToBoolean(outputPassed),
     defaultWaitInterval: Number.parseInt(defaultWaitInterval)
   }
   const ingester = new Ingester(config, client)
   let ingestStatusByYear: Map<number,IngestStatus> = new Map()
   let ingestStatusMain = new IngestStatus()
   let doiFailed = new Map()
-  let combinedFailed: PublicationStatus[] = []
+  let combinedStatus: PublicationStatus[] = []
 
   let sourceName = undefined
 
@@ -118,14 +120,13 @@ async function main() {
           }
           ingestStatusByYear[year][fileName] = ingestStatus
           ingestStatusMain = IngestStatus.merge(ingestStatusMain, ingestStatus)
-          combinedFailed = _.concat(combinedFailed, ingestStatus.failedAddPublications)
-          combinedFailed = _.concat(combinedFailed, ingestStatus.failedAddPersonPublications)
-          combinedFailed = _.concat(combinedFailed, ingestStatus.failedAddConfidenceSets)
+          combinedStatus = _.concat(combinedStatus, ingestStatus.failedAddPublications)
           if (config.outputWarnings) {
-            combinedFailed = _.concat(combinedFailed, ingestStatus.skippedAddPublications)
-            combinedFailed = _.concat(combinedFailed, ingestStatus.skippedAddPersonPublications)
-            combinedFailed = _.concat(combinedFailed, ingestStatus.skippedAddConfidenceSets)
-          }    
+            combinedStatus = _.concat(combinedStatus, ingestStatus.skippedAddPublications)
+          }  
+          if (config.outputPassed) {
+            combinedStatus = _.concat(combinedStatus, ingestStatus.addedPublications)
+          }     
         }
       }, { concurrency: 1 })
     }, { concurrency: 1})
@@ -134,17 +135,17 @@ async function main() {
   // console.log(`DOI Status: ${JSON.stringify(doiStatus,null,2)}`)
   await pMap(_.keys(pathsByYear), async (year) => {
      // write combined failure results limited to 1 per doi
-     if (combinedFailed && _.keys(combinedFailed).length > 0){
-      const sourceName = combinedFailed[0].sourceName
-      const combinedFailedValues = _.values(combinedFailed)
-      const failedCSVFile = `../data/${sourceName}_${year}_combined_failed.${moment().format('YYYYMMDDHHmmss')}.csv`
+     if (combinedStatus && _.keys(combinedStatus).length > 0){
+      const sourceName = combinedStatus[0].sourceName
+      const combinedStatusValues = _.values(combinedStatus)
+      const statusCSVFile = `../data/${sourceName}_${year}_combined_status.${moment().format('YYYYMMDDHHmmss')}.csv`
 
-      console.log(`Write failed doi's to csv file: ${failedCSVFile}`)
+      console.log(`Write status of doi's to csv file: ${statusCSVFile}, output warnings: ${config.outputWarnings}, output passed: ${config.outputPassed}`)
       // console.log(`Failed records are: ${JSON.stringify(failedRecords[sourceName], null, 2)}`)
       //write data out to csv
       await writeCsv({
-        path: failedCSVFile,
-        data: combinedFailedValues,
+        path: statusCSVFile,
+        data: combinedStatusValues,
       })
 
     }
@@ -181,23 +182,22 @@ async function main() {
     } else {
       sourceName = ingestStatusMain.failedAddConfidenceSets[0].sourceName
     }
-    let combinedFailedValues = []
-    combinedFailedValues = _.concat(combinedFailedValues, ingestStatusMain.failedAddPublications)
-    combinedFailedValues = _.concat(combinedFailedValues, ingestStatusMain.failedAddPersonPublications)
-    combinedFailedValues = _.concat(combinedFailedValues, ingestStatusMain.failedAddConfidenceSets)
+    let combinedStatusValues = []
+    combinedStatusValues = _.concat(combinedStatusValues, ingestStatusMain.failedAddPublications)
     if (config.outputWarnings) {
-      combinedFailedValues = _.concat(combinedFailedValues, ingestStatusMain.skippedAddPublications)
-      combinedFailedValues = _.concat(combinedFailedValues, ingestStatusMain.skippedAddPersonPublications)
-      combinedFailedValues = _.concat(combinedFailedValues, ingestStatusMain.skippedAddConfidenceSets)
-    }      
-    const failedCSVFile = `../data/${sourceName}_all_combined_failed.${moment().format('YYYYMMDDHHmmss')}.csv`
+      combinedStatusValues = _.concat(combinedStatusValues, ingestStatusMain.skippedAddPublications)
+    } 
+    if (config.outputPassed) {
+      combinedStatusValues = _.concat(combinedStatusValues, ingestStatusMain.addedPublications)
+    }     
+    const statusCSVFile = `../data/${sourceName}_all_combined_status.${moment().format('YYYYMMDDHHmmss')}.csv`
 
-    console.log(`Write all failed doi's to csv file: ${failedCSVFile}`)
+    console.log(`Write all doi status to csv file: ${statusCSVFile}, output warnings: ${config.outputWarnings}, output passed: ${config.outputPassed}`)
     // console.log(`Failed records are: ${JSON.stringify(failedRecords[sourceName], null, 2)}`)
     //write data out to csv
     await writeCsv({
-      path: failedCSVFile,
-      data: combinedFailedValues,
+      path: statusCSVFile,
+      data: combinedStatusValues,
     })
 
   }

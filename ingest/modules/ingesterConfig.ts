@@ -4,5 +4,6 @@ export default interface IngesterConfig {
   checkForNewPersonMatches: boolean,
   overwriteConfidenceSets: boolean,
   outputWarnings: boolean,
+  outputPassed: boolean,
   defaultWaitInterval: number
 }
