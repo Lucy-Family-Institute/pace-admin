@@ -58,7 +58,7 @@ export class PublicationStatus {
     this.publicationStatusValue = publicationStatusValue
     this.publicationStatus = PublicationStatusValue[publicationStatusValue]
 
-    if (personPublicationStatusValue) {
+    if (personPublicationStatusValue !== undefined) {
       this.personPublicationStatusValue = personPublicationStatusValue
       this.personPublicationStatus = PersonPublicationStatusValue[personPublicationStatusValue]
     } else {
@@ -66,7 +66,7 @@ export class PublicationStatus {
       this.personPublicationStatus = undefined
     }
 
-    if (confidenceSetStatusValue) {
+    if (confidenceSetStatusValue !== undefined) {
       this.confidenceSetStatusValue = confidenceSetStatusValue
       this.confidenceSetStatus = ConfidenceSetStatusValue[confidenceSetStatusValue]
     } else {

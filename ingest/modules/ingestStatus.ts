@@ -46,7 +46,7 @@ export default class IngestStatus {
         }
       }
 
-      if (pubStatus.personPublicationStatusValue) {
+      if (pubStatus.personPublicationStatusValue !== undefined) {
         if (pubStatus.personPublicationStatusValue === PersonPublicationStatusValue.ADDED_PERSON_PUBLICATIONS) {
           this.addedPersonPublications.push(pubStatus)
         } else if (pubStatus.personPublicationStatusValue === PersonPublicationStatusValue.SKIPPED_ADD_PERSON_PUBLICATIONS) {
@@ -64,7 +64,7 @@ export default class IngestStatus {
         }
       }
 
-      if (pubStatus.confidenceSetStatusValue) {
+      if (pubStatus.confidenceSetStatusValue !== undefined) {
         if (pubStatus.confidenceSetStatusValue === ConfidenceSetStatusValue.ADDED_CONFIDENCE_SETS) {
           this.addedConfidenceSets.push(pubStatus)
         } else if (pubStatus.confidenceSetStatusValue === ConfidenceSetStatusValue.SKIPPED_ADD_CONFIDENCE_SETS) {
