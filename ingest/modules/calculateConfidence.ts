@@ -266,8 +266,7 @@ export class CalculateConfidence {
         // console.log(`passed confidence tests are: ${JSON.stringify(passedConfidenceTestsWithConf, null, 2)}`)
         //check if persons last name in author list, if so mark a match
         //add person to map with confidence value > 0
-        if (confidenceTotal > 0) {
-          // console.log(`Match found for Author: ${author.family}, ${author.given}`)
+        if (confidenceTotal > 0 && confidenceTotal >= this.minConfidence) {
           const newConfSet: ConfidenceSet = {
             person: person,
             confidenceTests: passedConfidenceTestsWithConf,

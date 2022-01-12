@@ -77,9 +77,9 @@ async function main() {
 
   const pathsByYear = await getIngestFilePaths('../config/ingestFilePaths.json')
 
-  
+
   const config: IngesterConfig = {
-    minConfidence: Number.parseInt(minConfidence),
+    minConfidence: Number.parseFloat(minConfidence),
     confidenceAlgorithmVersion: confidenceAlgorithmVersion,
     checkForNewPersonMatches: stringToBoolean(checkForNewPersonMatches),
     overwriteConfidenceSets: stringToBoolean(overwriteConfidenceSets),
