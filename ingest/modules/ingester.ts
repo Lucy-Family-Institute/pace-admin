@@ -536,7 +536,7 @@ export class Ingester {
           personPublicationStatusValue = (addedPersons ? PersonPublicationStatusValue.ADDED_PERSON_PUBLICATIONS : PersonPublicationStatusValue.SKIPPED_ADD_PERSON_PUBLICATIONS)
           confidenceSetStatusValue = (addedConfidenceSets ? ConfidenceSetStatusValue.ADDED_CONFIDENCE_SETS : ConfidenceSetStatusValue.SKIPPED_ADD_CONFIDENCE_SETS)          
           pubStatus = new PublicationStatus(normedPub, publicationId, message, publicationStatusValue, personPublicationStatusValue, confidenceSetStatusValue)
-          console.log(`Everything passed added pub: ${addedPub}, added person pubs: ${addedPersons}, added conf sets: ${addedConfidenceSets}, pubStatus: ${PublicationStatusValue[publicationStatusValue]}, personPubStatus: ${PersonPublicationStatusValue[personPublicationStatusValue]}, confSetStatus: ${ConfidenceSetStatusValue[confidenceSetStatusValue]}`)
+          console.log(`Everything passed DOI: ${normedPub.doi} from source: ${normedPub.datasourceName}, added pub: ${addedPub}, added person pubs: ${addedPersons}, added conf sets: ${addedConfidenceSets}, pubStatus: ${PublicationStatusValue[publicationStatusValue]}, personPubStatus: ${PersonPublicationStatusValue[personPublicationStatusValue]}, confSetStatus: ${ConfidenceSetStatusValue[confidenceSetStatusValue]}`)
         }
       } else {
         if (_.keys(matchedPersons).length <= 0){
