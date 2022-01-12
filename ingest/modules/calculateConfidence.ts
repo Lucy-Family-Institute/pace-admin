@@ -904,7 +904,7 @@ testAuthorAffiliation (author: NormedPerson, publicationAuthorMap: Map<string, N
       version: this.confidenceAlgorithmVersion
     }
     //insert confidence set
-    const resultInsertConfidenceSet = await client.mutate(insertConfidenceSets([newConfidenceSet]))
+    const resultInsertConfidenceSet = await client.mutate(insertConfidenceSets([insertConfidenceSet]))
     try {
       if (resultInsertConfidenceSet.data.insert_confidencesets.returning.length > 0) {
         const confidenceSetId = 0+parseInt(`${ resultInsertConfidenceSet.data.insert_confidencesets.returning[0].id }`)
