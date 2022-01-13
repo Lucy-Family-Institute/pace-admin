@@ -18,6 +18,10 @@ export default class Csl {
     this.cslJson['author'] = authors
   }
 
+  setDoi(doi) {
+    this.cslJson['DOI'] = doi
+  }
+
   public static cslToNormedAuthors (cslAuthors): NormedAuthor[] {
     let normedAuthors: NormedAuthor[] = []
     _.each(cslAuthors, (author) => {

@@ -6,5 +6,7 @@ export default interface IngesterConfig {
   outputWarnings: boolean,
   outputPassed: boolean,
   defaultWaitInterval: number
-  confirmedAuthorFileDir: string
+  confirmedAuthorFileDir: string,
+  defaultToBibTex: boolean,
+  dedupByDoi: boolean
 }

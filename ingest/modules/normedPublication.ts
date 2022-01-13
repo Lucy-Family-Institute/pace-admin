@@ -357,39 +357,73 @@ export default class NormedPublication {
     }
   }
 
-  public static async getCsl (normedPub: NormedPublication): Promise<Csl> {
+  public static async getCslByBibTex(normedPub: NormedPublication) : Promise<Csl> {
+    let bibTexStr = undefined
+    let normedBibTex: BibTex = undefined
+    let csl: Csl
+    if (!normedPub.bibtex) {
+      normedBibTex = await NormedPublication.getBibTex(normedPub)
+      // console.log(`Normed bib tex is: ${JSON.stringify(normedBibTex, null, 2)}`)
+      if (normedBibTex) bibTexStr = BibTex.toString(normedBibTex)
+    } else {
+      bibTexStr = normedPub.bibtex
+    }
+    if (bibTexStr) {
+      // console.log(`Trying to get csl from bibtex str doi: ${doi}, for bibtex str ${bibTexStr} found...`)
+      try {
+         csl = await Csl.getCsl(bibTexStr)
+      } catch (error) {
+        // try it without the abstract
+        let newBibTex
+        try {
+          if (normedBibTex) {
+            console.log('Error encountered on bibTex, trying without abstract...')
+            newBibTex = BibTex.toString(normedBibTex, true)
+            csl = await Csl.getCsl(newBibTex)
+          }
+        } catch (error) {
+          console.log(`Errored on csl from bibtex w/ or w/out abstract: ${bibTexStr}, error: ${error}`)
+          throw (error)
+        }
+      }
+    } else {
+      throw ('Bibtex not defined properly')
+    }
+    if (csl && !csl.valueOf()['DOI']) {
+      if (normedBibTex && normedBibTex.doi) {
+        csl.setDoi(normedBibTex.doi)
+      } else if (normedPub.doi) {
+        csl.setDoi(normedPub.doi)
+      }
+    }
+    return csl
+  }
+
+  // if default to bibtex is true then it skips retrieval by doi, and constructs the csl from bibtex
+  public static async getCsl (normedPub: NormedPublication, defaultToBibTex = false): Promise<Csl> {
     let cslRecords = undefined
     let csl: Csl = undefined
     try {
-      csl = await Csl.getCsl(normedPub.doi)
-    } catch (error) {
-      let bibTexStr = undefined
-      let normedBibTex = undefined
-      normedBibTex = await NormedPublication.getBibTex(normedPub)
-      if (normedBibTex) bibTexStr = BibTex.toString(normedBibTex)           
-      if (bibTexStr) {
-        // console.log(`Trying to get csl from bibtex str doi: ${doi}, for bibtex str ${bibTexStr} found...`)
-        try {
-          csl = await Csl.getCsl(bibTexStr)
-        } catch (error) {
-          // try it without the abstract
-          let newBibTex
-          try {
-            if (normedBibTex) {
-              console.log('Error encountered on bibTex, trying without abstract...')
-              newBibTex = BibTex.toString(normedBibTex, true)
-              csl = await Csl.getCsl(newBibTex)
-            }
-          } catch (error) {
-            console.log(`Errored on csl from bibtex w/ or w/out abstract: ${bibTexStr}, error: ${error}`)
-            throw (error)
-          }
-        }
+      if (defaultToBibTex && normedPub.bibtex) {
+        csl = await NormedPublication.getCslByBibTex(normedPub)
       } else {
+        csl = await Csl.getCsl(normedPub.doi)
+      }
+    } catch (error) {
+      try {
+        if (defaultToBibTex && normedPub.bibtex) {
+          console.log(`Throwing the error for doi: ${normedPub.doi}`)
+          throw (error)
+        } else {
+          // try by bibtex
+          csl = await NormedPublication.getCslByBibTex(normedPub)
+        }
+      } catch (error) {
         console.log(`Throwing the error for doi: ${normedPub.doi}`)
         throw (error)
       }
     }
+    // console.log(`Csl found is: ${JSON.stringify(csl, null, 2)}`)
     return csl 
   }
 
@@ -400,7 +434,7 @@ export default class NormedPublication {
     let bib: BibTex = {
       title: normedPub.title,
       journal: normedPub.journalTitle,
-      year: `${date.getFullYear()}`,
+      year: (date ? `${date.getFullYear()}` : ''),
       author: BibTex.getBibTexAuthors(authors),
     }
     
