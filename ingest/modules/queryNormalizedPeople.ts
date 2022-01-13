@@ -1,6 +1,6 @@
-import readPersons from '../../client/src/gql/readPersons'
-import readPersonsByYearAllCenters from '../../client/src/gql/readPersonsByYearAllCenters'
-import readCenterMembers from '../../client/src/gql/readCenterMembers'
+import readPersons from '../gql/readPersons'
+import readPersonsByYearAllCenters from '../gql/readPersonsByYearAllCenters'
+import readCenterMembers from '../gql/readCenterMembers'
 import _ from 'lodash'
 import { ApolloClient } from 'apollo-client'
 import { NormalizedCacheObject } from 'apollo-cache-inmemory'
@@ -36,7 +36,7 @@ interface NormedCenterMember {
   }
 }
 
-function mapToNormedPersons(people: Array<any>) : Array<NormedPerson> {
+export function mapToNormedPersons(people: Array<any>) : Array<NormedPerson> {
   const normedPersons = _.map(people, (person) => {
     const names = []
     names.push({
@@ -70,7 +70,7 @@ function mapToNormedPersons(people: Array<any>) : Array<NormedPerson> {
   return normedPersons
 }
 
-function mapToSimplifiedPeople(people: Array<any>) : Array<SimplifiedPerson> {
+export function mapToSimplifiedPeople(people: Array<any>) : Array<SimplifiedPerson> {
   const simplifiedPersons = _.map(people, (person) => {
     let sp: SimplifiedPerson = {
       id: person.id,

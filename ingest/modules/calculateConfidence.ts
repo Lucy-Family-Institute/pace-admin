@@ -6,7 +6,7 @@ import { createHttpLink } from 'apollo-link-http'
 import fetch from 'node-fetch'
 import humanparser from 'humanparser'
 import readConfidenceTypes from '../gql/readConfidenceTypes'
-import readPersons from '../../client/src/gql/readPersons'
+import readPersons from '../gql/readPersons'
 import readPersonPublicationsConfSetsCount from '../gql/readPersonPublicationsConfSetsCount'
 import readLastPersonPubConfidenceSet from '../gql/readLastPersonPubConfidenceSet'
 import readPersonPublications from '../gql/readPersonPublications'
@@ -24,12 +24,12 @@ import { randomWait } from '../units/randomWait'
 const Fuse = require('fuse.js')
 import dotenv from 'dotenv'
 import readAllNewPersonPublications from '../gql/readAllNewPersonPublications'
-import insertReview from '../../client/src/gql/insertReview'
+import insertReview from '../gql/insertReview'
 import readPersonPublicationsByDoi from '../gql/readPersonPublicationsByDoi'
 
 const getIngestFilePaths = require('../getIngestFilePaths');
 import readPersonPublicationsByYear from '../gql/readPersonPublicationsByYear'
-import { normalizeString, normalizeObjectProperties } from '../units/normalizer'
+import Normalizer from '../units/normalizer'
 import { command as writeCsv } from '../units/writeCsv'
 import NormedPublication from './normedPublication'
 import moment from 'moment'
@@ -356,11 +356,11 @@ export class CalculateConfidence {
   familyNameMatchFuzzy (last, lastKey, nameList){
     // first normalize the diacritics
     const testNameList = _.map(nameList, (name) => {
-      let norm = normalizeObjectProperties(name, [lastKey], { removeSpaces: true })
+      let norm = Normalizer.normalizeObjectProperties(name, [lastKey], { removeSpaces: true })
       return norm
     })
     // normalize last name checking against as well
-    let testLast = normalizeString(last, { removeSpaces: true })
+    let testLast = Normalizer.normalizeString(last, { removeSpaces: true })
     const lastFuzzy = new Fuse(testNameList, {
       caseSensitive: false,
       shouldSort: true,
@@ -378,12 +378,12 @@ export class CalculateConfidence {
     // first normalize the diacritics
     // and if any spaces in search string replace spaces in both fields and search map with underscores for spaces
     const testNameList = _.map(nameList, (name) => {
-      let norm = normalizeObjectProperties(name, [lastKey, firstKey], { removeSpaces: true })
+      let norm = Normalizer.normalizeObjectProperties(name, [lastKey, firstKey], { removeSpaces: true })
       return norm
     })
     // normalize name checking against as well
-    let testLast = normalizeString(searchLast, { removeSpaces: true } )
-    let testFirst = normalizeString(searchFirst, { removeSpaces: true })
+    let testLast = Normalizer.normalizeString(searchLast, { removeSpaces: true } )
+    let testFirst = Normalizer.normalizeString(searchFirst, { removeSpaces: true })
 
     const lastFuzzy = new Fuse(testNameList, {
       caseSensitive: false,
@@ -454,7 +454,7 @@ export class CalculateConfidence {
   }
 
   testIsInitials(name) {
-    let testName = normalizeString(name, {removeSpaces: true, skipLower: true})
+    let testName = Normalizer.normalizeString(name, {removeSpaces: true, skipLower: true})
     if (testName && testName.length <= 2) {
       return true
     } else {

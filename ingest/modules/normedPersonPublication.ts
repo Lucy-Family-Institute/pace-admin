@@ -14,7 +14,7 @@ export default class NormedPersonPublication {
 
   public static getPublicationConfidence (normedPersonPub: NormedPersonPublication): Number {
     if (normedPersonPub.confidenceSet) {
-      return normedPersonPub.confidenceSet.value
+      return normedPersonPub.confidenceSet.confidenceTotal
     } else {
       return normedPersonPub.confidence
     }
