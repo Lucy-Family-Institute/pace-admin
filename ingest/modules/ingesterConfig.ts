@@ -6,4 +6,5 @@ export default interface IngesterConfig {
   outputWarnings: boolean,
   outputPassed: boolean,
   defaultWaitInterval: number
+  confirmedAuthorFileDir: string
 }

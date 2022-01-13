@@ -8,7 +8,7 @@ import { command as writeCsv} from '../units/writeCsv'
 import NormedPerson from './normedPerson'
 import NormedAuthor from './normedAuthor'
 import writeToJSONFile from '../units/writeToJSONFile'
-import { loadJSONFromFile } from '../units/loadJSONFromFile'
+import FsHelper from '../units/fsHelper'
 import BibTex from './bibTex'
 import Csl from './csl'
 import { SemanticScholarDataSource } from './semanticScholarDataSource'
@@ -316,6 +316,37 @@ export default class NormedPublication {
       normed.push(author)
     })
     return normed
+  }
+
+  public static async getConfirmedAuthorsByDoiFromCSV (path) {
+    try {
+      const normedPubs = await NormedPublication.loadFromCSV(path)
+      const normedPubsByDoi = _.groupBy(normedPubs, function(normedPub) {
+        return normedPub.doi
+      })
+      console.log(`Confirmed Papers by DOI Count: ${JSON.stringify(_.keys(normedPubsByDoi).length,null,2)}`)
+
+      //check if confirmed column exists first, if not ignore this step
+      let confirmedAuthorsByDoi = {}
+      if (normedPubsByDoi && _.keys(normedPubsByDoi).length > 0){
+        //get map of DOI's to an array of confirmed authors from the load table
+        confirmedAuthorsByDoi = await NormedPublication.getConfirmedAuthorsByDoi(normedPubsByDoi)
+
+      }
+      return confirmedAuthorsByDoi
+    } catch (error){
+      console.log(`Error on load confirmed authors: ${error}`)
+      return {}
+    }
+  }
+
+  public static async getConfirmedAuthorsByDoi (normedPubsByDoi) {
+    const confirmedAuthorsByDoi = _.mapValues(normedPubsByDoi, function (normedPubs: NormedPublication[]) {
+      return _.mapValues(normedPubs, function (normedPub: NormedPublication) {
+        return normedPub.confirmedAuthors
+      })
+    })
+    return confirmedAuthorsByDoi
   }
 
   public static async getAuthors (normedPub: NormedPublication): Promise<NormedAuthor[]> {

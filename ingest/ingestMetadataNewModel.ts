@@ -6,7 +6,7 @@ import { ApolloClient } from 'apollo-client'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { createHttpLink } from 'apollo-link-http'
 import fetch from 'node-fetch'
-import { isDir, loadDirList, loadJSONFromFile } from './units/loadJSONFromFile'
+import FsHelper from './units/fsHelper'
 import NormedPublication from './modules/normedPublication'
 import { Ingester } from './modules/ingester'
 import moment from 'moment'
@@ -14,6 +14,7 @@ import { PublicationStatus } from './modules/publicationStatus'
 import { command as writeCsv } from './units/writeCsv'
 import IngesterConfig from './modules/ingesterConfig'
 import IngestStatus from './modules/ingestStatus'
+import Normalizer from './units/normalizer'
 
 dotenv.config({
   path: '../.env'
@@ -48,29 +49,7 @@ const checkForNewPersonMatches = process.env.INGESTER_CHECK_FOR_NEW_PERSON_MATCH
 const overwriteConfidenceSets = process.env.INGESTER_OVERWRITE_CONFIDENCE_SETS
 const outputWarnings = process.env.INGESTER_OUTPUT_WARNINGS
 const outputPassed = process.env.INGESTER_OUTPUT_PASSED
-
-function stringToBoolean(value: string): boolean{
-  let returnVal
-  try {
-    const num = Number.parseInt(value)
-    if (num === 1) {
-      return true
-    } else if (num === 0) {
-      return false
-    } else {
-      throw(`Unknown boolean value encountered, unable to convert value: ${value}.  The value should be formatted as '1', '0', 'true', or 'false'`)
-    }
-  } catch (error) {
-    // try string values of 'false' and 'true' instead
-    if (value && value.toLowerCase() === 'true') {
-      return true
-    } else if (value && value.toLowerCase() === 'false') {
-      return false
-    } else {
-      throw(`Unknown boolean value encountered, unable to convert value: ${value}.  The value should be formatted as '1', '0', 'true', or 'false'`)
-    }
-  }
-}
+const confirmedAuthorFileDir = process.env.INGESTER_CONFIRMED_AUTHOR_FILE_DIR
 
 //returns status map of what was done
 async function main() {
@@ -81,11 +60,12 @@ async function main() {
   const config: IngesterConfig = {
     minConfidence: Number.parseFloat(minConfidence),
     confidenceAlgorithmVersion: confidenceAlgorithmVersion,
-    checkForNewPersonMatches: stringToBoolean(checkForNewPersonMatches),
-    overwriteConfidenceSets: stringToBoolean(overwriteConfidenceSets),
-    outputWarnings: stringToBoolean(outputWarnings),
-    outputPassed: stringToBoolean(outputPassed),
-    defaultWaitInterval: Number.parseInt(defaultWaitInterval)
+    checkForNewPersonMatches: Normalizer.stringToBoolean(checkForNewPersonMatches),
+    overwriteConfidenceSets: Normalizer.stringToBoolean(overwriteConfidenceSets),
+    outputWarnings: Normalizer.stringToBoolean(outputWarnings),
+    outputPassed: Normalizer.stringToBoolean(outputPassed),
+    defaultWaitInterval: Number.parseInt(defaultWaitInterval),
+    confirmedAuthorFileDir: confirmedAuthorFileDir
   }
   const ingester = new Ingester(config, client)
   let ingestStatusByYear: Map<number,IngestStatus> = new Map()
@@ -99,35 +79,26 @@ async function main() {
     console.log(`Loading ${year} Publication Data`)
     //load data
     await pMap(pathsByYear[year], async (yearPath) => {
-      let loadPaths = []
-      if (isDir(yearPath)) {
-        loadPaths = loadDirList(yearPath)
-      } else {
-        loadPaths.push(yearPath)
-      }
+      // ignore subdirectories
+      const loadPaths = FsHelper.loadDirPaths(yearPath, true)
       await pMap(loadPaths, async (filePath) => {
         // skip any subdirectories
-        if (!isDir(filePath)){
-          let dataDir = filePath
-          let fileName = path.basename(filePath)
-          if (!isDir(filePath)) {
-            // go to parent folder if needed
-            dataDir = path.dirname(filePath)
-          } 
-          const ingestStatus = await ingester.ingestFromFiles(dataDir, filePath, config.checkForNewPersonMatches, config.overwriteConfidenceSets, false)
-          if (!ingestStatusByYear[year]) {
-            ingestStatusByYear[year] = new Map()
-          }
-          ingestStatusByYear[year][fileName] = ingestStatus
-          ingestStatusMain = IngestStatus.merge(ingestStatusMain, ingestStatus)
-          combinedStatus = _.concat(combinedStatus, ingestStatus.failedAddPublications)
-          if (config.outputWarnings) {
-            combinedStatus = _.concat(combinedStatus, ingestStatus.skippedAddPublications)
-          }  
-          if (config.outputPassed) {
-            combinedStatus = _.concat(combinedStatus, ingestStatus.addedPublications)
-          }     
+        console.log(`Ingesting publications from path: ${filePath}`)
+        const fileName = FsHelper.getFileName(filePath)
+        const dataDir = FsHelper.getParentDir(filePath)
+        const ingestStatus = await ingester.ingestFromFiles(dataDir, filePath, config.checkForNewPersonMatches, config.overwriteConfidenceSets, false)
+        if (!ingestStatusByYear[year]) {
+          ingestStatusByYear[year] = new Map()
         }
+        ingestStatusByYear[year][fileName] = ingestStatus
+        ingestStatusMain = IngestStatus.merge(ingestStatusMain, ingestStatus)
+        combinedStatus = _.concat(combinedStatus, ingestStatus.failedAddPublications)
+        if (config.outputWarnings) {
+          combinedStatus = _.concat(combinedStatus, ingestStatus.skippedAddPublications)
+        }  
+        if (config.outputPassed) {
+          combinedStatus = _.concat(combinedStatus, ingestStatus.addedPublications)
+        }     
       }, { concurrency: 1 })
     }, { concurrency: 1})
   }, { concurrency: 1 }) // these all need to be 1 thread so no collisions on checking if pub already exists if present in multiple files

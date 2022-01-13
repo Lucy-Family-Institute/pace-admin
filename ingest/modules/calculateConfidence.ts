@@ -199,40 +199,6 @@ export class CalculateConfidence {
     }
   }
 
-  async getConfirmedAuthorsByDoi (papersByDoi, csvColumn) {
-    const confirmedAuthorsByDoi = _.mapValues(papersByDoi, function (papers) {
-      return _.mapValues(papers, function (paper) {
-        const unparsedNames = paper[csvColumn]
-        // console.log(`Unparsed names are: ${unparsedNames}`)
-        return NormedPublication.getConfirmedNormedAuthors(unparsedNames)
-      })
-    })
-    return confirmedAuthorsByDoi
-  }
-
-  async getConfirmedAuthorsByDoiFromCSV (path) {
-    try {
-      const papersByDoi = await this.getPapersByDoi(path)
-      const dois = _.keys(papersByDoi)
-      console.log(`Papers by DOI Count: ${JSON.stringify(dois.length,null,2)}`)
-
-      const confirmedAuthorColumn = 'nd author (last, first)'
-      const firstDoiConfirmedList = papersByDoi[dois[0]]
-
-      //check if confirmed column exists first, if not ignore this step
-      let confirmedAuthorsByDoi = {}
-      if (papersByDoi && dois.length > 0 && firstDoiConfirmedList && firstDoiConfirmedList.length > 0 && firstDoiConfirmedList[0][confirmedAuthorColumn]){
-        //get map of DOI's to an array of confirmed authors from the load table
-        confirmedAuthorsByDoi = await this.getConfirmedAuthorsByDoi(papersByDoi, confirmedAuthorColumn)
-
-      }
-      return confirmedAuthorsByDoi
-    } catch (error){
-      console.log(`Error on load confirmed authors: ${error}`)
-      return {}
-    }
-  }
-
   // person map assumed to be a map of simplename to simpleperson object
   // author map assumed to be doi mapped to two arrays: first authors and other authors
   // returns a map of person ids to the person object and confidence value for any persons that matched coauthor attributes

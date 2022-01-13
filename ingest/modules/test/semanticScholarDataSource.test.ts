@@ -6,8 +6,8 @@ import HarvestSet from '../HarvestSet'
 import NormedPerson from '../normedPerson'
 import { randomWait } from '../../units/randomWait'
 import { getDateObject } from '../../units/dateRange'
-import { escapeForRegEx } from '../../units/normalizer'
-import {loadJSONFromFile} from '../..//units/loadJSONFromFile'
+import Normalizer from '../../units/normalizer'
+import FsHelper from '../../units/fsHelper'
 import DataSourceConfig from '../dataSourceConfig'
 
 import dotenv from 'dotenv'
@@ -114,7 +114,7 @@ const semanticScholarDS: SemanticScholarDataSource = new SemanticScholarDataSour
 beforeAll(async () => {
     semanticScholarHarvester = new Harvester(semanticScholarDS)
 
-    defaultPubSourceMetadata = loadJSONFromFile(sampleRecordPath)
+    defaultPubSourceMetadata = FsHelper.loadJSONFromFile(sampleRecordPath)
 
     defaultNormedPerson = {
         id: 94,
@@ -178,7 +178,7 @@ test('test Semantic Scholar getAuthorQuery', () => {
 
 test('test Semantic Scholar semanticScholarDataSource.getCoauthors', async () => {
     expect.hasAssertions()
-    const coauthors = semanticScholarDS.getCoauthors(defaultPubSourceMetadata)
+    const coauthors = SemanticScholarDataSource.getCoauthors(defaultPubSourceMetadata)
     expect(coauthors).toEqual(expectedCoAuthors)
 })
 
