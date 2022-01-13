@@ -50,6 +50,8 @@ const overwriteConfidenceSets = process.env.INGESTER_OVERWRITE_CONFIDENCE_SETS
 const outputWarnings = process.env.INGESTER_OUTPUT_WARNINGS
 const outputPassed = process.env.INGESTER_OUTPUT_PASSED
 const confirmedAuthorFileDir = process.env.INGESTER_CONFIRMED_AUTHOR_FILE_DIR
+const defaultToBibTex = process.env.INGESTER_DEFAULT_TO_BIBTEX
+const dedupByDoi = process.env.INGESTER_DEDUP_BY_DOI
 
 //returns status map of what was done
 async function main() {
@@ -65,7 +67,9 @@ async function main() {
     outputWarnings: Normalizer.stringToBoolean(outputWarnings),
     outputPassed: Normalizer.stringToBoolean(outputPassed),
     defaultWaitInterval: Number.parseInt(defaultWaitInterval),
-    confirmedAuthorFileDir: confirmedAuthorFileDir
+    confirmedAuthorFileDir: confirmedAuthorFileDir,
+    defaultToBibTex: Normalizer.stringToBoolean(defaultToBibTex),
+    dedupByDoi: Normalizer.stringToBoolean(dedupByDoi)
   }
   const ingester = new Ingester(config, client)
   let ingestStatusByYear: Map<number,IngestStatus> = new Map()
@@ -86,7 +90,7 @@ async function main() {
         console.log(`Ingesting publications from path: ${filePath}`)
         const fileName = FsHelper.getFileName(filePath)
         const dataDir = FsHelper.getParentDir(filePath)
-        const ingestStatus = await ingester.ingestFromFiles(dataDir, filePath, config.checkForNewPersonMatches, config.overwriteConfidenceSets, false)
+        const ingestStatus = await ingester.ingestFromFiles(dataDir, filePath)
         if (!ingestStatusByYear[year]) {
           ingestStatusByYear[year] = new Map()
         }
@@ -150,8 +154,14 @@ async function main() {
       sourceName = ingestStatusMain.failedAddPublications[0].sourceName
     } else if (ingestStatusMain.failedAddPersonPublications.length > 0) {
       sourceName = ingestStatusMain.failedAddPersonPublications[0].sourceName
-    } else {
+    } else if (ingestStatusMain.failedAddConfidenceSets.length > 0){
       sourceName = ingestStatusMain.failedAddConfidenceSets[0].sourceName
+    } else if (ingestStatusMain.skippedAddConfidenceSets.length > 0){
+      sourceName = ingestStatusMain.skippedAddConfidenceSets[0].sourceName
+    } else if (ingestStatusMain.skippedAddPublications.length > 0) {
+      sourceName = ingestStatusMain.skippedAddPublications[0].sourceName
+    } else if (ingestStatusMain.skippedAddPersonPublications.length > 0) {
+      sourceName = ingestStatusMain.skippedAddPersonPublications[0].sourceName
     }
     let combinedStatusValues = []
     combinedStatusValues = _.concat(combinedStatusValues, ingestStatusMain.failedAddPublications)
