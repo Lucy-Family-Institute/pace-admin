@@ -32,7 +32,7 @@ import readConfidenceSetByPersonPubId from '../gql/readConfidenceSetByPersonPubI
 const getIngestFilePaths = require('../getIngestFilePaths');
 import IngestStatus from './ingestStatus'
 import { ConfidenceSetStatusValue, PersonPublicationStatusValue, PublicationStatus, PublicationStatusValue } from './publicationStatus'
-import { getTsBuildInfoEmitOutputFilePath, isArrayBindingPattern } from 'typescript'
+import FsHelper from '../units/fsHelper'
 export class Ingester {
   client: ApolloClient<NormalizedCacheObject>
   normedPersons: Array<NormedPerson>
@@ -105,22 +105,23 @@ export class Ingester {
   async initializeConfirmedAuthors() {
     await this.confirmedAuthorMutex.dispatch( async () => {
       if (!this.confirmedAuthorsByDoi) {
-        let confirmedAuthorsByDoiByYear = new Map()
-        const pathsByYear = await getIngestFilePaths("../config/ingestConfidenceReviewFilePaths.json")
+        // is a list of maps from each file loaded, map is doi to confirmed author
+        // will merge them below
+        let confirmedAuthorsByDoiMaps = []
+        // need to check on this as json file loaded with years or just a path
+        const paths = await FsHelper.loadDirPaths(this.config.confirmedAuthorFileDir)
+        // getIngestFilePaths(this.config.confirmedAuthorFileDir)
 
-        await pMap(_.keys(pathsByYear), async (year) => {
-          console.log(`Loading ${year} Confirmed Authors`)
-          //load data
-          await pMap(pathsByYear[year], async (path) => {
-            confirmedAuthorsByDoiByYear[year] = await this.calculateConfidence.getConfirmedAuthorsByDoiFromCSV(path)
-          }, { concurrency: 1})
+        await pMap(paths, async (path) => {
+          console.log(`Loading ${path} Confirmed Authors`)
+          confirmedAuthorsByDoiMaps.push(await NormedPublication.getConfirmedAuthorsByDoiFromCSV(path))
         }, { concurrency: 1 })
   
         // combine the confirmed author lists together
         this.confirmedAuthorsByDoi = new Map()
-        _.each(_.keys(confirmedAuthorsByDoiByYear), (year) => {
-          _.each(_.keys(confirmedAuthorsByDoiByYear[year]), (doi) => {
-            this.confirmedAuthorsByDoi[doi] = _.concat((this.confirmedAuthorsByDoi[doi] || []), _.values(confirmedAuthorsByDoiByYear[year][doi]))
+        _.each(confirmedAuthorsByDoiMaps, (confirmedAuthorsByDoiMap) => {
+          _.each(_.keys(confirmedAuthorsByDoiMap), (doi) => {
+            this.confirmedAuthorsByDoi[doi] = _.concat((this.confirmedAuthorsByDoi[doi] || []), _.values(confirmedAuthorsByDoiMap[doi]))
           })
         })
         // console.log(`Initialized Confirmed authors: ${JSON.stringify(this.confirmedAuthorsByDoi, null, 2)}`)

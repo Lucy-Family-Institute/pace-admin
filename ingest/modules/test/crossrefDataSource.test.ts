@@ -6,8 +6,8 @@ import HarvestSet from '../HarvestSet'
 import NormedPerson from '../normedPerson'
 import { randomWait } from '../../units/randomWait'
 import { getDateObject } from '../../units/dateRange'
-import { escapeForRegEx } from '../../units/normalizer'
-import {loadJSONFromFile} from '../..//units/loadJSONFromFile'
+import Normalizer from '../../units/normalizer'
+import FsHelper from '../../units/fsHelper'
 import DataSourceConfig from '../dataSourceConfig'
 
 import dotenv from 'dotenv'
@@ -70,7 +70,7 @@ beforeAll(async () => {
     // const wosDS: DataSource = new WosDataSource(dsConfig)
     crossrefHarvester = new Harvester(crossrefDS)
 
-    defaultPubSourceMetadata = loadJSONFromFile(crossrefSampleRecordPath)
+    defaultPubSourceMetadata = FsHelper.loadJSONFromFile(crossrefSampleRecordPath)
 
     defaultNormedPerson = {
         id: 94,

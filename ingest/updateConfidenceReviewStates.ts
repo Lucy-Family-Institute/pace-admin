@@ -35,6 +35,7 @@ const client = new ApolloClient({
 })
 
 import { CalculateConfidence } from './modules/calculateConfidence'
+import NormedPublication from './modules/normedPublication'
 
 async function main() {
 
@@ -56,7 +57,7 @@ async function main() {
     console.log(`Loading ${year} Confirmed Authors`)
     //load data
     await pMap(pathsByYear[year], async (path) => {
-      confirmedAuthorsByDoiByYear[year] = await calculateConfidence.getConfirmedAuthorsByDoiFromCSV(path)
+      confirmedAuthorsByDoiByYear[year] = await NormedPublication.getConfirmedAuthorsByDoiFromCSV(path)
     }, { concurrency: 1})
   }, { concurrency: 1 })
 

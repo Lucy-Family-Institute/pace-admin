@@ -1,5 +1,5 @@
 import { CalculateConfidence } from '../modules/calculateConfidence'
-import {loadJSONFromFile} from '../units/loadJSONFromFile'
+import {loadJSONFromFile} from '../units/fsHelper'
 import _ from 'lodash'
 
 const fs = require('fs');

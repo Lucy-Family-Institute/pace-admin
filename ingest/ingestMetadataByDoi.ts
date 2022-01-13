@@ -14,7 +14,7 @@ import path from 'path'
 import humanparser from 'humanparser'
 import { randomWait } from './units/randomWait'
 import { command as writeCsv } from './units/writeCsv'
-import { isDir, loadDirList, loadJSONFromFile } from './units/loadJSONFromFile'
+import FsHelper from './units/fsHelper'
 import moment from 'moment'
 
 import dotenv from 'dotenv'
@@ -385,7 +385,7 @@ async function loadConfirmedPapersByDoi(pathsByYear) {
     //load data
     await pMap(pathsByYear[year], async (yearPath: string) => {
       let dataDir = yearPath
-      if (!isDir(yearPath)) {
+      if (!FsHelper.isDir(yearPath)) {
         dataDir = path.dirname(yearPath)
       }
       confirmedPapersByDoi = _.merge(confirmedPapersByDoi, await getPapersByDoi(yearPath))
@@ -426,7 +426,7 @@ async function loadPersonPapersFromCSV (testPersons: NormedPerson[], paperPath, 
     const confidenceAlgorithmVersion = '82aa835eff3da48e497c6eb6b56dafc087c86958'
     const calculateConfidence: CalculateConfidence = new CalculateConfidence(minConfidence, confidenceAlgorithmVersion)
     let dataDir = paperPath
-    if (!isDir(paperPath)) {
+    if (!FsHelper.isDir(paperPath)) {
       dataDir = path.dirname(paperPath)
     }
   
@@ -824,14 +824,14 @@ const pathsByYear = await getIngestFilePaths('../config/ingestFilePaths.json')
     //load data
     await pMap(pathsByYear[year], async (yearPath) => {
       let loadPaths = []
-      if (isDir(yearPath)) {
-        loadPaths = loadDirList(yearPath)
+      if (FsHelper.isDir(yearPath)) {
+        loadPaths = FsHelper.loadDirList(yearPath)
       } else {
         loadPaths.push(yearPath)
       }
       await pMap(loadPaths, async (filePath) => {
         // skip any subdirectories
-        if (!isDir(filePath)){
+        if (!FsHelper.isDir(filePath)){
           const doiStatusByYear = await loadPersonPapersFromCSV(normedPersons, filePath, year)
           doiStatus[year] = doiStatusByYear
           sourceName = doiStatusByYear.sourceName
