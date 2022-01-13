@@ -35,7 +35,6 @@ import DataSourceConfig from './modules/dataSourceConfig'
 import { Mutex } from './units/mutex'
 import NormedPublication from './modules/normedPublication'
 import BibTex from './modules/bibTex'
-// import insertReview from '../client/src/gql/insertReview'
 
 dotenv.config({
   path: '../.env'

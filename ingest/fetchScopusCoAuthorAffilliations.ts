@@ -23,7 +23,7 @@ process.env.NODE_ENV = 'development';
 // process.env.NODE_ENV = 'staging';
 
 // config variables
-const config = require('../config/config.js');
+// const config = require('../config/config.js');
 
 async function getScopusAuthorData(authorGivenName, authorFamilyName, authorScopusId, year, pageSize, offset){
     const baseUrl = 'https://api.elsevier.com/content/search/scopus'

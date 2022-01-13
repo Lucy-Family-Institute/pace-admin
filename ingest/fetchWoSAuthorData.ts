@@ -5,8 +5,8 @@ import { createHttpLink } from 'apollo-link-http'
 import fetch from 'node-fetch'
 import pMap from 'p-map'
 import pTimes from 'p-times'
-import readPersonsByYearAllCenters from '../client/src/gql/readPersonsByYearAllCenters'
-import readPublicationsByPersonByConfidence from '../client/src/gql/readPublicationsByPersonByConfidence'
+import readPersonsByYearAllCenters from './gql/readPersonsByYearAllCenters'
+import readPublicationsByPersonByConfidence from './gql/readPublicationsByPersonByConfidence'
 import { command as loadCsv } from './units/loadCsv'
 import { split } from 'apollo-link'
 // import cslParser from './utils/cslParser'
@@ -33,7 +33,7 @@ process.env.NODE_ENV = 'development';
 // process.env.NODE_ENV = 'staging';
 
 // config variables
-const config = require('../config/config.js');
+// const config = require('../config/config.js');
 
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT

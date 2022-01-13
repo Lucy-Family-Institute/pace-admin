@@ -17,7 +17,7 @@ import moment from 'moment'
 import dotenv from 'dotenv'
 import resolve from 'path'
 import fetch from 'node-fetch'
-import readPersonsByYearAllCenters from '../client/src/gql/readPersonsByYearAllCenters'
+import readPersonsByYearAllCenters from './gql/readPersonsByYearAllCenters'
 import { randomWait, wait } from './units/randomWait'
 
 dotenv.config({
