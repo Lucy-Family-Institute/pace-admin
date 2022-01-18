@@ -91,15 +91,15 @@ async function main() {
   console.log(`Ingester config: ${JSON.stringify(config, null, 2)}`)
   console.log(`Loading ${year} Publication Data for staged paths: ${JSON.stringify(stagedDirs, null, 2)}`)
   //load data
-  await pMap(stagedDirs, async (stagedPath) => {
+  await pMap(stagedDirs, async (stagedPath, dirIndex) => {
     // ignore subdirectories
     const loadPaths = FsHelper.loadDirPaths(stagedPath, true)
-    await pMap(loadPaths, async (filePath) => {
+    await pMap(loadPaths, async (filePath, fileIndex) => {
       // skip any subdirectories
-      console.log(`Ingesting publications from path: ${filePath}`)
+      console.log(`Ingesting publications dir (${(dirIndex + 1)} of ${stagedDirs.length}) from paths (${(fileIndex + 1)} of ${loadPaths.length}) of path: ${filePath}`)
       const fileName = FsHelper.getFileName(filePath)
       const dataDir = FsHelper.getParentDir(filePath)
-      const ingestStatus = await ingester.ingestFromFiles(dataDir, filePath)
+      const ingestStatus = await ingester.ingestFromFiles(dataDir, filePath, 5)
       ingestStatusByFile[fileName] = ingestStatus
       ingestStatusMain = IngestStatus.merge(ingestStatusMain, ingestStatus)
       combinedStatus = _.concat(combinedStatus, ingestStatus.failedAddPublications)
@@ -109,7 +109,7 @@ async function main() {
       if (config.outputPassed) {
         combinedStatus = _.concat(combinedStatus, ingestStatus.addedPublications)
       }     
-    }, { concurrency: 1 })
+    }, { concurrency: 5 })
   }, { concurrency: 1}) // these all need to be 1 thread so no collisions on checking if pub already exists if present in multiple files
 
   // console.log(`DOI Status: ${JSON.stringify(doiStatus,null,2)}`)
