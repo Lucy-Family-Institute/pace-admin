@@ -451,7 +451,6 @@ import PublicationFilter from '../components/PublicationFilter.vue'
 import PeopleAuthorSortFilter from '../components/PeopleAuthorSortFilter.vue'
 import MainFilter from '../components/MainFilter.vue'
 import sanitize from 'sanitize-filename'
-import moment from 'moment'
 
 import VueFriendlyIframe from 'vue-friendly-iframe'
 
@@ -1099,7 +1098,6 @@ export default {
             this.people = personResult.data.persons
           }
         }
-  
         if (currentLoadCount === this.personLoadCount) {
           // calculate the total count to show
           this.personReviewedPubCounts = {}
