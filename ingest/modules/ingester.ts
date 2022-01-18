@@ -63,7 +63,8 @@ export class Ingester {
       sourceName: process.env.PUBMED_SOURCE_NAME,
       publicationUrl: process.env.PUBMED_PUBLICATION_URL,
       pageSize: process.env.PUBMED_PAGE_SIZE,
-      requestInterval: Number.parseInt(process.env.PUBMED_REQUEST_INTERVAL)
+      requestInterval: Number.parseInt(process.env.PUBMED_REQUEST_INTERVAL),
+      harvestDataDir: process.env.PUBMED_HARVEST_DATA_DIR
     }
     this.pubmedDS = new PubMedDataSource(pubmedConfig)
     
@@ -74,7 +75,8 @@ export class Ingester {
       sourceName: process.env.SEMANTIC_SCHOLAR_SOURCE_NAME,
       publicationUrl: process.env.SEMANTIC_SCHOLAR_PUBLICATION_URL,
       pageSize: process.env.SEMANTIC_SCHOLAR_PAGE_SIZE,
-      requestInterval: Number.parseInt(process.env.SEMANTIC_SCHOLAR_REQUEST_INTERVAL)
+      requestInterval: Number.parseInt(process.env.SEMANTIC_SCHOLAR_REQUEST_INTERVAL),
+      harvestDataDir: process.env.SEMANTIC_SCHOLAR_HARVEST_DATA_DIR
     }
     this.semanticScholarDS = new SemanticScholarDataSource(semanticScholarConfig)
     
@@ -85,7 +87,8 @@ export class Ingester {
       userName: process.env.WOS_USERNAME,
       password: process.env.WOS_PASSWORD,
       pageSize: process.env.WOS_PAGE_SIZE,
-      requestInterval: Number.parseInt(process.env.WOS_REQUEST_INTERVAL)
+      requestInterval: Number.parseInt(process.env.WOS_REQUEST_INTERVAL),
+      harvestDataDir: process.env.WEB_OF_SCIENCE_HARVEST_DATA_DIR
     }
     this.wosDS = new WosDataSource(wosConfig)
     

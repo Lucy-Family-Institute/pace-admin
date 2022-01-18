@@ -8,5 +8,8 @@ export default interface IngesterConfig {
   defaultWaitInterval: number
   confirmedAuthorFileDir: string,
   defaultToBibTex: boolean,
-  dedupByDoi: boolean
+  dedupByDoi: boolean,
+  stagedIngestDir: string,
+  outputIngestDir: string
+  centerMemberYear: number
 }

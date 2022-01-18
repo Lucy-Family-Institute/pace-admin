@@ -29,7 +29,9 @@ export default class FsHelper {
       } else {
         return dirList
       }
-    }
+    } else {
+      throw(`FS Helper: On load dir list, target path not found: ${dir}`)
+    } 
   }
 
   public static isDir (path) {
