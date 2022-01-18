@@ -6,6 +6,7 @@ import fetch from 'node-fetch'
 import pMap from 'p-map'
 import moment from 'moment'
 import dotenv from 'dotenv'
+import path from 'path'
 import { randomWait, wait } from './units/randomWait'
 import { Harvester, HarvestOperation } from './modules/harvester'
 import { WosDataSource } from './modules/wosDataSource'
@@ -60,7 +61,8 @@ async function main (): Promise<void> {
     sourceName: process.env.WOS_SOURCE_NAME,
     pageSize: process.env.WOS_PAGE_SIZE,  // page size must be a string for the request to work,
     harvestYears: harvestYears,
-    requestInterval: Number.parseInt(process.env.WOS_REQUEST_INTERVAL)
+    requestInterval: Number.parseInt(process.env.WOS_REQUEST_INTERVAL),
+    harvestDataDir: process.env.WOS_HARVEST_DATA_DIR
   }
 
   const ds: WosDataSource = new WosDataSource(dsConfig)
@@ -74,7 +76,7 @@ async function main (): Promise<void> {
   await pMap(years, async (year) => {
     const normedPersons: NormedPerson[] = await getAllNormedPersonsByYear(year.valueOf(), client)
 
-    const resultsDir = `../data/${dsConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`
+    const resultsDir = path.join(process.cwd(), dsConfig.harvestDataDir, `${dsConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`)
 
     // console.log(`Person with harvest errors for ${year} are: ${JSON.stringify(personWithHarvestErrors,null,2)}`)
     // console.log(`Normed persons for ${year} are: ${JSON.stringify(normedPersons,null,2)}`)
