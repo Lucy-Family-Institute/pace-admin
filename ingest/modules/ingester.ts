@@ -287,7 +287,7 @@ export class Ingester {
     return _.values(pubsByKey)
   }
 
-  async ingest (publications: NormedPublication[]): Promise<IngestStatus> {
+  async ingest (publications: NormedPublication[], threadCount = 1): Promise<IngestStatus> {
     let ingestStatus = new IngestStatus()
     // do for loop
     let dedupedPubs: NormedPublication[]
@@ -311,7 +311,7 @@ export class Ingester {
         ingestStatus.log(pubStatus)
         console.log(errorMessage)
       }
-    }, { concurrency: 1 })
+    }, { concurrency: threadCount })
     return ingestStatus
   }
 
@@ -567,7 +567,7 @@ export class Ingester {
     return pubStatus
   }
 
-  async ingestFromFiles (dataDirPath: string, manifestFilePath: string): Promise<IngestStatus> {
+  async ingestFromFiles (dataDirPath: string, manifestFilePath: string, threadCount = 1): Promise<IngestStatus> {
     // create master manifest of unique publications
     let count = 0
     let ingestStatus: IngestStatus
@@ -576,7 +576,7 @@ export class Ingester {
 
       // get normed publications from filedir and manifest
       const normedPubs: NormedPublication[] = await NormedPublication.loadFromCSV(manifestFilePath, dataDirPath)
-      ingestStatus = await this.ingest(normedPubs)
+      ingestStatus = await this.ingest(normedPubs, threadCount)
       // console.log(`Ingest status is: ${JSON.stringify(ingestStatus)}`)
     } catch (error) {
       console.log(`Error encountered on ingest publication with paths manifest: '${manifestFilePath}' data dir path: '${dataDirPath}'`)
