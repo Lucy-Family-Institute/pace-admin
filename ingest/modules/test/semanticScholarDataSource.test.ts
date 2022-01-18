@@ -44,7 +44,8 @@ const dsConfig: DataSourceConfig = {
     publicationUrl: 'https://api.semanticscholar.org/v1/paper/',
     sourceName: 'SemanticScholar',
     pageSize: '100',  // page size must be a string for the request to work
-    requestInterval: 3500
+    requestInterval: 3500,
+    harvestDataDir: process.env.SEMANTIC_SCHOLAR_HARVEST_DATA_DIR
 }
 
 // for now this is the set expected every time, not fully optimized yet

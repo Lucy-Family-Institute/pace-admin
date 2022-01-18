@@ -42,7 +42,8 @@ const dsConfig: DataSourceConfig = {
     queryUrl: 'https://api.crossref.org/works',
     sourceName: 'CrossRef',
     pageSize: '100',  // page size must be a string for the request to work
-    requestInterval: 10000
+    requestInterval: 10000,
+    harvestDataDir: process.env.CROSSREF_HARVEST_DATA_DIR
 }
 
 // for now this is the set expected every time, not fully optimized yet

@@ -221,7 +221,7 @@ export class Harvester {
     const fs = require('fs');
     
     if (!fs.existsSync(resultsFileDir)){
-        fs.mkdirSync(resultsFileDir);
+        fs.mkdirSync(resultsFileDir, { recursive: true });
     }
 
     let filePath = resultsFileDir
