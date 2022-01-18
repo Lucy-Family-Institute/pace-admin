@@ -36,7 +36,7 @@ const pubmedConfig = {
   requestInterval: Number.parseInt(process.env.PUBMED_REQUEST_INTERVAL),
   memberFilePath: process.env.PUBMED_CENTER_MEMBER_FILE_PATH,
   awardFilePath: process.env.PUBMED_AWARD_FILE_PATH,
-  dataFolderPath: process.env.PUBMED_DATA_FOLDER_PATH
+  dataFolderPath: process.env.PUBMED_HARVEST_DATA_DIR
 }
 
 const hasuraSecret = process.env.HASURA_SECRET
