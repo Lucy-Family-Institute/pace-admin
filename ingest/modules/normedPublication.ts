@@ -8,6 +8,7 @@ import { command as writeCsv} from '../units/writeCsv'
 import NormedPerson from './normedPerson'
 import NormedAuthor from './normedAuthor'
 import writeToJSONFile from '../units/writeToJSONFile'
+import readPublicationsCSLByYear from '../gql/readPublicationsCSLByYear'
 import FsHelper from '../units/fsHelper'
 import BibTex from './bibTex'
 import Csl from './csl'
@@ -17,10 +18,11 @@ export default class NormedPublication {
   // ------ begin declare properties used when using NormedPublication like an interface
 
   // the normalized simple form of a publication across all sources
+  id?: number
   searchPerson?: NormedPerson
   abstract?: string
   title: string
-  journalTitle: string
+  journalTitle?: string
   authors?: NormedAuthor[]
   confirmedAuthors?: NormedAuthor[]
   journalIssn?: string
@@ -36,6 +38,8 @@ export default class NormedPublication {
   pages?: string
   bibtex?: string
   sourceMetadata?: Object
+  csl?: Object
+  csl_string?: string
   // ------- end declare properties used when using NormedPublication like an interface
 
   // begin declaring static utility methods for NormedPublication objects
@@ -215,6 +219,15 @@ export default class NormedPublication {
     return json
   }
 
+  public static loadNormedPublicationObjectToDBMap(filePath = "./modules/normedPublicationObjectToDBMap.json", filesystem = fs) {
+    if (!filesystem.existsSync(filePath)) {
+      throw `Invalid path on load json from: ${filePath}`
+    }
+    let raw = filesystem.readFileSync(filePath, 'utf8')
+    let json = JSON.parse(raw);
+    return json
+  }
+
   public static loadNormedPublicationSourceMetadata(filePath, filesystem = fs) {
     if (!filesystem.existsSync(filePath)) {
       throw `Invalid path on load json from: ${filePath}`
@@ -224,6 +237,27 @@ export default class NormedPublication {
     return json
   }
 
+  // will return a list of publications for the given year
+  public static async loadPublicationsFromDB(client, year): Promise<NormedPublication[]> {
+    const queryResult = await client.query(readPublicationsCSLByYear(year))
+    return this.getNormedPublicationsFromDBRows(queryResult.data.publications) 
+  }
+
+  public static getNormedPublicationsFromDBRows(rows): NormedPublication[] {
+    let normedPubs = []
+    const objectToDBMap = NormedPublication.loadNormedPublicationObjectToDBMap()
+    _.each(rows, (row) => {
+      const normedPub = this.getNormedPublicationFromDBRow(row, objectToDBMap)
+      if (normedPub) normedPubs.push(normedPub)
+    })
+    return normedPubs
+  }
+
+  public static getNormedPublicationFromDBRow(row, objectToDBMap): NormedPublication{
+    // this should work with the object map swapped out
+    return NormedPublication.getNormedPublicationObjectFromCSVRow(row, objectToDBMap)
+  }
+
   /**
    * Expects the map to be used in defining column_names to pull properties for each leaf of NormedPublication object 
    * (e.g., for the searchPerson property there is an object that defines a column name for each item that equates to a string)
@@ -231,17 +265,16 @@ export default class NormedPublication {
    */
   public static getNormedPublicationObjectFromCSVRow(row, objectToCSVMap): NormedPublication {
     // assumes all column names in row passed in have been converted to lowercase
-    const searchPersonFamilyNameColumn = objectToCSVMap['searchPerson']['familyName']
+    const searchPersonFamilyNameColumn = (objectToCSVMap['searchPerson'] && objectToCSVMap['searchPerson']['familyName'] ? objectToCSVMap['searchPerson']['familyName'] : undefined)
     let pub: NormedPublication = {
       title: (row[_.toLower(objectToCSVMap['title'])] ? row[_.toLower(objectToCSVMap['title'])] : row[_.keys(row)[0]]),
-      journalTitle: row[_.toLower(objectToCSVMap['journalTitle'])],
       doi: row[_.toLower(objectToCSVMap['doi'])],
       publicationDate: row[_.toLower(objectToCSVMap['publicationDate'])],
       datasourceName: row[_.toLower(objectToCSVMap['datasourceName'])],
       authors: (row[_.toLower(objectToCSVMap['authors'])] ? JSON.parse(row[_.toLower(objectToCSVMap['authors'])]) : undefined)
     }
     // set optional properties, for search person first check if family name provided
-    if (row[_.toLower(searchPersonFamilyNameColumn)]){
+    if (searchPersonFamilyNameColumn && row[_.toLower(searchPersonFamilyNameColumn)]){
       const person: NormedPerson = {
         id: row[_.toLower(objectToCSVMap['searchPerson']['id'])] ? Number.parseInt(row[_.toLower(objectToCSVMap['searchPerson']['id'])]) : undefined,
         familyName: row[_.toLower(searchPersonFamilyNameColumn)],
@@ -255,43 +288,67 @@ export default class NormedPublication {
       _.set(pub, 'searchPerson', person)
     }
 
-    if (row[_.toLower(objectToCSVMap['abstract'])]) {
+    if (objectToCSVMap['id'] && row[_.toLower(objectToCSVMap['id'])]) {
+      _.set(pub, 'id', row[_.toLower(objectToCSVMap['id'])])
+    }
+    if (objectToCSVMap['journalTitle'] && row[_.toLower(objectToCSVMap['journalTitle'])]) {
+      _.set(pub, 'journalTitle', row[_.toLower(objectToCSVMap['journalTitle'])])
+    }
+    if (objectToCSVMap['abstract'] && row[_.toLower(objectToCSVMap['abstract'])]) {
       _.set(pub, 'abstract', row[_.toLower(objectToCSVMap['abstract'])])
     }
-    if (row[_.toLower(objectToCSVMap['journalIssn'])]) {
+    if (objectToCSVMap['journalIssn'] && row[_.toLower(objectToCSVMap['journalIssn'])]) {
       _.set(pub, 'journalIssn', row[_.toLower(objectToCSVMap['journalIssn'])])
     }
-    if (row[_.toLower(objectToCSVMap['journalEIssn'])]) {
+    if (objectToCSVMap['journalEIssn'] && row[_.toLower(objectToCSVMap['journalEIssn'])]) {
       _.set(pub, 'journalEIssn', row[_.toLower(objectToCSVMap['journalEIssn'])])
     }
-    if (row[_.toLower(objectToCSVMap['sourceId'])]) {
+    if (objectToCSVMap['sourceId'] && row[_.toLower(objectToCSVMap['sourceId'])]) {
       _.set(pub, 'sourceId', row[_.toLower(objectToCSVMap['sourceId'])])
     }
-    if (row[_.toLower(objectToCSVMap['sourceUrl'])]) {
+    if (objectToCSVMap['sourceUrl'] && row[_.toLower(objectToCSVMap['sourceUrl'])]) {
       _.set(pub, 'sourceUrl', row[_.toLower(objectToCSVMap['sourceUrl'])])
     }
-    if (row[_.toLower(objectToCSVMap['publisher'])]) {
+    if (objectToCSVMap['publisher'] && row[_.toLower(objectToCSVMap['publisher'])]) {
       _.set(pub, 'publisher', row[_.toLower(objectToCSVMap['publisher'])])
     }
-    if (row[_.toLower(objectToCSVMap['number'])]) {
+    if (objectToCSVMap['number'] && row[_.toLower(objectToCSVMap['number'])]) {
       _.set(pub, 'number', row[_.toLower(objectToCSVMap['number'])])
     }
-    if (row[_.toLower(objectToCSVMap['volume'])]) {
+    if (objectToCSVMap['volume'] && row[_.toLower(objectToCSVMap['volume'])]) {
       _.set(pub, 'volume', row[_.toLower(objectToCSVMap['volume'])])
     }
-    if (row[_.toLower(objectToCSVMap['pages'])]) {
+    if (objectToCSVMap['pages'] && row[_.toLower(objectToCSVMap['pages'])]) {
       _.set(pub, 'pages', row[_.toLower(objectToCSVMap['pages'])])
     }
-    if (row[_.toLower(objectToCSVMap['bibtex'])]) {
+    if (objectToCSVMap['bibtex'] && row[_.toLower(objectToCSVMap['bibtex'])]) {
       _.set(pub, 'bibtex', row[_.toLower(objectToCSVMap['bibtex'])])
     }
-    if (row[_.toLower(objectToCSVMap['confirmedAuthors'])]) {
+    if (objectToCSVMap['confirmedAuthors'] && row[_.toLower(objectToCSVMap['confirmedAuthors'])]) {
       _.set(pub, 'confirmedAuthors', NormedPublication.getConfirmedNormedAuthors(row[_.toLower(objectToCSVMap['confirmedAuthors'])]))
     }
-    if (row[_.toLower(objectToCSVMap['sourceMetadata'])]) {
+    if (objectToCSVMap['sourceMetadata'] && row[_.toLower(objectToCSVMap['sourceMetadata'])]) {
       // parse and get rid of any escaped quote characters
-      const sourceMetadata = JSON.parse(row[_.toLower(objectToCSVMap['sourceMetadata'])])
-      _.set(pub, 'sourceMetadata', sourceMetadata)
+      const value = row[_.toLower(objectToCSVMap['sourceMetadata'])]
+      if (_.isString(value)) {
+        _.set(pub, 'sourceMetadata', JSON.parse(row[_.toLower(objectToCSVMap['sourceMetadata'])]))
+      } else {
+        _.set(pub, 'sourceMetadata', value)        
+      }
+    }
+    if (objectToCSVMap['csl'] && row[_.toLower(objectToCSVMap['csl'])]) {
+      // parse and get rid of any escaped quote characters
+      const value = row[_.toLower(objectToCSVMap['csl'])]
+      if (_.isString(value)) {
+        _.set(pub, 'csl', JSON.parse(row[_.toLower(objectToCSVMap['csl'])]))
+      } else {
+        _.set(pub, 'csl', value)        
+      }
+    }
+    if (objectToCSVMap['csl_string'] && row[_.toLower(objectToCSVMap['csl_string'])]) {
+      // parse and get rid of any escaped quote characters
+      const value = row[_.toLower(objectToCSVMap['csl_string'])]
+      _.set(pub, 'csl_string', value)        
     }
 
     return pub
