@@ -7,6 +7,8 @@ import { Mutex } from '../units/mutex'
 import Cite from 'citation-js'
 import Csl from './csl'
 import pMap from 'p-map'
+import path from 'path'
+import moment from 'moment'
 import { ApolloClient } from 'apollo-client'
 import { InMemoryCache, NormalizedCacheObject } from 'apollo-cache-inmemory'
 import { getAllNormedPersons } from './queryNormalizedPeople'
@@ -19,6 +21,8 @@ import readPublicationsBySourceId from '../gql/readPublicationsBySourceId'
 import readPublicationsByTitle from '../gql/readPublicationsByTitle'
 import ConfidenceSet from './confidenceSet'
 import { randomWait } from '../units/randomWait'
+import { command as writeCsv } from '../units/writeCsv'
+import Normalizer from '../units/normalizer'
 
 import _ from 'lodash'
 import IngesterConfig from './ingesterConfig'
@@ -580,6 +584,100 @@ export class Ingester {
       // console.log(`Ingest status is: ${JSON.stringify(ingestStatus)}`)
     } catch (error) {
       console.log(`Error encountered on ingest publication with paths manifest: '${manifestFilePath}' data dir path: '${dataDirPath}'`)
+      throw (error)
+    }
+    return ingestStatus
+  }
+
+  async ingestStagedFiles(){
+    const stagedDirs = FsHelper.loadDirList(this.config.stagedIngestDir)
+
+    const year = this.config.centerMemberYear
+    console.log(`Loading ${year} Publication Data for staged paths: ${JSON.stringify(stagedDirs, null, 2)}`)
+    //load data
+    await pMap(stagedDirs, async (stagedPath, dirIndex) => {
+      // ignore subdirectories
+      let combinedStatus: PublicationStatus[] = []
+      let ingestStatusByPath: IngestStatus = new IngestStatus()
+
+      const loadPaths = FsHelper.loadDirPaths(stagedPath, true)
+      await pMap(loadPaths, async (filePath, fileIndex) => {
+        // skip any subdirectories
+        console.log(`Ingesting publications dir (${(dirIndex + 1)} of ${stagedDirs.length}) from paths (${(fileIndex + 1)} of ${loadPaths.length}) of path: ${filePath}`)
+        const fileName = FsHelper.getFileName(filePath)
+        const dataDir = FsHelper.getParentDir(filePath)
+        const ingestStatus = await this.ingestFromFiles(dataDir, filePath, 5)
+        ingestStatusByPath = IngestStatus.merge(ingestStatusByPath, ingestStatus)
+      }, { concurrency: 5 })
+
+      // output results for this path
+      // set label to the base of the path (file or dir)
+      const normalizedLabel = Normalizer.normalizeString(path.basename(stagedPath))
+      const statusCSVFile = `${normalizedLabel}_${year}_combined_status.${moment().format('YYYYMMDDHHmmss')}.csv`
+      console.log(`Writing ingest status for load from staged path: ${stagedPath} to file: ${statusCSVFile}`)
+      await this.writeIngestStatusToCSV(ingestStatusByPath, statusCSVFile)
+    }, { concurrency: 1}) // these all need to be 1 thread so no collisions on checking if pub already exists if present in multiple files
+  }
+
+  async writeIngestStatusToCSV(ingestStatus: IngestStatus, csvFileName) {
+    // console.log(`DOI Status: ${JSON.stringify(doiStatus,null,2)}`)
+    // write combined failure results limited to 1 per doi
+    let combinedStatus = []
+    if (ingestStatus){
+      combinedStatus = _.concat(combinedStatus, ingestStatus.failedAddPublications)
+      if (this.config.outputWarnings) {
+        combinedStatus = _.concat(combinedStatus, ingestStatus.skippedAddPublications)
+      }  
+      if (this.config.outputPassed) {
+        combinedStatus = _.concat(combinedStatus, ingestStatus.addedPublications)
+      }     
+      const combinedStatusValues = _.values(combinedStatus)
+      const csvFilePath = path.join(process.cwd(), this.config.outputIngestDir, csvFileName)
+
+      console.log(`Write status of doi's to csv file: ${csvFileName}, output warnings: ${this.config.outputWarnings}, output passed: ${this.config.outputPassed}`)
+      // console.log(`Failed records are: ${JSON.stringify(failedRecords[sourceName], null, 2)}`)
+      //write data out to csv
+      await writeCsv({
+        path: csvFilePath,
+        data: combinedStatusValues,
+      })
+
+      console.log(`DOIs errors for path ${csvFilePath}':\n${JSON.stringify(ingestStatus.errorMessages, null, 2)}`)
+      console.log(`DOIs warnings for path ${csvFilePath}':\n${JSON.stringify(ingestStatus.warningMessages, null, 2)}`)
+      console.log(`DOIs failed add publications for path ${csvFilePath}': ${ingestStatus.failedAddPublications.length}`)
+      console.log(`DOIs added publications for path ${csvFilePath}': ${ingestStatus.addedPublications.length}`)
+      console.log(`DOIs skipped add publications for path ${csvFilePath}': ${ingestStatus.skippedAddPublications.length}`)
+      console.log(`DOIs failed add person publications for path ${csvFilePath}': ${ingestStatus.failedAddPersonPublications.length}`)
+      console.log(`DOIs added person publications for path ${csvFilePath}': ${ingestStatus.addedPersonPublications.length}`)
+      console.log(`DOIs skipped add person publications for path ${csvFilePath}': ${ingestStatus.skippedAddPersonPublications.length}`)
+      console.log(`DOIs failed add confidence sets for path ${csvFilePath}': ${ingestStatus.failedAddConfidenceSets.length}`)
+      console.log(`DOIs added confidence sets for path ${csvFilePath}': ${ingestStatus.addedConfidenceSets.length}`)
+      console.log(`DOIs skipped add confidence sets for path ${csvFilePath}': ${ingestStatus.skippedAddConfidenceSets.length}`)
+  
+    }
+  }
+
+  // will look at existing publications for a given year and then run through the ingester essentially finding new matches
+  // - AND/OR - recreating confidence measures if overwrite confidence is enabled in the config
+  async checkCurrentPublicationsMatches(threadCount = 1): Promise<IngestStatus> {
+    const year = this.config.centerMemberYear
+    // create master manifest of unique publications
+    let count = 0
+    let ingestStatus: IngestStatus
+    try {
+      console.log(`Checking publications in DB for year ${year} for new author matches, with config: ${JSON.stringify(this.config)}`)
+
+      // get normed publications from filedir and manifest
+      const normedPubs: NormedPublication[] = await NormedPublication.loadPublicationsFromDB(this.client, year)
+      ingestStatus = await this.ingest(normedPubs, threadCount)
+       // output results for this path
+       const statusCSVFile = path.join(process.cwd(), this.config.outputIngestDir, `Check_new_matches_${year}_status.${moment().format('YYYYMMDDHHmmss')}.csv`)
+       console.log(`Writing ingest status for check new publication matches for year: ${year} to file: ${statusCSVFile}`)
+      await this.writeIngestStatusToCSV(ingestStatus, statusCSVFile)
+ 
+      // console.log(`Ingest status is: ${JSON.stringify(ingestStatus)}`)
+    } catch (error) {
+      console.log(`Error encountered on check publication for year: ${year}`)
       throw (error)
     }
     return ingestStatus

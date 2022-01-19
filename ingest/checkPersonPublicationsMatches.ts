@@ -72,7 +72,8 @@ async function main() {
     centerMemberYear: Number.parseInt(centerMemberYear)
   }
   const ingester = new Ingester(config, client)
-  await ingester.ingestStagedFiles()
+ 
+  await ingester.checkCurrentPublicationsMatches()
  }
 
 main()
