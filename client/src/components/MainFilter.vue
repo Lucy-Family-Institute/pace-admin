@@ -8,6 +8,28 @@
       class="text-grey-8"
       style="align:left;width:100%;border:solid;border-width:thin;border-color:#E0E0E0;"
     >
+      <template v-slot:header>
+        <div align="left" style="width:100%">
+          <q-icon align="center" class="text-grey-8" style="font-size:24px" name="tune"/>
+          &nbsp;&nbsp;
+          FILTER
+          &nbsp;&nbsp;
+          <q-btn
+            outline
+            rounded
+            no-wrap
+            size="sm"
+            v-for="option in filterOptions"
+            v-bind:key="option"
+            text-color="black"
+            style="background-color:white"
+            type="a"
+            :label="filterOption"
+          >
+            {{option}}
+          </q-btn>
+        </div>
+      </template>
       <div>
         <q-item header>
           <q-btn flat
@@ -34,7 +56,7 @@
         </div>
       </div>
     </q-expansion-item>
-    <div align="center" style="position:relative; bottom:20px">
+    <div align="center" style="position:relative; bottom:13px">
       <q-btn
         v-if="filterView"
         dense
@@ -71,22 +93,21 @@ export default {
     YearFilter,
     MemberYearFilter
   },
-  data () {
-    return {
-      sortCenterPubOptions: [
-        'Confidence',
-        'Title',
-        'Authors'
-      ],
-      institutionReviewStateOptions: [
-        'Accepted',
-        'Rejected',
-        'Unsure'
-      ],
-      reviewStates: undefined,
-      filterView: false
-    }
-  },
+  data: () => ({
+    sortCenterPubOptions: [
+      'Confidence',
+      'Title',
+      'Authors'
+    ],
+    institutionReviewStateOptions: [
+      'Accepted',
+      'Rejected',
+      'Unsure'
+    ],
+    reviewStates: undefined,
+    filterView: false,
+    filterOptions: []
+  }),
   computed: {
     preferredInstitutionReviewState: sync('filter/preferredInstitutionReviewState'),
     selectedInstitutionReviewState: sync('filter/selectedInstitutionReviewState'),
@@ -114,7 +135,16 @@ export default {
     this.fetchData()
   },
   watch: {
-    $route: 'fetchData'
+    $route: 'fetchData',
+    changedMemberYears () {
+      this.getChipOptions()
+    },
+    changedPubYears () {
+      this.getChipOptions()
+    },
+    selectedPersonConfidence () {
+      this.getChipOptions()
+    }
   },
   methods: {
     async fetchData () {
@@ -123,6 +153,7 @@ export default {
       this.selectedCenterPubSort = (this.selectedCenterPubSort) ? this.selectedCenterPubSort : this.preferredCenterPubSort
       this.selectedCenterAuthor = (this.selectedCenterAuthor) ? this.selectedCenterAuthor : this.preferredSelectedCenterAuthor
       this.pubSearch = ''
+      this.getChipOptions()
     },
     async loadReviewStates () {
       const reviewStatesResult = await this.$apollo.query({
@@ -131,6 +162,18 @@ export default {
       this.reviewStates = await _.map(reviewStatesResult.data.type_review, (typeReview) => {
         return typeReview.value
       })
+    },
+    getChipOptions () {
+      this.filterOptions = []
+      if (this.selectedPubYears) {
+        this.filterOptions.push(`Published: ${this.selectedPubYears.min}-${this.selectedPubYears.max}`)
+      }
+      if (this.selectedMemberYears) {
+        this.filterOptions.push(`Member Years: ${this.selectedMemberYears.min}-${this.selectedMemberYears.max}`)
+      }
+      if (this.selectedPersonConfidence) {
+        this.filterOptions.push(`Min Confidence: ${this.selectedPersonConfidence}`)
+      }
     },
     resetFilters () {
       this.selectedPersonPubSort = this.preferredPersonPubSort
