@@ -166,10 +166,18 @@ export default {
     getChipOptions () {
       this.filterOptions = []
       if (this.selectedPubYears) {
-        this.filterOptions.push(`Published: ${this.selectedPubYears.min}-${this.selectedPubYears.max}`)
+        if (this.selectedPubYears.min === this.selectedPubYears.max) {
+          this.filterOptions.push(`Published: ${this.selectedPubYears.min}`)
+        } else {
+          this.filterOptions.push(`Published: ${this.selectedPubYears.min}-${this.selectedPubYears.max}`)
+        }
       }
       if (this.selectedMemberYears) {
-        this.filterOptions.push(`Member Years: ${this.selectedMemberYears.min}-${this.selectedMemberYears.max}`)
+        if (this.selectedMemberYears.min === this.selectedMemberYears.max) {
+          this.filterOptions.push(`Member Year(s): ${this.selectedMemberYears.min}`)
+        } else {
+          this.filterOptions.push(`Member Year(s): ${this.selectedMemberYears.min}-${this.selectedMemberYears.max}`)
+        }
       }
       if (this.selectedPersonConfidence) {
         this.filterOptions.push(`Min Confidence: ${this.selectedPersonConfidence}`)
