@@ -37,6 +37,7 @@ const getIngestFilePaths = require('../getIngestFilePaths');
 import IngestStatus from './ingestStatus'
 import { ConfidenceSetStatusValue, PersonPublicationStatusValue, PublicationStatus, PublicationStatusValue } from './publicationStatus'
 import FsHelper from '../units/fsHelper'
+import DataSourceHelper from './dataSourceHelper'
 export class Ingester {
   client: ApolloClient<NormalizedCacheObject>
   normedPersons: Array<NormedPerson>
@@ -48,9 +49,6 @@ export class Ingester {
   personPubExistsMutex: Mutex
   confidenceSetExistsMutex: Mutex
   config: IngesterConfig
-  pubmedDS: PubMedDataSource
-  semanticScholarDS: SemanticScholarDataSource
-  wosDS: WosDataSource
 
   constructor (config: IngesterConfig, client: ApolloClient<NormalizedCacheObject>) {
     this.config = config
@@ -61,41 +59,6 @@ export class Ingester {
     this.pubExistsMutex = new Mutex()
     this.personPubExistsMutex = new Mutex()
     this.confidenceSetExistsMutex = new Mutex()
-    const pubmedConfig : DataSourceConfig = {
-      baseUrl: process.env.PUBMED_BASE_URL,
-      queryUrl: process.env.PUBMED_QUERY_URL,
-      sourceName: process.env.PUBMED_SOURCE_NAME,
-      publicationUrl: process.env.PUBMED_PUBLICATION_URL,
-      pageSize: process.env.PUBMED_PAGE_SIZE,
-      requestInterval: Number.parseInt(process.env.PUBMED_REQUEST_INTERVAL),
-      harvestDataDir: process.env.PUBMED_HARVEST_DATA_DIR
-    }
-    this.pubmedDS = new PubMedDataSource(pubmedConfig)
-    
-    const semanticScholarConfig : DataSourceConfig = {
-      baseUrl: process.env.SEMANTIC_SCHOLAR_BASE_URL,
-      authorUrl: process.env.SEMANTIC_SCHOLAR_AUTHOR_URL,
-      queryUrl: process.env.SEMANTIC_SCHOLAR_QUERY_URL,
-      sourceName: process.env.SEMANTIC_SCHOLAR_SOURCE_NAME,
-      publicationUrl: process.env.SEMANTIC_SCHOLAR_PUBLICATION_URL,
-      pageSize: process.env.SEMANTIC_SCHOLAR_PAGE_SIZE,
-      requestInterval: Number.parseInt(process.env.SEMANTIC_SCHOLAR_REQUEST_INTERVAL),
-      harvestDataDir: process.env.SEMANTIC_SCHOLAR_HARVEST_DATA_DIR
-    }
-    this.semanticScholarDS = new SemanticScholarDataSource(semanticScholarConfig)
-    
-    const wosConfig : DataSourceConfig = {
-      baseUrl: process.env.WOS_BASE_URL,
-      queryUrl: process.env.WOS_QUERY_URL,
-      sourceName: process.env.WOS_SOURCE_NAME,
-      userName: process.env.WOS_USERNAME,
-      password: process.env.WOS_PASSWORD,
-      pageSize: process.env.WOS_PAGE_SIZE,
-      requestInterval: Number.parseInt(process.env.WOS_REQUEST_INTERVAL),
-      harvestDataDir: process.env.WEB_OF_SCIENCE_HARVEST_DATA_DIR
-    }
-    this.wosDS = new WosDataSource(wosConfig)
-    
   }
 
   async initializeNormedPersons() {
@@ -138,12 +101,9 @@ export class Ingester {
   }
 
   async getCSLAuthorsFromSourceMetadata(sourceName, sourceMetadata) {
-    if (sourceName === 'SemanticScholar') {
-      return this.semanticScholarDS.getCSLStyleAuthorList(sourceMetadata)    
-    } else if (sourceName === 'WebOfScience') {
-      return this.wosDS.getCSLStyleAuthorList(sourceMetadata)    
-    } else if (sourceName === 'PubMed'){
-      return this.pubmedDS.getCSLStyleAuthorList(sourceMetadata)
+    const ds: DataSource = DataSourceHelper.getDataSource(sourceName)
+    if (ds) {
+      return await ds.getCSLStyleAuthorList(sourceMetadata)
     } else {
       return []
     }
@@ -395,7 +355,7 @@ export class Ingester {
 
       if (_.keys(matchedPersons).length <= 0){
         // try to match against authors from source if nothing found yet
-        // console.log(`No matching authors found from csl, doi: ${normedPub.doi} checking source metadata...`)
+        // console.log(`No matching authors found from csl, doi: ${normedPub.doi} checking source metadata...${JSON.stringify(sourceMetadata)}`)
         csl.setAuthors(await this.getCSLAuthorsFromSourceMetadata(normedPub.datasourceName, sourceMetadata))
         authors = csl.valueOf()['author']
         // console.log(`After check from source metadata if needed authors are: ${JSON.stringify(csl.author, null, 2)}`)
@@ -599,23 +559,28 @@ export class Ingester {
       // ignore subdirectories
       let combinedStatus: PublicationStatus[] = []
       let ingestStatusByPath: IngestStatus = new IngestStatus()
-
-      const loadPaths = FsHelper.loadDirPaths(stagedPath, true)
-      await pMap(loadPaths, async (filePath, fileIndex) => {
-        // skip any subdirectories
-        console.log(`Ingesting publications dir (${(dirIndex + 1)} of ${stagedDirs.length}) from paths (${(fileIndex + 1)} of ${loadPaths.length}) of path: ${filePath}`)
-        const fileName = FsHelper.getFileName(filePath)
-        const dataDir = FsHelper.getParentDir(filePath)
-        const ingestStatus = await this.ingestFromFiles(dataDir, filePath, 5)
-        ingestStatusByPath = IngestStatus.merge(ingestStatusByPath, ingestStatus)
-      }, { concurrency: 5 })
-
       // output results for this path
       // set label to the base of the path (file or dir)
       const normalizedLabel = Normalizer.normalizeString(path.basename(stagedPath))
       const statusCSVFile = `${normalizedLabel}_${year}_combined_status.${moment().format('YYYYMMDDHHmmss')}.csv`
-      console.log(`Writing ingest status for load from staged path: ${stagedPath} to file: ${statusCSVFile}`)
-      await this.writeIngestStatusToCSV(ingestStatusByPath, statusCSVFile)
+      try {
+        const loadPaths = FsHelper.loadDirPaths(stagedPath, true)
+        await pMap(loadPaths, async (filePath, fileIndex) => {
+          // skip any subdirectories
+          console.log(`Ingesting publications dir (${(dirIndex + 1)} of ${stagedDirs.length}) from paths (${(fileIndex + 1)} of ${loadPaths.length}) of path: ${filePath}`)
+          const fileName = FsHelper.getFileName(filePath)
+          const dataDir = FsHelper.getParentDir(filePath)
+          const ingestStatus = await this.ingestFromFiles(dataDir, filePath, 5)
+          ingestStatusByPath = IngestStatus.merge(ingestStatusByPath, ingestStatus)
+        }, { concurrency: 5 })
+
+        console.log(`Writing ingest status for load from staged path: ${stagedPath} to file: ${statusCSVFile}`)
+        await this.writeIngestStatusToCSV(ingestStatusByPath, statusCSVFile)
+      } catch (error) {
+        //attempt to write status to file
+        console.log(`Error on load staged path '${stagedPath}' files: ${error}, attempt to output logged status`)
+        await this.writeIngestStatusToCSV(ingestStatusByPath, statusCSVFile)
+      }
     }, { concurrency: 1}) // these all need to be 1 thread so no collisions on checking if pub already exists if present in multiple files
   }
 
@@ -671,7 +636,7 @@ export class Ingester {
       const normedPubs: NormedPublication[] = await NormedPublication.loadPublicationsFromDB(this.client, year)
       ingestStatus = await this.ingest(normedPubs, threadCount)
        // output results for this path
-       const statusCSVFile = path.join(process.cwd(), this.config.outputIngestDir, `Check_new_matches_${year}_status.${moment().format('YYYYMMDDHHmmss')}.csv`)
+       const statusCSVFile = `Check_new_matches_${year}_status.${moment().format('YYYYMMDDHHmmss')}.csv`
        console.log(`Writing ingest status for check new publication matches for year: ${year} to file: ${statusCSVFile}`)
       await this.writeIngestStatusToCSV(ingestStatus, statusCSVFile)
  

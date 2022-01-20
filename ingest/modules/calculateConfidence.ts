@@ -39,6 +39,8 @@ import NormedPerson from './normedPerson'
 import NormedAuthor from './normedAuthor'
 import ConfidenceTest from './confidenceTest'
 import Csl from './csl'
+import DataSourceHelper from './dataSourceHelper'
+import DataSource from './dataSource'
 
 dotenv.config({
   path: '../.env'
@@ -524,66 +526,55 @@ export class CalculateConfidence {
     }
   }
 
-  getAuthorsFromSourceMetadata(sourceName, sourceMetadata): NormedAuthor[] {
-    if (_.toLower(sourceName)==='pubmed'){
-      const authors: NormedAuthor[] = []
-      _.each(sourceMetadata['creators'], (creator) => {
-        const author: NormedAuthor = {
-          familyName: creator['familyName'],
-          givenName: creator['givenName'],
-          givenNameInitial: creator['initials'],
-          affiliations: [creator['affiliation']],
-          sourceIds: {}
-        }
-        return author
-      })
-      return authors
-    } else {
-      return undefined
+  async getAuthorsFromSourceMetadata(sourceName, sourceMetadata): Promise<NormedAuthor[]> {
+    const ds: DataSource = DataSourceHelper.getDataSource(sourceName)
+    if (ds) {
+      return await ds.getNormedAuthorsFromSourceMetadata(sourceMetadata)
     }
   }
 
-// assumes passing in authors that matched previously
-testAuthorAffiliation (author: NormedPerson, publicationAuthorMap: Map<string, NormedAuthor[]>, sourceName, sourceMetadata) {
-  const nameVariations = _.groupBy(author.names, 'familyName')
-  let matchedAuthors = new Map()
-  _.each(_.keys(nameVariations), (nameFamilyName) => {
-    _.each(_.keys(publicationAuthorMap), (pubFamilyName) => {
-      // check for a fuzzy match of name variant last names to lastname in pub author list
-      if (this.familyNameMatchFuzzy(pubFamilyName, 'familyName', nameVariations[nameFamilyName])){
-        _.each(publicationAuthorMap[pubFamilyName], async (pubAuthor: NormedAuthor) => {
-          if(!_.isEmpty(pubAuthor.affiliations)) {
-            if(/notre dame/gi.test(pubAuthor.affiliations[0])) {
-              (matchedAuthors[nameFamilyName] || (matchedAuthors[nameFamilyName] = [])).push(pubAuthor)
+  // assumes passing in authors that matched previously
+  async testAuthorAffiliation (author: NormedPerson, publicationAuthorMap: Map<string, NormedAuthor[]>, sourceName, sourceMetadata) {
+    const nameVariations = _.groupBy(author.names, 'familyName')
+    let matchedAuthors = new Map()
+    await pMap(_.keys(nameVariations), async (nameFamilyName) => {
+      _.each(_.keys(publicationAuthorMap), (pubFamilyName) => {
+        // check for a fuzzy match of name variant last names to lastname in pub author list
+        if (this.familyNameMatchFuzzy(pubFamilyName, 'familyName', nameVariations[nameFamilyName])){
+          _.each(publicationAuthorMap[pubFamilyName], async (pubAuthor: NormedAuthor) => {
+            if(!_.isEmpty(pubAuthor.affiliations)) {
+              if(/notre dame/gi.test(pubAuthor.affiliations[0])) {
+                (matchedAuthors[nameFamilyName] || (matchedAuthors[nameFamilyName] = [])).push(pubAuthor)
+              }
+            }
+          })
+        }
+      })
+      // check source metadata as well
+      const normedAuthors: NormedAuthor[] = await this.getAuthorsFromSourceMetadata(sourceName, sourceMetadata)
+      _.each(normedAuthors, (author: NormedAuthor) => {
+        const pubFamilyName = author.familyName
+        // console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}`)
+        // check for a fuzzy match of name variant last names to lastname in pub author list
+        if (pubFamilyName && this.familyNameMatchFuzzy(pubFamilyName, 'familyName', nameVariations[nameFamilyName])){
+          // console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}, found author match: ${pubLastName}`)
+          if(!_.isEmpty(author.affiliations)) {
+            // console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}, found affiliation value for author: ${pubLastName} affiliation: ${author['affiliation']}`)
+            // if(/notre dame/gi.test(author['affiliation'][0].name)) {
+            //   console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}, found affiliation match for author: ${pubLastName}`)
+            // }
+            if(/notre dame/gi.test(author.affiliations[0])) {
+              (matchedAuthors[nameFamilyName] || (matchedAuthors[nameFamilyName] = [])).push(author)
             }
           }
-        })
-      }
-    })
-    // check source metadata as well
-    _.each(this.getAuthorsFromSourceMetadata(sourceName, sourceMetadata), (author: NormedAuthor) => {
-      const pubFamilyName = author.familyName
-      // console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}`)
-      // check for a fuzzy match of name variant last names to lastname in pub author list
-      if (pubFamilyName && this.familyNameMatchFuzzy(pubFamilyName, 'familyName', nameVariations[nameFamilyName])){
-        // console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}, found author match: ${pubLastName}`)
-        if(!_.isEmpty(author.affiliations)) {
-          // console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}, found affiliation value for author: ${pubLastName} affiliation: ${author['affiliation']}`)
-          // if(/notre dame/gi.test(author['affiliation'][0].name)) {
-          //   console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}, found affiliation match for author: ${pubLastName}`)
-          // }
-          if(/notre dame/gi.test(author.affiliations[0])) {
-            (matchedAuthors[nameFamilyName] || (matchedAuthors[nameFamilyName] = [])).push(author)
-          }
         }
-      }
-    })
-  })
-  return matchedAuthors
-}
+      })
+    }, { concurrency: 1})
+    return matchedAuthors
+  }
 
   // returns true/false from a test called for the specific name passed in
-  performConfidenceTest (confidenceType, publicationCsl, testPerson: NormedPerson, publicationAuthorMap: Map<string, NormedAuthor[]>, confirmedAuthors: NormedAuthor[], sourceName, sourceMetadata?): Map<string, NormedAuthor[]>{
+  async performConfidenceTest (confidenceType, publicationCsl, testPerson: NormedPerson, publicationAuthorMap: Map<string, NormedAuthor[]>, confirmedAuthors: NormedAuthor[], sourceName, sourceMetadata?): Promise<Map<string, NormedAuthor[]>>{
     if (confidenceType.name === 'lastname') {
       return this.testAuthorFamilyName(testPerson, publicationAuthorMap)
     } else if (confidenceType.name === 'confirmed_by_author') {
@@ -600,7 +591,7 @@ testAuthorAffiliation (author: NormedPerson, publicationAuthorMap: Map<string, N
     } else if (confidenceType.name === 'given_name') {
       return this.testAuthorGivenName(testPerson, publicationAuthorMap, true)
     } else if (confidenceType.name === 'university_affiliation') {
-      return this.testAuthorAffiliation(testPerson, publicationAuthorMap, sourceName, sourceMetadata)
+      return await this.testAuthorAffiliation(testPerson, publicationAuthorMap, sourceName, sourceMetadata)
     } else if (confidenceType.name === 'common_coauthor') {
       // need the publication for this test
       // do nothing for now, and return an empty set
@@ -652,7 +643,7 @@ testAuthorAffiliation (author: NormedPerson, publicationAuthorMap: Map<string, N
         await pMap(confidenceTypesByRank[rank], async (confidenceType) => {
           // console.log(`Performing confidence test rank: ${rank}, confidence type: ${JSON.stringify(confidenceType)}, testPerson: ${testPerson.familyName}, ${testPerson.givenName} pub title: ${publicationCsl.valueOf()['title']}`)
           // need to update to make publicationAuthorMap be only ones that matched last name for subsequent tests
-          let currentMatchedAuthors: Map<string, NormedAuthor[]> = this.performConfidenceTest(confidenceType, publicationCsl, testPerson, publicationAuthorMap, confirmedAuthors, sourceName, sourceMetadata)
+          let currentMatchedAuthors: Map<string, NormedAuthor[]> = await this.performConfidenceTest(confidenceType, publicationCsl, testPerson, publicationAuthorMap, confirmedAuthors, sourceName, sourceMetadata)
           if (currentMatchedAuthors && _.keys(currentMatchedAuthors).length > 0){
             if (!confidenceTestItems) {
               confidenceTestItems = []
