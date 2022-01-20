@@ -7,12 +7,15 @@ import DataSource from './dataSource'
 import HarvestSet from './HarvestSet'
 import DataSourceConfig from './dataSourceConfig'
 import { PossibleFragmentSpreadsRule } from 'graphql'
+import DataSourceHelper from './dataSourceHelper'
+import Csl from './csl'
+import pMap from 'p-map'
 
 export class CrossRefDataSource implements DataSource {
 
   private dsConfig: DataSourceConfig 
 
-  constructor (dsConfig: DataSourceConfig) {
+  constructor (dsConfig?: DataSourceConfig) {
     this.dsConfig = dsConfig
   }
 
@@ -48,6 +51,8 @@ export class CrossRefDataSource implements DataSource {
 
   // assumes that if only one of startDate or endDate provided it would always be startDate first and then have endDate undefined
   async getPublicationsByAuthorName(person: NormedPerson, sessionState: {}, offset: Number, startDate: Date, endDate?: Date): Promise<HarvestSet> {
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
     const query = this.getAuthorQuery(person, startDate, endDate)
 
     let totalResults: Number
@@ -99,6 +104,8 @@ export class CrossRefDataSource implements DataSource {
   }
 
   async fetchCrossRefResults(pageSize, offset, queryAuthor, affiliation?, filter?) : Promise<any>{
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
     // need to make sure date string in correct format
     let totalResults
     let publications
@@ -119,6 +126,8 @@ export class CrossRefDataSource implements DataSource {
   }
 
   async fetchCrossRefQuery(pageSize, offset, queryAuthor, affiliation?, filter?) : Promise<any>{
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
     console.log(`Querying crossref offset: ${offset}, and query.author: ${queryAuthor} query.affiliation: ${affiliation} query.filter: ${filter}`)
 
     const response = await axios.get(this.dsConfig.queryUrl, {
@@ -137,7 +146,11 @@ export class CrossRefDataSource implements DataSource {
     return response.data
   }
 
-  getCSLAuthors(paperCsl){
+  async getNormedAuthorsFromSourceMetadata(sourceMetadata): Promise<NormedAuthor[]> {
+    return Csl.cslToNormedAuthors(await this.getCSLStyleAuthorList(sourceMetadata))
+  }
+
+  async getCSLStyleAuthorList(paperCsl): Promise<any[]>{
 
     const authMap = {
       firstAuthors : [],
@@ -176,25 +189,10 @@ export class CrossRefDataSource implements DataSource {
     return authors
   }
 
-  getNormedAuthors(csl) {
-    const cslAuthors = this.getCSLAuthors(csl)
-    const normedAuthors: NormedAuthor[] = []
-    _.each(cslAuthors, (sourceAuthor, index) => {
-      let author: NormedAuthor = {
-        familyName: sourceAuthor.family,
-        givenName: sourceAuthor.given,
-        givenNameInitial: sourceAuthor.given[0],
-        affiliations: sourceAuthor.affiliation,
-        sourceIds: { semanticScholarIds : [sourceAuthor['authorId']]}
-      }
-      normedAuthors.push(author)
-    })
-    return normedAuthors
-  }
-
   // returns an array of normalized publication objects given ones retrieved fron this datasource
   async getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): Promise<NormedPublication[]>{
-    const normedPubs =  _.map(sourcePublications, (pub) => {
+    let normedPubs: NormedPublication[] = []
+    await pMap(sourcePublications, async (pub) => {
       let publicationDate = ''
       if (pub['issued'] && pub['issued']['date-parts'] && pub['issued']['date-parts'][0] && pub['issued']['date-parts'][0][0]) {
         const dateParts = pub['issued']['date-parts'][0]
@@ -211,10 +209,10 @@ export class CrossRefDataSource implements DataSource {
           title: pub['title'][0],
           journalTitle: pub['container-title'] ? pub['container-title'][0] : (pub['short-container-title'] ? pub['short-containter-title'] : ''),
           publicationDate: publicationDate,
-          datasourceName: this.dsConfig.sourceName,
+          datasourceName: this.getSourceName(),
           doi: pub['DOI'] ? pub['DOI'] : '',
           sourceId: pub['DOI'] ? pub['DOI'] : '',
-          authors: this.getNormedAuthors(pub),
+          authors: await this.getNormedAuthorsFromSourceMetadata(pub),
           sourceUrl: pub['URL'] ? pub['URL'] : '', 
           number: pub['issue'] ? pub['issue'] : '',
           publisher: pub['publisher'] ? pub['publisher'] : '',
@@ -238,7 +236,7 @@ export class CrossRefDataSource implements DataSource {
         })
       }
       // console.log(`Created normed pub: ${JSON.stringify(normedPub, null, 2)}`)
-      return normedPub
+      normedPubs.push(normedPub)
     })
 
     return _.filter(normedPubs, (pub) => {
@@ -248,10 +246,14 @@ export class CrossRefDataSource implements DataSource {
 
   //returns a machine readable string version of this source
   getSourceName() {
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
     return (this.dsConfig && this.dsConfig.sourceName) ? this.dsConfig.sourceName : 'CrossRef'
   }
 
   getRequestPageSize(): Number {
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
     return Number.parseInt(this.dsConfig.pageSize)
   }
 

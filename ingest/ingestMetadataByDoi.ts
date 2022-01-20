@@ -403,11 +403,11 @@ function isString(value) {
 
 async function getCSLAuthorsFromSourceMetadata(sourceName, sourceMetadata) {
   if (sourceName === 'SemanticScholar') {
-    return semanticScholarDS.getCSLStyleAuthorList(sourceMetadata)    
+    return await semanticScholarDS.getCSLStyleAuthorList(sourceMetadata)    
   } else if (sourceName === 'WebOfScience') {
-    return wosDS.getCSLStyleAuthorList(sourceMetadata)    
+    return await wosDS.getCSLStyleAuthorList(sourceMetadata)    
   } else if (sourceName === 'PubMed'){
-    return pubmedDS.getCSLStyleAuthorList(sourceMetadata)
+    return await pubmedDS.getCSLStyleAuthorList(sourceMetadata)
   } else {
     return []
   }

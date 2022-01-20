@@ -13,7 +13,12 @@ import FsHelper from '../units/fsHelper'
 import BibTex from './bibTex'
 import Csl from './csl'
 import { SemanticScholarDataSource } from './semanticScholarDataSource'
-
+import { PubMedDataSource } from './pubmedDataSource'
+import { WosDataSource } from './wosDataSource'
+import { CrossRefDataSource } from './crossrefDataSource'
+import DataSourceHelper from './dataSourceHelper'
+import DataSource from './dataSource'
+import { DataStore } from 'apollo-client/data/store'
 export default class NormedPublication {
   // ------ begin declare properties used when using NormedPublication like an interface
 
@@ -40,6 +45,18 @@ export default class NormedPublication {
   sourceMetadata?: Object
   csl?: Object
   csl_string?: string
+  
+  public static getDataSource(normedPub: NormedPublication): DataSource {
+    if (normedPub) {
+      if (normedPub.datasourceName) {
+        return DataSourceHelper.getDataSource(normedPub.datasourceName)
+      } else {
+        throw('Unable to get data source object if data source name is undefined.')
+      }
+    } else {
+      throw('Unable to get data source object if normedPub is undefined.')
+    }
+  }
   // ------- end declare properties used when using NormedPublication like an interface
 
   // begin declaring static utility methods for NormedPublication objects
@@ -409,9 +426,14 @@ export default class NormedPublication {
   public static async getAuthors (normedPub: NormedPublication): Promise<NormedAuthor[]> {
     if (normedPub.authors) {
       return normedPub.authors
-    } else if (normedPub.datasourceName === 'SemanticScholar') {
-      return await SemanticScholarDataSource.getNormedAuthors(normedPub.sourceMetadata)
+    } else {
+      return await this.getAuthorsFromSourceMetadata(normedPub)
     }
+  }
+
+  public static async getAuthorsFromSourceMetadata (normedPub: NormedPublication): Promise<NormedAuthor[]> {
+    const ds: DataSource = NormedPublication.getDataSource(normedPub)
+    return await ds.getNormedAuthorsFromSourceMetadata(normedPub.sourceMetadata)
   }
 
   public static async getCslByBibTex(normedPub: NormedPublication) : Promise<Csl> {

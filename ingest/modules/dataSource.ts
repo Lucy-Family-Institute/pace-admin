@@ -2,6 +2,7 @@ import NormedPublication from './normedPublication'
 import NormedPerson from './normedPerson'
 import HarvestSet from './HarvestSet'
 import DataSourceConfig from './dataSourceConfig'
+import NormedAuthor from './normedAuthor'
 export default interface DataSource {
 
   // return the query passed to scopus for searching for given author
@@ -24,6 +25,10 @@ export default interface DataSource {
 
   // perform any actions necessary to initialize a connection to the datasource
   initialize(): Promise<void>
+
+  getNormedAuthorsFromSourceMetadata(sourceMetadata): Promise<NormedAuthor[]>
+
+  getCSLStyleAuthorList(sourceMetadata): Promise<any[]>
 
   getDataSourceConfig(): DataSourceConfig
 }
