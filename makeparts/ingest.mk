@@ -13,6 +13,9 @@ ingest_metadata: ingest/node_modules
 ingest_metadata_new_model: ingest/node_modules
 	cd ingest && ts-node ingestMetadataNewModel.ts && cd ..
 
+check_publications_new_matches: ingest/node_modules
+	cd ingest && ts-node checkPersonPublicationsMatches.ts && cd ..
+
 load_new_confidence_sets: ingest/node_modules
 	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
 
