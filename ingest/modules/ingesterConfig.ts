@@ -11,5 +11,6 @@ export default interface IngesterConfig {
   dedupByDoi: boolean,
   stagedIngestDir: string,
   outputIngestDir: string
-  centerMemberYear: number
+  centerMemberYear: number,
+  loggingBatchSize: number
 }
