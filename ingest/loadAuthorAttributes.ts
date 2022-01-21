@@ -20,6 +20,8 @@ dotenv.config({
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
 
+const authorAttributeFilePath = process.env.INGESTER_AUTHOR_ATTRIBUTES_FILE
+
 const client = new ApolloClient({
   link: createHttpLink({
     uri: graphQlEndPoint,
@@ -33,7 +35,7 @@ const client = new ApolloClient({
 
 async function main (): Promise<void> {
   const authorsWithVariances: any = await loadCsv({
-    path: '../data/input/researchers_2017-2021_attributes.csv'
+    path: authorAttributeFilePath
   })
 
   // get the set of persons to add variances to
