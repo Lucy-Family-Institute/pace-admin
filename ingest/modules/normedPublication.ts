@@ -67,9 +67,11 @@ export default class NormedPublication {
    * 
    * @param columnNameMap a map of column names in the csv to harvestset property names, if not defined uses default path from configuration
    * @param dataDirPath path to dir containing JSON files for sourceMetadata
+   * @param pageOffset if provided gives the page index if results are broken into blocks of results (i.e., pages)
+   * @param pageSize optional param if set will return a block of results at the page index with number results returned as this pageSize
    * @returns object with array of raw publication set as well as hash of doi to index of corresponding publication in array
    */
-  public static async loadFromCSV (csvPath: string, dataDirPath?: string): Promise<NormedPublication[]> {
+  public static async loadFromCSV (csvPath: string, dataDirPath?: string, pageOffset=0, pageSize?: number): Promise<NormedPublication[]> {
     console.log(`Loading Papers from path: ${csvPath}`)
     // ingest list of DOI's from CSV and relevant center author name
     try {
@@ -78,7 +80,9 @@ export default class NormedPublication {
 
       const authorPapers: any = await loadCsv({
         path: csvPath,
-        lowerCaseColumns: true
+        lowerCaseColumns: true,
+        pageOffset: pageOffset,
+        pageSize: pageSize
       })
 
       let sourceName = undefined

@@ -31,6 +31,8 @@ export default class IngestStatus {
   ingesterConfig: IngesterConfig
   csvFileIndex: number
 
+  loggingBatchSize: number
+
   constructor (csvFileBaseName: string, ingesterConfig: IngesterConfig){
     this.addedPublications = []
     this.skippedAddPublications = []
@@ -55,6 +57,13 @@ export default class IngestStatus {
     this.totalFailedAddConfidenceSets = 0
     this.csvFileBaseName = csvFileBaseName
     this.ingesterConfig = ingesterConfig
+
+    if (this.ingesterConfig && this.ingesterConfig.loadPageSize && this.ingesterConfig.loggingBatchSize && this.ingesterConfig.loggingBatchSize > this.ingesterConfig.loadPageSize) {
+      console.log(`Warning ingest logging batch size: ${this.ingesterConfig.loggingBatchSize} is greater than load page size ${this.ingesterConfig.loadPageSize}. Will use load page size for logging batch size instead.`)
+      this.loggingBatchSize = this.ingesterConfig.loadPageSize
+    } else {
+      this.loggingBatchSize = this.ingesterConfig.loggingBatchSize
+    }
     this.csvFileIndex = 1
   }
 
@@ -127,9 +136,10 @@ export default class IngestStatus {
   }
 
   logToCSV(){
-    if (this.ingesterConfig && this.ingesterConfig.loggingBatchSize && 
-      ((this.totalRecords % this.ingesterConfig.loggingBatchSize) >= 0) &&
-      (this.totalRecords / this.ingesterConfig.loggingBatchSize > this.csvFileIndex)) {
+    if (this.loggingBatchSize && 
+      ((this.totalRecords % this.loggingBatchSize) >= 0) &&
+      (((this.totalRecords + 1) / this.loggingBatchSize) > this.csvFileIndex)) {
+      // if one more pushes it over the batch size, write the current amount
       this.writeIngestStatusToCSV()
     }
   }
@@ -147,7 +157,7 @@ export default class IngestStatus {
     if (this.ingesterConfig.outputPassed) {
       combinedStatus = _.concat(combinedStatus, this.addedPublications)
     }     
-    const combinedStatusValues = _.values(combinedStatus)
+
 
     console.log(`Write status of doi's to csv file: ${csvFileName}, output warnings: ${this.ingesterConfig.outputWarnings}, output passed: ${this.ingesterConfig.outputPassed}`)
     // console.log(`Failed records are: ${JSON.stringify(failedRecords[sourceName], null, 2)}`)
@@ -156,7 +166,7 @@ export default class IngestStatus {
     
     await writeCsv({
       path: csvFilePath,
-      data: combinedStatusValues,
+      data: combinedStatus,
     })
 
     console.log(`DOIs errors for path ${csvFilePath}':\n${JSON.stringify(this.errorMessages, null, 2)}`)
@@ -180,11 +190,10 @@ export default class IngestStatus {
     console.log(`Total DOIs failed add confidence sets': ${this.totalFailedAddConfidenceSets}`)
     console.log(`Total DOIs added confidence sets': ${this.totalAddedConfidenceSets}`)
     console.log(`Total DOIs skipped add confidence sets': ${this.totalSkippedAddConfidenceSets}`)
-    // now reset queues
     this.resetStatusLists()
   }
 
-  resetStatusLists() {
+  resetStatusLists () {
     this.addedPublications = []
     this.skippedAddPublications = []
     this.failedAddPublications = []
@@ -212,6 +221,8 @@ export default class IngestStatus {
     newIngestStatus.warningMessages = _.concat(ingestStatus1.warningMessages, ingestStatus2.warningMessages)
     newIngestStatus.errorMessages = _.concat(ingestStatus1.errorMessages, ingestStatus2.errorMessages)
     newIngestStatus.totalRecords = ingestStatus1.totalRecords + ingestStatus2.totalRecords
+    // call this to make sure any incremental logging happens after merge
+    newIngestStatus.logToCSV()
     return newIngestStatus
   }
 }

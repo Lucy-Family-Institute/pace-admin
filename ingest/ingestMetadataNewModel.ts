@@ -54,6 +54,7 @@ const stagedIngestDir = process.env.INGESTER_STAGED_DIR
 const outputIngestDir = process.env.INGESTER_OUTPUT_DIR
 const centerMemberYear = process.env.INGESTER_CENTER_MEMBER_YEAR
 const loggingBatchSize = process.env.INGESTER_LOGGING_BATCH_SIZE
+const loadPageSize = process.env.INGESTER_LOAD_BATCH_SIZE
 
 //returns status map of what was done
 async function main() {
@@ -71,7 +72,8 @@ async function main() {
     stagedIngestDir: stagedIngestDir,
     outputIngestDir: outputIngestDir,
     centerMemberYear: Number.parseInt(centerMemberYear),
-    loggingBatchSize: Number.parseInt(loggingBatchSize)
+    loggingBatchSize: Number.parseInt(loggingBatchSize),
+    loadPageSize: Number.parseInt(loadPageSize)
   }
   const ingester = new Ingester(config, client)
   await ingester.ingestStagedFiles()

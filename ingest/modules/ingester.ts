@@ -364,6 +364,8 @@ export class Ingester {
         }
       }
 
+      let addedPersonsCount = 0
+      let addedConfSetCount = 0
       if (_.keys(matchedPersons).length > 0){
         const publicationYear = Csl.getPublicationYear(csl)
         const sourceId = normedPub.sourceId
@@ -423,10 +425,12 @@ export class Ingester {
                   )
                   newPersonPubId = await mutateResult.data.insert_persons_publications.returning[0]['id']
                   currentPersonPubId = newPersonPubId
+                  addedPersonsCount += 1
                   addedPersons = true
-                } else if (thisIngester.config.checkForNewPersonMatches) {
-                  console.log(`Warning: Person publication already found for person id: ${personId} publication id: ${publicationId} person Pub id: ${currentPersonPubId}`)
                 }
+                // } else if (thisIngester.config.checkForNewPersonMatches) {
+                //   console.log(`Warning: Person publication already found for person id: ${personId} publication id: ${publicationId} person Pub id: ${currentPersonPubId}`)
+                // }
               })
             } catch (error) {
               const errorMessage = `Error encountered on add person publications for publication id: ${publicationId}, error: ${error}`
@@ -458,6 +462,7 @@ export class Ingester {
                     // use personpubid and matched person from above to insert
                     const insertedConfidenceSetItems = await thisIngester.calculateConfidence.insertConfidenceSetToDB(confidenceSet, currentPersonPubId)
                     if (insertedConfidenceSetItems.length > 0) {
+                      addedConfSetCount += 1
                       addedConfidenceSets = true
                     } else {
                       const errorMessage = `Unknow error and 0 confidence sets were added for publication id: ${publicationId} and personPub id: ${currentPersonPubId}`
@@ -507,7 +512,7 @@ export class Ingester {
           personPublicationStatusValue = (addedPersons ? PersonPublicationStatusValue.ADDED_PERSON_PUBLICATIONS : PersonPublicationStatusValue.SKIPPED_ADD_PERSON_PUBLICATIONS)
           confidenceSetStatusValue = (addedConfidenceSets ? ConfidenceSetStatusValue.ADDED_CONFIDENCE_SETS : ConfidenceSetStatusValue.SKIPPED_ADD_CONFIDENCE_SETS)          
           pubStatus = new PublicationStatus(normedPub, publicationId, message, publicationStatusValue, personPublicationStatusValue, confidenceSetStatusValue)
-          console.log(`Everything passed DOI: ${normedPub.doi} from source: ${normedPub.datasourceName}, added pub: ${addedPub}, added person pubs: ${addedPersons}, added conf sets: ${addedConfidenceSets}, pubStatus: ${PublicationStatusValue[publicationStatusValue]}, personPubStatus: ${PersonPublicationStatusValue[personPublicationStatusValue]}, confSetStatus: ${ConfidenceSetStatusValue[confidenceSetStatusValue]}`)
+          console.log(`Everything passed DOI: ${normedPub.doi} from source: ${normedPub.datasourceName}, added pub: ${addedPub},${addedPersonsCount} person pubs: ${addedPersons} (${addedPersonsCount} of ${_.keys(matchedPersons).length}), added conf sets: ${addedConfidenceSets} (${addedConfSetCount} of ${_.keys(matchedPersons).length}), pubStatus: ${PublicationStatusValue[publicationStatusValue]}, personPubStatus: ${PersonPublicationStatusValue[personPublicationStatusValue]}, confSetStatus: ${ConfidenceSetStatusValue[confidenceSetStatusValue]}`)
         }
       } else {
         if (_.keys(matchedPersons).length <= 0){
@@ -538,9 +543,20 @@ export class Ingester {
     try {
       console.log(`Ingesting publications from ${manifestFilePath}, with config: ${JSON.stringify(this.config)}`)
 
+      let pageOffset = 0
+      const pageSize = this.config.loadPageSize
+      // const pageSize = undefined
       // get normed publications from filedir and manifest
-      const normedPubs: NormedPublication[] = await NormedPublication.loadFromCSV(manifestFilePath, dataDirPath)
-      ingestStatus = await this.ingest(normedPubs, csvOutputFileBase, threadCount)
+      let normedPubs: NormedPublication[] = await NormedPublication.loadFromCSV(manifestFilePath, dataDirPath, pageOffset, pageSize)
+      ingestStatus = await this.ingest(normedPubs, `${csvOutputFileBase}_${pageOffset}`, threadCount)
+      if (pageSize){
+        // iterate over the remaining set until results returned are 0
+        while (normedPubs && normedPubs.length > 0) {
+          pageOffset += 1
+          normedPubs = await NormedPublication.loadFromCSV(manifestFilePath, dataDirPath, pageOffset, pageSize)
+          ingestStatus = IngestStatus.merge(ingestStatus, await this.ingest(normedPubs, `${csvOutputFileBase}_${pageOffset}`, threadCount))
+        }
+      }
       // console.log(`Ingest status is: ${JSON.stringify(ingestStatus)}`)
     } catch (error) {
       console.log(`Error encountered on ingest publication with paths manifest: '${manifestFilePath}' data dir path: '${dataDirPath}'`)
