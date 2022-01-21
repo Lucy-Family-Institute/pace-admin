@@ -8,16 +8,13 @@ load_author_attributes: ingest/node_modules
 	cd ingest && ts-node loadAuthorAttributes.ts && cd ..
 
 ingest_metadata: ingest/node_modules
-	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
+	cd ingest && ts-node ingestMetadataNewModel.ts && cd ..
 
 ingest_metadata_new_model: ingest/node_modules
 	cd ingest && ts-node ingestMetadataNewModel.ts && cd ..
 
 check_publications_new_matches: ingest/node_modules
 	cd ingest && ts-node checkPersonPublicationsMatches.ts && cd ..
-
-load_new_confidence_sets: ingest/node_modules
-	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
 
 synchronize_reviews: ingest/node_modules
 	cd ingest && ts-node synchronizeReviewStates.ts && cd ..
@@ -31,14 +28,10 @@ load_awards: ingest/node_modules
 update_pub_journals: ingest/node_modules
 	cd ingest && ts-node updatePublicationsJournals.ts && cd ..
 
-recheck_author_matches: ingest/node_modules
-	cd ingest && ts-node updatePersonPublicationsMatches.ts && cd ..
-
 newdb: ingest/node_modules
 	cd ingest && ts-node loadAuthors.ts && cd ..
 	cd ingest && ts-node loadAuthorAttributes.ts && cd ..
-	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
-	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
+	cd ingest && ts-node ingestMetadataNewModel.ts && cd ..
 	cd ingest && ts-node loadAwards.ts && cd ..
 	cd ingest && ts-node loadFunders.ts && cd ..
 	cd ingest && ts-node loadAbstracts.ts && cd ..
@@ -49,8 +42,7 @@ newdb: ingest/node_modules
 reharvest: ingest/node_modules
 	cd ingest && ts-node loadAuthors.ts && cd ..
 	cd ingest && ts-node loadAuthorAttributes.ts && cd ..
-	cd ingest && ts-node ingestMetadataByDoi.ts && cd ..
-	cd ingest && ts-node updateConfidenceReviewStates.ts && cd ..
+	cd ingest && ts-node ingestMetadataNewModel.ts && cd ..
 	cd ingest && ts-node synchronizeReviewStates.ts && cd ..
 	cd ingest && ts-node loadAwards.ts && cd ..
 	cd ingest && ts-node loadAbstracts.ts && cd ..
@@ -90,9 +82,6 @@ load_funders: ingest/node_modules
 
 update_awards_funders: ingest/node_modules
 	cd ingest && ts-node updateAwardsFunders.ts && cd ..
-
-scopus_author_data: ingest/node_modules
-	cd ingest && ts-node fetchScopusAuthorObjects.ts && cd ..
 
 mine_semantic_scholar_ids: ingest/node_modules
 	cd ingest && ts-node mineSemanticScholarAuthorIds.ts && cd ..
