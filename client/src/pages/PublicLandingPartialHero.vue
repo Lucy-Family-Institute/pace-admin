@@ -68,12 +68,6 @@
             <p class="text-center btn-group">
                 <q-btn
                   type="a"
-                  :href="`mailto:${email}`"
-                  size="md"
-                  label="EXPLORE PARTNERSHIP"
-                  class="btn btn-cta" />
-                <q-btn
-                  type="a"
                   href="/login"
                   size="md"
                   label="LOGIN"
@@ -231,8 +225,8 @@ export default {
     return {
       siteName: `PACE`,
       title: `Publication Activity Collection Environment`,
-      description: `
-        Providing high-confidence publication data for centers,
+      description: `A pilot project in partnership between the Hesburgh Libraries and Notre Dame Research
+        to collect publication data for centers,
         institutes, and departments to measure impact and highlight
         examples of research excellence.`,
       address: {
