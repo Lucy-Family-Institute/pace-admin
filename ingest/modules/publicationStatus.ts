@@ -1,4 +1,5 @@
 import NormedPublication from "./normedPublication"
+import _ from 'lodash'
 
 export enum PublicationStatusValue {
   ADDED_PUBLICATION,
@@ -46,8 +47,13 @@ export class PublicationStatus {
     this.title = normedPub.title
     this.journalTitle = normedPub.journalTitle
     this.publicationDate = normedPub.publicationDate
-    this.authors = JSON.stringify(normedPub.authors)
-    this.confirmedAuthors = JSON.stringify(normedPub.confirmedAuthors)
+    // truncate author lists as needed
+    const chunkedAuthors = _.chunk(normedPub.authors, 10)
+    // skip if either author set is too large to avoid memory logjams while processes are running
+    this.authors = ((chunkedAuthors && chunkedAuthors.length > 0) ? JSON.stringify(chunkedAuthors[0]) : '')
+     // truncate confirmed author lists as needed
+    const chunkedConfirmedAuthors = _.chunk(normedPub.confirmedAuthors, 10)
+    this.confirmedAuthors = ((chunkedConfirmedAuthors && chunkedConfirmedAuthors.length > 0) ? JSON.stringify(chunkedConfirmedAuthors[0]) : '')
     this.bibTex = normedPub.bibtex
     if (publicationId > 0) {
       this.publicationId = publicationId

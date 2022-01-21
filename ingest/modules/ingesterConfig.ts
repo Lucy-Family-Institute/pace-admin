@@ -12,5 +12,6 @@ export default interface IngesterConfig {
   stagedIngestDir: string,
   outputIngestDir: string
   centerMemberYear: number,
-  loggingBatchSize: number
+  loggingBatchSize: number,
+  loadPageSize?: number,
 }
