@@ -4,6 +4,7 @@ import path from 'path'
 import moment from 'moment'
 import IngesterConfig from './ingesterConfig'
 import { command as writeCsv } from '../units/writeCsv'
+import FsHelper from '../units/fsHelper'
 export default class IngestStatus {
   addedPublications: Array<PublicationStatus>
   skippedAddPublications: Array<PublicationStatus>
@@ -27,6 +28,7 @@ export default class IngestStatus {
   totalSkippedAddConfidenceSets: number
   totalFailedAddConfidenceSets: number
 
+  csvBaseLogDir: string
   csvFileBaseName: string
   ingesterConfig: IngesterConfig
   csvFileIndex: number
@@ -55,6 +57,7 @@ export default class IngestStatus {
     this.totalAddedConfidenceSets = 0
     this.totalSkippedAddConfidenceSets = 0
     this.totalFailedAddConfidenceSets = 0
+    this.csvBaseLogDir = `${csvFileBaseName}_logs`
     this.csvFileBaseName = csvFileBaseName
     this.ingesterConfig = ingesterConfig
 
@@ -162,7 +165,10 @@ export default class IngestStatus {
     console.log(`Write status of doi's to csv file: ${csvFileName}, output warnings: ${this.ingesterConfig.outputWarnings}, output passed: ${this.ingesterConfig.outputPassed}`)
     // console.log(`Failed records are: ${JSON.stringify(failedRecords[sourceName], null, 2)}`)
     //write data out to csv
-    const csvFilePath = path.join(process.cwd(), this.ingesterConfig.outputIngestDir, csvFileName)
+    // create log dir if it does not exist
+    const csvFileDir = path.join(process.cwd(), this.ingesterConfig.outputIngestDir, this.csvBaseLogDir)
+    FsHelper.createDirIfNotExists(csvFileDir, true)
+    const csvFilePath = path.join(csvFileDir, csvFileName)
     
     await writeCsv({
       path: csvFilePath,
