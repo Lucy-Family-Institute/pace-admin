@@ -24,11 +24,12 @@ function parseCsv(file): Promise<any[]> {
  * @param {string} filePath Path to csv file to be loaded
  * @param {boolean} lowerCaseColumns true or false whether to convert column names to all lowercase
  * @param {hash} columnNameMap key:value pair (original:new) map of any column names to convert original column names to a new column name
- * @param page the page index if pageSize is set, used if pageSize is provided
+ * @param includeData this defaults to true and can be set to false in order to just return an empty set of rows for total objects (can be used to optimize memory usage)
+ * @param pageOffset the page index if pageSize is set, used if pageSize is provided
  * @param pageSize the max amount of results to return for each page
  * @returns array of resultant rows with column values, first row will contain column names
  */
-async function loadCsv(filePath, lowerCaseColumns=false, columnNameMap={}, pageOffset=0, pageSize?: number) {
+async function loadCsv(filePath, lowerCaseColumns=false, columnNameMap={}, includeData=true, pageOffset=0, pageSize?: number) {
   // TODO error on missing filepath
   console.log(`Loading CSV File from path: ${filePath}`)
   if (!fs.existsSync(filePath)) {
@@ -41,16 +42,25 @@ async function loadCsv(filePath, lowerCaseColumns=false, columnNameMap={}, pageO
   })
 
   const data = await parseCsv(fs.createReadStream(filePath));
-  let curPage = data
-  if (pageSize) {
-    //page size is defined so will chunk results and use page offset
-    const pages = _.chunk(data, pageSize)
-    curPage = pages[pageOffset]
-  }
-  if (lowerCaseColumns || _.keys(lowerColumnNameMap).length>0) {
-    return normalizeColumns(curPage, lowerCaseColumns, lowerColumnNameMap);
+  if (!includeData) {
+    // return an array with empty values
+    let emptyData = []
+    _.each(data, (item, index) => {
+      emptyData.push({index: index})
+    })
+    return emptyData
   } else {
-    return curPage;
+    let curPage = data
+    if (pageSize) {
+      //page size is defined so will chunk results and use page offset
+      const pages = _.chunk(data, pageSize)
+      curPage = pages[pageOffset]
+    }
+    if (lowerCaseColumns || _.keys(lowerColumnNameMap).length>0) {
+      return normalizeColumns(curPage, lowerCaseColumns, lowerColumnNameMap);
+    } else {
+      return curPage;
+    }
   }
 }
 
@@ -93,9 +103,10 @@ interface CommandProperties {
   lowerCaseColumns?: boolean,
   columnNameMap?: {},
   pageOffset?: number,
-  pageSize?: number
+  pageSize?: number,
+  includeData?: boolean
 }
 
 export async function command(input: CommandProperties) {
-  return loadCsv(input.path, input.lowerCaseColumns, input.columnNameMap, input.pageOffset, input.pageSize)
+  return loadCsv(input.path, input.lowerCaseColumns, input.columnNameMap, input.includeData, input.pageOffset, input.pageSize)
 }

@@ -57,6 +57,15 @@ export default class NormedPublication {
       throw('Unable to get data source object if normedPub is undefined.')
     }
   }
+
+  public static async getTotalCSVFileRows(csvPath: string): Promise<number> {
+    const authorPapers: any = await loadCsv({
+      path: csvPath,
+      includeData: false
+    })
+    return authorPapers.length
+  }
+
   // ------- end declare properties used when using NormedPublication like an interface
 
   // begin declaring static utility methods for NormedPublication objects
@@ -71,7 +80,7 @@ export default class NormedPublication {
    * @param pageSize optional param if set will return a block of results at the page index with number results returned as this pageSize
    * @returns object with array of raw publication set as well as hash of doi to index of corresponding publication in array
    */
-  public static async loadFromCSV (csvPath: string, dataDirPath?: string, pageOffset=0, pageSize?: number): Promise<NormedPublication[]> {
+  public static async loadFromCSV (csvPath: string, dataDirPath: string, pageOffset=0, pageSize?: number): Promise<NormedPublication[]> {
     console.log(`Loading Papers from path: ${csvPath}`)
     // ingest list of DOI's from CSV and relevant center author name
     try {
@@ -398,7 +407,7 @@ export default class NormedPublication {
 
   public static async getConfirmedAuthorsByDoiFromCSV (path) {
     try {
-      const normedPubs = await NormedPublication.loadFromCSV(path)
+      const normedPubs = await NormedPublication.loadFromCSV(path, undefined)
       const normedPubsByDoi = _.groupBy(normedPubs, function(normedPub) {
         return normedPub.doi
       })
