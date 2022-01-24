@@ -251,7 +251,7 @@ export class Ingester {
     return _.values(pubsByKey)
   }
 
-  async ingest (publications: NormedPublication[], csvFileBaseName: string, threadCount = 1): Promise<IngestStatus> {
+  async ingest (publications: NormedPublication[], csvFileBaseName: string, totalRows: number, threadCount = 1): Promise<IngestStatus> {
     let ingestStatus = new IngestStatus(csvFileBaseName, this.config)
     // do for loop
     let dedupedPubs: NormedPublication[]
@@ -263,7 +263,7 @@ export class Ingester {
     }
     await pMap(dedupedPubs, async (publication, index) => {
       try {
-        console.log(`Ingesting publication count: ${index+1} of ${dedupedPubs.length}`)
+        console.log(`Ingesting publication batch: (${index+1} of ${dedupedPubs.length}) of ${totalRows} total publications`)
         const pubStatus: PublicationStatus = await this.ingestNormedPublication(publication)
         ingestStatus.log(pubStatus)
       } catch (error) {
@@ -303,7 +303,7 @@ export class Ingester {
     //retrieve the authors from the record and put in a map, returned above in array, but really just one element
     let authors = []
   
-    if (csl) {
+    if (csl && csl.valueOf() && csl.cslJson) {
       // console.log(`Getting csl authors for doi: ${doi}`)
       authors = await Csl.getCslAuthors(csl)
     }
@@ -350,17 +350,18 @@ export class Ingester {
 
       //match paper authors to people
       //console.log(`Testing for Author Matches for DOI: ${doi}`)
-      let matchedPersons: Map<number,ConfidenceSet> = await this.calculateConfidence.matchPeopleToPaperAuthors(csl, testAuthors, this.confirmedAuthorsByDoi[normedPub.doi], normedPub.datasourceName)
+      let matchedPersons: Map<number,ConfidenceSet> = await this.calculateConfidence.matchPeopleToPaperAuthors(csl, testAuthors, this.confirmedAuthorsByDoi[normedPub.doi], normedPub.datasourceName, sourceMetadata)
       //console.log(`Person to Paper Matches: ${JSON.stringify(matchedPersons,null,2)}`)
 
-      if (_.keys(matchedPersons).length <= 0){
+      if (_.keys(matchedPersons).length <= 0 && csl && csl.valueOf()){
         // try to match against authors from source if nothing found yet
         // console.log(`No matching authors found from csl, doi: ${normedPub.doi} checking source metadata...${JSON.stringify(sourceMetadata)}`)
         csl.setAuthors(await this.getCSLAuthorsFromSourceMetadata(normedPub.datasourceName, sourceMetadata))
+        
         authors = csl.valueOf()['author']
         // console.log(`After check from source metadata if needed authors are: ${JSON.stringify(csl.author, null, 2)}`)
         if (csl.valueOf()['author'] && csl.valueOf()['author'].length > 0){
-          matchedPersons = await this.calculateConfidence.matchPeopleToPaperAuthors(csl, testAuthors, this.confirmedAuthorsByDoi[normedPub.doi], normedPub.datasourceName)
+          matchedPersons = await this.calculateConfidence.matchPeopleToPaperAuthors(csl, testAuthors, this.confirmedAuthorsByDoi[normedPub.doi], normedPub.datasourceName, sourceMetadata)
         }
       }
 
@@ -545,16 +546,18 @@ export class Ingester {
 
       let pageOffset = 0
       const pageSize = this.config.loadPageSize
-      // const pageSize = undefined
+
+      // get total rows from csv file
+      const totalRows = await NormedPublication.getTotalCSVFileRows(manifestFilePath)
       // get normed publications from filedir and manifest
       let normedPubs: NormedPublication[] = await NormedPublication.loadFromCSV(manifestFilePath, dataDirPath, pageOffset, pageSize)
-      ingestStatus = await this.ingest(normedPubs, `${csvOutputFileBase}_${pageOffset}`, threadCount)
+      ingestStatus = await this.ingest(normedPubs, `${csvOutputFileBase}_${pageOffset}`, totalRows, threadCount)
       if (pageSize){
         // iterate over the remaining set until results returned are 0
         while (normedPubs && normedPubs.length > 0) {
           pageOffset += 1
           normedPubs = await NormedPublication.loadFromCSV(manifestFilePath, dataDirPath, pageOffset, pageSize)
-          ingestStatus = IngestStatus.merge(ingestStatus, await this.ingest(normedPubs, `${csvOutputFileBase}_${pageOffset}`, threadCount))
+          ingestStatus = IngestStatus.merge(ingestStatus, await this.ingest(normedPubs, `${csvOutputFileBase}_${pageOffset}`, totalRows, threadCount))
         }
       }
       // console.log(`Ingest status is: ${JSON.stringify(ingestStatus)}`)
@@ -650,7 +653,7 @@ export class Ingester {
       // get normed publications from filedir and manifest
       const normedPubs: NormedPublication[] = await NormedPublication.loadPublicationsFromDB(this.client, year)
       const statusCSVFileBase = `Check_new_matches_${year}_status`
-      ingestStatus = await this.ingest(normedPubs, statusCSVFileBase, threadCount)
+      ingestStatus = await this.ingest(normedPubs, statusCSVFileBase, normedPubs.length, threadCount)
       // output remaining results for this path
       await ingestStatus.writeIngestStatusToCSV()
  

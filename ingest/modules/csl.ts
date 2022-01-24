@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import NormedAuthor from './normedAuthor'
 import Cite from 'citation-js'
+import pMap from 'p-map'
 
 export default class Csl {
 
@@ -11,11 +12,15 @@ export default class Csl {
   }
 
   valueOf() {
-    return this.cslJson
+    if (this.cslJson) {
+      return this.cslJson
+    }
   }
 
   setAuthors(authors) {
-    this.cslJson['author'] = authors
+    if (this.cslJson){
+      this.cslJson['author'] = authors
+    }
   }
 
   setDoi(doi) {
@@ -89,28 +94,33 @@ export default class Csl {
   
   }
 
-  public static getCslAuthors(csl: Csl): any[] {
+  public static async getCslAuthors(csl: Csl): Promise<any[]> {
     const authMap = {
       firstAuthors : [],
       otherAuthors : []
     }
   
     let authorCount = 0
-    _.each(csl.valueOf()['author'], async (author) => {
-      // skip if family_name undefined
-      if (author.family != undefined){
-        authorCount += 1
-  
-        //if given name empty change to empty string instead of null, so that insert completes
-        if (author.given === undefined) author.given = ''
-  
-        if (_.lowerCase(author.sequence) === 'first' ) {
-          authMap.firstAuthors.push(author)
-        } else {
-          authMap.otherAuthors.push(author)
+      if (csl && csl.valueOf()){
+      // console.log(`iterating of csl: ${JSON.stringify(csl)}`)
+      // console.log(`Before author is: ${JSON.stringify(csl.valueOf()['author'], null, 2)}`)
+      await pMap(csl.valueOf()['author'], async (author: any) => {
+        // skip if family_name undefined
+        // console.log(`During author is: ${JSON.stringify(author, null, 2)}`)
+        if (author.family != undefined){
+          authorCount += 1
+
+          //if given name empty change to empty string instead of null, so that insert completes
+          if (author.given === undefined) author.given = ''
+          
+          if (_.lowerCase(author.sequence) === 'first' ) {
+            authMap.firstAuthors.push(author)
+          } else {
+            authMap.otherAuthors.push(author)
+          }
         }
-      }
-    })
+      }, { concurrency: 1})
+    }
   
     //add author positions
     authMap.firstAuthors = _.forEach(authMap.firstAuthors, function (author, index){

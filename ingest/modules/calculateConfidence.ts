@@ -205,7 +205,7 @@ export class CalculateConfidence {
   // author map assumed to be doi mapped to two arrays: first authors and other authors
   // returns a map of person ids to the person object and confidence value for any persons that matched coauthor attributes
   // example: {1: {person: simplepersonObject, confidence: 0.5}, 51: {person: simplepersonObject, confidence: 0.8}}
-  async matchPeopleToPaperAuthors(publicationCSL, normedPersons: NormedPerson[], confirmedAuthors, sourceName) : Promise<Map<number,ConfidenceSet>> {
+  async matchPeopleToPaperAuthors(publicationCSL: Csl, normedPersons: NormedPerson[], confirmedAuthors, sourceName, sourceMetadata?) : Promise<Map<number,ConfidenceSet>> {
 
     //match to last name
     //match to first initial (increase confidence)
@@ -216,35 +216,35 @@ export class CalculateConfidence {
       
       //console.log(`Testing Author for match: ${author.family}, ${author.given}`)
 
-        const passedConfidenceTests: ConfidenceTest[] = await this.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank, sourceName)
-        // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
-        // returns a new map of rank -> confidenceTestName -> calculatedValue
-        const passedConfidenceTestsWithConf = await this.calculateAuthorConfidence(passedConfidenceTests)
-        // calculate overall total and write the confidence set and comments to the DB
-        let confidenceTotal = 0.0
-        _.each(passedConfidenceTestsWithConf, (confTestSet: ConfidenceTest) => {
-          _.each(confTestSet.confidenceTestItems, (confTestItem: ConfidenceTestItem) => {
-            confidenceTotal += confTestItem.confidenceValue
-          })
+      const passedConfidenceTests: ConfidenceTest[] = await this.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank, sourceName)
+      // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
+      // returns a new map of rank -> confidenceTestName -> calculatedValue
+      const passedConfidenceTestsWithConf = await this.calculateAuthorConfidence(passedConfidenceTests)
+      // calculate overall total and write the confidence set and comments to the DB
+      let confidenceTotal = 0.0
+      _.each(passedConfidenceTestsWithConf, (confTestSet: ConfidenceTest) => {
+        _.each(confTestSet.confidenceTestItems, (confTestItem: ConfidenceTestItem) => {
+          confidenceTotal += confTestItem.confidenceValue
         })
-        // set ceiling to 99%
-        if (confidenceTotal >= 1.0) confidenceTotal = 0.99
-        // have to do some weird conversion stuff to keep the decimals correct
-        confidenceTotal = Number.parseFloat(confidenceTotal.toFixed(3))
-        // console.log(`passed confidence tests are: ${JSON.stringify(passedConfidenceTestsWithConf, null, 2)}`)
-        //check if persons last name in author list, if so mark a match
-        //add person to map with confidence value > 0
-        if (confidenceTotal > 0 && confidenceTotal >= this.minConfidence) {
-          const newConfSet: ConfidenceSet = {
-            person: person,
-            confidenceTests: passedConfidenceTestsWithConf,
-            confirmedAuthors: confirmedAuthors,
-            confidenceTotal: confidenceTotal,
-          };
-          matchedPersonMap[person.id] = newConfSet
-          //console.log(`After add matched persons map is: ${JSON.stringify(matchedPersonMap,null,2)}`)
-        }
-    }, { concurrency: 1 })
+      })
+      // set ceiling to 99%
+      if (confidenceTotal >= 1.0) confidenceTotal = 0.99
+      // have to do some weird conversion stuff to keep the decimals correct
+      confidenceTotal = Number.parseFloat(confidenceTotal.toFixed(3))
+      // console.log(`passed confidence tests are: ${JSON.stringify(passedConfidenceTestsWithConf, null, 2)}`)
+      //check if persons last name in author list, if so mark a match
+      //add person to map with confidence value > 0
+      if (confidenceTotal > 0 && confidenceTotal >= this.minConfidence) {
+        const newConfSet: ConfidenceSet = {
+          person: person,
+          confidenceTests: passedConfidenceTestsWithConf,
+          confirmedAuthors: confirmedAuthors,
+          confidenceTotal: confidenceTotal,
+        };
+        matchedPersonMap[person.id] = newConfSet
+        //console.log(`After add matched persons map is: ${JSON.stringify(matchedPersonMap,null,2)}`)
+      }
+   }, { concurrency: 1 })
 
     //console.log(`After tests matchedPersonMap is: ${JSON.stringify(matchedPersonMap,null,2)}`)
     return matchedPersonMap
@@ -258,49 +258,9 @@ export class CalculateConfidence {
     return confidenceTypesByRank
   }
 
-  getCSLAuthors(paperCsl: Csl){
-
-    const cslJson = paperCsl.valueOf()
-    const authMap = {
-      firstAuthors : [],
-      otherAuthors : []
-    }
-
-    let authorCount = 0
-    _.each(cslJson['author'], async (author) => {
-      // skip if family_name undefined
-      if (author.family != undefined){
-        authorCount += 1
-
-        //if given name empty change to empty string instead of null, so that insert completes
-        if (author.given === undefined) author.given = ''
-
-        if (_.lowerCase(author.sequence) === 'first' ) {
-          authMap.firstAuthors.push(author)
-        } else {
-          authMap.otherAuthors.push(author)
-        }
-      }
-    })
-
-    //add author positions
-    authMap.firstAuthors = _.forEach(authMap.firstAuthors, function (author, index){
-      author.position = index + 1
-    })
-
-    authMap.otherAuthors = _.forEach(authMap.otherAuthors, function (author, index){
-      author.position = index + 1 + authMap.firstAuthors.length
-    })
-
-    //concat author arrays together
-    const authors = _.concat(authMap.firstAuthors, authMap.otherAuthors)
-
-    return authors
-  }
-
-  getPublicationAuthorMap (publicationCsl: Csl): Map<string,NormedAuthor[]> {
+  async getPublicationAuthorMap (publicationCsl: Csl): Promise<Map<string,NormedAuthor[]>> {
     //retrieve the authors from the record and put in a map, returned above in array, but really just one element
-    const authors = Csl.getCslAuthors(publicationCsl)
+    const authors: any[] = await Csl.getCslAuthors(publicationCsl)
     const normedAuthors = Csl.cslToNormedAuthors(authors)
     // group authors by last name
     //create map of last name to array of related persons with same last name
@@ -530,6 +490,8 @@ export class CalculateConfidence {
     const ds: DataSource = DataSourceHelper.getDataSource(sourceName)
     if (ds) {
       return await ds.getNormedAuthorsFromSourceMetadata(sourceMetadata)
+    } else {
+      return []
     }
   }
 
@@ -551,47 +513,73 @@ export class CalculateConfidence {
         }
       })
       // check source metadata as well
-      const normedAuthors: NormedAuthor[] = await this.getAuthorsFromSourceMetadata(sourceName, sourceMetadata)
-      _.each(normedAuthors, (author: NormedAuthor) => {
-        const pubFamilyName = author.familyName
-        // console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}`)
-        // check for a fuzzy match of name variant last names to lastname in pub author list
-        if (pubFamilyName && this.familyNameMatchFuzzy(pubFamilyName, 'familyName', nameVariations[nameFamilyName])){
-          // console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}, found author match: ${pubLastName}`)
-          if(!_.isEmpty(author.affiliations)) {
-            // console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}, found affiliation value for author: ${pubLastName} affiliation: ${author['affiliation']}`)
-            // if(/notre dame/gi.test(author['affiliation'][0].name)) {
-            //   console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}, found affiliation match for author: ${pubLastName}`)
-            // }
-            if(/notre dame/gi.test(author.affiliations[0])) {
-              (matchedAuthors[nameFamilyName] || (matchedAuthors[nameFamilyName] = [])).push(author)
+      if (sourceMetadata){
+        const normedAuthors: NormedAuthor[] = await this.getAuthorsFromSourceMetadata(sourceName, sourceMetadata)
+        _.each(normedAuthors, (author: NormedAuthor) => {
+          const pubFamilyName = author.familyName
+          // console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}`)
+          // check for a fuzzy match of name variant last names to lastname in pub author list
+          if (pubFamilyName && this.familyNameMatchFuzzy(pubFamilyName, 'familyName', nameVariations[nameFamilyName])){
+            // console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}, found author match: ${pubLastName}`)
+            if(!_.isEmpty(author.affiliations)) {
+              // console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}, found affiliation value for author: ${pubLastName} affiliation: ${author['affiliation']}`)
+              // if(/notre dame/gi.test(author['affiliation'][0].name)) {
+              //   console.log(`Checking affiliation of author: ${JSON.stringify(author, null, 2)}, found affiliation match for author: ${pubLastName}`)
+              // }
+              if(/notre dame/gi.test(author.affiliations[0])) {
+                (matchedAuthors[nameFamilyName] || (matchedAuthors[nameFamilyName] = [])).push(author)
+              }
             }
           }
-        }
-      })
+        })
+      }
     }, { concurrency: 1})
     return matchedAuthors
   }
 
   // returns true/false from a test called for the specific name passed in
-  async performConfidenceTest (confidenceType, publicationCsl, testPerson: NormedPerson, publicationAuthorMap: Map<string, NormedAuthor[]>, confirmedAuthors: NormedAuthor[], sourceName, sourceMetadata?): Promise<Map<string, NormedAuthor[]>>{
+  async performConfidenceTest (confidenceType, testPerson: NormedPerson, publicationAuthorMap: Map<string, NormedAuthor[]>, confirmedAuthors: NormedAuthor[], sourceName, sourceMetadata?): Promise<Map<string, NormedAuthor[]>>{
     if (confidenceType.name === 'lastname') {
-      return this.testAuthorFamilyName(testPerson, publicationAuthorMap)
+      try {
+        return this.testAuthorFamilyName(testPerson, publicationAuthorMap)
+      } catch (error) {
+        throw(`Error on testauthorfamily name: ${error}`)
+      }
     } else if (confidenceType.name === 'confirmed_by_author') {
       // needs to test against confirmed list
-      const matchedAuthors = this.testConfirmedAuthor(testPerson, publicationAuthorMap, confirmedAuthors)
-      // console.log(`Matches authors for ${confidenceTypeName}: ${JSON.stringify(matchedAuthors, null, 2)}`)
-      return matchedAuthors
+      try {
+        const matchedAuthors = this.testConfirmedAuthor(testPerson, publicationAuthorMap, confirmedAuthors)
+        // console.log(`Matches authors for ${confidenceTypeName}: ${JSON.stringify(matchedAuthors, null, 2)}`)
+       return matchedAuthors
+      } catch (error) {
+        throw(`Error on testconfirmedauthor: ${error}`)
+      }
     } else if (confidenceType.name === 'given_name_initial') {
-      return this.testAuthorGivenNameInitial(testPerson, publicationAuthorMap)
+      try {
+        return this.testAuthorGivenNameInitial(testPerson, publicationAuthorMap)
+      } catch (error) {
+        throw(`Error on testauthorgivennameinitial: ${error}`)
+      }
     } else if (confidenceType.name === 'given_name_mismatch') {
       // this one opposite other tests where a set is returned if mismatches are found, setting it true
       // console.log('Checking if given name mismatch...')
-      return this.testAuthorGivenNameMismatch(testPerson, publicationAuthorMap)
+      try {
+        return this.testAuthorGivenNameMismatch(testPerson, publicationAuthorMap)
+      } catch (error) {
+        throw(`Error on testauthorgivennamemismatch: ${error}`)
+      }
     } else if (confidenceType.name === 'given_name') {
-      return this.testAuthorGivenName(testPerson, publicationAuthorMap, true)
+      try {
+        return this.testAuthorGivenName(testPerson, publicationAuthorMap, true)
+      } catch (error) {
+        throw(`Error on testauthorgivenname: ${error}`)
+      }
     } else if (confidenceType.name === 'university_affiliation') {
-      return await this.testAuthorAffiliation(testPerson, publicationAuthorMap, sourceName, sourceMetadata)
+      try {
+        return await this.testAuthorAffiliation(testPerson, publicationAuthorMap, sourceName, sourceMetadata)
+      } catch (error) {
+        throw(`error on affiliation test: ${error}`)
+      }
     } else if (confidenceType.name === 'common_coauthor') {
       // need the publication for this test
       // do nothing for now, and return an empty set
@@ -616,7 +604,7 @@ export class CalculateConfidence {
     return newAuthor
   }
 
-  async performAuthorConfidenceTests (person: NormedPerson, publicationCsl, confirmedAuthors: NormedAuthor[], confidenceTypesByRank, sourceName, sourceMetadata?, pubAuthorMap?): Promise<ConfidenceTest[]> {
+  async performAuthorConfidenceTests (person: NormedPerson, publicationCsl: Csl, confirmedAuthors: NormedAuthor[], confidenceTypesByRank, sourceName, sourceMetadata?, pubAuthorMap?): Promise<ConfidenceTest[]> {
     // array of arrays for each rank sorted 1 to highest number
     // iterate through each group by rank if no matches in one rank, do no execute the next rank
     const sortedRanks = _.sortBy(_.keys(confidenceTypesByRank), (value) => { return value })
@@ -629,7 +617,7 @@ export class CalculateConfidence {
     if (pubAuthorMap) {
       publicationAuthorMap = pubAuthorMap
     } else {
-      publicationAuthorMap = this.getPublicationAuthorMap(publicationCsl)
+      publicationAuthorMap = await this.getPublicationAuthorMap(publicationCsl)
     }
     // initialize map to store passed tests by rank
     let passedConfidenceTests: ConfidenceTest[] = []
@@ -643,7 +631,12 @@ export class CalculateConfidence {
         await pMap(confidenceTypesByRank[rank], async (confidenceType) => {
           // console.log(`Performing confidence test rank: ${rank}, confidence type: ${JSON.stringify(confidenceType)}, testPerson: ${testPerson.familyName}, ${testPerson.givenName} pub title: ${publicationCsl.valueOf()['title']}`)
           // need to update to make publicationAuthorMap be only ones that matched last name for subsequent tests
-          let currentMatchedAuthors: Map<string, NormedAuthor[]> = await this.performConfidenceTest(confidenceType, publicationCsl, testPerson, publicationAuthorMap, confirmedAuthors, sourceName, sourceMetadata)
+          let currentMatchedAuthors: Map<string, NormedAuthor[]>
+          try {
+            currentMatchedAuthors = await this.performConfidenceTest(confidenceType, testPerson, publicationAuthorMap, confirmedAuthors, sourceName, sourceMetadata)
+          } catch (error) {
+            throw(`Error on perform confidence test: ${error}`)
+          }
           if (currentMatchedAuthors && _.keys(currentMatchedAuthors).length > 0){
             if (!confidenceTestItems) {
               confidenceTestItems = []
@@ -781,7 +774,7 @@ export class CalculateConfidence {
       await pMap(personPublications, async (personPublication) => {
         // need to load csl one by one since query fails otherwise
         const currentPersonPublication = await thisConf.getPersonPublication(personPublication['id'])
-        const publicationCsl = JSON.parse(currentPersonPublication['publication']['csl_string'])
+        const publicationCsl = new Csl(JSON.parse(currentPersonPublication['publication']['csl_string']))
         const sourceMetadata = currentPersonPublication['publication']['source_metadata']
         const sourceName = currentPersonPublication['publication']['source_name']
         // console.log(`Source metadata is: ${JSON.stringify(sourceMetadata, null, 2)}`)
@@ -801,7 +794,7 @@ export class CalculateConfidence {
         // have to do some weird conversion stuff to keep the decimals correct
         confidenceTotal = Number.parseFloat(confidenceTotal.toFixed(3))
         //update to current matched authors before proceeding with next tests
-        let publicationAuthorMap: Map<string, NormedAuthor[]> = thisConf.getPublicationAuthorMap(publicationCsl)
+        let publicationAuthorMap: Map<string, NormedAuthor[]> = await thisConf.getPublicationAuthorMap(publicationCsl)
         const newConfSet: ConfidenceSet = {
           person: testPerson,
           confidenceTests: passedConfidenceTestsWithConf,

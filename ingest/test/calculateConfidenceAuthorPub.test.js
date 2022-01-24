@@ -1,6 +1,7 @@
 import { CalculateConfidence } from '../modules/calculateConfidence'
 import {loadJSONFromFile} from '../units/fsHelper'
 import _ from 'lodash'
+import pMap from 'p-map';
 
 const fs = require('fs');
 
@@ -33,10 +34,10 @@ beforeAll(async () => {
 test('testing get publication author map from csl', async () => {
   expect.hasAssertions();
 
-  _.each(_.keys(pubCSLs), async (doi) => {
-    const foundPubAuthorMap = calculateConfidence.getPublicationAuthorMap(pubCSLs[doi])
+  await pMap(_.keys(pubCSLs), async (doi) => {
+    const foundPubAuthorMap = await calculateConfidence.getPublicationAuthorMap(pubCSLs[doi])
     expect(pubAuthorMaps[doi]).toEqual(foundPubAuthorMap)
-  })
+  }, { concurrency: 1 })
 })
 
 test('testing perform confidence test', async () => {

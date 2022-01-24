@@ -158,21 +158,23 @@ export class CrossRefDataSource implements DataSource {
     }
   
     let authorCount = 0
-    _.each(paperCsl.author, async (author) => {
-      // skip if family_name undefined
-      if (author.family != undefined){
-        authorCount += 1
-  
-        //if given name empty change to empty string instead of null, so that insert completes
-        if (author.given === undefined) author.given = ''
-  
-        if (_.lowerCase(author.sequence) === 'first' ) {
-          authMap.firstAuthors.push(author)
-        } else {
-          authMap.otherAuthors.push(author)
+    if (paperCsl){
+      _.each(paperCsl.author, async (author) => {
+        // skip if family_name undefined
+        if (author.family != undefined){
+          authorCount += 1
+    
+          //if given name empty change to empty string instead of null, so that insert completes
+          if (author.given === undefined) author.given = ''
+    
+          if (_.lowerCase(author.sequence) === 'first' ) {
+            authMap.firstAuthors.push(author)
+          } else {
+            authMap.otherAuthors.push(author)
+          }
         }
-      }
-    })
+      })
+    }
   
     //add author positions
     authMap.firstAuthors = _.forEach(authMap.firstAuthors, function (author, index){
