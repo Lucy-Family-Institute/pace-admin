@@ -10,6 +10,7 @@ import NormedPublication from './normedPublication'
 import NormedPerson from './normedPerson'
 import DataSource from './dataSource'
 import HarvestSet from './HarvestSet'
+import FsHelper from '../units/fsHelper'
 
 export enum HarvestOperation {
   QUERY_BY_AUTHOR_NAME,
@@ -216,13 +217,8 @@ export class Harvester {
     //   _.each (harvestSet.normedPublications, (pub: NormedPublication) => {
     //     console.log(`After harvest, doi:${pub.doi} Normed Pub search person: ${JSON.stringify(pub.searchPerson, null, 2)} doi:${pub.doi}`)
     //   })
-    // })
-
-    const fs = require('fs');
-    
-    if (!fs.existsSync(resultsFileDir)){
-        fs.mkdirSync(resultsFileDir, { recursive: true });
-    }
+    // })    
+    FsHelper.createDirIfNotExists(resultsFileDir, true)
 
     let filePath = resultsFileDir
     if (filePrefix) {
