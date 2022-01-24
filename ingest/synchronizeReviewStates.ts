@@ -9,7 +9,7 @@ import pMap from 'p-map'
 import { CalculateConfidence } from './modules/calculateConfidence'
 import Normalizer from './units/normalizer'
 import readReviewTypes from './gql/readReviewTypes'
-import insertReview from './gql/insertReview'
+import insertSyncReview from './gql/insertSyncReview'
 import readPersonPublicationsReviews from './gql/readPersonPublicationsReviews'
 import readOrganizations from './gql/readOrganizations'
 import NormedPersonPublication from './modules/normedPersonPublication'
@@ -142,7 +142,7 @@ async function synchronizeReviewsForOrganization(persons, reviewOrgValue) {
             if (personPub.reviewTypeStatus !== mostRecentReview.reviewType) {
               console.log(`Inserting Review personpub: '${personPub['id']}', most recent review ${JSON.stringify(mostRecentReview, null, 2)}`)
               const mutateResult = await client.mutate(
-                insertReview(personPub['id'], mostRecentReview.reviewType, mostRecentReview.reviewOrgValue)
+                insertSyncReview(mostRecentReview.userId, personPub['id'], mostRecentReview.reviewType, mostRecentReview.reviewOrgValue)
               )
               insertedReviewsCount += 1
             }
