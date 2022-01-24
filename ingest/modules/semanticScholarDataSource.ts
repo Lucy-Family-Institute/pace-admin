@@ -12,13 +12,14 @@ import { wait } from '../units/randomWait'
 import pMap from 'p-map'
 import { getDateObject } from '../units/dateRange'
 import { command as loadCsv} from '../units/loadCsv'
+import DataSourceHelper from './dataSourceHelper'
 
 const nameParser = require('../units/nameParser').command;
 export class SemanticScholarDataSource implements DataSource {
 
   private dsConfig: DataSourceConfig 
 
-  constructor (dsConfig: DataSourceConfig) {
+  constructor (dsConfig?: DataSourceConfig) {
     this.dsConfig = dsConfig
   }
 
@@ -37,6 +38,8 @@ export class SemanticScholarDataSource implements DataSource {
 
   // assumes that if only one of startDate or endDate provided it would always be startDate first and then have endDate undefined
   async getPublicationsByAuthorId(person: NormedPerson, sessionState: {}, offset: Number, startDate: Date, endDate?: Date): Promise<HarvestSet> {
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
     let finalTotalResults = 0
     let publications = []
 
@@ -111,6 +114,8 @@ export class SemanticScholarDataSource implements DataSource {
   }
 
   async fetchSemanticScholarPaperData(paperId) : Promise<any> {
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
     console.log(`Fetching semantic scholar paper id: ${paperId}`)
 
     const baseUrl = (this.dsConfig.publicationUrl ? this.dsConfig.publicationUrl : `${this.dsConfig.baseUrl}/paper/`)
@@ -126,6 +131,8 @@ export class SemanticScholarDataSource implements DataSource {
   }
 
   async fetchSemanticScholarAuthorData(pageSize, offset, authorId, affiliation?, filter?) : Promise<any> {
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
     console.log(`Querying semantic scholar offset: ${offset}, and authorId: ${authorId}`)
 
     const baseUrl = (this.dsConfig.authorUrl ? this.dsConfig.authorUrl : `${this.dsConfig.baseUrl}/author/`)
@@ -165,7 +172,7 @@ export class SemanticScholarDataSource implements DataSource {
   async getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): Promise<NormedPublication[]>{
     let normedPubs = []
     await pMap (sourcePublications, async (pub) => {
-      const authors = await SemanticScholarDataSource.getNormedAuthors(pub)
+      const authors = await this.getNormedAuthorsFromSourceMetadata(pub)
       // console.log(`Normed authors found: ${JSON.stringify(authors, null, 2)}`)
       let normedPub: NormedPublication = {
         title: pub['title'],
@@ -202,10 +209,14 @@ export class SemanticScholarDataSource implements DataSource {
 
   //returns a machine readable string version of this source
   getSourceName() {
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
     return (this.dsConfig && this.dsConfig.sourceName) ? this.dsConfig.sourceName : 'SemanticScholar'
   }
 
   getRequestPageSize(): Number {
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
     return Number.parseInt(this.dsConfig.pageSize)
   }
 
@@ -239,7 +250,7 @@ export class SemanticScholarDataSource implements DataSource {
     //   author['family'] = parsedName.last
     //   cslStyleAuthors.push(author)
     // }, { concurrency: 1 })
-    const normedAuthors: NormedAuthor[] = await SemanticScholarDataSource.getNormedAuthors(sourceMetadata)
+    const normedAuthors: NormedAuthor[] = await this.getNormedAuthorsFromSourceMetadata(sourceMetadata)
     return _.map(normedAuthors, (author) => {
       return {
         family: author.familyName,
@@ -248,7 +259,7 @@ export class SemanticScholarDataSource implements DataSource {
     })
   }
 
-  public static async getNormedAuthors(sourceMetadata): Promise<NormedAuthor[]> {
+  public async getNormedAuthorsFromSourceMetadata(sourceMetadata): Promise<NormedAuthor[]> {
     const sourceAuthors = SemanticScholarDataSource.getCoauthors(sourceMetadata)
     const normedAuthors: NormedAuthor[] = []
     await pMap(sourceAuthors, async (sourceAuthor, index) => {

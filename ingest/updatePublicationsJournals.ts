@@ -13,7 +13,7 @@ import pMap from 'p-map'
 import { randomWait } from './units/randomWait'
 const Fuse = require('fuse.js')
 
-import { removeSpaces, normalizeString, normalizeObjectProperties } from './units/normalizer'
+import Normalizer from './units/normalizer'
 
 
 dotenv.config({
@@ -45,10 +45,10 @@ const client = new ApolloClient({
 function journalMatchFuzzy (journalTitle, titleKey, journalMap){
   // first normalize the diacritics
   const testJournalMap = _.map(journalMap, (journal) => {
-     return normalizeObjectProperties(journal, [titleKey], { removeSpaces: true, skipLower: true })
+     return Normalizer.normalizeObjectProperties(journal, [titleKey], { removeSpaces: true, skipLower: true })
   })
   // normalize last name checking against as well
-  const testTitle = normalizeString(journalTitle, { removeSpaces: true, skipLower: true })
+  const testTitle = Normalizer.normalizeString(journalTitle, { removeSpaces: true, skipLower: true })
   const lastFuzzy = new Fuse(journalMap, {
     caseSensitive: false,
     shouldSort: true,
@@ -90,7 +90,7 @@ async function main (): Promise<void> {
 
   // first normalize the diacritics
   const journalMap = _.map(journals, (journal) => {
-    return normalizeObjectProperties(journal, ['title'], { removeSpaces: true, skipLower: true })
+    return Normalizer.normalizeObjectProperties(journal, ['title'], { removeSpaces: true, skipLower: true })
   })
 
   const multipleMatches = []
@@ -106,7 +106,7 @@ async function main (): Promise<void> {
     console.log(`${pubCounter} - Checking publication id: ${publication['id']}`)
     let matchedJournal = undefined
     if (publication['journal_title']) {
-      const testTitle = normalizeString(publication['journal_title'], { removeSpaces: true, skipLower: true })
+      const testTitle = Normalizer.normalizeString(publication['journal_title'], { removeSpaces: true, skipLower: true })
       const matchedJournals = journalMatchFuzzy(testTitle, 'title', journalMap)
       let matchedInfo = {
         'doi': publication['doi'],

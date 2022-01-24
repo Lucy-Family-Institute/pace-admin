@@ -7,9 +7,9 @@ import fetch from 'node-fetch'
 import dotenv from 'dotenv'
 import pMap from 'p-map'
 import { CalculateConfidence } from './modules/calculateConfidence'
-import { normalizeString } from './units/normalizer'
+import Normalizer from './units/normalizer'
 import readReviewTypes from './gql/readReviewTypes'
-import insertReview from '../client/src/gql/insertReview'
+import insertSyncReview from './gql/insertSyncReview'
 import readPersonPublicationsReviews from './gql/readPersonPublicationsReviews'
 import readOrganizations from './gql/readOrganizations'
 import NormedPersonPublication from './modules/normedPersonPublication'
@@ -55,7 +55,7 @@ async function loadOrganizations () {
 
 function getPublicationTitleKey (title: string) {
   // normalize the string and remove characters like dashes as well
-  return normalizeString(title)
+  return Normalizer.normalizeString(title)
 }
 
 async function synchronizeReviewsForOrganization(persons, reviewOrgValue) {
@@ -142,7 +142,7 @@ async function synchronizeReviewsForOrganization(persons, reviewOrgValue) {
             if (personPub.reviewTypeStatus !== mostRecentReview.reviewType) {
               console.log(`Inserting Review personpub: '${personPub['id']}', most recent review ${JSON.stringify(mostRecentReview, null, 2)}`)
               const mutateResult = await client.mutate(
-                insertReview(mostRecentReview.userId, personPub['id'], mostRecentReview.reviewType, mostRecentReview.reviewOrgValue)
+                insertSyncReview(mostRecentReview.userId, personPub['id'], mostRecentReview.reviewType, mostRecentReview.reviewOrgValue)
               )
               insertedReviewsCount += 1
             }
@@ -160,8 +160,10 @@ async function synchronizeReviewsForOrganization(persons, reviewOrgValue) {
 //returns status map of what was done
 async function main() {
 
+  const minConfidence = Number.parseFloat(process.env.INGESTER_MIN_CONFIDENCE)
+  const confidenceAlgorithmVersion = process.env.INGESTER_CONFIDENCE_ALGORITHM
   // //just get all simplified persons as will filter later
-  const calculateConfidence: CalculateConfidence = new CalculateConfidence()
+  const calculateConfidence: CalculateConfidence = new CalculateConfidence(minConfidence,confidenceAlgorithmVersion)
   console.log('Starting load person list...')
   const simplifiedPersons = await calculateConfidence.getAllSimplifiedPersons()
   console.log('Finished load person list.')

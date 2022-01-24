@@ -8,18 +8,26 @@ import { command as writeCsv} from '../units/writeCsv'
 import NormedPerson from './normedPerson'
 import NormedAuthor from './normedAuthor'
 import writeToJSONFile from '../units/writeToJSONFile'
-import { loadJSONFromFile } from '../units/loadJSONFromFile'
+import readPublicationsCSLByYear from '../gql/readPublicationsCSLByYear'
+import FsHelper from '../units/fsHelper'
 import BibTex from './bibTex'
+import Csl from './csl'
 import { SemanticScholarDataSource } from './semanticScholarDataSource'
-
+import { PubMedDataSource } from './pubmedDataSource'
+import { WosDataSource } from './wosDataSource'
+import { CrossRefDataSource } from './crossrefDataSource'
+import DataSourceHelper from './dataSourceHelper'
+import DataSource from './dataSource'
+import { DataStore } from 'apollo-client/data/store'
 export default class NormedPublication {
   // ------ begin declare properties used when using NormedPublication like an interface
 
   // the normalized simple form of a publication across all sources
+  id?: number
   searchPerson?: NormedPerson
   abstract?: string
   title: string
-  journalTitle: string
+  journalTitle?: string
   authors?: NormedAuthor[]
   confirmedAuthors?: NormedAuthor[]
   journalIssn?: string
@@ -35,6 +43,29 @@ export default class NormedPublication {
   pages?: string
   bibtex?: string
   sourceMetadata?: Object
+  csl?: Object
+  csl_string?: string
+  
+  public static getDataSource(normedPub: NormedPublication): DataSource {
+    if (normedPub) {
+      if (normedPub.datasourceName) {
+        return DataSourceHelper.getDataSource(normedPub.datasourceName)
+      } else {
+        throw('Unable to get data source object if data source name is undefined.')
+      }
+    } else {
+      throw('Unable to get data source object if normedPub is undefined.')
+    }
+  }
+
+  public static async getTotalCSVFileRows(csvPath: string): Promise<number> {
+    const authorPapers: any = await loadCsv({
+      path: csvPath,
+      includeData: false
+    })
+    return authorPapers.length
+  }
+
   // ------- end declare properties used when using NormedPublication like an interface
 
   // begin declaring static utility methods for NormedPublication objects
@@ -45,9 +76,11 @@ export default class NormedPublication {
    * 
    * @param columnNameMap a map of column names in the csv to harvestset property names, if not defined uses default path from configuration
    * @param dataDirPath path to dir containing JSON files for sourceMetadata
+   * @param pageOffset if provided gives the page index if results are broken into blocks of results (i.e., pages)
+   * @param pageSize optional param if set will return a block of results at the page index with number results returned as this pageSize
    * @returns object with array of raw publication set as well as hash of doi to index of corresponding publication in array
    */
-  public static async loadFromCSV (csvPath: string, dataDirPath?: string): Promise<NormedPublication[]> {
+  public static async loadFromCSV (csvPath: string, dataDirPath: string, pageOffset=0, pageSize?: number): Promise<NormedPublication[]> {
     console.log(`Loading Papers from path: ${csvPath}`)
     // ingest list of DOI's from CSV and relevant center author name
     try {
@@ -56,7 +89,9 @@ export default class NormedPublication {
 
       const authorPapers: any = await loadCsv({
         path: csvPath,
-        lowerCaseColumns: true
+        lowerCaseColumns: true,
+        pageOffset: pageOffset,
+        pageSize: pageSize
       })
 
       let sourceName = undefined
@@ -214,6 +249,15 @@ export default class NormedPublication {
     return json
   }
 
+  public static loadNormedPublicationObjectToDBMap(filePath = "./modules/normedPublicationObjectToDBMap.json", filesystem = fs) {
+    if (!filesystem.existsSync(filePath)) {
+      throw `Invalid path on load json from: ${filePath}`
+    }
+    let raw = filesystem.readFileSync(filePath, 'utf8')
+    let json = JSON.parse(raw);
+    return json
+  }
+
   public static loadNormedPublicationSourceMetadata(filePath, filesystem = fs) {
     if (!filesystem.existsSync(filePath)) {
       throw `Invalid path on load json from: ${filePath}`
@@ -223,6 +267,27 @@ export default class NormedPublication {
     return json
   }
 
+  // will return a list of publications for the given year
+  public static async loadPublicationsFromDB(client, year): Promise<NormedPublication[]> {
+    const queryResult = await client.query(readPublicationsCSLByYear(year))
+    return this.getNormedPublicationsFromDBRows(queryResult.data.publications) 
+  }
+
+  public static getNormedPublicationsFromDBRows(rows): NormedPublication[] {
+    let normedPubs = []
+    const objectToDBMap = NormedPublication.loadNormedPublicationObjectToDBMap()
+    _.each(rows, (row) => {
+      const normedPub = this.getNormedPublicationFromDBRow(row, objectToDBMap)
+      if (normedPub) normedPubs.push(normedPub)
+    })
+    return normedPubs
+  }
+
+  public static getNormedPublicationFromDBRow(row, objectToDBMap): NormedPublication{
+    // this should work with the object map swapped out
+    return NormedPublication.getNormedPublicationObjectFromCSVRow(row, objectToDBMap)
+  }
+
   /**
    * Expects the map to be used in defining column_names to pull properties for each leaf of NormedPublication object 
    * (e.g., for the searchPerson property there is an object that defines a column name for each item that equates to a string)
@@ -230,17 +295,16 @@ export default class NormedPublication {
    */
   public static getNormedPublicationObjectFromCSVRow(row, objectToCSVMap): NormedPublication {
     // assumes all column names in row passed in have been converted to lowercase
-    const searchPersonFamilyNameColumn = objectToCSVMap['searchPerson']['familyName']
+    const searchPersonFamilyNameColumn = (objectToCSVMap['searchPerson'] && objectToCSVMap['searchPerson']['familyName'] ? objectToCSVMap['searchPerson']['familyName'] : undefined)
     let pub: NormedPublication = {
       title: (row[_.toLower(objectToCSVMap['title'])] ? row[_.toLower(objectToCSVMap['title'])] : row[_.keys(row)[0]]),
-      journalTitle: row[_.toLower(objectToCSVMap['journalTitle'])],
       doi: row[_.toLower(objectToCSVMap['doi'])],
       publicationDate: row[_.toLower(objectToCSVMap['publicationDate'])],
       datasourceName: row[_.toLower(objectToCSVMap['datasourceName'])],
       authors: (row[_.toLower(objectToCSVMap['authors'])] ? JSON.parse(row[_.toLower(objectToCSVMap['authors'])]) : undefined)
     }
     // set optional properties, for search person first check if family name provided
-    if (row[_.toLower(searchPersonFamilyNameColumn)]){
+    if (searchPersonFamilyNameColumn && row[_.toLower(searchPersonFamilyNameColumn)]){
       const person: NormedPerson = {
         id: row[_.toLower(objectToCSVMap['searchPerson']['id'])] ? Number.parseInt(row[_.toLower(objectToCSVMap['searchPerson']['id'])]) : undefined,
         familyName: row[_.toLower(searchPersonFamilyNameColumn)],
@@ -254,43 +318,67 @@ export default class NormedPublication {
       _.set(pub, 'searchPerson', person)
     }
 
-    if (row[_.toLower(objectToCSVMap['abstract'])]) {
+    if (objectToCSVMap['id'] && row[_.toLower(objectToCSVMap['id'])]) {
+      _.set(pub, 'id', row[_.toLower(objectToCSVMap['id'])])
+    }
+    if (objectToCSVMap['journalTitle'] && row[_.toLower(objectToCSVMap['journalTitle'])]) {
+      _.set(pub, 'journalTitle', row[_.toLower(objectToCSVMap['journalTitle'])])
+    }
+    if (objectToCSVMap['abstract'] && row[_.toLower(objectToCSVMap['abstract'])]) {
       _.set(pub, 'abstract', row[_.toLower(objectToCSVMap['abstract'])])
     }
-    if (row[_.toLower(objectToCSVMap['journalIssn'])]) {
+    if (objectToCSVMap['journalIssn'] && row[_.toLower(objectToCSVMap['journalIssn'])]) {
       _.set(pub, 'journalIssn', row[_.toLower(objectToCSVMap['journalIssn'])])
     }
-    if (row[_.toLower(objectToCSVMap['journalEIssn'])]) {
+    if (objectToCSVMap['journalEIssn'] && row[_.toLower(objectToCSVMap['journalEIssn'])]) {
       _.set(pub, 'journalEIssn', row[_.toLower(objectToCSVMap['journalEIssn'])])
     }
-    if (row[_.toLower(objectToCSVMap['sourceId'])]) {
+    if (objectToCSVMap['sourceId'] && row[_.toLower(objectToCSVMap['sourceId'])]) {
       _.set(pub, 'sourceId', row[_.toLower(objectToCSVMap['sourceId'])])
     }
-    if (row[_.toLower(objectToCSVMap['sourceUrl'])]) {
+    if (objectToCSVMap['sourceUrl'] && row[_.toLower(objectToCSVMap['sourceUrl'])]) {
       _.set(pub, 'sourceUrl', row[_.toLower(objectToCSVMap['sourceUrl'])])
     }
-    if (row[_.toLower(objectToCSVMap['publisher'])]) {
+    if (objectToCSVMap['publisher'] && row[_.toLower(objectToCSVMap['publisher'])]) {
       _.set(pub, 'publisher', row[_.toLower(objectToCSVMap['publisher'])])
     }
-    if (row[_.toLower(objectToCSVMap['number'])]) {
+    if (objectToCSVMap['number'] && row[_.toLower(objectToCSVMap['number'])]) {
       _.set(pub, 'number', row[_.toLower(objectToCSVMap['number'])])
     }
-    if (row[_.toLower(objectToCSVMap['volume'])]) {
+    if (objectToCSVMap['volume'] && row[_.toLower(objectToCSVMap['volume'])]) {
       _.set(pub, 'volume', row[_.toLower(objectToCSVMap['volume'])])
     }
-    if (row[_.toLower(objectToCSVMap['pages'])]) {
+    if (objectToCSVMap['pages'] && row[_.toLower(objectToCSVMap['pages'])]) {
       _.set(pub, 'pages', row[_.toLower(objectToCSVMap['pages'])])
     }
-    if (row[_.toLower(objectToCSVMap['bibtex'])]) {
+    if (objectToCSVMap['bibtex'] && row[_.toLower(objectToCSVMap['bibtex'])]) {
       _.set(pub, 'bibtex', row[_.toLower(objectToCSVMap['bibtex'])])
     }
-    if (row[_.toLower(objectToCSVMap['confirmedAuthors'])]) {
+    if (objectToCSVMap['confirmedAuthors'] && row[_.toLower(objectToCSVMap['confirmedAuthors'])]) {
       _.set(pub, 'confirmedAuthors', NormedPublication.getConfirmedNormedAuthors(row[_.toLower(objectToCSVMap['confirmedAuthors'])]))
     }
-    if (row[_.toLower(objectToCSVMap['sourceMetadata'])]) {
+    if (objectToCSVMap['sourceMetadata'] && row[_.toLower(objectToCSVMap['sourceMetadata'])]) {
       // parse and get rid of any escaped quote characters
-      const sourceMetadata = JSON.parse(row[_.toLower(objectToCSVMap['sourceMetadata'])])
-      _.set(pub, 'sourceMetadata', sourceMetadata)
+      const value = row[_.toLower(objectToCSVMap['sourceMetadata'])]
+      if (_.isString(value)) {
+        _.set(pub, 'sourceMetadata', JSON.parse(row[_.toLower(objectToCSVMap['sourceMetadata'])]))
+      } else {
+        _.set(pub, 'sourceMetadata', value)        
+      }
+    }
+    if (objectToCSVMap['csl'] && row[_.toLower(objectToCSVMap['csl'])]) {
+      // parse and get rid of any escaped quote characters
+      const value = row[_.toLower(objectToCSVMap['csl'])]
+      if (_.isString(value)) {
+        _.set(pub, 'csl', JSON.parse(row[_.toLower(objectToCSVMap['csl'])]))
+      } else {
+        _.set(pub, 'csl', value)        
+      }
+    }
+    if (objectToCSVMap['csl_string'] && row[_.toLower(objectToCSVMap['csl_string'])]) {
+      // parse and get rid of any escaped quote characters
+      const value = row[_.toLower(objectToCSVMap['csl_string'])]
+      _.set(pub, 'csl_string', value)        
     }
 
     return pub
@@ -303,10 +391,12 @@ export default class NormedPublication {
     const normed: NormedAuthor[] = []
     const confirmed = _.each(names, (name: string) => {
       const obj = _.split(name, ',')
+      const familyName = (obj[0] ? obj[0].trim() : '')
+      const givenName = (obj[1] ? obj[1].trim() : '')
       const author: NormedAuthor = {
-        familyName: name[0],
-        givenName: (name[1] ? name[1] : ''),
-        givenNameInitial: (name[1]&&name[1][0] ? name[1][0] : ''),
+        familyName: familyName,
+        givenName: givenName,
+        givenNameInitial: (givenName && givenName[0] ? givenName[0] : ''),
         affiliations: [],
         sourceIds: {}
       }
@@ -315,12 +405,118 @@ export default class NormedPublication {
     return normed
   }
 
+  public static async getConfirmedAuthorsByDoiFromCSV (path) {
+    try {
+      const normedPubs = await NormedPublication.loadFromCSV(path, undefined)
+      const normedPubsByDoi = _.groupBy(normedPubs, function(normedPub) {
+        return normedPub.doi
+      })
+      console.log(`Confirmed Papers by DOI Count: ${JSON.stringify(_.keys(normedPubsByDoi).length,null,2)}`)
+
+      //check if confirmed column exists first, if not ignore this step
+      let confirmedAuthorsByDoi = {}
+      if (normedPubsByDoi && _.keys(normedPubsByDoi).length > 0){
+        //get map of DOI's to an array of confirmed authors from the load table
+        confirmedAuthorsByDoi = await NormedPublication.getConfirmedAuthorsByDoi(normedPubsByDoi)
+
+      }
+      return confirmedAuthorsByDoi
+    } catch (error){
+      console.log(`Error on load confirmed authors: ${error}`)
+      return {}
+    }
+  }
+
+  public static async getConfirmedAuthorsByDoi (normedPubsByDoi) {
+    const confirmedAuthorsByDoi = _.mapValues(normedPubsByDoi, function (normedPubs: NormedPublication[]) {
+      return _.mapValues(normedPubs, function (normedPub: NormedPublication) {
+        return normedPub.confirmedAuthors
+      })
+    })
+    return confirmedAuthorsByDoi
+  }
+
   public static async getAuthors (normedPub: NormedPublication): Promise<NormedAuthor[]> {
     if (normedPub.authors) {
       return normedPub.authors
-    } else if (normedPub.datasourceName === 'SemanticScholar') {
-      return await SemanticScholarDataSource.getNormedAuthors(normedPub.sourceMetadata)
+    } else {
+      return await this.getAuthorsFromSourceMetadata(normedPub)
     }
+  }
+
+  public static async getAuthorsFromSourceMetadata (normedPub: NormedPublication): Promise<NormedAuthor[]> {
+    const ds: DataSource = NormedPublication.getDataSource(normedPub)
+    return await ds.getNormedAuthorsFromSourceMetadata(normedPub.sourceMetadata)
+  }
+
+  public static async getCslByBibTex(normedPub: NormedPublication) : Promise<Csl> {
+    let bibTexStr = undefined
+    let normedBibTex: BibTex = undefined
+    let csl: Csl
+    if (!normedPub.bibtex) {
+      normedBibTex = await NormedPublication.getBibTex(normedPub)
+      // console.log(`Normed bib tex is: ${JSON.stringify(normedBibTex, null, 2)}`)
+      if (normedBibTex) bibTexStr = BibTex.toString(normedBibTex)
+    } else {
+      bibTexStr = normedPub.bibtex
+    }
+    if (bibTexStr) {
+      // console.log(`Trying to get csl from bibtex str doi: ${doi}, for bibtex str ${bibTexStr} found...`)
+      try {
+         csl = await Csl.getCsl(bibTexStr)
+      } catch (error) {
+        // try it without the abstract
+        let newBibTex
+        try {
+          if (normedBibTex) {
+            console.log('Error encountered on bibTex, trying without abstract...')
+            newBibTex = BibTex.toString(normedBibTex, true)
+            csl = await Csl.getCsl(newBibTex)
+          }
+        } catch (error) {
+          console.log(`Errored on csl from bibtex w/ or w/out abstract: ${bibTexStr}, error: ${error}`)
+          throw (error)
+        }
+      }
+    } else {
+      throw ('Bibtex not defined properly')
+    }
+    if (csl && !csl.valueOf()['DOI']) {
+      if (normedBibTex && normedBibTex.doi) {
+        csl.setDoi(normedBibTex.doi)
+      } else if (normedPub.doi) {
+        csl.setDoi(normedPub.doi)
+      }
+    }
+    return csl
+  }
+
+  // if default to bibtex is true then it skips retrieval by doi, and constructs the csl from bibtex
+  public static async getCsl (normedPub: NormedPublication, defaultToBibTex = false): Promise<Csl> {
+    let cslRecords = undefined
+    let csl: Csl = undefined
+    try {
+      if (defaultToBibTex && normedPub.bibtex) {
+        csl = await NormedPublication.getCslByBibTex(normedPub)
+      } else {
+        csl = await Csl.getCsl(normedPub.doi)
+      }
+    } catch (error) {
+      try {
+        if (defaultToBibTex && normedPub.bibtex) {
+          console.log(`Throwing the error for doi: ${normedPub.doi}`)
+          throw (error)
+        } else {
+          // try by bibtex
+          csl = await NormedPublication.getCslByBibTex(normedPub)
+        }
+      } catch (error) {
+        console.log(`Throwing the error for doi: ${normedPub.doi}`)
+        throw (error)
+      }
+    }
+    // console.log(`Csl found is: ${JSON.stringify(csl, null, 2)}`)
+    return csl 
   }
 
   public static async getBibTex (normedPub: NormedPublication): Promise<BibTex> {
@@ -330,7 +526,7 @@ export default class NormedPublication {
     let bib: BibTex = {
       title: normedPub.title,
       journal: normedPub.journalTitle,
-      year: `${date.getFullYear()}`,
+      year: (date ? `${date.getFullYear()}` : ''),
       author: BibTex.getBibTexAuthors(authors),
     }
     
@@ -345,5 +541,17 @@ export default class NormedPublication {
     if (normedPub.pages) bib.pages = normedPub.pages
 
     return bib
+  }
+
+  public static getDoiKey (normedPub: NormedPublication): string {
+    if (!normedPub.doi || normedPub.doi.length <= 0){
+      return NormedPublication.getSourceKey(normedPub)
+    } else {
+      return normedPub.doi
+    }
+  }
+
+  public static getSourceKey (normedPub: NormedPublication): string {
+    return `${normedPub.datasourceName}_${normedPub.sourceId}`
   }
 }

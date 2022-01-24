@@ -1,9 +1,13 @@
-import _ from 'lodash'
+import ConfidenceTest from './confidenceTest'
 import NormedPerson from './normedPerson'
-import NormedPublication from './normedPublication'
+import NormedAuthor from './normedAuthor'
 
 export default interface ConfidenceSet {
-  // ------ begin declare properties used when using NormedPerson like an interface
-  value: Number
-  // ------ end declare properties used when using NormedPerson like an interface
+  person?: NormedPerson,
+  confidenceTests?: ConfidenceTest[],
+  confirmedAuthors?: NormedAuthor[],
+  confidenceTotal: number,
+  doi?: string,
+  prevConfidenceTotal?: number
+  personsPublicationId?: number
 }
