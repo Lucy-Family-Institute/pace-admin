@@ -7,6 +7,7 @@ import pMap from 'p-map'
 import moment from 'moment'
 import dotenv from 'dotenv'
 import { randomWait, wait } from './units/randomWait'
+import NormedPerson from './modules/normedPerson'
 
 import readPersonPublicationsConfSetsBySource from './gql/readPersonPublicationsConfSetsBySource'
 import { SemanticScholarDataSource } from './modules/semanticScholarDataSource'
@@ -14,10 +15,15 @@ import { SemanticScholarDataSource } from './modules/semanticScholarDataSource'
 import DataSourceConfig from '../ingest/modules/dataSourceConfig'
 import { CalculateConfidence } from './modules/calculateConfidence'
 import { command as writeCsv} from './units/writeCsv'
-import readPublicationsByPersonByConfidence from '../client/src/gql/readPublicationsByPersonByConfidence'
+import { mapToNormedPersons } from './modules/queryNormalizedPeople'
+import readPublicationsByPersonByConfidence from './gql/readPublicationsByPersonByConfidence'
+import ConfidenceTest from './modules/confidenceTest'
+import ConfidenceTestItem from './modules/confidenceTestItem'
 
 const nameParser = require('./units/nameParser').command;
-const calculateConfidence: CalculateConfidence = new CalculateConfidence()
+const minConfidence = Number.parseFloat(process.env.INGESTER_MIN_CONFIDENCE)
+const confidenceAlgorithmVersion = process.env.INGESTER_CONFIDENCE_ALGORITHM
+const calculateConfidence: CalculateConfidence = new CalculateConfidence(minConfidence,confidenceAlgorithmVersion)
 
 dotenv.config({
   path: '../.env'
@@ -32,7 +38,7 @@ process.env.NODE_ENV = 'development';
 // process.env.NODE_ENV = 'staging';
 
 // config variables
-const config = require('../config/config.js');
+// const config = require('../config/config.js');
 
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
@@ -91,7 +97,7 @@ function getSimplifiedPerson (personPub) {
 
 async function matchAuthors (personPub, searchAuthorMap, sourceName, confidenceTypesByRank, minConfidence) {
   let matchedAuthors = {}
-  const testAuthor = getSimplifiedPerson(personPub)
+  const testAuthor: NormedPerson = mapToNormedPersons([personPub.person])[0]
   await pMap (_.keys(searchAuthorMap), async (pubLastName) => {
     let objMap = {}
     objMap[pubLastName] = [searchAuthorMap[pubLastName]]
@@ -100,9 +106,9 @@ async function matchAuthors (personPub, searchAuthorMap, sourceName, confidenceT
     const passedConfidenceTestsWithConf = await calculateConfidence.calculateAuthorConfidence(passedConfidenceTests)
     // returns a new map of rank -> confidenceTestName -> calculatedValue
     let confidenceTotal = 0.0
-    _.mapValues(passedConfidenceTestsWithConf, (confidenceTests, rank) => {
-      _.mapValues(confidenceTests, (confidenceTest) => {
-        confidenceTotal += confidenceTest['confidenceValue']
+    _.each(passedConfidenceTestsWithConf, (confTestSet: ConfidenceTest) => {
+      _.each(confTestSet.confidenceTestItems, (confTestItem: ConfidenceTestItem) => {
+        confidenceTotal += confTestItem.confidenceValue
       })
     })
     // set ceiling to 99%
@@ -183,7 +189,7 @@ async function main (): Promise<void> {
     const personPubConf = personPubConfSetsByDoi[doi][0]
     authorListByDoi[doi] = {}
     const sourceMetadata = personPubConf.publication.source_metadata
-    await pMap(semanticDS.getCoauthors(sourceMetadata), async (author) => {
+    await pMap(SemanticScholarDataSource.getCoauthors(sourceMetadata), async (author) => {
       const parsedName = await nameParser({
         name: author['name'],
         reduceMethod: 'majority',

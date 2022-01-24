@@ -45,7 +45,7 @@ export default {
       ],
       personConfidenceOptions: [
         '50%',
-        'All'
+        'None'
       ],
       filterMenuIcons: {
         'institution':
