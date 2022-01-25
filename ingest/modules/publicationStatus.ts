@@ -21,16 +21,14 @@ export enum ConfidenceSetStatusValue {
   FAILED_ADD_CONFIDENCE_SETS
 }
 
-export class PublicationStatus {
-  sourceName: string
+export class PublicationStatus implements NormedPublication{
+  datasourceName: string
   sourceId: string
   doi: string
   title: string
   journalTitle: string
   publicationDate: string
-  authors: string
-  confirmedAuthors?: string
-  bibTex?: string			
+  bibtex?: string			
   publicationId?: number
   errorMessage?: string
   publicationStatusValue: number
@@ -41,7 +39,7 @@ export class PublicationStatus {
   confidenceSetStatus?: string
       
   constructor (normedPub: NormedPublication, publicationId: number, errorMessage: string, publicationStatusValue: PublicationStatusValue, personPublicationStatusValue?: PersonPublicationStatusValue, confidenceSetStatusValue?: ConfidenceSetStatusValue) {
-    this.sourceName = normedPub.datasourceName
+    this.datasourceName = normedPub.datasourceName
     this.sourceId = normedPub.sourceId
     this.doi = normedPub.doi
     this.title = normedPub.title
@@ -50,11 +48,11 @@ export class PublicationStatus {
     // truncate author lists as needed
     const chunkedAuthors = _.chunk(normedPub.authors, 10)
     // skip if either author set is too large to avoid memory logjams while processes are running
-    this.authors = ((chunkedAuthors && chunkedAuthors.length > 0) ? JSON.stringify(chunkedAuthors[0]) : '')
+    // this.authors = ((chunkedAuthors && chunkedAuthors.length > 0) ? JSON.stringify(chunkedAuthors[0]) : '')
      // truncate confirmed author lists as needed
     const chunkedConfirmedAuthors = _.chunk(normedPub.confirmedAuthors, 10)
-    this.confirmedAuthors = ((chunkedConfirmedAuthors && chunkedConfirmedAuthors.length > 0) ? JSON.stringify(chunkedConfirmedAuthors[0]) : '')
-    this.bibTex = normedPub.bibtex
+    // this.confirmedAuthors = ((chunkedConfirmedAuthors && chunkedConfirmedAuthors.length > 0) ? JSON.stringify(chunkedConfirmedAuthors[0]) : '')
+    this.bibtex = normedPub.bibtex
     if (publicationId > 0) {
       this.publicationId = publicationId
     }
@@ -79,5 +77,16 @@ export class PublicationStatus {
       this.confidenceSetStatusValue = undefined
       this.confidenceSetStatus = undefined
     }
+  }
+
+  getObjectToCSVMap () {
+    return NormedPublication.loadNormedPublicationObjectToCSVMap()
+  }
+
+  getCSVRow(objectToCSVMap) {
+    // translate any normed pub values to csv row map equivalents
+    // duck type this to a NormedPublication
+    let normedPubCSVRow = NormedPublication.getCSVRow(this, objectToCSVMap)
+    return _.merge(normedPubCSVRow, this)
   }
 }

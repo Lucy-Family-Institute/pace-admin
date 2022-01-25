@@ -104,7 +104,7 @@ export default class IngestStatus {
         if (pubStatus.errorMessage) {
           this.errorMessages.push(pubStatus.errorMessage)
         } else {
-          this.errorMessages.push(`Ingest publication from source: '${pubStatus.sourceName}' with sourceid: '${pubStatus.sourceId}' failed with unknown error`)
+          this.errorMessages.push(`Ingest publication from source: '${pubStatus.datasourceName}' with sourceid: '${pubStatus.sourceId}' failed with unknown error`)
         }
       }
 
@@ -129,7 +129,7 @@ export default class IngestStatus {
           if (pubStatus.errorMessage) {
             this.errorMessages.push(pubStatus.errorMessage)
           } else {
-            this.errorMessages.push(`Ingest publication from source: '${pubStatus.sourceName}' with sourceid: '${pubStatus.sourceId}' failed with unknown error`)
+            this.errorMessages.push(`Ingest publication from source: '${pubStatus.datasourceName}' with sourceid: '${pubStatus.sourceId}' failed with unknown error`)
           }
         }
       }
@@ -155,7 +155,7 @@ export default class IngestStatus {
           if (pubStatus.errorMessage) {
             this.errorMessages.push(pubStatus.errorMessage)
           } else {
-            this.errorMessages.push(`Ingest publication from source: '${pubStatus.sourceName}' with sourceid: '${pubStatus.sourceId}' failed with unknown error`)
+            this.errorMessages.push(`Ingest publication from source: '${pubStatus.datasourceName}' with sourceid: '${pubStatus.sourceId}' failed with unknown error`)
           }
         }
       }
@@ -185,6 +185,18 @@ export default class IngestStatus {
     }
   }
 
+  private getCSVRows(pubStatuses: PublicationStatus[]): any[] {
+    let rows = []
+    if (pubStatuses.length > 0) {
+      const objectToCSVMap = pubStatuses[0].getObjectToCSVMap()
+      _.each(pubStatuses, (pubStatus: PublicationStatus) => {
+        const row = pubStatus.getCSVRow(objectToCSVMap)
+        rows.push(row)
+      })
+    }
+    return rows
+  }
+
   private async writeFailedIngestStatusToCSV() {
     const csvFailedFileName = `${this.csvFileBaseName}_failed_${moment().format('YYYYMMDDHHmmss')}_${this.csvCombinedFailedFileIndex}.csv`
     this.csvCombinedFailedFileIndex += 1
@@ -199,7 +211,7 @@ export default class IngestStatus {
     
     await writeCsv({
       path: csvFilePath,
-      data: this.combinedFailed,
+      data: this.getCSVRows(this.combinedFailed),
     })
 
     // if written successfully clear it out
@@ -231,7 +243,7 @@ export default class IngestStatus {
     
     await writeCsv({
       path: csvFilePath,
-      data: combinedStatus,
+      data: this.getCSVRows(combinedStatus),
     })
 
     console.log(`DOIs errors for path ${csvFilePath}':\n${JSON.stringify(this.errorMessages, null, 2)}`)

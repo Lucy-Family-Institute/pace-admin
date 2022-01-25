@@ -342,7 +342,7 @@ export class Ingester {
     } 
 
     // if at least one author, add the paper, and related personpub objects
-    if(csl && _.includes(types, csl.valueOf()['type']) && csl.valueOf()['title']) {
+    if(csl && csl.valueOf() && csl.valueOf()['type'] && _.includes(types, csl.valueOf()['type']) && csl.valueOf()['title']) {
       // push in csl record to jsonb blob
       if (!normedPub.doi && csl.valueOf()['DOI']) {
         normedPub.doi = csl.valueOf()['DOI']
@@ -525,7 +525,11 @@ export class Ingester {
         }
       }
     } else {
-      errorMessage = `${normedPub.doi} and not added to DB with unknown type ${csl.valueOf()['type']} or no title defined in DOI csl record` //, csl is: ${JSON.stringify(csl, null, 2)}`
+      if (!csl || !csl.valueOf() || !csl.valueOf()['type'] || !csl.valueOf()['title']){
+        errorMessage = `${normedPub.doi} and not added to DB unable to determine type or no title defined in DOI csl record` //, csl is: ${JSON.stringify(csl, null, 2)}`
+      } else {
+        errorMessage = `${normedPub.doi} and not added to DB with unknown type ${csl.valueOf()['type']} or no title defined in DOI csl record` //, csl is: ${JSON.stringify(csl, null, 2)}`
+      }
       console.log(errorMessage)
       publicationStatusValue = PublicationStatusValue.FAILED_ADD_PUBLICATION_UNKNOWN_PUB_TYPE
       publicationId = -1
