@@ -251,8 +251,8 @@ export class Ingester {
     return _.values(pubsByKey)
   }
 
-  async ingest (publications: NormedPublication[], csvFileBaseName: string, totalRows: number, threadCount = 1): Promise<IngestStatus> {
-    let ingestStatus = new IngestStatus(csvFileBaseName, this.config)
+  async ingest (publications: NormedPublication[], csvDirBaseName: string, csvFileBaseName: string, totalRows: number, threadCount = 1): Promise<IngestStatus> {
+    let ingestStatus = new IngestStatus(csvFileBaseName, csvDirBaseName, this.config)
     // do for loop
     let dedupedPubs: NormedPublication[]
     if (this.config.dedupByDoi) {
@@ -265,14 +265,14 @@ export class Ingester {
       try {
         console.log(`Ingesting publication batch: (${index+1} of ${dedupedPubs.length}) of ${totalRows} total publications`)
         const pubStatus: PublicationStatus = await this.ingestNormedPublication(publication)
-        await ingestStatus.log(pubStatus)
+        await ingestStatus.log(pubStatus, publication.sourceMetadata)
       } catch (error) {
         const errorMessage = `Error encountered on ingest of publication title: ${publication.title}, error: ${error}`
         const publicationStatusValue = PublicationStatusValue.FAILED_ADD_PUBLICATION
         const publicationId = -1
         // only create object when want to halt execution
         const pubStatus = new PublicationStatus(publication, publicationId, errorMessage, publicationStatusValue)
-        await ingestStatus.log(pubStatus)
+        await ingestStatus.log(pubStatus, publication.sourceMetadata)
         console.log(errorMessage)
       }
     }, { concurrency: threadCount })
@@ -555,13 +555,13 @@ export class Ingester {
       const totalRows = await NormedPublication.getTotalCSVFileRows(manifestFilePath)
       // get normed publications from filedir and manifest
       let normedPubs: NormedPublication[] = await NormedPublication.loadFromCSV(manifestFilePath, dataDirPath, pageOffset, pageSize)
-      ingestStatus = await this.ingest(normedPubs, `${csvOutputFileBase}_${pageOffset}`, totalRows, threadCount)
+      ingestStatus = await this.ingest(normedPubs, csvOutputFileBase, `${csvOutputFileBase}_${pageOffset}`, totalRows, threadCount)
       if (pageSize){
         // iterate over the remaining set until results returned are 0
         while (normedPubs && normedPubs.length > 0) {
           pageOffset += 1
           normedPubs = await NormedPublication.loadFromCSV(manifestFilePath, dataDirPath, pageOffset, pageSize)
-          ingestStatus = IngestStatus.merge(ingestStatus, await this.ingest(normedPubs, `${csvOutputFileBase}_${pageOffset}`, totalRows, threadCount))
+          ingestStatus = IngestStatus.merge(ingestStatus, await this.ingest(normedPubs, csvOutputFileBase, `${csvOutputFileBase}_${pageOffset}`, totalRows, threadCount))
         }
       }
       // console.log(`Ingest status is: ${JSON.stringify(ingestStatus)}`)
@@ -584,7 +584,7 @@ export class Ingester {
       // set label to the base of the path (file or dir)
       const normalizedLabel = Normalizer.normalizeString(path.basename(stagedPath))
       const statusCSVFileBase = `${normalizedLabel}_${year}_${moment().format('YYYYMMDDHHmmss')}_combined_status`
-      let ingestStatusByPath: IngestStatus = new IngestStatus(statusCSVFileBase, this.config)
+      let ingestStatusByPath: IngestStatus = new IngestStatus(statusCSVFileBase, statusCSVFileBase, this.config)
       try {
         const loadPaths = FsHelper.loadDirPaths(stagedPath, true)
         await pMap(loadPaths, async (filePath, fileIndex) => {
@@ -657,7 +657,7 @@ export class Ingester {
       // get normed publications from filedir and manifest
       const normedPubs: NormedPublication[] = await NormedPublication.loadPublicationsFromDB(this.client, year)
       const statusCSVFileBase = `Check_new_matches_${year}_status`
-      ingestStatus = await this.ingest(normedPubs, statusCSVFileBase, normedPubs.length, threadCount)
+      ingestStatus = await this.ingest(normedPubs, statusCSVFileBase, statusCSVFileBase, normedPubs.length, threadCount)
       // output remaining results for this path
       await ingestStatus.writeLogsToCSV()
  
