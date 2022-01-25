@@ -64,7 +64,7 @@ export default class IngestStatus {
     this.totalAddedConfidenceSets = 0
     this.totalSkippedAddConfidenceSets = 0
     this.totalFailedAddConfidenceSets = 0
-    this.csvBaseLogDir = `${csvFileBaseName}_${moment().format('YYYYMMDDHHmmss')}_logs`
+    this.csvBaseLogDir = `${csvFileBaseName}_logs`
     this.csvFileBaseName = csvFileBaseName
     this.ingesterConfig = ingesterConfig
     this.keepSeparateFailedLog = keepSeparateFailedLog

@@ -579,7 +579,7 @@ export class Ingester {
       // output results for this path
       // set label to the base of the path (file or dir)
       const normalizedLabel = Normalizer.normalizeString(path.basename(stagedPath))
-      const statusCSVFileBase = `${normalizedLabel}_${year}_combined_status`
+      const statusCSVFileBase = `${normalizedLabel}_${year}_${moment().format('YYYYMMDDHHmmss')}_combined_status`
       let ingestStatusByPath: IngestStatus = new IngestStatus(statusCSVFileBase, this.config)
       try {
         const loadPaths = FsHelper.loadDirPaths(stagedPath, true)
