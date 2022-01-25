@@ -37,6 +37,7 @@ export class PublicationStatus implements NormedPublication{
   personPublicationStatus?: string
   confidenceSetStatusValue?: number
   confidenceSetStatus?: string
+  sourceMetadata?: Object
       
   constructor (normedPub: NormedPublication, publicationId: number, errorMessage: string, publicationStatusValue: PublicationStatusValue, personPublicationStatusValue?: PersonPublicationStatusValue, confidenceSetStatusValue?: ConfidenceSetStatusValue) {
     this.datasourceName = normedPub.datasourceName
