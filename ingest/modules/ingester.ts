@@ -265,14 +265,14 @@ export class Ingester {
       try {
         console.log(`Ingesting publication batch: (${index+1} of ${dedupedPubs.length}) of ${totalRows} total publications`)
         const pubStatus: PublicationStatus = await this.ingestNormedPublication(publication)
-        ingestStatus.log(pubStatus)
+        await ingestStatus.log(pubStatus)
       } catch (error) {
         const errorMessage = `Error encountered on ingest of publication title: ${publication.title}, error: ${error}`
         const publicationStatusValue = PublicationStatusValue.FAILED_ADD_PUBLICATION
         const publicationId = -1
         // only create object when want to halt execution
         const pubStatus = new PublicationStatus(publication, publicationId, errorMessage, publicationStatusValue)
-        ingestStatus.log(pubStatus)
+        await ingestStatus.log(pubStatus)
         console.log(errorMessage)
       }
     }, { concurrency: threadCount })
@@ -593,11 +593,11 @@ export class Ingester {
         }, { concurrency: 5 })
 
         // output remaining records
-        await ingestStatusByPath.writeIngestStatusToCSV()
+        await ingestStatusByPath.writeLogsToCSV()
       } catch (error) {
         //attempt to write status to file
         console.log(`Error on load staged path '${stagedPath}' files: ${error}, attempt to output logged status`)
-        await ingestStatusByPath.writeIngestStatusToCSV()
+        await ingestStatusByPath.writeLogsToCSV()
       }
     }, { concurrency: 1}) // these all need to be 1 thread so no collisions on checking if pub already exists if present in multiple files
   }
@@ -655,7 +655,7 @@ export class Ingester {
       const statusCSVFileBase = `Check_new_matches_${year}_status`
       ingestStatus = await this.ingest(normedPubs, statusCSVFileBase, normedPubs.length, threadCount)
       // output remaining results for this path
-      await ingestStatus.writeIngestStatusToCSV()
+      await ingestStatus.writeLogsToCSV()
  
       // console.log(`Ingest status is: ${JSON.stringify(ingestStatus)}`)
     } catch (error) {

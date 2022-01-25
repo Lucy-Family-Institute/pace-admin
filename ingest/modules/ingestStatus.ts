@@ -5,6 +5,7 @@ import moment from 'moment'
 import IngesterConfig from './ingesterConfig'
 import { command as writeCsv } from '../units/writeCsv'
 import FsHelper from '../units/fsHelper'
+
 export default class IngestStatus {
   addedPublications: Array<PublicationStatus>
   skippedAddPublications: Array<PublicationStatus>
@@ -15,9 +16,11 @@ export default class IngestStatus {
   addedConfidenceSets: Array<PublicationStatus>
   skippedAddConfidenceSets: Array<PublicationStatus>
   failedAddConfidenceSets: Array<PublicationStatus>
+  combinedFailed: Array<PublicationStatus>
   errorMessages: Array<string>
   warningMessages: Array<string>
   totalRecords: number
+  totalFailedRecords: number
   totalAddedPublications: number
   totalSkippedAddPublications: number
   totalFailedAddPublications: number
@@ -32,10 +35,13 @@ export default class IngestStatus {
   csvFileBaseName: string
   ingesterConfig: IngesterConfig
   csvFileIndex: number
+  csvCombinedFailedFileIndex: number
 
   loggingBatchSize: number
+  keepSeparateFailedLog: boolean
 
-  constructor (csvFileBaseName: string, ingesterConfig: IngesterConfig){
+  constructor (csvFileBaseName: string, ingesterConfig: IngesterConfig, keepSeparateFailedLog = true){
+    this.combinedFailed = []
     this.addedPublications = []
     this.skippedAddPublications = []
     this.failedAddPublications = []
@@ -48,6 +54,7 @@ export default class IngestStatus {
     this.errorMessages = []
     this.warningMessages = []
     this.totalRecords = 0
+    this.totalFailedRecords = 0
     this.totalAddedPublications = 0
     this.totalSkippedAddPublications = 0
     this.totalFailedAddPublications = 0
@@ -57,9 +64,10 @@ export default class IngestStatus {
     this.totalAddedConfidenceSets = 0
     this.totalSkippedAddConfidenceSets = 0
     this.totalFailedAddConfidenceSets = 0
-    this.csvBaseLogDir = `${csvFileBaseName}_logs`
+    this.csvBaseLogDir = `${csvFileBaseName}_${moment().format('YYYYMMDDHHmmss')}_logs`
     this.csvFileBaseName = csvFileBaseName
     this.ingesterConfig = ingesterConfig
+    this.keepSeparateFailedLog = keepSeparateFailedLog
 
     if (this.ingesterConfig && this.ingesterConfig.loadPageSize && this.ingesterConfig.loggingBatchSize && this.ingesterConfig.loggingBatchSize > this.ingesterConfig.loadPageSize) {
       console.log(`Warning ingest logging batch size: ${this.ingesterConfig.loggingBatchSize} is greater than load page size ${this.ingesterConfig.loadPageSize}. Will use load page size for logging batch size instead.`)
@@ -68,11 +76,13 @@ export default class IngestStatus {
       this.loggingBatchSize = this.ingesterConfig.loggingBatchSize
     }
     this.csvFileIndex = 1
+    this.csvCombinedFailedFileIndex = 1
   }
 
   // returns the ingestStatus object updated with the new status added
-  log(pubStatus: PublicationStatus) {
+  async log(pubStatus: PublicationStatus) {
     if (pubStatus) {
+      let failedRecord: boolean = false
       this.totalRecords += 1
       if (pubStatus.publicationStatusValue === PublicationStatusValue.ADDED_PUBLICATION) {
         this.addedPublications.push(pubStatus)
@@ -84,6 +94,11 @@ export default class IngestStatus {
           this.warningMessages.push(pubStatus.errorMessage)
         }
       } else {
+        if (this.keepSeparateFailedLog) {
+          failedRecord = true
+          this.combinedFailed.push(pubStatus)
+          this.totalFailedRecords += 1
+        }
         this.failedAddPublications.push(pubStatus)
         this.totalFailedAddPublications += 1
         if (pubStatus.errorMessage) {
@@ -104,6 +119,11 @@ export default class IngestStatus {
             this.warningMessages.push(pubStatus.errorMessage)
           }
         } else {
+          if (this.keepSeparateFailedLog && !failedRecord) {
+            failedRecord = true
+            this.totalFailedRecords += 1
+            this.combinedFailed.push(pubStatus)
+          }
           this.failedAddPersonPublications.push(pubStatus)
           this.totalFailedAddPersonPublications += 1
           if (pubStatus.errorMessage) {
@@ -125,6 +145,11 @@ export default class IngestStatus {
             this.warningMessages.push(pubStatus.errorMessage)
           }
         } else {
+          if (this.keepSeparateFailedLog && !failedRecord) {
+            failedRecord = true
+            this.totalFailedRecords += 1
+            this.combinedFailed.push(pubStatus)
+          }
           this.failedAddConfidenceSets.push(pubStatus)
           this.totalFailedAddConfidenceSets += 1
           if (pubStatus.errorMessage) {
@@ -134,20 +159,54 @@ export default class IngestStatus {
           }
         }
       }
-      this.logToCSV()
+      await this.logToCSV()
     }
   }
 
-  logToCSV(){
+  async logToCSV(){
     if (this.loggingBatchSize && 
       ((this.totalRecords % this.loggingBatchSize) >= 0) &&
       (((this.totalRecords + 1) / this.loggingBatchSize) > this.csvFileIndex)) {
       // if one more pushes it over the batch size, write the current amount
-      this.writeIngestStatusToCSV()
+      await this.writeIngestStatusToCSV()
+    }
+    if ((this.keepSeparateFailedLog && this.loggingBatchSize) &&
+      ((this.totalFailedRecords % this.loggingBatchSize) >= 0) &&
+      (((this.totalFailedRecords + 1) / this.loggingBatchSize) > this.csvCombinedFailedFileIndex)) {
+      await this.writeFailedIngestStatusToCSV()
     }
   }
 
-  async writeIngestStatusToCSV() {
+  async writeLogsToCSV(){
+    // skip checks and write out all logs
+    await this.writeIngestStatusToCSV()
+    if (this.keepSeparateFailedLog) {
+      await this.writeFailedIngestStatusToCSV()
+    }
+  }
+
+  private async writeFailedIngestStatusToCSV() {
+    const csvFailedFileName = `${this.csvFileBaseName}_failed_${moment().format('YYYYMMDDHHmmss')}_${this.csvCombinedFailedFileIndex}.csv`
+    this.csvCombinedFailedFileIndex += 1
+
+    console.log(`Write failed status of doi's to csv file: ${csvFailedFileName}...`)
+    // console.log(`Failed records are: ${JSON.stringify(failedRecords[sourceName], null, 2)}`)
+    //write data out to csv
+    // create log dir if it does not exist
+    const csvFileDir = path.join(process.cwd(), this.ingesterConfig.outputIngestDir, this.csvBaseLogDir)
+    FsHelper.createDirIfNotExists(csvFileDir, true)
+    const csvFilePath = path.join(csvFileDir, csvFailedFileName)
+    
+    await writeCsv({
+      path: csvFilePath,
+      data: this.combinedFailed,
+    })
+
+    // if written successfully clear it out
+    this.combinedFailed = []
+  }
+
+  private async writeIngestStatusToCSV() {
     // console.log(`DOI Status: ${JSON.stringify(doiStatus,null,2)}`)
     // write combined failure results limited to 1 per doi
     let combinedStatus = []
@@ -214,7 +273,7 @@ export default class IngestStatus {
   }
 
   public static merge(ingestStatus1: IngestStatus, ingestStatus2: IngestStatus): IngestStatus {
-    let newIngestStatus = new IngestStatus(ingestStatus1.csvFileBaseName, ingestStatus1.ingesterConfig)
+    let newIngestStatus = new IngestStatus(ingestStatus1.csvFileBaseName, ingestStatus1.ingesterConfig, ingestStatus1.keepSeparateFailedLog)
     newIngestStatus.addedPublications = _.concat(ingestStatus1.addedPublications, ingestStatus2.addedPublications)
     newIngestStatus.failedAddPublications = _.concat(ingestStatus1.failedAddPublications, ingestStatus2.failedAddPublications)
     newIngestStatus.skippedAddPublications = _.concat(ingestStatus1.skippedAddPublications, ingestStatus2.skippedAddPublications)
@@ -227,6 +286,8 @@ export default class IngestStatus {
     newIngestStatus.warningMessages = _.concat(ingestStatus1.warningMessages, ingestStatus2.warningMessages)
     newIngestStatus.errorMessages = _.concat(ingestStatus1.errorMessages, ingestStatus2.errorMessages)
     newIngestStatus.totalRecords = ingestStatus1.totalRecords + ingestStatus2.totalRecords
+    newIngestStatus.combinedFailed = _.concat(ingestStatus1.combinedFailed, ingestStatus2.combinedFailed)
+    newIngestStatus.totalFailedRecords = ingestStatus1.totalFailedRecords + ingestStatus2.totalFailedRecords
     // call this to make sure any incremental logging happens after merge
     newIngestStatus.logToCSV()
     return newIngestStatus
