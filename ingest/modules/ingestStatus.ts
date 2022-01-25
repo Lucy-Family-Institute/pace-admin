@@ -5,6 +5,7 @@ import moment from 'moment'
 import IngesterConfig from './ingesterConfig'
 import { command as writeCsv } from '../units/writeCsv'
 import FsHelper from '../units/fsHelper'
+import NormedPublication from './normedPublication'
 
 export default class IngestStatus {
   addedPublications: Array<PublicationStatus>
@@ -32,7 +33,9 @@ export default class IngestStatus {
   totalFailedAddConfidenceSets: number
 
   csvBaseLogDir: string
+  csvBaseFailedLogDir: string
   csvFileBaseName: string
+  csvDirBaseName: string
   ingesterConfig: IngesterConfig
   csvFileIndex: number
   csvCombinedFailedFileIndex: number
@@ -40,7 +43,7 @@ export default class IngestStatus {
   loggingBatchSize: number
   keepSeparateFailedLog: boolean
 
-  constructor (csvFileBaseName: string, ingesterConfig: IngesterConfig, keepSeparateFailedLog = true){
+  constructor (csvFileBaseName: string, csvDirBaseName: string, ingesterConfig: IngesterConfig, keepSeparateFailedLog = true){
     this.combinedFailed = []
     this.addedPublications = []
     this.skippedAddPublications = []
@@ -64,7 +67,9 @@ export default class IngestStatus {
     this.totalAddedConfidenceSets = 0
     this.totalSkippedAddConfidenceSets = 0
     this.totalFailedAddConfidenceSets = 0
-    this.csvBaseLogDir = `${csvFileBaseName}_logs`
+    this.csvDirBaseName = csvDirBaseName
+    this.csvBaseLogDir = `${csvDirBaseName}_logs`
+    this.csvBaseFailedLogDir = `${this.csvBaseLogDir}_failed`
     this.csvFileBaseName = csvFileBaseName
     this.ingesterConfig = ingesterConfig
     this.keepSeparateFailedLog = keepSeparateFailedLog
@@ -80,7 +85,7 @@ export default class IngestStatus {
   }
 
   // returns the ingestStatus object updated with the new status added
-  async log(pubStatus: PublicationStatus) {
+  async log(pubStatus: PublicationStatus, sourceMetadata?) {
     if (pubStatus) {
       let failedRecord: boolean = false
       this.totalRecords += 1
@@ -160,6 +165,11 @@ export default class IngestStatus {
         }
       }
       await this.logToCSV()
+      if (failedRecord && sourceMetadata) {
+        let newPubStatus: PublicationStatus = _.cloneDeep(pubStatus)
+        newPubStatus.sourceMetadata = sourceMetadata
+        await this.writeFailedSourceMetadataToLog([newPubStatus])
+      }
     }
   }
 
@@ -185,6 +195,12 @@ export default class IngestStatus {
     }
   }
 
+  async writeFailedSourceMetadataToLog(normedPubs: NormedPublication[]) {
+    const failedDirPath = path.join(this.ingesterConfig.outputIngestDir, this.csvBaseLogDir, this.csvBaseFailedLogDir)
+    FsHelper.createDirIfNotExists(path.join(process.cwd(), failedDirPath), true)
+    await NormedPublication.writeSourceMetadataToJSON(normedPubs, failedDirPath)
+  }
+
   private getCSVRows(pubStatuses: PublicationStatus[]): any[] {
     let rows = []
     if (pubStatuses.length > 0) {
@@ -205,7 +221,7 @@ export default class IngestStatus {
     // console.log(`Failed records are: ${JSON.stringify(failedRecords[sourceName], null, 2)}`)
     //write data out to csv
     // create log dir if it does not exist
-    const csvFileDir = path.join(process.cwd(), this.ingesterConfig.outputIngestDir, this.csvBaseLogDir)
+    const csvFileDir = path.join(process.cwd(), this.ingesterConfig.outputIngestDir, this.csvBaseLogDir, this.csvBaseFailedLogDir)
     FsHelper.createDirIfNotExists(csvFileDir, true)
     const csvFilePath = path.join(csvFileDir, csvFailedFileName)
     
@@ -285,7 +301,7 @@ export default class IngestStatus {
   }
 
   public static merge(ingestStatus1: IngestStatus, ingestStatus2: IngestStatus): IngestStatus {
-    let newIngestStatus = new IngestStatus(ingestStatus1.csvFileBaseName, ingestStatus1.ingesterConfig, ingestStatus1.keepSeparateFailedLog)
+    let newIngestStatus = new IngestStatus(ingestStatus1.csvFileBaseName, ingestStatus1.csvDirBaseName, ingestStatus1.ingesterConfig, ingestStatus1.keepSeparateFailedLog)
     newIngestStatus.addedPublications = _.concat(ingestStatus1.addedPublications, ingestStatus2.addedPublications)
     newIngestStatus.failedAddPublications = _.concat(ingestStatus1.failedAddPublications, ingestStatus2.failedAddPublications)
     newIngestStatus.skippedAddPublications = _.concat(ingestStatus1.skippedAddPublications, ingestStatus2.skippedAddPublications)
