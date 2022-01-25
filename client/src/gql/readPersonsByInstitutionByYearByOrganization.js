@@ -59,6 +59,7 @@ export default function readPersonsByInstitutionByYearByOrganization (organizati
               value: {_gte: "${minConfidence}"},
             }
           ) {
+            persons_publications_id
             doi
             value
             title

@@ -1,7 +1,7 @@
 import { getAuthors, getAuthorsByLastName } from '../cslParser'
 import _ from 'lodash'
 import Cite from 'citation-js'
-import { loadJSONFromFile } from '../loadJSONFromFile'
+import FsHelper from '../fsHelper'
 
 const cslFilePath = './test/fixtures/default_csl.json'
 const cslAuthorMapPath = './test/fixtures/default_expected_author_map.json'
@@ -12,10 +12,10 @@ let defaultExpectedAuthorMap
 let defaultDoi
 
 beforeAll(async () => {
-  pubCSL = loadJSONFromFile(cslFilePath)
+  pubCSL = FsHelper.loadJSONFromFile(cslFilePath)
   defaultDoi = _.keys(pubCSL)[0]
-  defaultExpectedAuthors = loadJSONFromFile(cslExpectedAuthorPath)
-  defaultExpectedAuthorMap = loadJSONFromFile(cslAuthorMapPath)
+  defaultExpectedAuthors = FsHelper.loadJSONFromFile(cslExpectedAuthorPath)
+  defaultExpectedAuthorMap = FsHelper.loadJSONFromFile(cslAuthorMapPath)
 })
 
 

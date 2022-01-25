@@ -1,17 +1,25 @@
 import axios from 'axios'
 import _ from 'lodash'
+import pMap from 'p-map'
 import NormedPublication from './normedPublication'
 import NormedPerson from './normedPerson'
 import DataSource from './dataSource'
 import HarvestSet from './HarvestSet'
 import DataSourceConfig from './dataSourceConfig'
+import DataSourceHelper from './dataSourceHelper'
+import NormedAuthor from './normedAuthor'
 
 export class ScopusDataSource implements DataSource {
 
   private dsConfig: DataSourceConfig 
 
-  constructor (dsConfig: DataSourceConfig) {
+  constructor (dsConfig?: DataSourceConfig) {
     this.dsConfig = dsConfig
+  }
+
+  async getCSLStyleAuthorList(sourceMetadata): Promise<any[]> {
+    // do nothing for now
+    return []
   }
 
   // return the query passed to scopus for searching for given author
@@ -25,6 +33,8 @@ export class ScopusDataSource implements DataSource {
 
   // assumes that if only one of startDate or endDate provided it would always be startDate first and then have endDate undefined
   async getPublicationsByAuthorName(person: NormedPerson, sessionState: {}, offset: Number, startDate: Date, endDate?: Date): Promise<HarvestSet> {
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
     const authorQuery = this.getAuthorQuery(person)
 
     let totalResults: Number
@@ -62,7 +72,8 @@ export class ScopusDataSource implements DataSource {
 
   async fetchScopusQuery(query, date, pageSize, offset) : Promise<any>{
     console.log(`Querying scopus with date: ${date}, offset: ${offset}, and query: ${query}`)
-
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
     const response = await axios.get(this.dsConfig.queryUrl, {
       headers: {
         'X-ELS-APIKey' : this.dsConfig.apiKey,
@@ -80,15 +91,16 @@ export class ScopusDataSource implements DataSource {
 
   // returns an array of normalized publication objects given ones retrieved fron this datasource
   async getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): Promise<NormedPublication[]>{
-    return _.map(sourcePublications, (pub) => {
+    let normedPubs: NormedPublication[] = []
+    await pMap(sourcePublications, async (pub) => {
         let normedPub: NormedPublication = {
             title: pub['dc:title'],
             journalTitle: pub['prism:publicationName'],
             publicationDate: pub['prism:coverDate'],
-            datasourceName: this.dsConfig.sourceName,
+            datasourceName: this.getSourceName(),
             doi: pub['prism:doi'] ? pub['prism:doi'] : '',
             sourceId: _.replace(pub['dc:identifier'], 'SCOPUS_ID:', ''),
-            authors: [],
+            authors: await this.getNormedAuthorsFromSourceMetadata(pub),
             sourceMetadata: pub
         }
         // add optional properties
@@ -96,16 +108,26 @@ export class ScopusDataSource implements DataSource {
         if (pub['abstract']) _.set(normedPub, 'abstract', pub['abstract'])
         if (pub['prism:issn']) _.set(normedPub, 'journalIssn', pub['prism:issn'])
         if (pub['prism:eIssn']) _.set(normedPub, 'journalEIssn', pub['prism:eIssn'])
-        return normedPub
-    })
+        normedPubs.push(normedPub)
+    }, { concurrency: 1 })
+    return normedPubs
+  }
+
+  async getNormedAuthorsFromSourceMetadata(sourceMetadata): Promise<NormedAuthor[]> {
+    // just return nothing for now as not in metadata
+    return []
   }
 
   //returns a machine readable string version of this source
   getSourceName() {
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
     return (this.dsConfig && this.dsConfig.sourceName) ? this.dsConfig.sourceName : 'Scopus'
   }
 
   getRequestPageSize(): Number {
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
     return Number.parseInt(this.dsConfig.pageSize)
   }
 

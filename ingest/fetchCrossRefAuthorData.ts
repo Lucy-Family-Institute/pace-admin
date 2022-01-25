@@ -6,6 +6,7 @@ import fetch from 'node-fetch'
 import pMap from 'p-map'
 import moment from 'moment'
 import dotenv from 'dotenv'
+import path from 'path'
 import { randomWait, wait } from './units/randomWait'
 import { Harvester, HarvestOperation } from './modules/harvester'
 import { CrossRefDataSource } from './modules/crossrefDataSource'
@@ -28,7 +29,7 @@ process.env.NODE_ENV = 'development';
 // process.env.NODE_ENV = 'staging';
 
 // config variables
-const config = require('../config/config.js');
+// const config = require('../config/config.js');
 
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
@@ -58,7 +59,8 @@ async function main (): Promise<void> {
     sourceName: process.env.CROSSREF_SOURCE_NAME,
     pageSize: process.env.CROSSREF_PAGE_SIZE,  // page size must be a string for the request to work,
     harvestYears: harvestYears,
-    requestInterval: Number.parseInt(process.env.CROSSREF_REQUEST_INTERVAL)
+    requestInterval: Number.parseInt(process.env.CROSSREF_REQUEST_INTERVAL),
+    harvestDataDir: process.env.CROSSREF_HARVEST_DATA_DIR
   }
 
   const crossrefDS: CrossRefDataSource = new CrossRefDataSource(crossrefConfig)
@@ -72,7 +74,7 @@ async function main (): Promise<void> {
   await pMap(years, async (year) => {
     const normedPersons: NormedPerson[] = await getAllNormedPersonsByYear(year.valueOf(), client)
 
-    const resultsDir = `../data/${crossrefConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`
+    const resultsDir = path.join(process.cwd(), crossrefConfig.harvestDataDir, `${crossrefConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`)
 
     // console.log(`Person with harvest errors for ${year} are: ${JSON.stringify(personWithHarvestErrors,null,2)}`)
     // console.log(`Normed persons for ${year} are: ${JSON.stringify(normedPersons,null,2)}`)

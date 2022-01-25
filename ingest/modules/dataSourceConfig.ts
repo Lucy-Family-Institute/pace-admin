@@ -11,4 +11,5 @@ export default interface DataSourceConfig {
   harvestYears?: Number[]
   requestInterval: Number
   memberFilePath?: string
+  harvestDataDir: string
 }

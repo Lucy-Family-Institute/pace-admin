@@ -5,7 +5,7 @@ import { createHttpLink } from 'apollo-link-http'
 import fetch from 'node-fetch'
 import pMap from 'p-map'
 import pTimes from 'p-times'
-import readPersonsByYear from '../client/src/gql/readPersonsByYear'
+import readPersonsByYear from './gql/readPersonsByYear'
 import { command as writeCsv } from './units/writeCsv'
 import moment from 'moment'
 import dotenv from 'dotenv'
@@ -25,7 +25,7 @@ process.env.NODE_ENV = 'development';
 // process.env.NODE_ENV = 'staging';
 
 // config variables
-const config = require('../config/config.js');
+// const config = require('../config/config.js');
 
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
