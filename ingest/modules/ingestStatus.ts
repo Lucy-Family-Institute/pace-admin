@@ -288,6 +288,15 @@ export default class IngestStatus {
     newIngestStatus.totalRecords = ingestStatus1.totalRecords + ingestStatus2.totalRecords
     newIngestStatus.combinedFailed = _.concat(ingestStatus1.combinedFailed, ingestStatus2.combinedFailed)
     newIngestStatus.totalFailedRecords = ingestStatus1.totalFailedRecords + ingestStatus2.totalFailedRecords
+    newIngestStatus.totalAddedConfidenceSets = ingestStatus1.totalAddedConfidenceSets + ingestStatus2.totalAddedConfidenceSets
+    newIngestStatus.totalAddedPersonPublications = ingestStatus1.totalAddedPersonPublications + ingestStatus2.totalAddedPersonPublications
+    newIngestStatus.totalAddedPublications = ingestStatus1.totalAddedPublications + ingestStatus2.totalAddedPublications
+    newIngestStatus.totalFailedAddConfidenceSets = ingestStatus1.totalFailedAddConfidenceSets + ingestStatus2.totalFailedAddConfidenceSets
+    newIngestStatus.totalFailedAddPersonPublications = ingestStatus1.totalFailedAddPersonPublications + ingestStatus2.totalFailedAddPersonPublications
+    newIngestStatus.totalFailedAddPublications = ingestStatus1.totalFailedAddPublications + ingestStatus2.totalFailedAddPublications
+    newIngestStatus.totalSkippedAddConfidenceSets = ingestStatus1.totalSkippedAddConfidenceSets + ingestStatus2.totalSkippedAddConfidenceSets
+    newIngestStatus.totalSkippedAddPersonPublications = ingestStatus1.totalSkippedAddPersonPublications + ingestStatus2.totalSkippedAddPersonPublications
+    newIngestStatus.totalSkippedAddPublications = ingestStatus1.totalSkippedAddPublications + ingestStatus2.totalSkippedAddPublications
     // call this to make sure any incremental logging happens after merge
     newIngestStatus.logToCSV()
     return newIngestStatus
