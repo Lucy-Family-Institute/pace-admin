@@ -143,10 +143,13 @@ export default class Csl {
     let csl = undefined
     //get CSL (citation style language) record by doi from dx.dio.org
     cslRecords = await Cite.inputAsync(inputStr)
-    //console.log(`For DOI: ${doi}, Found CSL: ${JSON.stringify(cslRecords,null,2)}`)
-    csl = cslRecords[0]
-    const cslObj = new Csl(csl)
-    return cslObj
+    if (cslRecords && cslRecords.length > 0) {
+      csl = cslRecords[0]
+      const cslObj = new Csl(csl)
+      return cslObj
+    } else {
+      throw(`Unable to generate CSL for input str: '${inputStr}'`)
+    }
   }
 
 }

@@ -525,13 +525,20 @@ export class Ingester {
         }
       }
     } else {
-      if (!csl || !csl.valueOf() || !csl.valueOf()['type'] || !csl.valueOf()['title']){
-        errorMessage = `${normedPub.doi} and not added to DB unable to determine type or no title defined in DOI csl record` //, csl is: ${JSON.stringify(csl, null, 2)}`
+      if (!csl || !csl.valueOf()){
+        errorMessage = `Publication doi: '${normedPub.doi}' not added to DB because could not find or generate csl`
+        publicationStatusValue = PublicationStatusValue.FAILED_ADD_PUBLICATION_NO_CSL
+      } else if (!csl.valueOf()['type']) {
+        errorMessage = `Publication doi: '${normedPub.doi}' not added to DB because no type defined in DOI csl record`
+        publicationStatusValue = PublicationStatusValue.FAILED_ADD_PUBLICATION_UNKNOWN_PUB_TYPE
+      } else if (!csl.valueOf()['title']){
+        errorMessage = `Publication doi: '${normedPub.doi}' not added to DB because no title defined in DOI csl record`
+        publicationStatusValue = PublicationStatusValue.FAILED_ADD_PUBLICATION_UNKNOWN_TITLE
       } else {
-        errorMessage = `${normedPub.doi} and not added to DB with unknown type ${csl.valueOf()['type']} or no title defined in DOI csl record` //, csl is: ${JSON.stringify(csl, null, 2)}`
+        errorMessage = `Publication doi: '${normedPub.doi}' not added to DB with unknown type '${csl.valueOf()['type']}'' in csl record` //, csl is: ${JSON.stringify(csl, null, 2)}`
+        publicationStatusValue = PublicationStatusValue.FAILED_ADD_PUBLICATION_UNKNOWN_PUB_TYPE
       }
       console.log(errorMessage)
-      publicationStatusValue = PublicationStatusValue.FAILED_ADD_PUBLICATION_UNKNOWN_PUB_TYPE
       publicationId = -1
       pubStatus = new PublicationStatus(normedPub, publicationId, errorMessage, publicationStatusValue, personPublicationStatusValue, confidenceSetStatusValue)
     }
