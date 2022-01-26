@@ -354,8 +354,18 @@ export default class NormedPublication {
     if (objectToCSVMap['bibtex'] && row[_.toLower(objectToCSVMap['bibtex'])]) {
       _.set(pub, 'bibtex', row[_.toLower(objectToCSVMap['bibtex'])])
     }
-    if (objectToCSVMap['confirmedAuthors'] && row[_.toLower(objectToCSVMap['confirmedAuthors'])]) {
-      _.set(pub, 'confirmedAuthors', NormedPublication.getConfirmedNormedAuthors(row[_.toLower(objectToCSVMap['confirmedAuthors'])]))
+    if (objectToCSVMap['confirmedAuthors']){
+      if (_.isArray(objectToCSVMap['confirmedAuthors'])){
+        // try each
+        const colNames = objectToCSVMap['confirmedAuthors']
+        _.each(colNames, (colName) => {
+          if (row[_.toLower(colName)]) {
+            _.set(pub, 'confirmedAuthors', NormedPublication.getConfirmedNormedAuthors(row[_.toLower(colName)]))
+          }
+        })
+      } else if (row[_.toLower(objectToCSVMap['confirmedAuthors'])]) {
+        _.set(pub, 'confirmedAuthors', NormedPublication.getConfirmedNormedAuthors(row[_.toLower(objectToCSVMap['confirmedAuthors'])]))
+      }
     }
     if (objectToCSVMap['sourceMetadata'] && row[_.toLower(objectToCSVMap['sourceMetadata'])]) {
       // parse and get rid of any escaped quote characters
@@ -480,6 +490,9 @@ export default class NormedPublication {
       }
     } else {
       throw ('Bibtex not defined properly')
+    }
+    if (!csl || !cls.valueOf()) {
+      throw (`Failed to generate csl`)
     }
     if (csl && !csl.valueOf()['DOI']) {
       if (normedBibTex && normedBibTex.doi) {
