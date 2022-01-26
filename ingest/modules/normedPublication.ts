@@ -504,15 +504,23 @@ export default class NormedPublication {
     } catch (error) {
       try {
         if (defaultToBibTex && normedPub.bibtex) {
-          console.log(`Throwing the error for doi: ${normedPub.doi}`)
+          const errorMessage = `Error for doi: ${normedPub.doi} bad bibtex record: ${error}`
+          console.log(errorMessage)
           throw (error)
         } else {
-          // try by bibtex
+           if (!normedPub.bibtex) {
+            // try by bibtex
+            // try manually constructing bibtex and then feeding to csl
+            const bibTex = await NormedPublication.getBibTex(normedPub)
+            console.log(`Generated bibtex: ${JSON.stringify(bibTex)} for pub source_name: '${normedPub.datasourceName}' source id: '${normedPub.sourceId}'`)
+            normedPub.bibtex = BibTex.toString(bibTex)
+          } 
           csl = await NormedPublication.getCslByBibTex(normedPub)
         }
       } catch (error) {
-        console.log(`Throwing the error for doi: ${normedPub.doi}`)
-        throw (error)
+        const errorMessage = `Error for doi: ${normedPub.doi}: ${error}`
+        console.log(errorMessage)
+        throw (errorMessage)
       }
     }
     // console.log(`Csl found is: ${JSON.stringify(csl, null, 2)}`)
