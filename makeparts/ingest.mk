@@ -63,6 +63,9 @@ update_pubmed_data: ingest/node_modules
 	cd ingest && ts-node fetchPubmedDataByAuthor.ts && cd ..
 	cd ingest && ts-node joinAuthorPubmedPubs.js && cd ..
 
+recreate_pubmed_harvest_batches: ingest/node_modules
+	cd ingest && ts-node joinAuthorPubmedPubs.js && cd ..
+
 update_scopus_data: ingest/node_modules
 	cd ingest && ts-node fetchScopusAuthorData.ts && cd ..
 
