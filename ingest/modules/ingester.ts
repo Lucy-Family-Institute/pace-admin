@@ -186,6 +186,9 @@ export class Ingester {
   async getPublicationIdIfAlreadyInDB (doi, sourceId, csl: Csl, sourceName) : Promise<number> {
     let foundPub = false
     let publicationId
+    if (!csl || !csl.valueOf()) {
+      throw('Csl undefined on check if publication in DB')
+    }
     const title = csl.valueOf()['title']
     const publicationYear = Csl.getPublicationYear(csl)
     if (doi !== null){
@@ -322,6 +325,8 @@ export class Ingester {
     let errorMessage = ''
     const types = [
       'manuscript',
+      'monograph',
+      'journal',
       'article-journal',
       'article',
       'paper-conference',
@@ -535,7 +540,7 @@ export class Ingester {
         errorMessage = `Publication doi: '${normedPub.doi}' not added to DB because no title defined in DOI csl record`
         publicationStatusValue = PublicationStatusValue.FAILED_ADD_PUBLICATION_UNKNOWN_TITLE
       } else {
-        errorMessage = `Publication doi: '${normedPub.doi}' not added to DB with unknown type '${csl.valueOf()['type']}'' in csl record` //, csl is: ${JSON.stringify(csl, null, 2)}`
+        errorMessage = `Publication doi: '${normedPub.doi}' not added to DB with unknown type '${csl.valueOf()['type']}' in csl record` //, csl is: ${JSON.stringify(csl, null, 2)}`
         publicationStatusValue = PublicationStatusValue.FAILED_ADD_PUBLICATION_UNKNOWN_PUB_TYPE
       }
       console.log(errorMessage)

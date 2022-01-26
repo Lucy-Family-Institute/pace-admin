@@ -491,6 +491,9 @@ export default class NormedPublication {
     } else {
       throw ('Bibtex not defined properly')
     }
+    if (!csl || !cls.valueOf()) {
+      throw (`Failed to generate csl`)
+    }
     if (csl && !csl.valueOf()['DOI']) {
       if (normedBibTex && normedBibTex.doi) {
         csl.setDoi(normedBibTex.doi)

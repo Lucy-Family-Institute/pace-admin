@@ -62,14 +62,18 @@ export default class Csl {
     // put in array sorted by date
     const csl = cslParent.valueOf()
     let years = []
-    years.push(_.get(csl, 'journal-issue.published-print.date-parts[0][0]', null))
-    years.push(_.get(csl, 'journal-issue.published-online.date-parts[0][0]', null))
-    years.push(_.get(csl, 'published.date-parts[0][0]', null))
-    years.push(_.get(csl, 'issued.date-parts[0][0]', null))
-    years.push(_.get(csl, 'published-print.date-parts[0][0]', null))
-    years.push(_.get(csl, 'published-online.date-parts[0][0]', null))
+
+    if (csl) {
+      years.push(_.get(csl, 'journal-issue.published-print.date-parts[0][0]', null))
+      years.push(_.get(csl, 'journal-issue.published-online.date-parts[0][0]', null))
+      years.push(_.get(csl, 'published.date-parts[0][0]', null))
+      years.push(_.get(csl, 'issued.date-parts[0][0]', null))
+      years.push(_.get(csl, 'published-print.date-parts[0][0]', null))
+      years.push(_.get(csl, 'published-online.date-parts[0][0]', null))
   
-    years = _.sortBy(years, (year) => { return year === null ?  0 : Number.parseInt(year) }).reverse()
+      years = _.sortBy(years, (year) => { return year === null ?  0 : Number.parseInt(year) }).reverse()
+    }
+
     if (years.length > 0 && years[0] > 0) {
       // return the most recent year
       return years[0]
@@ -101,7 +105,7 @@ export default class Csl {
     }
   
     let authorCount = 0
-      if (csl && csl.valueOf()){
+      if (csl && csl.valueOf() && csl.valueOf()['author']){
       // console.log(`iterating of csl: ${JSON.stringify(csl)}`)
       // console.log(`Before author is: ${JSON.stringify(csl.valueOf()['author'], null, 2)}`)
       await pMap(csl.valueOf()['author'], async (author: any) => {
