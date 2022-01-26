@@ -699,8 +699,9 @@ export class CalculateConfidence {
       additiveCoefficient: 2.0
     },
     given_name_mismatch: {
-      // in this case lower confidence if given name not a match but initial was a match
-      base: -0.10,
+      // in this case lower confidence if given name not a match but initial was a match,
+      // put at 0.16 to make sure to drop below 50% if name mismatch but still rank 3 match like affiliation
+      base: -0.16,
       additiveCoefficient: 1.0
     },
     given_name_initial: {
