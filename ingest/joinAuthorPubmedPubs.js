@@ -30,7 +30,7 @@ const pubmedConfig = {
   requestInterval: Number.parseInt(process.env.PUBMED_REQUEST_INTERVAL),
   memberFilePath: process.env.PUBMED_CENTER_MEMBER_FILE_PATH,
   awardFilePath: process.env.PUBMED_AWARD_FILE_PATH,
-  dataFolderPath: process.env.PUBMED_DATA_FOLDER_PATH
+  dataFolderPath: process.env.PUBMED_HARVEST_DATA_DIR
 }
 
 // return map of identifier type to id
@@ -123,8 +123,8 @@ async function go() {
   const authors = _.compact(_.flatten(authorsByPub));
 
   const data = authors
-  // chunk it up into sizes of 6000
-  const batches = _.chunk(data, 6000)
+  // chunk it up into sizes of 500
+  const batches = _.chunk(data, 500)
   // console.log('Joining Pub Data')
   // const data = leftOuterJoin(authors, 'grantId', nih, 'grantId');
 
