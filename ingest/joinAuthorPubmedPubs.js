@@ -144,9 +144,8 @@ async function go() {
       const normedPub = {
         datasourceName: 'PubMed',
         sourceId: pub.source_id,
-        sourceMetadata: pub.source_metadata
       }
-      await NormedPublication.writeSourceMetadataToJSON([normedPub], pubmedDataDir)
+      await NormedPublication.writeSourceMetadataToJSON(normedPub, pub.source_metadata, pubmedDataDir)
     })
 
     // remove sourceMetadata from what is written to csv

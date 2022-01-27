@@ -13,7 +13,6 @@ import moment from 'moment'
 import { PublicationStatus } from './modules/publicationStatus'
 import { command as writeCsv } from './units/writeCsv'
 import IngesterConfig from './modules/ingesterConfig'
-import IngestStatus from './modules/ingestStatus'
 import Normalizer from './units/normalizer'
 
 dotenv.config({
@@ -74,8 +73,8 @@ async function main() {
     loggingBatchSize: Number.parseInt(loggingBatchSize)
   }
   const ingester = new Ingester(config, client)
- 
-  await ingester.checkCurrentPublicationsMatches()
+  const threadCount = 1
+  await ingester.checkCurrentPublicationsMatches(threadCount)
  }
 
 main()
