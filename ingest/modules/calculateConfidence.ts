@@ -477,7 +477,7 @@ export class CalculateConfidence {
         // console.log(`No given Name mismatch both with initials and without`)
         return new Map()
       } else {
-        console.log(`Given Name mismatch detected initials match, but not other match test author: ${JSON.stringify(testPerson, null, 2)} pub authors: ${JSON.stringify(publicationAuthorMap, null, 2)}`)
+        // console.log(`Given Name mismatch detected initials match, but not other match test author: ${JSON.stringify(testPerson, null, 2)} pub authors: ${JSON.stringify(publicationAuthorMap, null, 2)}`)
         return testInitialsMatchedAuthors
       }
     } else {
