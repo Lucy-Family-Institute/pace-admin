@@ -42,7 +42,8 @@ export default class NormedPublication {
   volume?: string
   pages?: string
   bibtex?: string
-  sourceMetadata?: Object
+  dataDirPath?: string   // use this property for fetching source metadata from disk if not pre-caching sourceMetadata, useful when trying to minimize overall memory usage for batch operations
+  sourceMetadata?: Object   // IMPORTANT: only reference this property directly if setting the value, for any get of the property use getSourceMetadata method
   csl?: Object
   csl_string?: string
   
@@ -102,15 +103,7 @@ export default class NormedPublication {
       return _.map(authorPapers, (paper) => {
         let pub: NormedPublication = NormedPublication.getNormedPublicationObjectFromCSVRow(paper, objectToCSVMap)
         if (dataDirPath) {
-          let sourceFileName
-          let sourceFilePath
-          try {
-            sourceFileName = NormedPublication.getSourceMetadataFileName(pub)
-            sourceFilePath = path.join(process.cwd(), NormedPublication.getSourceMetadataDirPath(dataDirPath), sourceFileName)
-            pub.sourceMetadata = NormedPublication.loadNormedPublicationSourceMetadata(sourceFilePath)
-          } catch (error) {
-            console.log(`Warning failed to load source metadata from JSON for filePath: ${sourceFilePath} with error: ${error}`)
-          }
+          pub.dataDirPath = dataDirPath
         }
         return pub
       })
@@ -118,6 +111,36 @@ export default class NormedPublication {
       console.log(`Error on paper load for path ${csvPath}, error: ${error}`)
       throw error
     }
+  }
+
+  // Creating this method to only load source metadata when it is needed since too many loaded at once
+  // causing heap to get exhausted
+  // always use this method instead of calling normedPub.sourceMetadata directly
+  public static getSourceMetadata(normedPub: NormedPublication, dataDirPath: string): Object {
+    let sourceFilePath
+    try {
+      if (normedPub.sourceMetadata) {
+        return normedPub.sourceMetadata
+      } else {
+        sourceFilePath = NormedPublication.getSourceMetadataFilePath(normedPub, dataDirPath)
+        return NormedPublication.loadNormedPublicationSourceMetadata(sourceFilePath)
+      }
+    } catch (error) {
+      console.log(`Warning failed to load source metadata from JSON for filePath: ${sourceFilePath} with error: ${error}`)
+      return undefined
+    }
+  }
+
+  public static getSourceMetadataFilePath(normedPub: NormedPublication, dataDirPath?): string {
+    if (!dataDirPath) {
+      if (normedPub.dataDirPath) {
+        dataDirPath = normedPub.dataDirPath
+      } else {
+        throw('No data dir path defined on NormedPublication or getSourceMetadataFilePath method call')
+      }
+    } 
+    const sourceFileName = NormedPublication.getSourceMetadataFileName(normedPub)
+    return path.join(process.cwd(), NormedPublication.getSourceMetadataDirPath(dataDirPath), sourceFileName)  
   }
 
   /**
@@ -153,19 +176,16 @@ export default class NormedPublication {
     }
   }
 
-  public static async writeSourceMetadataToJSON(pubs: NormedPublication[], dataDir) {
-    await pMap(pubs, async (pub) => { 
-      const jsonFileDir = path.join(process.cwd(), NormedPublication.getSourceMetadataDirPath(dataDir))
-      if (!fs.existsSync(jsonFileDir)){
-        fs.mkdirSync(jsonFileDir);
-      }
-      const filePath = path.join(jsonFileDir, NormedPublication.getSourceMetadataFileName(pub))
-      const sourceMetadata = pub.sourceMetadata
-      if (sourceMetadata) {
-        console.log(`Writing source metadata file: ${filePath}`)
-        await writeToJSONFile(sourceMetadata, filePath)
-      }
-    }, { concurrency: 1})
+  public static async writeSourceMetadataToJSON(pub: NormedPublication, sourceMetadata, dataDir) {
+    const jsonFileDir = path.join(process.cwd(), NormedPublication.getSourceMetadataDirPath(dataDir))
+    if (!fs.existsSync(jsonFileDir)){
+      fs.mkdirSync(jsonFileDir);
+    }
+    const filePath = path.join(jsonFileDir, NormedPublication.getSourceMetadataFileName(pub))
+    if (sourceMetadata) {
+      console.log(`Writing source metadata file: ${filePath}`)
+      await writeToJSONFile(sourceMetadata, filePath)
+    }
   }
 
   public static getCSVRow(pub: NormedPublication, objectToCSVMap): {} {
@@ -259,6 +279,9 @@ export default class NormedPublication {
   }
 
   public static loadNormedPublicationSourceMetadata(filePath, filesystem = fs) {
+    if (!filePath) {
+      throw 'Invalid path on load json, path: undefined'
+    }
     if (!filesystem.existsSync(filePath)) {
       throw `Invalid path on load json from: ${filePath}`
     }
@@ -446,25 +469,25 @@ export default class NormedPublication {
     return confirmedAuthorsByDoi
   }
 
-  public static async getAuthors (normedPub: NormedPublication): Promise<NormedAuthor[]> {
+  public static async getAuthors (normedPub: NormedPublication, sourceMetadata?): Promise<NormedAuthor[]> {
     if (normedPub.authors) {
       return normedPub.authors
-    } else {
-      return await this.getAuthorsFromSourceMetadata(normedPub)
+    } else if (sourceMetadata) {
+      return await this.getAuthorsFromSourceMetadata(normedPub, sourceMetadata)
     }
   }
 
-  public static async getAuthorsFromSourceMetadata (normedPub: NormedPublication): Promise<NormedAuthor[]> {
+  public static async getAuthorsFromSourceMetadata (normedPub: NormedPublication, sourceMetadata): Promise<NormedAuthor[]> {
     const ds: DataSource = NormedPublication.getDataSource(normedPub)
-    return await ds.getNormedAuthorsFromSourceMetadata(normedPub.sourceMetadata)
+    return await ds.getNormedAuthorsFromSourceMetadata(sourceMetadata)
   }
 
-  public static async getCslByBibTex(normedPub: NormedPublication) : Promise<Csl> {
+  public static async getCslByBibTex(normedPub: NormedPublication, sourceMetadata?) : Promise<Csl> {
     let bibTexStr = undefined
     let normedBibTex: BibTex = undefined
     let csl: Csl
     if (!normedPub.bibtex) {
-      normedBibTex = await NormedPublication.getBibTex(normedPub)
+      normedBibTex = await NormedPublication.getBibTex(normedPub, sourceMetadata)
       // console.log(`Normed bib tex is: ${JSON.stringify(normedBibTex, null, 2)}`)
       if (normedBibTex) bibTexStr = BibTex.toString(normedBibTex)
     } else {
@@ -505,12 +528,12 @@ export default class NormedPublication {
   }
 
   // if default to bibtex is true then it skips retrieval by doi, and constructs the csl from bibtex
-  public static async getCsl (normedPub: NormedPublication, defaultToBibTex = false): Promise<Csl> {
+  public static async getCsl (normedPub: NormedPublication, defaultToBibTex, sourceMetadata?): Promise<Csl> {
     let cslRecords = undefined
     let csl: Csl = undefined
     try {
       if (defaultToBibTex && normedPub.bibtex) {
-        csl = await NormedPublication.getCslByBibTex(normedPub)
+        csl = await NormedPublication.getCslByBibTex(normedPub, sourceMetadata)
       } else {
         csl = await Csl.getCsl(normedPub.doi)
       }
@@ -524,11 +547,11 @@ export default class NormedPublication {
            if (!normedPub.bibtex) {
             // try by bibtex
             // try manually constructing bibtex and then feeding to csl
-            const bibTex = await NormedPublication.getBibTex(normedPub)
-            console.log(`Generated bibtex: ${JSON.stringify(bibTex)} for pub source_name: '${normedPub.datasourceName}' source id: '${normedPub.sourceId}'`)
+            const bibTex = await NormedPublication.getBibTex(normedPub, sourceMetadata)
+            console.log(`Generated bibtex for pub source_name: '${normedPub.datasourceName}' source id: '${normedPub.sourceId}'`)
             normedPub.bibtex = BibTex.toString(bibTex)
           } 
-          csl = await NormedPublication.getCslByBibTex(normedPub)
+          csl = await NormedPublication.getCslByBibTex(normedPub, sourceMetadata)
         }
       } catch (error) {
         const errorMessage = `Error for doi: ${normedPub.doi}: ${error}`
@@ -540,10 +563,10 @@ export default class NormedPublication {
     return csl 
   }
 
-  public static async getBibTex (normedPub: NormedPublication): Promise<BibTex> {
+  public static async getBibTex (normedPub: NormedPublication, sourceMetadata?): Promise<BibTex> {
     const date: Date = getDateObject(normedPub.publicationDate)
     
-    const authors = await NormedPublication.getAuthors(normedPub)
+    const authors = await NormedPublication.getAuthors(normedPub, sourceMetadata)
     let bib: BibTex = {
       title: normedPub.title,
       journal: normedPub.journalTitle,

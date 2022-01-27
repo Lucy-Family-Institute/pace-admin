@@ -85,7 +85,7 @@ export default class IngestStatus {
   }
 
   // returns the ingestStatus object updated with the new status added
-  async log(pubStatus: PublicationStatus, sourceMetadata?) {
+  async log (pubStatus: PublicationStatus, sourceMetadata?) {
     if (pubStatus) {
       let failedRecord: boolean = false
       this.totalRecords += 1
@@ -167,8 +167,7 @@ export default class IngestStatus {
       await this.logToCSV()
       if (failedRecord && sourceMetadata) {
         let newPubStatus: PublicationStatus = _.cloneDeep(pubStatus)
-        newPubStatus.sourceMetadata = sourceMetadata
-        await this.writeFailedSourceMetadataToLog([newPubStatus])
+        await this.writeFailedSourceMetadataToLog(newPubStatus, sourceMetadata)
       }
     }
   }
@@ -195,10 +194,10 @@ export default class IngestStatus {
     }
   }
 
-  async writeFailedSourceMetadataToLog(normedPubs: NormedPublication[]) {
+  async writeFailedSourceMetadataToLog(normedPub: NormedPublication, sourceMetadata) {
     const failedDirPath = path.join(this.ingesterConfig.outputIngestDir, this.csvBaseLogDir, this.csvBaseFailedLogDir)
     FsHelper.createDirIfNotExists(path.join(process.cwd(), failedDirPath), true)
-    await NormedPublication.writeSourceMetadataToJSON(normedPubs, failedDirPath)
+    await NormedPublication.writeSourceMetadataToJSON(normedPub, sourceMetadata, failedDirPath)
   }
 
   private getCSVRows(pubStatuses: PublicationStatus[]): any[] {

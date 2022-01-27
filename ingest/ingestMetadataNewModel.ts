@@ -13,7 +13,6 @@ import moment from 'moment'
 import { PublicationStatus } from './modules/publicationStatus'
 import { command as writeCsv } from './units/writeCsv'
 import IngesterConfig from './modules/ingesterConfig'
-import IngestStatus from './modules/ingestStatus'
 import Normalizer from './units/normalizer'
 
 dotenv.config({
