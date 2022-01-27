@@ -254,7 +254,7 @@ export class Ingester {
     return _.values(pubsByKey)
   }
 
-  async ingest (publications: NormedPublication[], csvDirBaseName: string, csvFileBaseName: string, totalRows: number, threadCount = 1): Promise<IngestStatus> {
+  async ingest (publications: NormedPublication[], csvDirBaseName: string, csvFileBaseName: string, totalRows: number, threadCount: number, dataDirPath?: string): Promise<IngestStatus> {
     let ingestStatus = new IngestStatus(csvFileBaseName, csvDirBaseName, this.config)
     // do for loop
     let dedupedPubs: NormedPublication[]
@@ -264,18 +264,19 @@ export class Ingester {
     } else {
       dedupedPubs = this.dedupBySource(publications)
     }
-    await pMap(dedupedPubs, async (publication, index) => {
+    await pMap(dedupedPubs, async (publication: NormedPublication, index) => {
+      const sourceMetadata = NormedPublication.getSourceMetadata(publication, dataDirPath)
       try {
         console.log(`Ingesting publication batch: (${index+1} of ${dedupedPubs.length}) of ${totalRows} total publications`)
-        const pubStatus: PublicationStatus = await this.ingestNormedPublication(publication)
-        await ingestStatus.log(pubStatus, publication.sourceMetadata)
+        const pubStatus: PublicationStatus = await this.ingestNormedPublication(publication, sourceMetadata)
+        await ingestStatus.log(pubStatus, sourceMetadata)
       } catch (error) {
         const errorMessage = `Error encountered on ingest of publication title: ${publication.title}, error: ${error}`
         const publicationStatusValue = PublicationStatusValue.FAILED_ADD_PUBLICATION
         const publicationId = -1
         // only create object when want to halt execution
         const pubStatus = new PublicationStatus(publication, publicationId, errorMessage, publicationStatusValue)
-        await ingestStatus.log(pubStatus, publication.sourceMetadata)
+        await ingestStatus.log(pubStatus, sourceMetadata)
         console.log(errorMessage)
       }
     }, { concurrency: threadCount })
@@ -283,7 +284,7 @@ export class Ingester {
   }
 
   // returns the publication id of the ingested publication
-  async ingestNormedPublication (normedPub: NormedPublication): Promise<PublicationStatus> {
+  async ingestNormedPublication (normedPub: NormedPublication, sourceMetadata?: Object): Promise<PublicationStatus> {
     // only do something if the first call on this object
     await this.initializeNormedPersons()
     const testAuthors = this.normedPersons
@@ -297,7 +298,7 @@ export class Ingester {
 
     let csl: Csl = undefined
     try {
-      csl = await NormedPublication.getCsl(normedPub, this.config.defaultToBibTex)
+      csl = await NormedPublication.getCsl(normedPub, this.config.defaultToBibTex, sourceMetadata)
     } catch (error) {
       console.log(`Throwing the error for doi: ${normedPub.doi}`)
       throw (error)
@@ -321,7 +322,7 @@ export class Ingester {
     }
     // console.log(`Authors found: ${JSON.stringify(authors,null,2)}`)
 
-    let sourceMetadata= csl.valueOf()
+    if (!sourceMetadata) sourceMetadata = csl.valueOf()
     let errorMessage = ''
     const types = [
       'manuscript',
@@ -336,10 +337,6 @@ export class Ingester {
       'report',
       'report-series'
     ]
-
-    if (normedPub['sourceMetadata']) {
-      sourceMetadata = normedPub.sourceMetadata
-    }
 
     let publicationYear = undefined
     if (csl) {
@@ -553,7 +550,7 @@ export class Ingester {
     return pubStatus
   }
 
-  async ingestFromFiles (dataDirPath: string, manifestFilePath: string, csvOutputFileBase: string, threadCount = 1): Promise<IngestStatus> {
+  async ingestFromFiles (dataDirPath: string, manifestFilePath: string, csvOutputFileBase: string, threadCount: number): Promise<IngestStatus> {
     // create master manifest of unique publications
     let count = 0
     let ingestStatus: IngestStatus
@@ -567,13 +564,13 @@ export class Ingester {
       const totalRows = await NormedPublication.getTotalCSVFileRows(manifestFilePath)
       // get normed publications from filedir and manifest
       let normedPubs: NormedPublication[] = await NormedPublication.loadFromCSV(manifestFilePath, dataDirPath, pageOffset, pageSize)
-      ingestStatus = await this.ingest(normedPubs, csvOutputFileBase, `${csvOutputFileBase}_${pageOffset}`, totalRows, threadCount)
+      ingestStatus = await this.ingest(normedPubs, csvOutputFileBase, `${csvOutputFileBase}_${pageOffset}`, totalRows, threadCount, dataDirPath)
       if (pageSize){
         // iterate over the remaining set until results returned are 0
         while (normedPubs && normedPubs.length > 0) {
           pageOffset += 1
           normedPubs = await NormedPublication.loadFromCSV(manifestFilePath, dataDirPath, pageOffset, pageSize)
-          ingestStatus = IngestStatus.merge(ingestStatus, await this.ingest(normedPubs, csvOutputFileBase, `${csvOutputFileBase}_${pageOffset}`, totalRows, threadCount))
+          ingestStatus = IngestStatus.merge(ingestStatus, await this.ingest(normedPubs, csvOutputFileBase, `${csvOutputFileBase}_${pageOffset}`, totalRows, threadCount, dataDirPath))
         }
       }
       // console.log(`Ingest status is: ${JSON.stringify(ingestStatus)}`)
@@ -618,47 +615,9 @@ export class Ingester {
     }, { concurrency: 1}) // these all need to be 1 thread so no collisions on checking if pub already exists if present in multiple files
   }
 
-  // async writeIngestStatusToCSV(ingestStatus: IngestStatus, csvFileName) {
-  //   // console.log(`DOI Status: ${JSON.stringify(doiStatus,null,2)}`)
-  //   // write combined failure results limited to 1 per doi
-  //   let combinedStatus = []
-  //   if (ingestStatus){
-  //     combinedStatus = _.concat(combinedStatus, ingestStatus.failedAddPublications)
-  //     if (this.config.outputWarnings) {
-  //       combinedStatus = _.concat(combinedStatus, ingestStatus.skippedAddPublications)
-  //     }  
-  //     if (this.config.outputPassed) {
-  //       combinedStatus = _.concat(combinedStatus, ingestStatus.addedPublications)
-  //     }     
-  //     const combinedStatusValues = _.values(combinedStatus)
-  //     const csvFilePath = path.join(process.cwd(), this.config.outputIngestDir, csvFileName)
-
-  //     console.log(`Write status of doi's to csv file: ${csvFileName}, output warnings: ${this.config.outputWarnings}, output passed: ${this.config.outputPassed}`)
-  //     // console.log(`Failed records are: ${JSON.stringify(failedRecords[sourceName], null, 2)}`)
-  //     //write data out to csv
-  //     await writeCsv({
-  //       path: csvFilePath,
-  //       data: combinedStatusValues,
-  //     })
-
-  //     console.log(`DOIs errors for path ${csvFilePath}':\n${JSON.stringify(ingestStatus.errorMessages, null, 2)}`)
-  //     console.log(`DOIs warnings for path ${csvFilePath}':\n${JSON.stringify(ingestStatus.warningMessages, null, 2)}`)
-  //     console.log(`DOIs failed add publications for path ${csvFilePath}': ${ingestStatus.failedAddPublications.length}`)
-  //     console.log(`DOIs added publications for path ${csvFilePath}': ${ingestStatus.addedPublications.length}`)
-  //     console.log(`DOIs skipped add publications for path ${csvFilePath}': ${ingestStatus.skippedAddPublications.length}`)
-  //     console.log(`DOIs failed add person publications for path ${csvFilePath}': ${ingestStatus.failedAddPersonPublications.length}`)
-  //     console.log(`DOIs added person publications for path ${csvFilePath}': ${ingestStatus.addedPersonPublications.length}`)
-  //     console.log(`DOIs skipped add person publications for path ${csvFilePath}': ${ingestStatus.skippedAddPersonPublications.length}`)
-  //     console.log(`DOIs failed add confidence sets for path ${csvFilePath}': ${ingestStatus.failedAddConfidenceSets.length}`)
-  //     console.log(`DOIs added confidence sets for path ${csvFilePath}': ${ingestStatus.addedConfidenceSets.length}`)
-  //     console.log(`DOIs skipped add confidence sets for path ${csvFilePath}': ${ingestStatus.skippedAddConfidenceSets.length}`)
-  
-  //   }
-  // }
-
   // will look at existing publications for a given year and then run through the ingester essentially finding new matches
   // - AND/OR - recreating confidence measures if overwrite confidence is enabled in the config
-  async checkCurrentPublicationsMatches(threadCount = 1): Promise<IngestStatus> {
+  async checkCurrentPublicationsMatches(threadCount): Promise<IngestStatus> {
     const year = this.config.centerMemberYear
     // create master manifest of unique publications
     let count = 0
@@ -667,6 +626,7 @@ export class Ingester {
       console.log(`Checking publications in DB for year ${year} for new author matches, with config: ${JSON.stringify(this.config)}`)
 
       // get normed publications from filedir and manifest
+      // need to figure out how to not have source metadata be pre-cached so as not to have memory errors, maybe retrieve number of rows with offset? or load source metadata for different batches?
       const normedPubs: NormedPublication[] = await NormedPublication.loadPublicationsFromDB(this.client, year)
       const statusCSVFileBase = `Check_new_matches_${year}_status`
       ingestStatus = await this.ingest(normedPubs, statusCSVFileBase, statusCSVFileBase, normedPubs.length, threadCount)
