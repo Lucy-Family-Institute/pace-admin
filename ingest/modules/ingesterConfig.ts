@@ -14,4 +14,5 @@ export default interface IngesterConfig {
   centerMemberYear: number,
   loggingBatchSize: number,
   loadPageSize?: number,
+  threadCount?: number
 }
