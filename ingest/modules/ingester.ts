@@ -334,6 +334,7 @@ export class Ingester {
       'chapter',
       'book',
       'peer-review',
+      'reference-entry',
       'report',
       'report-series'
     ]
