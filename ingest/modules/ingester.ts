@@ -584,6 +584,8 @@ export class Ingester {
   async ingestStagedFiles(){
     const stagedDirs = FsHelper.loadDirList(this.config.stagedIngestDir)
 
+    const threadCount = (this.config.threadCount ? this.config.threadCount : 5)
+
     const year = this.config.centerMemberYear
     console.log(`Loading ${year} Publication Data for staged paths: ${JSON.stringify(stagedDirs, null, 2)}`)
     //load data
@@ -601,9 +603,9 @@ export class Ingester {
           console.log(`Ingesting publications dir (${(dirIndex + 1)} of ${stagedDirs.length}) from paths (${(fileIndex + 1)} of ${loadPaths.length}) of path: ${filePath}`)
           const fileName = FsHelper.getFileName(filePath)
           const dataDir = FsHelper.getParentDir(filePath)
-          const ingestStatus = await this.ingestFromFiles(dataDir, filePath, statusCSVFileBase, 5)
+          const ingestStatus = await this.ingestFromFiles(dataDir, filePath, statusCSVFileBase, threadCount)
           ingestStatusByPath = IngestStatus.merge(ingestStatusByPath, ingestStatus)
-        }, { concurrency: 5 })
+        }, { concurrency: threadCount })
 
         // output remaining records
         await ingestStatusByPath.writeLogsToCSV()
