@@ -92,7 +92,8 @@ export default class IngestStatus {
       if (pubStatus.publicationStatusValue === PublicationStatusValue.ADDED_PUBLICATION) {
         this.addedPublications.push(pubStatus)
         this.totalAddedPublications += 1
-      } else if (pubStatus.publicationStatusValue === PublicationStatusValue.SKIPPED_ADD_PUBLICATION) {
+      } else if (pubStatus.publicationStatusValue === PublicationStatusValue.SKIPPED_ADD_PUBLICATION ||
+        pubStatus.publicationStatusValue === PublicationStatusValue.SKIPPED_ADD_PUBLICATION_NO_PERSON_MATCH) {
         this.skippedAddPublications.push(pubStatus)
         this.totalSkippedAddPublications += 1
         if (pubStatus.errorMessage) {
