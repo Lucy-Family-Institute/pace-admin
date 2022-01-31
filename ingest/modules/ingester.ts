@@ -520,11 +520,11 @@ export class Ingester {
         }
       } else {
         if (_.keys(matchedPersons).length <= 0){
-          errorMessage = `No author match found for ${normedPub.doi} and not added to DB`
-          console.log(errorMessage)
-          publicationStatusValue = PublicationStatusValue.FAILED_ADD_PUBLICATION_NO_PERSON_MATCH
+          const warningMessage = `Warning: No author match found for ${normedPub.doi} and not added to DB`
+          console.log(warningMessage)
+          publicationStatusValue = PublicationStatusValue.SKIPPED_ADD_PUBLICATION_NO_PERSON_MATCH
           publicationId = -1
-          pubStatus = new PublicationStatus(normedPub, publicationId, errorMessage, publicationStatusValue, personPublicationStatusValue, confidenceSetStatusValue)
+          pubStatus = new PublicationStatus(normedPub, publicationId, warningMessage, publicationStatusValue, personPublicationStatusValue, confidenceSetStatusValue)
         }
       }
     } else {
