@@ -6,6 +6,7 @@ import fetch from 'node-fetch'
 import pMap from 'p-map'
 import moment from 'moment'
 import dotenv from 'dotenv'
+import path from 'path'
 import { randomWait, wait } from './units/randomWait'
 import { Harvester, HarvestOperation } from './modules/harvester'
 import { SemanticScholarDataSource } from './modules/semanticScholarDataSource'
@@ -30,7 +31,7 @@ process.env.NODE_ENV = 'development';
 // process.env.NODE_ENV = 'staging';
 
 // config variables
-const config = require('../config/config.js');
+// const config = require('../config/config.js');
 
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
@@ -48,6 +49,14 @@ const client = new ApolloClient({
 
 async function main (): Promise<void> {
 
+  const harvestStartYear = Number.parseInt(process.env.SEMANTIC_SCHOLAR_HARVEST_START_YEAR)
+  const harvestEndYear = Number.parseInt(process.env.SEMANTIC_SCHOLAR_HARVEST_END_YEAR)
+  let harvestYears = []
+
+  for (let index = 0; index <= harvestEndYear - harvestStartYear; index++) {
+    harvestYears.push((harvestStartYear+index))
+  }
+
   const dsConfig: DataSourceConfig = {
     baseUrl: process.env.SEMANTIC_SCHOLAR_BASE_URL,
     authorUrl: process.env.SEMANTIC_SCHOLAR_AUTHOR_URL,
@@ -55,19 +64,21 @@ async function main (): Promise<void> {
     publicationUrl: process.env.SEMANTIC_SCHOLAR_PUBLICATION_URL,
     sourceName: process.env.SEMANTIC_SCHOLAR_SOURCE_NAME,
     pageSize: process.env.SEMANTIC_SCHOLAR_PAGE_SIZE,  // page size must be a string for the request to work
-    requestInterval: Number.parseInt(process.env.SEMANTIC_SCHOLAR_REQUEST_INTERVAL)
+    requestInterval: Number.parseInt(process.env.SEMANTIC_SCHOLAR_REQUEST_INTERVAL),
+    harvestYears: harvestYears,
+    harvestDataDir: process.env.SEMANTIC_SCHOLAR_HARVEST_DATA_DIR
   }
 
   const semanticScholarDS: SemanticScholarDataSource = new SemanticScholarDataSource(dsConfig)
   const semanticScholarHarvester: Harvester = new Harvester(semanticScholarDS)
 
-  const possibleAuthorIdsPath = '../data/input/new_semantic_scholar_ids.csv'
-  const possibleAuthorIdsByPersonId: {} = await semanticScholarDS.loadPossibleAuthorIdsFromCSV(possibleAuthorIdsPath, 'person_id', 'matched_author_author_id')
+  // const possibleAuthorIdsPath = '../data/input/new_semantic_scholar_ids.csv'
+  // const possibleAuthorIdsByPersonId: {} = await semanticScholarDS.loadPossibleAuthorIdsFromCSV(possibleAuthorIdsPath, 'person_id', 'matched_author_author_id')
   
-  console.log(`Possible Author Ids by Person Id: ${JSON.stringify(possibleAuthorIdsByPersonId, null, 2)}`)
+  // console.log(`Possible Author Ids by Person Id: ${JSON.stringify(possibleAuthorIdsByPersonId, null, 2)}`)
   // const years = [ 2019, 2020, 2021 ]
-  const minYear = 2019
-  const maxYear = 2021
+  const minYear = dsConfig.harvestYears[0].valueOf()
+  const maxYear = dsConfig.harvestYears.reverse()[0].valueOf()
   let succeededPapers = []
   let failedPapers = []
   let succeededAuthors = []
@@ -86,7 +97,7 @@ async function main (): Promise<void> {
   } //, { concurrency: 1 })
 
 
-  const resultsDir = `../data/${dsConfig.sourceName}_${minYear}-${maxYear}_${moment().format('YYYYMMDDHHmmss')}/`
+  const resultsDir = path.join(process.cwd(), dsConfig.harvestDataDir, `${dsConfig.sourceName}_${minYear}-${maxYear}_${moment().format('YYYYMMDDHHmmss')}/`)
 
   // console.log(`Person with harvest errors for ${year} are: ${JSON.stringify(personWithHarvestErrors,null,2)}`)
   // console.log(`Normed persons for ${year} are: ${JSON.stringify(normedPersons,null,2)}`)
@@ -104,7 +115,7 @@ async function main (): Promise<void> {
       personCounter += 1
       const person = persons[0]
       const personId = person['id']
-      if (person.sourceIds && person.sourceIds.semanticScholarIds || possibleAuthorIdsByPersonId[`${personId}`]) {
+      if (person.sourceIds && person.sourceIds.semanticScholarIds) { // || possibleAuthorIdsByPersonId[`${personId}`]) {
         // run for each name plus name variance, put name variance second in case undefined
         // let searchNames = _.concat([{given_name: person.firstName, family_name: person.lastName }], person.nameVariances)
         // if (person.id === 157) {

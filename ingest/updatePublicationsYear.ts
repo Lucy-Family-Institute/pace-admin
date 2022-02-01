@@ -13,9 +13,6 @@ import { randomWait } from './units/randomWait'
 import { command as writeCsv} from './units/writeCsv'
 const Fuse = require('fuse.js')
 
-import { removeSpaces, normalizeString, normalizeObjectProperties } from './units/normalizer'
-
-
 dotenv.config({
   path: '../.env'
 })

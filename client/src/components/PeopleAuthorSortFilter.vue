@@ -1,6 +1,6 @@
 <template>
   <div class="row">
-  <div class="q-pa-md"  style="min-width:200px">
+  <div class="q-pa-sm"  style="min-width:175px">
     <q-select
       name="sort_person"
       :key="personSortKey"
@@ -11,14 +11,14 @@
       label="Sort Person By:"
     />
   </div>
-  <div class="q-pa-md"  style="min-width:200px">
+  <div class="q-pa-sm"  style="min-width:175px">
     <q-select
       name="person_total"
       v-model="selectedPersonTotal"
       :options="personTotalOptions"
       color="primary"
       filled
-      label="Show Total Counts:"
+      label="Show Counts:"
       class="fullSelect"
     />
   </div>

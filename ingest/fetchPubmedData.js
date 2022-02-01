@@ -8,10 +8,26 @@ const schema = require('schm');
 const translate = require('schm-translate');
 const xmlToJson = require('xml-js');
 import { wait } from "./units/randomWait"
+import dotenv from 'dotenv'
 
 const getIds = require('./units/joinCsvs').command;
 
-const dataFolderPath = "../data";
+dotenv.config({
+  path: '../.env'
+})
+
+// environment variables
+process.env.NODE_ENV = 'development';
+
+const pubmedConfig = {
+  baseUrl: process.env.PUBMED_BASE_URL,
+  queryUrl: process.env.PUBMED_QUERY_URL,
+  sourceName: process.env.PUBMED_SOURCE_NAME,
+  publicationUrl: process.env.PUBMED_PUBLICATION_URL,
+  pageSize: process.env.PUBMED_PAGE_SIZE,
+  requestInterval: Number.parseInt(process.env.PUBMED_REQUEST_INTERVAL),
+  dataFolderPath: process.env.PUBMED_DATA_FOLDER_PATH
+}
 
 //const getText = constraints => prevSchema => prevSchema.merge({
 //  validate(values) {
@@ -79,8 +95,8 @@ async function getAwardPublications(awardId){
 }
 
 async function getESearch(term){
-  await wait(1000);
-  const url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
+  await wait(pubmedConfig.requestInterval);
+  const url = pubmedConfig.queryUrl
   const response = await axios.get(url, {
     params: {
       db: 'pubmed',
@@ -93,8 +109,8 @@ async function getESearch(term){
 }
 
 async function getEFetch(ids){
-  await wait(1000);
-  const url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi';
+  await wait(pubmedConfig.requestInterval);
+  const url = pubmedConfig.publicationUrl
   const commaSeparatedIds = _.join(ids, ',');
   const response = await axios.get(url, {
     responseType: 'text',
@@ -132,7 +148,12 @@ async function go() {
   const mapper = async (awardId) => {
     console.log(`Working on ${awardId}`);
     const response = await getAwardPublications(awardId);
-    const filename = path.join(process.cwd(), dataFolderPath, 'awards', `${awardId}.json`);
+
+    const awardsPath = path.join(process.cwd(), pubmedConfig.dataFolderPath, 'awards')
+    if (!fs.existsSync(awardsPath)){
+      fs.mkdirSync(awardsPath, { recursive: true });
+    }
+    const filename = path.join(awardsPath, `${awardId}.json`);
     if( response ) {
       console.log(`Writing ${filename}`);
       await pify(fs.writeFile)(filename, JSON.stringify(response));

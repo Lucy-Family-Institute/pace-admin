@@ -1,0 +1,13 @@
+{
+  "id": "id",
+  "title": "title",
+  "journalTitle": "journal_title", 
+  "doi": "doi",
+  "publicationDate": "year",
+  "datasourceName": "source_name",
+  "csl": "csl",
+  "csl_string": "csl_string",
+  "sourceId": "source_id",
+  "sourceMetadata": "source_metadata",
+  "abstract": "abstract"
+}
