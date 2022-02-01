@@ -115,12 +115,6 @@
               <p class="text-center btn-group">
                 <q-btn
                   type="a"
-                  :href="`mailto:${email}`"
-                  size="md"
-                  label="EXPLORE PARTNERSHIP"
-                  class="btn" />
-                <q-btn
-                  type="a"
                   href="/login"
                   size="md"
                   label="LOGIN"
@@ -192,6 +186,15 @@
                 <li><a class="soc-instagram" :href="social.instagramUrl" rel="noopener" :aria-label="`${siteName} on Instagram`"><svg class="icon" width="16" height="16" aria-hidden="true"> <use xlink:href="#icon-instagram"></use> </svg> Instagram</a></li>
               </ul>
             </nav>
+          </div>
+          <div>
+            Incorporates metadata retrieved from the following third-party Sources:
+            <ul>
+              <li><a href="https://www.semanticscholar.org/product/api" target="_blank">Semantic Scholar</a></li>
+              <li><a href="https://developer.clarivate.com/" target="_blank">Web of Science</a></li>
+              <li><a href="https://www.ncbi.nlm.nih.gov/home/develop/api/" target="_blank">PubMed</a></li>
+              <li><a href="https://api.crossref.org/swagger-ui/index.html" target="_blank">CrossRef</a></li>
+            </ul>
           </div>
           <div property="logo" typeof="ImageObject">
             <meta property="url" content="https://static.nd.edu/images/webclips/default/webclip-60.png">
@@ -282,12 +285,12 @@ export default {
     return {
       siteName: `PACE`,
       title: `Publication Activity Collection Environment`,
-      description: `
-        Providing high-confidence publication data for centers,
+      description: `A pilot project in partnership between the Hesburgh Libraries and Notre Dame Research
+        to collect publication data for centers,
         institutes, and departments to measure impact and highlight
         examples of research excellence.`,
       address: {
-        street1: '271C Hesburgh Library',
+        street1: '271A Hesburgh Library',
         city: 'Notre Dame',
         state: 'IN',
         zip: 46556,

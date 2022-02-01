@@ -10,6 +10,28 @@ const loadCsv = require('./units/loadCsv').command;
 const fuzzyMatchName = require('./units/fuzzyMatchName').command;
 const nameParser = require('./units/nameParser').command;
 
+import dotenv from 'dotenv'
+
+dotenv.config({
+  path: '../.env'
+})
+
+// environment variables
+process.env.NODE_ENV = 'development';
+
+const pubmedConfig = {
+  baseUrl: process.env.PUBMED_BASE_URL,
+  queryUrl: process.env.PUBMED_QUERY_URL,
+  sourceName: process.env.PUBMED_SOURCE_NAME,
+  publicationUrl: process.env.PUBMED_PUBLICATION_URL,
+  pageSize: process.env.PUBMED_PAGE_SIZE,
+  requestInterval: Number.parseInt(process.env.PUBMED_REQUEST_INTERVAL),
+  memberFilePath: process.env.PUBMED_CENTER_MEMBER_FILE_PATH,
+  awardFilePath: process.env.PUBMED_AWARD_FILE_PATH,
+  dataFolderPath: process.env.PUBMED_DATA_FOLDER_PATH
+}
+
+
 // return map of identifier type to id
 function getResourceIdentifiers (resourceIdentifiers) {
   console.log(`Keying resource identifiers by type: ${JSON.stringify(resourceIdentifiers, null,2)}`)
@@ -18,7 +40,7 @@ function getResourceIdentifiers (resourceIdentifiers) {
 
 async function mapGrantFiles (filename) {
   if(!_.endsWith(filename, '.json')) return;
-  const data = await pify(fs.readFile)(path.join('../data', 'awards', filename));
+  const data = await pify(fs.readFile)(path.join(pubmedConfig.dataFolderPath, 'awards', filename));
   const grantId = filename.replace('.json', '');
 
   console.log(`Processing Grant Award Id: ${grantId}`)
@@ -42,7 +64,7 @@ async function mapGrantFiles (filename) {
     }, { concurrency: 1 });
 
     const centerMembers = await loadCsv({
-      path: '../data/input/researchers_2017-2020_attributes.csv',
+      path: pubmedConfig.memberFilePath
     });
 
     const parsedName = await nameParser({
@@ -59,7 +81,7 @@ async function mapGrantFiles (filename) {
     });
 
     const awards = await loadCsv({
-      path: '../data/input/Awards_for_2009Jan01-thru-2021Feb02.csv',
+      path: pubmedConfig.awardFilePath
     });
 
     const investigatorCorpus = await pMap(awards, async (award) => {
@@ -133,7 +155,7 @@ async function go() {
 
   console.log('Processing NIH load')
   const awards = await loadCsv({
-    path: '../data/input/Awards_for_2009Jan01-thru-2021Feb02.csv',
+    path: pubmedConfig.awardFilePath,
   });
   
   const nih = _.compact(_.map(awards, (award) => {
@@ -148,7 +170,8 @@ async function go() {
   }));
   
   console.log('Reading awards')
-  const files = await pify(fs.readdir)('../data/awards');
+  const awardPath = path.join(process.cwd(), pubmedConfig.dataFolderPath, 'awards');
+  const files = await pify(fs.readdir)(awardPath);
 
   console.log ('Mapping grant files')
   const authorsByGrant = await pMap(files, mapGrantFiles, { concurrency: 1 });
@@ -160,8 +183,9 @@ async function go() {
   const data = leftOuterJoin(authors, 'grantId', nih, 'grantId');
 
   console.log('Writing Grant Award data to disk')
+  const authorsByAwardsPath = path.join(process.cwd(), pubmedConfig.dataFolderPath, `authorsByAwards.${moment().format('YYYYMMDDHHmmss')}.csv`);
   await writeCsv({
-    path: `../data/authorsByAwards.${moment().format('YYYYMMDDHHmmss')}.csv`,
+    path: authorsByAwardsPath,
     data,
   });
 }

@@ -61,23 +61,6 @@ export default function readPersonsByInstitutionByYearAllCenters (institutionNam
             title
             review_type
           }
-          confidencesets_persons_publications(
-            distinct_on: title, 
-            order_by: {
-              title: asc, 
-              datetime: desc
-            }, 
-            where: {
-              year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}},
-              value: {_gte: "${minConfidence}"},
-            }
-          ) {
-            persons_publications_id
-            title
-            doi
-            value
-            year
-          }
           confidencesets_persons_publications_aggregate(distinct_on: title, order_by: {title: asc, datetime: desc}, where: {year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}}) {
             nodes {
               datetime
@@ -87,16 +70,6 @@ export default function readPersonsByInstitutionByYearAllCenters (institutionNam
               value
               version
               title
-            }
-          }
-          reviews_persons_publications_aggregate(distinct_on: title, order_by: {title: asc, datetime: desc}) {
-            aggregate {
-              count(columns: title)
-            }
-          }
-          persons_publications_metadata_aggregate (distinct_on: title, where: {year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}}) {
-            aggregate {
-              count(columns: title)
             }
           }
           persons_namevariances {

@@ -6,8 +6,8 @@ import HarvestSet from '../HarvestSet'
 import NormedPerson from '../normedPerson'
 import { randomWait } from '../../units/randomWait'
 import { getDateObject } from '../../units/dateRange'
-import { escapeForRegEx } from '../../units/normalizer'
-import {loadJSONFromFile} from '../..//units/loadJSONFromFile'
+import Normalizer from '../../units/normalizer'
+import FsHelper from '../../units/fsHelper'
 import DataSourceConfig from '../dataSourceConfig'
 
 import dotenv from 'dotenv'
@@ -42,7 +42,8 @@ const dsConfig: DataSourceConfig = {
     queryUrl: 'https://api.crossref.org/works',
     sourceName: 'CrossRef',
     pageSize: '100',  // page size must be a string for the request to work
-    requestInterval: 10000
+    requestInterval: 10000,
+    harvestDataDir: process.env.CROSSREF_HARVEST_DATA_DIR
 }
 
 // for now this is the set expected every time, not fully optimized yet
@@ -70,7 +71,7 @@ beforeAll(async () => {
     // const wosDS: DataSource = new WosDataSource(dsConfig)
     crossrefHarvester = new Harvester(crossrefDS)
 
-    defaultPubSourceMetadata = loadJSONFromFile(crossrefSampleRecordPath)
+    defaultPubSourceMetadata = FsHelper.loadJSONFromFile(crossrefSampleRecordPath)
 
     defaultNormedPerson = {
         id: 94,

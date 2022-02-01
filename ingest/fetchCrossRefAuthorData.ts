@@ -6,6 +6,7 @@ import fetch from 'node-fetch'
 import pMap from 'p-map'
 import moment from 'moment'
 import dotenv from 'dotenv'
+import path from 'path'
 import { randomWait, wait } from './units/randomWait'
 import { Harvester, HarvestOperation } from './modules/harvester'
 import { CrossRefDataSource } from './modules/crossrefDataSource'
@@ -28,7 +29,7 @@ process.env.NODE_ENV = 'development';
 // process.env.NODE_ENV = 'staging';
 
 // config variables
-const config = require('../config/config.js');
+// const config = require('../config/config.js');
 
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
@@ -46,26 +47,34 @@ const client = new ApolloClient({
 
 async function main (): Promise<void> {
 
+  const harvestYearStr = process.env.CROSSREF_HARVEST_YEARS
+  const harvestYearStrArr = _.split(harvestYearStr, ',')
+  const harvestYears = _.map(harvestYearStrArr, (yearStr) => {
+    return Number.parseInt(yearStr)
+  })
+
   const crossrefConfig: DataSourceConfig = {
-    baseUrl: 'https://api.crossref.org',
-    queryUrl: 'https://api.crossref.org/works',
-    sourceName: 'CrossRef',
-    pageSize: '100',  // page size must be a string for the request to work
-    requestInterval: 1000
+    baseUrl: process.env.CROSSREF_BASE_URL,
+    queryUrl: process.env.CROSSREF_QUERY_URL,
+    sourceName: process.env.CROSSREF_SOURCE_NAME,
+    pageSize: process.env.CROSSREF_PAGE_SIZE,  // page size must be a string for the request to work,
+    harvestYears: harvestYears,
+    requestInterval: Number.parseInt(process.env.CROSSREF_REQUEST_INTERVAL),
+    harvestDataDir: process.env.CROSSREF_HARVEST_DATA_DIR
   }
 
   const crossrefDS: CrossRefDataSource = new CrossRefDataSource(crossrefConfig)
   const crossrefHarvester: Harvester = new Harvester(crossrefDS)
   
-  const years = [ 2020 ]
+  const years = crossrefConfig.harvestYears
   let succeededPapers = []
   let failedPapers = []
   let succeededAuthors = []
   let failedAuthors = []
   await pMap(years, async (year) => {
-    const normedPersons: NormedPerson[] = await getAllNormedPersonsByYear(year, client)
+    const normedPersons: NormedPerson[] = await getAllNormedPersonsByYear(year.valueOf(), client)
 
-    const resultsDir = `../data/${crossrefConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`
+    const resultsDir = path.join(process.cwd(), crossrefConfig.harvestDataDir, `${crossrefConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`)
 
     // console.log(`Person with harvest errors for ${year} are: ${JSON.stringify(personWithHarvestErrors,null,2)}`)
     // console.log(`Normed persons for ${year} are: ${JSON.stringify(normedPersons,null,2)}`)

@@ -6,7 +6,7 @@ import fetch from 'node-fetch'
 import pMap from 'p-map'
 import _, { update } from 'lodash'
 import { command as loadCsv } from './units/loadCsv'
-import readPersons from '../client/src/gql/readPersons'
+import readPersons from './gql/readPersons'
 import updatePersonSemanticScholarIds from './gql/updatePersonSemanticScholarIds'
 import { __EnumValue } from 'graphql'
 import { getAllSimplifiedPersons, getNameKey } from './modules/queryNormalizedPeople'
@@ -19,6 +19,8 @@ dotenv.config({
 
 const hasuraSecret = process.env.HASURA_SECRET
 const graphQlEndPoint = process.env.GRAPHQL_END_POINT
+
+const authorAttributeFilePath = process.env.INGESTER_AUTHOR_ATTRIBUTES_FILE
 
 const client = new ApolloClient({
   link: createHttpLink({
@@ -33,7 +35,7 @@ const client = new ApolloClient({
 
 async function main (): Promise<void> {
   const authorsWithVariances: any = await loadCsv({
-    path: '../data/input/researchers_2017-2020_attributes.csv'
+    path: authorAttributeFilePath
   })
 
   // get the set of persons to add variances to

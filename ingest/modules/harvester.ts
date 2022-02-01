@@ -10,6 +10,7 @@ import NormedPublication from './normedPublication'
 import NormedPerson from './normedPerson'
 import DataSource from './dataSource'
 import HarvestSet from './HarvestSet'
+import FsHelper from '../units/fsHelper'
 
 export enum HarvestOperation {
   QUERY_BY_AUTHOR_NAME,
@@ -192,6 +193,7 @@ export class Harvester {
     }
     console.log(`Querying ${this.ds.getSourceName()} with date: ${searchStartDate}, offset: ${offset}, found pubs: ${harvestSet.sourcePublications.length} person: ${person.familyName}, ${person.givenName}`)
     // console.log(`Source pubs are: ${harvestSet.sourcePublications.length}`)
+    // this assumes that getNormedPublications will set the sourceMetadata value to the sourcePublication value
     const normedPublications: NormedPublication[] = await this.ds.getNormedPublications(harvestSet.sourcePublications, person)
     _.set(harvestSet, 'normedPublications',normedPublications)
     // console.log(`Normed pubs are: ${harvestSet.normedPublications.length}`)
@@ -216,13 +218,8 @@ export class Harvester {
     //   _.each (harvestSet.normedPublications, (pub: NormedPublication) => {
     //     console.log(`After harvest, doi:${pub.doi} Normed Pub search person: ${JSON.stringify(pub.searchPerson, null, 2)} doi:${pub.doi}`)
     //   })
-    // })
-
-    const fs = require('fs');
-    
-    if (!fs.existsSync(resultsFileDir)){
-        fs.mkdirSync(resultsFileDir);
-    }
+    // })    
+    FsHelper.createDirIfNotExists(resultsFileDir, true)
 
     let filePath = resultsFileDir
     if (filePrefix) {
@@ -242,7 +239,9 @@ export class Harvester {
       // console.log(`Harvestsets are: ${JSON.stringify(harvestSets[0].normedPublications[0], null, 2)}`)
       // console.log(`Writing normed pubs to csv: ${JSON.stringify(normedPubs, null, 2)}`)
       await NormedPublication.writeToCSV(normedPubs, filePath)
-      await NormedPublication.writeSourceMetadataToJSON(normedPubs, resultsFileDir)
+      await pMap (normedPubs, async (normedPub) => {
+        await NormedPublication.writeSourceMetadataToJSON(normedPub, normedPub.sourceMetadata, resultsFileDir)
+      })
     } catch (error) {
       console.log(`Error on normed pubs: ${JSON.stringify(normedPubs, null, 2)}`)
       throw error

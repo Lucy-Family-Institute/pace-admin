@@ -9,7 +9,7 @@ const state = {
   institutionOptions: [],
   preferredPersonSort: 'Total',
   preferredPersonTotal: 'Pending',
-  preferredPersonConfidence: 'All',
+  preferredPersonConfidence: 'None',
   preferredPersonPubSort: 'Confidence',
   preferredCenterPubSort: 'Authors',
   preferredInstitutionReviewState: 'Accepted',

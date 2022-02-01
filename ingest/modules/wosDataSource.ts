@@ -10,6 +10,7 @@ import { getDateString, getDateObject } from '../units/dateRange'
 import { wait } from '../units/randomWait';
 import DataSourceConfig from './dataSourceConfig'
 import pMap from 'p-map'
+import DataSourceHelper from './dataSourceHelper';
 
 const nameParser = require('../units/nameParser').command;
 export class WosDataSource implements DataSource {
@@ -17,7 +18,7 @@ export class WosDataSource implements DataSource {
   private dsConfig: DataSourceConfig
   private sessionId: string 
 
-  constructor (dsConfig: DataSourceConfig) {
+  constructor (dsConfig?: DataSourceConfig) {
     this.dsConfig = dsConfig
   }
 
@@ -104,6 +105,9 @@ export class WosDataSource implements DataSource {
 
   // assumes that if only one of startDate or endDate provided it would always be startDate first and then have endDate undefined
   async getPublicationsByAuthorName(person: NormedPerson, sessionState: {}, offset: Number, startDate: Date, endDate?: Date): Promise<HarvestSet> {
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
+
     const authorQuery = this.getAuthorQuery(person)
    
     let totalResults: Number
@@ -162,6 +166,9 @@ export class WosDataSource implements DataSource {
   }
 
   async fetchQuery(sessionId, query) : Promise<any>{
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
+
     console.log(`Querying ${this.getSourceName()} with query: ${query}`)
 
     //const baseUrl = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearchLite'
@@ -211,7 +218,7 @@ export class WosDataSource implements DataSource {
     return authors
   }
 
-  async getCSLStyleAuthorList(sourceMetadata) {
+  async getCSLStyleAuthorList(sourceMetadata): Promise<any[]> {
     const sourceAuthors = this.getAuthors(sourceMetadata)
     console.log(`source authors are: ${JSON.stringify(sourceAuthors, null, 2)}`)
     const cslStyleAuthors = []
@@ -228,7 +235,7 @@ export class WosDataSource implements DataSource {
     return cslStyleAuthors
   }
 
-  async getNormedAuthors(sourceMetadata): Promise<NormedAuthor[]> {
+  async getNormedAuthorsFromSourceMetadata(sourceMetadata): Promise<NormedAuthor[]> {
     const cslAuthors = await this.getCSLStyleAuthorList(sourceMetadata)
     console.log(`CSL authors are: ${JSON.stringify(cslAuthors, null, 2)}`)
     const normedAuthors: NormedAuthor[] = []
@@ -257,10 +264,10 @@ export class WosDataSource implements DataSource {
             title: pub['title'] && pub['title']['value'] && pub['title']['value']['_text'] ? pub['title']['value']['_text'] : '',
             journalTitle: sourceProps && sourceProps['SourceTitle'] && sourceProps['SourceTitle']['_text'] ? sourceProps['SourceTitle']['_text'] : '',
             publicationDate: sourceProps && sourceProps['Published.BiblioYear'] && sourceProps['Published.BiblioYear']['_text'] ? sourceProps['Published.BiblioYear']['_text'] : '',
-            datasourceName: this.dsConfig.sourceName,
+            datasourceName: this.getSourceName(),
             doi: otherProps && otherProps['Identifier.Doi'] && otherProps['Identifier.Doi']['_text'] ? otherProps['Identifier.Doi']['_text'] : '',
             sourceId: pub['uid'] && pub['uid']['_text'] ? `${Number.parseInt(_.replace(pub['uid']['_text'], 'WOS:', ''))}` : '',
-            authors: await this.getNormedAuthors(pub),
+            authors: await this.getNormedAuthorsFromSourceMetadata(pub),
             sourceMetadata: pub
         }
         // add optional properties
@@ -282,10 +289,14 @@ export class WosDataSource implements DataSource {
 
   //returns a machine readable string version of this source
   getSourceName() {
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
     return (this.dsConfig && this.dsConfig.sourceName) ? this.dsConfig.sourceName : 'WebOfScience'
   }
 
   getRequestPageSize(): Number {
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
     return Number.parseInt(this.dsConfig.pageSize)
   }
 
@@ -299,6 +310,8 @@ export class WosDataSource implements DataSource {
 
   // return the session id
   async wosAuthenticate() {
+    // must check that config is initialized
+    DataSourceHelper.checkDataSourceConfig(this)
     const baseUrl = 'http://search.webofknowledge.com/esti/wokmws/ws/WOKMWSAuthenticate'
     //encode authstring in base64, need to send as bytes, not character
     if (!this.dsConfig.userName || !this.dsConfig.password) {
@@ -337,5 +350,4 @@ export class WosDataSource implements DataSource {
   getDataSourceConfig() {
     return this.dsConfig
   }
-  
 }

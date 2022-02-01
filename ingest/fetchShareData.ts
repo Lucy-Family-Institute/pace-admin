@@ -9,7 +9,7 @@ const translate = require('schm-translate');
 const moment = require('moment');
 import pTimes from 'p-times'
 import { randomWait } from './units/randomWait'
-import { normalizeString } from './units/normalizer'
+import Normalizer from './units/normalizer'
 
 
 const getIds = require('./units/joinCsvs').command;
@@ -224,7 +224,7 @@ async function writeSearchResult (dataDir, source, startDate, endDate, startInde
   if (startDate && endDate) {
     dateString = `${startDate}_${endDate}`
   }
-  let sourceString = normalizeString(source, { skipLower: true, normalizeTitle: true })
+  let sourceString = Normalizer.normalizeString(source, { skipLower: true, normalizeTitle: true })
   const filename = path.join(dataDir, `share_metadata_${sourceString}_${dateString}_from_index_${startIndex}.json`);
   if( results && results.length > 0) {
     console.log(`Writing ${filename}`);

@@ -15,7 +15,7 @@ const pify = require('pify')
 const fs = require('fs')
 const writeCsv = require('./units/writeCsv').command;
 import { randomWait } from './units/randomWait'
-import { normalizeString, normalizeObjectProperties } from './units/normalizer'
+import Normalizer from './units/normalizer'
 
 dotenv.config({
   path: '../.env'
@@ -38,7 +38,7 @@ const client = new ApolloClient({
 function createFuzzyIndex (titleKey, journalMap) {
   // first normalize the diacritics
   const testJournalMap = _.map(journalMap, (journal) => {
-    return normalizeObjectProperties(journal, [titleKey], { normalizeTitle: true, skipLower: true })
+    return Normalizer.normalizeObjectProperties(journal, [titleKey], { normalizeTitle: true, skipLower: true })
  })
 
  const journalFuzzy = new Fuse(testJournalMap, {
@@ -55,7 +55,7 @@ function createFuzzyIndex (titleKey, journalMap) {
 
 function journalMatchFuzzy (journalTitle, fuzzyIndex){
   // normalize last name checking against as well
-  const testTitle = normalizeString(journalTitle, { normalizeTitle: true, skipLower: true })
+  const testTitle = Normalizer.normalizeString(journalTitle, { normalizeTitle: true, skipLower: true })
   const journalResults = fuzzyIndex.search(testTitle)
   const reducedResults = _.map(journalResults, (result) => {
     return result['item'] ? result['item'] : result
@@ -136,7 +136,7 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
   try {
     let simplifiedJournalFactors = []
     await pMap (_.keys(csvPathsByYear), async (year) => {
-      await pMap (csvPathsByYear[year], async (path) => {
+      await pMap (csvPathsByYear[year], async (path: string) => {
         console.log(`Loading Journals Impact Factors for year ${year} from path: ${path}`)
         const journalsImpactFactors: any = await loadCsv({
           path: path
@@ -182,7 +182,7 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
       factorCounter += 1
       console.log(`${factorCounter} - Checking match for journal factor: ${journalFactorTitle}`)
       let matchedJournal = undefined
-      const testTitle = normalizeString(journalFactorTitle, { normalizeTitle: true, skipLower: true })
+      const testTitle = Normalizer.normalizeString(journalFactorTitle, { normalizeTitle: true, skipLower: true })
       const matchedJournals = journalMatchFuzzy(testTitle, journalFuzzyIndex)
 
       let otherMatchedJournals = []
@@ -193,7 +193,7 @@ async function loadJournalsImpactFactorsFromCSV (csvPathsByYear, journalMap, cur
       if (splitJournalTitle.length>1 && splitJournalTitle[0].indexOf(' ') < 0){
         // check to see if has prefix to strip
         otherMatchString = journalFactorTitle.substr(journalFactorTitle.indexOf('-')+1)
-        otherMatchString = normalizeString(otherMatchString, { normalizeTitle: true, skipLower: true })
+        otherMatchString = Normalizer.normalizeString(otherMatchString, { normalizeTitle: true, skipLower: true })
         otherMatchedJournals = journalMatchFuzzy(otherMatchString, journalFuzzyIndex)
       }
       let matchedInfo = {
@@ -351,7 +351,7 @@ async function main() {
   // first normalize the diacritics
   console.log(`Starting normalize journal properties ${moment().format('HH:mm:ss')}...`)
   let journalMap = _.map(journals, (journal) => {
-    return normalizeObjectProperties(journal, ['title'], { normalizeTitle: true, skipLower: true })
+    return Normalizer.normalizeObjectProperties(journal, ['title'], { normalizeTitle: true, skipLower: true })
   })
   console.log(`Finished normalize journal properties ${moment().format('HH:mm:ss')}`)
   const journalStatus = await loadJournalsImpactFactorsFromCSV(pathsByYear, journalMap, currentJournalImpactFactorsByJournalId)
