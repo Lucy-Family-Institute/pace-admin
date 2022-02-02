@@ -12,4 +12,5 @@ export default interface DataSourceConfig {
   requestInterval: Number
   memberFilePath?: string
   harvestDataDir: string
+  batchSize: number
 }

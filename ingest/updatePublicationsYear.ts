@@ -67,6 +67,7 @@ function getUpdatedPublicationYear (csl) {
         years.push(_.get(node['data'], 'journal-issue.published-print.date-parts[0][0]', null))
         years.push(_.get(node['data'], 'journal-issue.published-online.date-parts[0][0]', null))
         years.push(_.get(node['data'], 'published.date-parts[0][0]', null))
+     // years.push(_.get(csl, 'created.date-parts[0][0]', null))
         years.push(_.get(node['data'], 'issued.date-parts[0][0]', null))
         years.push(_.get(node['data'], 'published-print.date-parts[0][0]', null))
         years.push(_.get(node['data'], 'published-online.date-parts[0][0]', null))

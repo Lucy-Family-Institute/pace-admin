@@ -66,7 +66,8 @@ async function main (): Promise<void> {
     pageSize: process.env.SEMANTIC_SCHOLAR_PAGE_SIZE,  // page size must be a string for the request to work
     requestInterval: Number.parseInt(process.env.SEMANTIC_SCHOLAR_REQUEST_INTERVAL),
     harvestYears: harvestYears,
-    harvestDataDir: process.env.SEMANTIC_SCHOLAR_HARVEST_DATA_DIR
+    harvestDataDir: process.env.SEMANTIC_SCHOLAR_HARVEST_DATA_DIR,
+    batchSize: Number.parseInt(process.env.HARVEST_BATCH_SIZE)
   }
 
   const semanticScholarDS: SemanticScholarDataSource = new SemanticScholarDataSource(dsConfig)
