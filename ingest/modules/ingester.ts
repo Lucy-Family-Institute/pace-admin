@@ -333,6 +333,7 @@ export class Ingester {
       'paper-conference',
       'chapter',
       'book',
+      'other',
       'peer-review',
       'reference-entry',
       'reference-book',
