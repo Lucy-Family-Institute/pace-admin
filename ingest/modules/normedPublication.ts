@@ -559,10 +559,11 @@ export default class NormedPublication {
            if (!normedPub.bibtex) {
             // try by bibtex
             // try manually constructing bibtex and then feeding to csl
+            console.log(`Warning: error when getting csl from doi, trying with bibtex error was: ${error}`)
             const bibTex = await NormedPublication.getBibTex(normedPub, sourceMetadata)
             console.log(`Generated bibtex for pub source_name: '${normedPub.datasourceName}' source id: '${normedPub.sourceId}'`)
             normedPub.bibtex = BibTex.toString(bibTex)
-          } 
+          }
           csl = await NormedPublication.getCslByBibTex(normedPub, sourceMetadata)
         }
       } catch (error) {
