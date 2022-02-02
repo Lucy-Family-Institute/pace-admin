@@ -26,7 +26,7 @@ const pubmedConfig = {
   publicationUrl: process.env.PUBMED_PUBLICATION_URL,
   pageSize: process.env.PUBMED_PAGE_SIZE,
   requestInterval: Number.parseInt(process.env.PUBMED_REQUEST_INTERVAL),
-  dataFolderPath: process.env.PUBMED_DATA_FOLDER_PATH
+  dataFolderPath: process.env.PUBMED_HARVEST_DATA_DIR
 }
 
 //const getText = constraints => prevSchema => prevSchema.merge({
