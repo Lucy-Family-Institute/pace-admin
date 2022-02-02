@@ -62,7 +62,8 @@ async function main (): Promise<void> {
     pageSize: process.env.WOS_PAGE_SIZE,  // page size must be a string for the request to work,
     harvestYears: harvestYears,
     requestInterval: Number.parseInt(process.env.WOS_REQUEST_INTERVAL),
-    harvestDataDir: process.env.WOS_HARVEST_DATA_DIR
+    harvestDataDir: process.env.WOS_HARVEST_DATA_DIR,
+    batchSize: Number.parseInt(process.env.HARVEST_BATCH_SIZE)
   }
 
   const ds: WosDataSource = new WosDataSource(dsConfig)
