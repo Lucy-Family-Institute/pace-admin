@@ -299,6 +299,7 @@ export class Ingester {
 
     let csl: Csl = undefined
     try {
+      await wait(this.config.defaultWaitInterval)
       csl = await NormedPublication.getCsl(normedPub, this.config.defaultToBibTex, sourceMetadata)
     } catch (error) {
       console.log(`Throwing the error for doi: ${normedPub.doi}`)
