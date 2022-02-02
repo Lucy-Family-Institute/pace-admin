@@ -109,7 +109,7 @@ async function getAwardPublications(awardId){
 }
 
 async function getPersonPublications(person){
-  const batchSize = 400
+  const batchSize = (process.env.HARVEST_BATCH_SIZE ? Number.parseInt(process.env.HARVEST_BATCH_SIZE): 400)
   const ids = await getPersonESearch(person)
   console.log(`Fetching papers for ${ids.length} ids`)
   const batches = _.chunk(ids, batchSize)

@@ -18,3 +18,27 @@ module.exports = {
     return writeCsv(input.path, input.data);
   },
 }
+
+async function spreadCsv(sourcePath, targetDir, targetBaseFileName, batchSize) {
+  console.log(`Redistributing CSV records into batches of ${batchSize}`)
+  console.log('Reading source CSVs...')
+  const filePaths = FsHelper.loadDirPaths(sourcePath)
+
+  let rows = []
+  await pMap(filePaths, async (filePath) => {
+    rows = _.concat(rows, await loadCSV(filePath))
+  }, { concurrency: 1 });
+
+  console.log('Chunking rows')
+  // chunk it up into sizes of 500
+  const batches = _.chunk(data, 50)
+  
+  console.log('Writing Author data to disk')
+  const filePath = path.join(targetDir, `${targetBaseFileName}_${moment().format('YYYYMMDDHHmmss')}`)
+  if (!fs.existsSync(targetDir)){
+    fs.mkdirSync(targetDir, true);
+  }
+  await pMap (batches, async (batch, index) => {
+    await writeCsv(`${filePath}_${index}`, batch)
+  })
+}

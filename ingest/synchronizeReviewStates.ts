@@ -151,7 +151,7 @@ async function synchronizeReviewsForOrganization(persons, reviewOrgValue) {
       }, { concurrency: 1 })
       console.log(`Done synchronizing Reviews for these personPubs out of sync for person id '${person['id']}'.`)
     }
-  }, { concurrency: 1 })
+  }, { concurrency: 2 })
   console.log(`Inserted ${insertedReviewsCount} reviews for org value: ${reviewOrgValue}`)
   console.log(`Done syncrhonizing all reviews for org value: ${reviewOrgValue}`)
 
@@ -172,7 +172,7 @@ async function main() {
 
   await pMap(organizations, async (org) => {
     await synchronizeReviewsForOrganization(simplifiedPersons, org['value'])
-  }, { concurrency: 1 })
+  }, { concurrency: 4 })
 }
 
 main()
