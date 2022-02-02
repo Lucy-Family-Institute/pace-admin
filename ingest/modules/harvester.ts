@@ -238,7 +238,7 @@ export class Harvester {
     try {
       // console.log(`Harvestsets are: ${JSON.stringify(harvestSets[0].normedPublications[0], null, 2)}`)
       // console.log(`Writing normed pubs to csv: ${JSON.stringify(normedPubs, null, 2)}`)
-      await NormedPublication.writeToCSV(normedPubs, filePath)
+      await NormedPublication.writeToCSV(normedPubs, filePath, this.ds.getDataSourceConfig().batchSize)
       await pMap (normedPubs, async (normedPub) => {
         await NormedPublication.writeSourceMetadataToJSON(normedPub, normedPub.sourceMetadata, resultsFileDir)
       })
