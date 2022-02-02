@@ -38,7 +38,7 @@ export class PubMedDataSource implements DataSource {
         const author: NormedAuthor = {
           familyName: creator['familyName'],
           givenName: creator['givenName'],
-          givenNameInitial: (creator['givenName'] ? creator['giveName'][0]: ''),
+          givenNameInitial: (creator['givenName'] && creator['givenName'][0] ? creator['givenName'][0]: ''),
           affiliations: [creator['affiliation']],
           sourceIds: {}
         }
