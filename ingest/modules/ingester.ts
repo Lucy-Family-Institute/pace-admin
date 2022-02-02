@@ -20,7 +20,7 @@ import readPublicationsByDoi from '../gql/readPublicationsByDoi'
 import readPublicationsBySourceId from '../gql/readPublicationsBySourceId'
 import readPublicationsByTitle from '../gql/readPublicationsByTitle'
 import ConfidenceSet from './confidenceSet'
-import { randomWait } from '../units/randomWait'
+import { randomWait, wait } from '../units/randomWait'
 import { command as writeCsv } from '../units/writeCsv'
 import Normalizer from '../units/normalizer'
 
@@ -268,6 +268,7 @@ export class Ingester {
       const sourceMetadata = NormedPublication.getSourceMetadata(publication, dataDirPath)
       try {
         console.log(`Ingesting publication batch: (${index+1} of ${dedupedPubs.length}) of ${totalRows} total publications`)
+        await wait(this.config.defaultWaitInterval)
         const pubStatus: PublicationStatus = await this.ingestNormedPublication(publication, sourceMetadata)
         await ingestStatus.log(pubStatus, sourceMetadata)
       } catch (error) {
@@ -333,6 +334,7 @@ export class Ingester {
       'paper-conference',
       'chapter',
       'book',
+      'other',
       'peer-review',
       'reference-entry',
       'reference-book',
