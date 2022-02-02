@@ -19,18 +19,21 @@ export default class BibTex {
   eprint?: string
 
   public static toString(bibTex: BibTex, skipAbstract?): string {
-    let bibStr = `@article{${bibTex.doi},`
-    _.each(_.keys(bibTex), (key, index) => {
-      if (!skipAbstract || key !== 'abstract') {
-        if (index > 0) {
-          bibStr = `${bibStr}, `
+    let bibStr = ''
+    if (bibTex){
+      bibStr = `${bibStr}@article{${bibTex.doi},`
+      _.each(_.keys(bibTex), (key, index) => {
+        if (!skipAbstract || key !== 'abstract') {
+          if (index > 0) {
+            bibStr = `${bibStr}, `
+          }
+          bibStr = `${bibStr}${key} = {${bibTex[key]}}`
         }
-        bibStr = `${bibStr}${key} = {${bibTex[key]}}`
-      }
-    })  
-    bibStr = `${bibStr} }`
-    // trim off trailing whitespace that may sneak in
-    bibStr = _.trimEnd(bibStr)
+      })  
+      bibStr = `${bibStr} }`
+      // trim off trailing whitespace that may sneak in
+      bibStr = _.trimEnd(bibStr)
+    }
     return bibStr
   }
 
