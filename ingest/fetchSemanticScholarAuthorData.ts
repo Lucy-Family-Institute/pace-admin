@@ -98,7 +98,7 @@ async function main (): Promise<void> {
   } //, { concurrency: 1 })
 
 
-  const resultsDir = path.join(process.cwd(), dsConfig.harvestDataDir, `${dsConfig.sourceName}_${minYear}-${maxYear}_${moment().format('YYYYMMDDHHmmss')}/`)
+  const resultsDir = path.join(dsConfig.harvestDataDir, `${dsConfig.sourceName}_${minYear}-${maxYear}_${moment().format('YYYYMMDDHHmmss')}/`)
 
   // console.log(`Person with harvest errors for ${year} are: ${JSON.stringify(personWithHarvestErrors,null,2)}`)
   // console.log(`Normed persons for ${year} are: ${JSON.stringify(normedPersons,null,2)}`)

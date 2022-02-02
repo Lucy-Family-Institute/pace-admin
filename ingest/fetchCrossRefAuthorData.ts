@@ -75,7 +75,7 @@ async function main (): Promise<void> {
   await pMap(years, async (year) => {
     const normedPersons: NormedPerson[] = await getAllNormedPersonsByYear(year.valueOf(), client)
 
-    const resultsDir = path.join(process.cwd(), crossrefConfig.harvestDataDir, `${crossrefConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`)
+    const resultsDir = path.join(crossrefConfig.harvestDataDir, `${crossrefConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`)
 
     // console.log(`Person with harvest errors for ${year} are: ${JSON.stringify(personWithHarvestErrors,null,2)}`)
     // console.log(`Normed persons for ${year} are: ${JSON.stringify(normedPersons,null,2)}`)
