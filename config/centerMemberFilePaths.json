@@ -1,23 +1,8 @@
 {
-  "HCRI": [
-    "../data/input/hcri_members_2017-2021.csv"
+  "NFCDS": [
+    "../data/input/nfcds_members_2017-2021.csv"
   ],
-  "NDENERGY": [
-    "../data/input/ndenergy_members_2017-2021.csv"
-  ],
-  "EIGH": [
-    "../data/input/eigh_members_2017-2021.csv"
-  ],
-  "NDNANO": [
-    "../data/input/ndnano_members_2017-2021.csv"
-  ],
-  "ECI": [
-    "../data/input/eci_members_2017-2021.csv"
-  ],
-  "CRC": [
-    "../data/input/crc_members_2017-2021.csv"
-  ],
-  "IPH": [
-    "../data/input/iph_members_2017-2021.csv"
+  "LFIDS": [
+    "../data/input/lfids_members_2017-2021.csv"
   ]
 }
