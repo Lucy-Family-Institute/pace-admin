@@ -2,8 +2,8 @@ import { make } from 'vuex-pathify'
 
 const state = {
   personSortKey: 0,
-  preferredSelectedCenter: { label: 'Harper Cancer Research Institute', value: 'HCRI' },
-  selectedCenter: { label: 'Harper Cancer Research Institute', value: 'HCRI' },
+  preferredSelectedCenter: { label: 'Lucy Family Institute of Data and Society', value: 'LFIDS' },
+  selectedCenter: { label: 'Lucy Family Institute of Data and Society', value: 'LFIDS' },
   centerOptions: [],
   selectedInstitutions: [],
   institutionOptions: [],
