@@ -159,7 +159,7 @@ export default class NormedPublication {
     if (batchSize) {
       const batches = _.chunk(output, batchSize)
       await pMap (batches, async (batch, index) => {
-        const curFilePath = `${filePath}_${index}`
+        const curFilePath = `${filePath}_${index}.csv`
         //write data out to csv
         await writeCsv({
           path: curFilePath,
