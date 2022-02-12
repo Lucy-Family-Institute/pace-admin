@@ -28,7 +28,7 @@ const pubmedConfig = {
   requestInterval: Number.parseInt(process.env.PUBMED_REQUEST_INTERVAL),
   memberFilePath: process.env.PUBMED_CENTER_MEMBER_FILE_PATH,
   awardFilePath: process.env.PUBMED_AWARD_FILE_PATH,
-  dataFolderPath: process.env.PUBMED_DATA_FOLDER_PATH
+  dataFolderPath: process.env.PUBMED_HARVEST_DATA_DIR
 }
 
 
@@ -170,7 +170,7 @@ async function go() {
   }));
   
   console.log('Reading awards')
-  const awardPath = path.join(process.cwd(), pubmedConfig.dataFolderPath, 'awards');
+  const awardPath = path.join(pubmedConfig.dataFolderPath, 'awards');
   const files = await pify(fs.readdir)(awardPath);
 
   console.log ('Mapping grant files')

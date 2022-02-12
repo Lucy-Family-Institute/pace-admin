@@ -53,6 +53,8 @@ const stagedIngestDir = process.env.INGESTER_STAGED_DIR
 const outputIngestDir = process.env.INGESTER_OUTPUT_DIR
 const centerMemberYear = process.env.INGESTER_CENTER_MEMBER_YEAR
 const loggingBatchSize = process.env.INGESTER_LOGGING_BATCH_SIZE
+const threadCount = Number.parseInt(process.env.INGESTER_THREAD_COUNT)
+const types = _.split(process.env.INGESTER_PUBLICATION_TYPES, ',')
 
 //returns status map of what was done
 async function main() {
@@ -70,10 +72,11 @@ async function main() {
     stagedIngestDir: stagedIngestDir,
     outputIngestDir: outputIngestDir,
     centerMemberYear: Number.parseInt(centerMemberYear),
-    loggingBatchSize: Number.parseInt(loggingBatchSize)
+    loggingBatchSize: Number.parseInt(loggingBatchSize),
+    publicationTypes: types
   }
   const ingester = new Ingester(config, client)
-  const threadCount = 1
+  
   await ingester.checkCurrentPublicationsMatches(threadCount)
  }
 

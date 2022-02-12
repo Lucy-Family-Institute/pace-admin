@@ -149,18 +149,30 @@ export default class NormedPublication {
    * @param pubs An array of NormedPublications to write to CSV
    * @param filePath the path for the file to write
    */
-  public static async writeToCSV(pubs: NormedPublication[], filePath: string) {
+  public static async writeToCSV(pubs: NormedPublication[], filePath: string, batchSize: number = 200) {
 
     const objectToCSVMap = NormedPublication.loadNormedPublicationObjectToCSVMap()
     const output = _.map(pubs, (pub) => {
       return NormedPublication.getCSVRow(pub, objectToCSVMap)
     })
-   
-    //write data out to csv
-    await writeCsv({
-      path: filePath,
-      data: output
-    });
+
+    if (batchSize) {
+      const batches = _.chunk(output, batchSize)
+      await pMap (batches, async (batch, index) => {
+        const curFilePath = `${filePath}_${index}.csv`
+        //write data out to csv
+        await writeCsv({
+          path: curFilePath,
+          data: batch
+        });
+      }, { concurrency: 1 })
+    } else {
+      //write data out to csv
+      await writeCsv({
+        path: filePath,
+        data: output
+      });
+    }
   }
 
   public static getSourceMetadataDirPath(parentDir: string) {
@@ -547,10 +559,11 @@ export default class NormedPublication {
            if (!normedPub.bibtex) {
             // try by bibtex
             // try manually constructing bibtex and then feeding to csl
+            console.log(`Warning: error when getting csl from doi, trying with bibtex error was: ${error}`)
             const bibTex = await NormedPublication.getBibTex(normedPub, sourceMetadata)
             console.log(`Generated bibtex for pub source_name: '${normedPub.datasourceName}' source id: '${normedPub.sourceId}'`)
             normedPub.bibtex = BibTex.toString(bibTex)
-          } 
+          }
           csl = await NormedPublication.getCslByBibTex(normedPub, sourceMetadata)
         }
       } catch (error) {

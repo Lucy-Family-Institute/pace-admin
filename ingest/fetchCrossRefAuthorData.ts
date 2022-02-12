@@ -60,7 +60,8 @@ async function main (): Promise<void> {
     pageSize: process.env.CROSSREF_PAGE_SIZE,  // page size must be a string for the request to work,
     harvestYears: harvestYears,
     requestInterval: Number.parseInt(process.env.CROSSREF_REQUEST_INTERVAL),
-    harvestDataDir: process.env.CROSSREF_HARVEST_DATA_DIR
+    harvestDataDir: process.env.CROSSREF_HARVEST_DATA_DIR,
+    batchSize: Number.parseInt(process.env.HARVEST_BATCH_SIZE)
   }
 
   const crossrefDS: CrossRefDataSource = new CrossRefDataSource(crossrefConfig)
@@ -74,7 +75,7 @@ async function main (): Promise<void> {
   await pMap(years, async (year) => {
     const normedPersons: NormedPerson[] = await getAllNormedPersonsByYear(year.valueOf(), client)
 
-    const resultsDir = path.join(process.cwd(), crossrefConfig.harvestDataDir, `${crossrefConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`)
+    const resultsDir = path.join(crossrefConfig.harvestDataDir, `${crossrefConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`)
 
     // console.log(`Person with harvest errors for ${year} are: ${JSON.stringify(personWithHarvestErrors,null,2)}`)
     // console.log(`Normed persons for ${year} are: ${JSON.stringify(normedPersons,null,2)}`)

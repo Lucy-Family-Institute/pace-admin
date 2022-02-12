@@ -55,6 +55,7 @@ const centerMemberYear = process.env.INGESTER_CENTER_MEMBER_YEAR
 const loggingBatchSize = process.env.INGESTER_LOGGING_BATCH_SIZE
 const loadPageSize = process.env.INGESTER_LOAD_BATCH_SIZE
 const threadCount = process.env.INGESTER_THREAD_COUNT
+const types = _.split(process.env.INGESTER_PUBLICATION_TYPES, ',')
 
 //returns status map of what was done
 async function main() {
@@ -74,7 +75,8 @@ async function main() {
     centerMemberYear: Number.parseInt(centerMemberYear),
     loggingBatchSize: Number.parseInt(loggingBatchSize),
     loadPageSize: Number.parseInt(loadPageSize),
-    threadCount: (threadCount ? Number.parseInt(threadCount) : undefined)
+    threadCount: (threadCount ? Number.parseInt(threadCount) : undefined),
+    publicationTypes: types
   }
   const ingester = new Ingester(config, client)
   await ingester.ingestStagedFiles()
