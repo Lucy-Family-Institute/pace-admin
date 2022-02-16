@@ -238,7 +238,7 @@ export class Harvester {
     try {
       // console.log(`Harvestsets are: ${JSON.stringify(harvestSets[0].normedPublications[0], null, 2)}`)
       // console.log(`Writing normed pubs to csv: ${JSON.stringify(normedPubs, null, 2)}`)
-      await NormedPublication.writeToCSV(normedPubs, filePath, this.ds.getDataSourceConfig().batchSize)
+      await NormedPublication.writeToCSV(normedPubs, filePath, false, this.ds.getDataSourceConfig().batchSize)
       await pMap (normedPubs, async (normedPub) => {
         await NormedPublication.writeSourceMetadataToJSON(normedPub, normedPub.sourceMetadata, resultsFileDir)
       })
@@ -249,4 +249,63 @@ export class Harvester {
     // console.log(`No error on normed pubs: ${JSON.stringify(normedPubs)}`)
     return filePath
   }
+
+  async loadPublicationsFromManifestFile(manifestFilePath, dataDirPath): Promise<NormedPublication[]> {
+    let normedPubs: NormedPublication[]
+    try {
+      console.log(`Loading publications from ${manifestFilePath}`)
+
+      // get normed publications from filedir and manifest
+      normedPubs = await NormedPublication.loadFromCSV(manifestFilePath, dataDirPath)
+      // console.log(`Ingest status is: ${JSON.stringify(ingestStatus)}`)
+    } catch (error) {
+      console.log(`Error encountered on load publications with paths manifest: '${manifestFilePath}' data dir path: '${dataDirPath}'`)
+      throw (error)
+    }
+    return normedPubs
+  }
+
+  async dedupPublicationsFromDir(sourceDir: string): Promise<NormedPublication[]> {
+    let normedPubs: NormedPublication[] = []
+    let origPubCount = 0
+    try {
+      const loadPaths = FsHelper.loadDirPaths(sourceDir, true)
+      await pMap(loadPaths, async (filePath, fileIndex) => {
+        // skip any subdirectories
+        console.log(`Loading publications file (${(fileIndex + 1)} of ${loadPaths.length}) with path: ${filePath}`)
+        const fileName = FsHelper.getFileName(filePath)
+        const dataDir = FsHelper.getParentDir(filePath)
+        const curNormedPubs = await this.loadPublicationsFromManifestFile(filePath, dataDir)
+        origPubCount = origPubCount + curNormedPubs.length
+        normedPubs = NormedPublication.mergeNormedPublicationLists(normedPubs, curNormedPubs)
+        console.log(`Normed pubs list length currently: ${normedPubs.length}`)
+      }, { concurrency: 1 })
+    } catch (error) {
+      //attempt to write status to file
+      console.log(`Error on load publications path '${sourceDir}' files: ${error}, attempt to output logged status`)
+    }
+    console.log(`Dedupped publications from original count: ${origPubCount} to ${normedPubs.length}`)
+    return normedPubs    
+  }
+
+  async dedupHarvestedPublications(sourceHarvestDir, targetDedupedDir) {
+    console.log(`Deduping publications for source dir: ${sourceHarvestDir} to target dir: ${targetDedupedDir}`)
+    const dedupedNormedPubs: NormedPublication[] = await this.dedupPublicationsFromDir(sourceHarvestDir)
+    try {
+      console.log(`Writing deduped pubs back to csv target deduped dir: ${targetDedupedDir} with batch size: ${this.ds.getDataSourceConfig().batchSize}`)
+      const filePath = `${targetDedupedDir}/${this.ds.getSourceName()}.deduped.${moment().format('YYYYMMDDHHmmss')}.csv`
+
+      FsHelper.createDirIfNotExists(targetDedupedDir, true)
+
+      await NormedPublication.writeToCSV(dedupedNormedPubs, filePath, false, this.ds.getDataSourceConfig().batchSize)
+      // await pMap (normedPubs, async (normedPub) => {
+      //   await NormedPublication.writeSourceMetadataToJSON(normedPub, normedPub.sourceMetadata, resultsFileDir)
+      // })
+      console.log(`Finished writing deduped pubs back to csv target deduped dir: ${targetDedupedDir}`)
+    } catch (error) {
+      console.log(`Error on dedup normed pubs: ${error}`)
+      throw error
+    }
+  }
+
 }
