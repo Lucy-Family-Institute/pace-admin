@@ -25,6 +25,7 @@ export default class NormedPublication {
   // the normalized simple form of a publication across all sources
   id?: number
   searchPerson?: NormedPerson
+  searchPersonIds?: number[]
   abstract?: string
   title: string
   journalTitle?: string
@@ -149,11 +150,11 @@ export default class NormedPublication {
    * @param pubs An array of NormedPublications to write to CSV
    * @param filePath the path for the file to write
    */
-  public static async writeToCSV(pubs: NormedPublication[], filePath: string, batchSize: number = 200) {
+  public static async writeToCSV(pubs: NormedPublication[], filePath: string, includeAuthors, batchSize: number = 200) {
 
     const objectToCSVMap = NormedPublication.loadNormedPublicationObjectToCSVMap()
     const output = _.map(pubs, (pub) => {
-      return NormedPublication.getCSVRow(pub, objectToCSVMap)
+      return NormedPublication.getCSVRow(pub, objectToCSVMap, includeAuthors)
     })
 
     if (batchSize) {
@@ -200,7 +201,7 @@ export default class NormedPublication {
     }
   }
 
-  public static getCSVRow(pub: NormedPublication, objectToCSVMap): {} {
+  public static getCSVRow(pub: NormedPublication, objectToCSVMap, includeAuthors: boolean = true): {} {
     let row = {}
     if (pub.searchPerson){
       row[objectToCSVMap['searchPerson']['id']] = pub.searchPerson.id
@@ -212,6 +213,16 @@ export default class NormedPublication {
       if (pub.searchPerson.sourceIds.scopusAffiliationId) {
         row[objectToCSVMap['searchPerson']['sourceIds']['scopusAffiliationId']] = pub.searchPerson.sourceIds.scopusAffiliationId
       }
+    }
+    if (pub.searchPersonIds && pub.searchPersonIds.length > 0){
+      let searchPersonIdsString = ''
+      _.each(pub.searchPersonIds, (id, index) => {
+        if (index > 0) {
+          searchPersonIdsString = `${searchPersonIdsString};`
+        }
+        searchPersonIdsString = `${searchPersonIdsString}${id}`
+      })
+      row[objectToCSVMap['searchPersonIds']] = searchPersonIdsString
     }
     row[objectToCSVMap['title']] = pub.title
     row[objectToCSVMap['journalTitle']] = pub.journalTitle
@@ -246,7 +257,7 @@ export default class NormedPublication {
     if (pub.pages) {
       row[objectToCSVMap['pages']] = pub.pages
     }
-    if (pub.authors) {
+    if (includeAuthors && pub.authors) {
       row[objectToCSVMap['authors']] = JSON.stringify(pub.authors)      
     }
     if (pub.confirmedAuthors) {
@@ -353,6 +364,10 @@ export default class NormedPublication {
       _.set(pub, 'searchPerson', person)
     }
 
+    if (objectToCSVMap['searchPersonIds'] && row[_.toLower(objectToCSVMap['searchPersonIds'])]) {
+      _.set(pub, 'searchPersonIds', _.split(row[_.toLower(objectToCSVMap['searchPersonIds'])], ';'))
+    }
+
     if (objectToCSVMap['id'] && row[_.toLower(objectToCSVMap['id'])]) {
       _.set(pub, 'id', row[_.toLower(objectToCSVMap['id'])])
     }
@@ -427,6 +442,43 @@ export default class NormedPublication {
     }
 
     return pub
+  }
+
+  // merges two normed publication lists together by source key
+  public static mergeNormedPublicationLists(normedPublications1: NormedPublication[], normedPublications2: NormedPublication[]){
+    // just an O(n) operation to go through each list and collapse into same object if already exists
+    // keep a list of ones without a source key first to make sure nothing merged unnecessarily
+    let unmergedPubs: NormedPublication[] = []
+    let mergedNormedPubMap = {}
+    // first just concat them together and then merge records that exist (assuming dups could be in one list)
+    let mergedList = _.concat(normedPublications1, normedPublications2)
+    _.each(mergedList, (normedPublication: NormedPublication) => {
+      const sourceKey = NormedPublication.getSourceKey(normedPublication)
+      // console.log(`Found source key: ${sourceKey}`)
+      if (sourceKey) {
+        let curSearchIds: number[] = []
+        if (mergedNormedPubMap[sourceKey]) {
+          curSearchIds = (mergedNormedPubMap[sourceKey].searchPersonIds ? mergedNormedPubMap[sourceKey].searchPersonIds : [])
+        }
+        curSearchIds = _.union(curSearchIds, (normedPublication.searchPersonIds ? normedPublication.searchPersonIds : []))
+        if (normedPublication.searchPerson && normedPublication.searchPerson.id) {
+          curSearchIds = _.union(curSearchIds, [normedPublication.searchPerson.id])
+        }
+        // console.log(`Search ids on merge: ${JSON.stringify(curSearchIds, null, 2)}`)
+        _.set(normedPublication, 'searchPersonIds', curSearchIds)
+        mergedNormedPubMap[sourceKey] = normedPublication
+      } else {
+        unmergedPubs.push(normedPublication)
+      }
+    })
+
+    // console.log(`Merged map: ${JSON.stringify(mergedNormedPubMap, null, 2)}`)
+    const finalMergedList: NormedPublication[] = _.values(mergedNormedPubMap)
+    if (unmergedPubs.length > 0) {
+      return _.concat(finalMergedList, unmergedPubs)
+    } else {
+      return finalMergedList
+    }
   }
 
   // parse the format in the input csv file to be names separated by ';' and name of form 'family, given'
@@ -609,6 +661,10 @@ export default class NormedPublication {
   }
 
   public static getSourceKey (normedPub: NormedPublication): string {
-    return `${normedPub.datasourceName}_${normedPub.sourceId}`
+    if (normedPub.datasourceName && normedPub.sourceId) {
+      return `${normedPub.datasourceName}_${normedPub.sourceId}`
+    } else {
+      return undefined
+    }
   }
 }
