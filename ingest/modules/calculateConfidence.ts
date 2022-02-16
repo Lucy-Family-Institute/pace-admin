@@ -268,6 +268,7 @@ export class CalculateConfidence {
     // console.log(`Normed authors for for author map: ${JSON.stringify(normedAuthors, null, 2)}`)
     const authorMap = _.transform(normedAuthors, function (result, value: NormedAuthor) {
       const familyName = _.toLower(value.familyName)
+      if (result[familyName] && !_.isArray(result[familyName])) result[familyName] = [result[familyName]]
       return (result[familyName] || (result[familyName] = [])).push(value)
     }, new Map())
     return authorMap
