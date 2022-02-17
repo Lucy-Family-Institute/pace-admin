@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import NormedPerson from '../normedPerson'
-import { getDateObject } from '../../units/dateRange'
+import DateHelper from '../../units/dateHelper'
 
 const testCSVPath = './test/fixtures/persons_2020.csv'
 
@@ -53,8 +53,8 @@ const defaultExpectedPersons = [
     familyName: 'Alber',
     givenNameInitial: 'M',
     givenName: 'Mark',
-    startDate: getDateObject('2017-01-01'),
-    endDate: getDateObject('2017-12-31'),
+    startDate: DateHelper.getDateObject('2017-01-01'),
+    endDate: DateHelper.getDateObject('2017-12-31'),
     sourceIds: {
       scopusAffiliationId: undefined
     }

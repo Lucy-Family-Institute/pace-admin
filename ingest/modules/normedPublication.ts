@@ -2,7 +2,7 @@ import _ from 'lodash'
 import fs from 'fs'
 import pMap from 'p-map'
 import path from 'path'
-import { getDateObject } from '../units/dateRange'
+import DateHelper from '../units/dateHelper'
 import { command as loadCsv } from '../units/loadCsv'
 import { command as writeCsv} from '../units/writeCsv'
 import NormedPerson from './normedPerson'
@@ -178,6 +178,10 @@ export default class NormedPublication {
 
   public static getSourceMetadataDirPath(parentDir: string) {
     return path.join(parentDir, 'source_metadata')
+  }
+
+  public static getRawHarvestDirPath(parentDir: string) {
+    return path.join(parentDir, 'raw_harvest/')
   }
 
   public static getSourceMetadataFileName(pub: NormedPublication): string {
@@ -356,8 +360,8 @@ export default class NormedPublication {
         familyName: row[_.toLower(searchPersonFamilyNameColumn)],
         givenName: row[_.toLower(objectToCSVMap['searchPerson']['givenName'])] ? row[_.toLower(objectToCSVMap['searchPerson']['givenName'])] : undefined,
         givenNameInitial: row[_.toLower(objectToCSVMap['searchPerson']['givenNameInitial'])] ? row[_.toLower(objectToCSVMap['searchPerson']['givenNameInitial'])] : undefined,
-        startDate: row[_.toLower(objectToCSVMap['searchPerson']['startDate'])] ? getDateObject(row[_.toLower(objectToCSVMap['searchPerson']['startDate'])]) : undefined,
-        endDate: row[_.toLower(objectToCSVMap['searchPerson']['endDate'])] ? getDateObject(row[_.toLower(objectToCSVMap['searchPerson']['endDate'])]) : undefined,
+        startDate: row[_.toLower(objectToCSVMap['searchPerson']['startDate'])] ? DateHelper.getDateObject(row[_.toLower(objectToCSVMap['searchPerson']['startDate'])]) : undefined,
+        endDate: row[_.toLower(objectToCSVMap['searchPerson']['endDate'])] ? DateHelper.getDateObject(row[_.toLower(objectToCSVMap['searchPerson']['endDate'])]) : undefined,
         sourceIds: row[_.toLower(objectToCSVMap['searchPerson']['sourceIds']['scopusAffiliationId'])] ? 
           { scopusAffiliationId: row[_.toLower(objectToCSVMap['searchPerson']['sourceIds']['scopusAffiliationId'])] } : {}
       }
@@ -629,7 +633,7 @@ export default class NormedPublication {
   }
 
   public static async getBibTex (normedPub: NormedPublication, sourceMetadata?): Promise<BibTex> {
-    const date: Date = getDateObject(normedPub.publicationDate)
+    const date: Date = DateHelper.getDateObject(normedPub.publicationDate)
     
     const authors = await NormedPublication.getAuthors(normedPub, sourceMetadata)
     let bib: BibTex = {

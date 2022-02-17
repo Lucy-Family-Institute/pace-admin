@@ -8,8 +8,8 @@ const schema = require('schm');
 const translate = require('schm-translate');
 const moment = require('moment');
 import pTimes from 'p-times'
-import { randomWait } from './units/randomWait'
-import Normalizer from './units/normalizer'
+import { randomWait } from '../units/randomWait'
+import Normalizer from '../units/normalizer'
 
 
 const getIds = require('./units/joinCsvs').command;

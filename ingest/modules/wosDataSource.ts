@@ -5,12 +5,17 @@ import NormedPublication from './normedPublication'
 import NormedAuthor from './normedAuthor'
 import NormedPerson from './normedPerson'
 import HarvestSet from './HarvestSet'
+import { HarvestOperation, HarvestOperationType } from './harvestOperation';
 import DataSource from './dataSource'
-import { getDateString, getDateObject } from '../units/dateRange'
+import DateHelper from '../units/dateHelper'
 import { wait } from '../units/randomWait';
+import path from 'path'
+import moment from 'moment';
 import DataSourceConfig from './dataSourceConfig'
 import pMap from 'p-map'
 import DataSourceHelper from './dataSourceHelper';
+import ApolloClient from 'apollo-client';
+import { NormalizedCacheObject } from 'apollo-cache-inmemory';
 
 const nameParser = require('../units/nameParser').command;
 export class WosDataSource implements DataSource {
@@ -35,13 +40,13 @@ export class WosDataSource implements DataSource {
    * @returns The soap query string
    */
   getWoSQuerySOAPString(query, startDate: Date, endDate: Date) {
-    let startDateString = getDateString(startDate)
+    let startDateString = DateHelper.getDateString(startDate)
     let endDateString = undefined
     // if no end date defined default to the end of the year of the start date
     if (!endDate) {
       endDateString = `${startDate.getFullYear()}-12-31`
     } else {
-      endDateString = getDateString(endDate)
+      endDateString = DateHelper.getDateString(endDate)
     }
     let soapquery = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"\
                       xmlns:woksearchlite="http://woksearchlite.v3.wokmws.thomsonreuters.com">\
@@ -349,5 +354,23 @@ export class WosDataSource implements DataSource {
 
   getDataSourceConfig() {
     return this.dsConfig
+  }
+
+  async getHarvestOperations(client: ApolloClient<NormalizedCacheObject>): Promise<HarvestOperation[]> {
+    let harvestOperations: HarvestOperation[] = []
+    const years = this.dsConfig.harvestYears
+    await pMap(years, async (year) => {
+      const normedPersons: NormedPerson[] = await NormedPerson.getAllNormedPersonsByYear(year.valueOf(), client)
+      const resultsDir = path.join(this.dsConfig.harvestDataDir, `${this.dsConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`)
+      const harvestOperation: HarvestOperation = {
+        harvestOperationType: HarvestOperationType.QUERY_BY_AUTHOR_NAME,
+        normedPersons: normedPersons,
+        harvestResultsDir: resultsDir,
+        startDate: DateHelper.getDateObject(`${year}-01-01`),
+        endDate: DateHelper.getDateObject(`${year}-12-31`)
+      }
+      harvestOperations.push(harvestOperation)
+    }, { concurrency: 1 })
+    return harvestOperations
   }
 }

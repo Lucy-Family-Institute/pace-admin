@@ -9,7 +9,7 @@ import { command as loadCsv } from './units/loadCsv'
 import readPersons from './gql/readPersons'
 import updatePersonSemanticScholarIds from './gql/updatePersonSemanticScholarIds'
 import { __EnumValue } from 'graphql'
-import { getAllSimplifiedPersons, getNameKey } from './modules/queryNormalizedPeople'
+import NormedPerson from './modules/normedPerson'
 
 import dotenv from 'dotenv'
 
@@ -39,11 +39,11 @@ async function main (): Promise<void> {
   })
 
   // get the set of persons to add variances to
-  const authors = await getAllSimplifiedPersons(client)
+  const authors = await NormedPerson.getAllSimplifiedPersons(client)
   
   //create map of 'last_name, first_name' to array of related persons with same last name
   const personMap = _.transform(authors, function (result, value) {
-    (result[getNameKey(value.lastName, value.firstName)] || (result[getNameKey(value.lastName, value.firstName)] = [])).push(value)
+    (result[NormedPerson.getNameKey(value.lastName, value.firstName)] || (result[NormedPerson.getNameKey(value.lastName, value.firstName)] = [])).push(value)
   }, {})
 
   console.log(`Person Map is: ${JSON.stringify(personMap, null, 2)}`)
@@ -61,7 +61,7 @@ async function main (): Promise<void> {
         familyNameIndex = index
       }
     })   
-    const nameKey = getNameKey(author[_.keys(author)[familyNameIndex]], author['given_name'])
+    const nameKey = NormedPerson.getNameKey(author[_.keys(author)[familyNameIndex]], author['given_name'])
     // console.log(`Person map is: ${JSON.stringify(_.keys(personMap).length, null, 2)}`)
     console.log(`Name key is: ${nameKey}`)
     const personId = personMap[nameKey][0].id
@@ -80,7 +80,7 @@ async function main (): Promise<void> {
       if (author['name_variances']) {
         const existingNameVariances = personMap[nameKey][0].nameVariances
         const variancesByName = _.mapKeys(existingNameVariances, (variance) => {
-          return getNameKey(variance['family_name'], variance['given_name'])
+          return NormedPerson.getNameKey(variance['family_name'], variance['given_name'])
         })
         const nameVariances = author['name_variances'].split(';')
         _.each(nameVariances, (nameVariance) => {
@@ -100,11 +100,11 @@ async function main (): Promise<void> {
           // check if name variance object already exists and if so skip
           // console.log(`Existing variances: ${JSON.stringify(existingNameVariances, null, 2)}`)
           // console.log(`Current variances: ${JSON.stringify(variancesByName, null, 2)}`)
-          if (!variancesByName[getNameKey(obj['family_name'], obj['given_name'])]) {
-            console.log(`Staging insert Name Variance ${JSON.stringify(obj, null, 2)} for ${getNameKey(author['family_name'], author['given_name'])}`)
+          if (!variancesByName[NormedPerson.getNameKey(obj['family_name'], obj['given_name'])]) {
+            console.log(`Staging insert Name Variance ${JSON.stringify(obj, null, 2)} for ${NormedPerson.getNameKey(author['family_name'], author['given_name'])}`)
             result.push(obj)
           } else {
-            console.log(`Skipping Already Existing Name Variance '${obj['family_name']}, ${obj['given_name']}' for ${getNameKey(author['family_name'], author['given_name'])}`)
+            console.log(`Skipping Already Existing Name Variance '${obj['family_name']}, ${obj['given_name']}' for ${NormedPerson.getNameKey(author['family_name'], author['given_name'])}`)
           }
         })
       } 
