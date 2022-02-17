@@ -6,19 +6,18 @@ import fetch from 'node-fetch'
 import pMap from 'p-map'
 import moment from 'moment'
 import dotenv from 'dotenv'
-import { randomWait, wait } from './units/randomWait'
-import NormedPerson from './modules/normedPerson'
+import { randomWait, wait } from '../units/randomWait'
+import NormedPerson from '../modules/normedPerson'
 
-import readPersonPublicationsConfSetsBySource from './gql/readPersonPublicationsConfSetsBySource'
-import { SemanticScholarDataSource } from './modules/semanticScholarDataSource'
+import readPersonPublicationsConfSetsBySource from '../gql/readPersonPublicationsConfSetsBySource'
+import { SemanticScholarDataSource } from '../modules/semanticScholarDataSource'
 
-import DataSourceConfig from '../ingest/modules/dataSourceConfig'
-import { CalculateConfidence } from './modules/calculateConfidence'
-import { command as writeCsv} from './units/writeCsv'
-import { mapToNormedPersons } from './modules/queryNormalizedPeople'
-import readPublicationsByPersonByConfidence from './gql/readPublicationsByPersonByConfidence'
-import ConfidenceTest from './modules/confidenceTest'
-import ConfidenceTestItem from './modules/confidenceTestItem'
+import DataSourceConfig from '../modules/dataSourceConfig'
+import { CalculateConfidence } from '../modules/calculateConfidence'
+import { command as writeCsv} from '../units/writeCsv'
+import readPublicationsByPersonByConfidence from '../gql/readPublicationsByPersonByConfidence'
+import ConfidenceTest from '../modules/confidenceTest'
+import ConfidenceTestItem from '../modules/confidenceTestItem'
 
 const nameParser = require('./units/nameParser').command;
 const minConfidence = Number.parseFloat(process.env.INGESTER_MIN_CONFIDENCE)
@@ -97,7 +96,7 @@ function getSimplifiedPerson (personPub) {
 
 async function matchAuthors (personPub, searchAuthorMap, sourceName, confidenceTypesByRank, minConfidence) {
   let matchedAuthors = {}
-  const testAuthor: NormedPerson = mapToNormedPersons([personPub.person])[0]
+  const testAuthor: NormedPerson = NormedPerson.mapToNormedPersons([personPub.person])[0]
   await pMap (_.keys(searchAuthorMap), async (pubLastName) => {
     let objMap = {}
     objMap[pubLastName] = [searchAuthorMap[pubLastName]]
@@ -152,6 +151,13 @@ async function main (): Promise<void> {
   const getFlatMatches = true
   const minConfidence = 0.3
 
+  const harvestStartYear = Number.parseInt(process.env.SEMANTIC_SCHOLAR_HARVEST_START_YEAR)
+  const harvestEndYear = Number.parseInt(process.env.SEMANTIC_SCHOLAR_HARVEST_END_YEAR)
+  let harvestYears = []
+
+  for (let index = 0; index <= harvestEndYear - harvestStartYear; index++) {
+    harvestYears.push((harvestStartYear+index))
+  }
   const dsConfig: DataSourceConfig = {
     baseUrl: process.env.SEMANTIC_SCHOLAR_BASE_URL,
     authorUrl: process.env.SEMANTIC_SCHOLAR_AUTHOR_URL,
@@ -159,7 +165,10 @@ async function main (): Promise<void> {
     publicationUrl: process.env.SEMANTIC_SCHOLAR_PUBLICATION_URL,
     sourceName: process.env.SEMANTIC_SCHOLAR_SOURCE_NAME,
     pageSize: process.env.SEMANTIC_SCHOLAR_PAGE_SIZE,  // page size must be a string for the request to work
-    requestInterval: Number.parseInt(process.env.SEMANTIC_SCHOLAR_REQUEST_INTERVAL)
+    requestInterval: Number.parseInt(process.env.SEMANTIC_SCHOLAR_REQUEST_INTERVAL),
+    harvestYears: harvestYears,
+    harvestDataDir: process.env.SEMANTIC_SCHOLAR_HARVEST_DATA_DIR,
+    batchSize: Number.parseInt(process.env.HARVEST_BATCH_SIZE)
   }
   const semanticDS = new SemanticScholarDataSource(dsConfig)
 

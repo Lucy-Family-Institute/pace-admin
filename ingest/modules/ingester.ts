@@ -11,7 +11,6 @@ import path from 'path'
 import moment from 'moment'
 import { ApolloClient } from 'apollo-client'
 import { InMemoryCache, NormalizedCacheObject } from 'apollo-cache-inmemory'
-import { getAllNormedPersons } from './queryNormalizedPeople'
 import { CalculateConfidence } from './calculateConfidence'
 import insertPublication from '../gql/insertPublication'
 import insertPersonPublication from '../gql/insertPersonPublication'
@@ -65,7 +64,7 @@ export class Ingester {
     // include mutex to make sure this is thread-safe and not initialized simultaneously by multiple threads
     await this.normedPersonMutex.dispatch( async () => {
       if (!this.normedPersons) {
-        this.normedPersons = await getAllNormedPersons(this.client)
+        this.normedPersons = await NormedPerson.getAllNormedPersons(this.client)
         // console.log(`Initialized Normed Persons: ${JSON.stringify(this.normedPersons, null, 2)}`)
         console.log(`Initialized ${this.normedPersons.length} Normed Persons`)
       }

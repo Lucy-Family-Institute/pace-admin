@@ -1,14 +1,17 @@
-import { Harvester, HarvestOperation } from '../harvester'
+import Harvester from '../harvester'
 import { SemanticScholarDataSource } from '../semanticScholarDataSource'
 import DataSource from '../dataSource'
 import NormedPublication from '../normedPublication'
 import HarvestSet from '../HarvestSet'
 import NormedPerson from '../normedPerson'
 import { randomWait } from '../../units/randomWait'
-import { getDateObject } from '../../units/dateRange'
+import DateHelper from '../../units/dateHelper'
 import Normalizer from '../../units/normalizer'
 import FsHelper from '../../units/fsHelper'
 import DataSourceConfig from '../dataSourceConfig'
+import ApolloClient from 'apollo-client'
+import { InMemoryCache } from 'apollo-cache-inmemory'
+import { createHttpLink } from 'apollo-link-http'
 
 import dotenv from 'dotenv'
 const fs = require('fs');
@@ -45,7 +48,8 @@ const dsConfig: DataSourceConfig = {
     sourceName: 'SemanticScholar',
     pageSize: '100',  // page size must be a string for the request to work
     requestInterval: 3500,
-    harvestDataDir: process.env.SEMANTIC_SCHOLAR_HARVEST_DATA_DIR
+    harvestDataDir: process.env.SEMANTIC_SCHOLAR_HARVEST_DATA_DIR,
+    batchSize: 200
 }
 
 // for now this is the set expected every time, not fully optimized yet
@@ -112,8 +116,22 @@ const sampleRecordPath = './test/fixtures/semanticscholar_source_sample.json'
 
 const semanticScholarDS: SemanticScholarDataSource = new SemanticScholarDataSource(dsConfig)
 
+const hasuraSecret = process.env.HASURA_SECRET
+const graphQlEndPoint = process.env.GRAPHQL_END_POINT
+
+const client = new ApolloClient({
+  link: createHttpLink({
+    uri: graphQlEndPoint,
+    headers: {
+      'x-hasura-admin-secret': hasuraSecret
+    },
+    fetch: fetch as any
+  }),
+  cache: new InMemoryCache()
+})
+
 beforeAll(async () => {
-    semanticScholarHarvester = new Harvester(semanticScholarDS)
+    semanticScholarHarvester = new Harvester(semanticScholarDS, client)
 
     defaultPubSourceMetadata = FsHelper.loadJSONFromFile(sampleRecordPath)
 
@@ -122,7 +140,7 @@ beforeAll(async () => {
         familyName: 'Li',
         givenNameInitial: 'J',
         givenName: 'Jun',
-        startDate: getDateObject('2019-01-01'),
+        startDate: DateHelper.getDateObject('2019-01-01'),
         sourceIds: {
             semanticScholarIds: ['46276642']
         },
@@ -151,7 +169,7 @@ test('test Semantic Scholar harvester.fetchPublications by Author Id', async () 
     const expectedHarvestSet: HarvestSet = {
         sourceName: dsConfig.sourceName,
         searchPerson: defaultNormedPerson,
-        query: semanticScholarDS.getAuthorQuery(defaultNormedPerson, getDateObject('2020-01-01'), getDateObject('2020-12-31')),
+        query: semanticScholarDS.getAuthorQuery(defaultNormedPerson, DateHelper.getDateObject('2020-01-01'), DateHelper.getDateObject('2020-12-31')),
         sourcePublications: [],
         normedPublications: undefined, // expectedNormedPubsByAuthor[`${defaultNormedPerson.familyName}, ${defaultNormedPerson.givenNameInitial}`],
         offset: 0,
@@ -159,7 +177,7 @@ test('test Semantic Scholar harvester.fetchPublications by Author Id', async () 
         totalResults: 10  // should only be 10 of 32 pubs after ones not 2020 are filtered out
     }
     // for date need to call getDateObject to make sure time zone is set correctly and not accidentally setting to previous date because of hour difference in local timezone
-    const results = await semanticScholarDS.getPublicationsByAuthorId(defaultNormedPerson, {}, 0, getDateObject('2020-01-01'), getDateObject('2020-12-31'))
+    const results = await semanticScholarDS.getPublicationsByAuthorId(defaultNormedPerson, {}, 0, DateHelper.getDateObject('2020-01-01'), DateHelper.getDateObject('2020-12-31'))
     // as new publications may be added to available, just test that current set includes expected pubs
     expect(results.sourceName).toEqual(expectedHarvestSet.sourceName)
     expect(results.searchPerson).toEqual(expectedHarvestSet.searchPerson)

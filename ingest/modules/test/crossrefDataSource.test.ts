@@ -1,14 +1,17 @@
-import { Harvester, HarvestOperation } from '../harvester'
+import Harvester from '../harvester'
 import { CrossRefDataSource } from '../crossrefDataSource'
 import DataSource from '../dataSource'
 import NormedPublication from '../normedPublication'
 import HarvestSet from '../HarvestSet'
 import NormedPerson from '../normedPerson'
 import { randomWait } from '../../units/randomWait'
-import { getDateObject } from '../../units/dateRange'
+import DateHelper from '../../units/dateHelper'
 import Normalizer from '../../units/normalizer'
 import FsHelper from '../../units/fsHelper'
 import DataSourceConfig from '../dataSourceConfig'
+import ApolloClient from 'apollo-client'
+import { createHttpLink } from 'apollo-link-http'
+import { InMemoryCache } from 'apollo-cache-inmemory'
 
 import dotenv from 'dotenv'
 const fs = require('fs');
@@ -43,7 +46,8 @@ const dsConfig: DataSourceConfig = {
     sourceName: 'CrossRef',
     pageSize: '100',  // page size must be a string for the request to work
     requestInterval: 10000,
-    harvestDataDir: process.env.CROSSREF_HARVEST_DATA_DIR
+    harvestDataDir: process.env.CROSSREF_HARVEST_DATA_DIR,
+    batchSize: 200
 }
 
 // for now this is the set expected every time, not fully optimized yet
@@ -67,9 +71,23 @@ const crossrefSampleRecordPath = './test/fixtures/crossref_source_sample.json'
 
 const crossrefDS: CrossRefDataSource = new CrossRefDataSource(dsConfig)
 
+const hasuraSecret = process.env.HASURA_SECRET
+const graphQlEndPoint = process.env.GRAPHQL_END_POINT
+
+const client = new ApolloClient({
+  link: createHttpLink({
+    uri: graphQlEndPoint,
+    headers: {
+      'x-hasura-admin-secret': hasuraSecret
+    },
+    fetch: fetch as any
+  }),
+  cache: new InMemoryCache()
+})
+
 beforeAll(async () => {
     // const wosDS: DataSource = new WosDataSource(dsConfig)
-    crossrefHarvester = new Harvester(crossrefDS)
+    crossrefHarvester = new Harvester(crossrefDS, client)
 
     defaultPubSourceMetadata = FsHelper.loadJSONFromFile(crossrefSampleRecordPath)
 
@@ -78,7 +96,7 @@ beforeAll(async () => {
         familyName: 'Zhang',
         givenNameInitial: 'S',
         givenName: 'Siyuan',
-        startDate: getDateObject('2019-01-01'),
+        startDate: DateHelper.getDateObject('2019-01-01'),
         endDate: undefined,
         sourceIds: {
             scopusAffiliationId: '60021508'
@@ -126,7 +144,7 @@ beforeAll(async () => {
 test('test CrossRef generate author query string with start and end date', () => {
     expect.hasAssertions()
     const person = testPersons[0]
-    const query = crossrefDS.getAuthorQuery(person, getDateObject('2020-01-01'), getDateObject('2020-12-31'))
+    const query = crossrefDS.getAuthorQuery(person, DateHelper.getDateObject('2020-01-01'), DateHelper.getDateObject('2020-12-31'))
     expect(query).toEqual({
         'query.author': `${_.toLower(person.givenName)}+${_.toLower(person.familyName)}`,
         'query.affiliation': 'notre+dame',
@@ -139,7 +157,7 @@ test('test CrossRef harvester.fetchPublications by Author Name', async () => {
     const expectedHarvestSet: HarvestSet = {
         sourceName: dsConfig.sourceName,
         searchPerson: defaultNormedPerson,
-        query: JSON.stringify(crossrefDS.getAuthorQuery(defaultNormedPerson, getDateObject('2020-01-01'), getDateObject('2020-12-31'))),
+        query: JSON.stringify(crossrefDS.getAuthorQuery(defaultNormedPerson, DateHelper.getDateObject('2020-01-01'), DateHelper.getDateObject('2020-12-31'))),
         sourcePublications: [],
         normedPublications: undefined, // expectedNormedPubsByAuthor[`${defaultNormedPerson.familyName}, ${defaultNormedPerson.givenNameInitial}`],
         offset: 0,
@@ -147,7 +165,7 @@ test('test CrossRef harvester.fetchPublications by Author Name', async () => {
         totalResults: 54
     }
     // for date need to call getDateObject to make sure time zone is set correctly and not accidentally setting to previous date because of hour difference in local timezone
-    const results = await crossrefDS.getPublicationsByAuthorName(defaultNormedPerson, {}, 0, getDateObject('2020-01-01'), getDateObject('2020-12-31'))
+    const results = await crossrefDS.getPublicationsByAuthorName(defaultNormedPerson, {}, 0, DateHelper.getDateObject('2020-01-01'), DateHelper.getDateObject('2020-12-31'))
     // as new publications may be added to available, just test that current set includes expected pubs
     expect(results.sourceName).toEqual(expectedHarvestSet.sourceName)
     expect(results.searchPerson).toEqual(expectedHarvestSet.searchPerson)

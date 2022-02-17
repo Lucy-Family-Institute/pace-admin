@@ -3,25 +3,24 @@ import pMap from 'p-map'
 import pTimes from 'p-times'
 import path from 'path'
 import { command as writeCsv } from '../units/writeCsv'
-import { dateRangesOverlapping } from '../units/dateRange'
 import { wait, randomWait } from '../units/randomWait'
 import moment from 'moment'
 import NormedPublication from './normedPublication'
 import NormedPerson from './normedPerson'
 import DataSource from './dataSource'
 import HarvestSet from './HarvestSet'
+import { HarvestOperationType, HarvestOperation } from './harvestOperation'
 import FsHelper from '../units/fsHelper'
+import ApolloClient from 'apollo-client'
+import { InMemoryCache, NormalizedCacheObject } from 'apollo-cache-inmemory'
 
-export enum HarvestOperation {
-  QUERY_BY_AUTHOR_NAME,
-  QUERY_BY_AUTHOR_ID
-}
-
-export class Harvester {
+export default class Harvester {
   ds: DataSource
+  client: ApolloClient<NormalizedCacheObject>
 
-  constructor (ds: DataSource) {
+  constructor (ds: DataSource, client: ApolloClient<NormalizedCacheObject>) {
     this.ds = ds
+    this.client = client
   }
 
   // TODO: Multiple harvest methods for different datasource queries?
@@ -32,7 +31,7 @@ export class Harvester {
   //
   // threadCount default = 1 concurrent thread
   // waitInterval desc: wait time between harvests of each person search default = 1000 milliseconds in miliseconds
-  async harvest (searchPersons: NormedPerson[], harvestBy: HarvestOperation, searchStartDate: Date, searchEndDate: Date = undefined, threadCount: number = 1, waitInterval: number = 1000): Promise<HarvestSet[]> {
+  async harvest (searchPersons: NormedPerson[], harvestOperation: HarvestOperation, threadCount: number = 1, waitInterval: number = 1000): Promise<HarvestSet[]> {
     let personCounter = 0
     let harvestSets: HarvestSet[] = []
     await pMap(searchPersons, async (person) => {
@@ -47,7 +46,7 @@ export class Harvester {
         // harvest for each name variance
         const nameVariances = (person.nameVariances ? person.nameVariances : [])
         let normedNameVariances = [{ givenName: person.givenName, familyName: person.familyName}]
-        if (harvestBy === HarvestOperation.QUERY_BY_AUTHOR_NAME){
+        if (harvestOperation.harvestOperationType === HarvestOperationType.QUERY_BY_AUTHOR_NAME){
           normedNameVariances = _.concat(normedNameVariances, _.map(nameVariances, (variance) => {
             return {
               givenName: variance.given_name,
@@ -72,7 +71,7 @@ export class Harvester {
 
           let sessionState = {}
           await wait(thisHarvester.ds.getDataSourceConfig().requestInterval)
-          harvestSet = await this.fetchPublications(searchPerson, harvestBy, sessionState, offset, searchStartDate, searchEndDate)
+          harvestSet = await this.fetchPublications(searchPerson, harvestOperation, sessionState, offset)
           if (harvestSet) {
             currentHarvestSets.push(harvestSet)
           }
@@ -100,7 +99,7 @@ export class Harvester {
               } else {
                 offset += totalResults - offset
               }
-              harvestSet = await thisHarvester.fetchPublications(searchPerson, harvestBy, sessionState, offset, searchStartDate, searchEndDate)
+              harvestSet = await thisHarvester.fetchPublications(searchPerson, harvestOperation, sessionState, offset)
               if (harvestSet) {
                 currentHarvestSets.push(harvestSet)
               }
@@ -112,24 +111,15 @@ export class Harvester {
             totalRetrieved += harvestSet.sourcePublications.length
           })
           if (totalRetrieved < totalResults) {
-            throw `All expected results not returned for ${searchPerson.familyName}, ${searchPerson.givenName}, expected: ${totalResults} actual: ${totalRetrieved} start date: ${searchPerson.startDate} and end date ${searchPerson.endDate}`
+            throw `All expected results not returned for ${searchPerson.familyName}, ${searchPerson.givenName}, expected: ${totalResults} actual: ${totalRetrieved}, harvestOperationType: ${HarvestOperationType[harvestOperation.harvestOperationType]} start date: ${harvestOperation.startDate} and end date ${harvestOperation.endDate}`
           } else {
-            console.log(`Retrieved (${totalRetrieved} of ${totalResults}) expected results for ${searchPerson.familyName}, ${searchPerson.givenName} start date: ${searchPerson.startDate} and end date ${searchPerson.endDate}`)
-            // _.each (currentHarvestSets, (harvestSet: HarvestSet) => {
-            //   _.each (harvestSet.normedPublications, (pub: NormedPublication) => {
-            //     console.log(`doi:${pub.doi} Normed Pub search person: ${JSON.stringify(pub.searchPerson, null, 2)}`)
-            //   })
-            // })
-            // console.log(`Normed pubs`)
+            console.log(`Retrieved (${totalRetrieved} of ${totalResults}) expected results for ${searchPerson.familyName}, ${searchPerson.givenName}, harvestOperationType: ${HarvestOperationType[harvestOperation.harvestOperationType]} start date: ${harvestOperation.startDate} and end date ${harvestOperation.endDate}`)
           }
           harvestSets = _.concat(harvestSets, currentHarvestSets)
         }, { concurrency: 1 })
-        // } else {
-        //   console.log(`Warning: Skipping harvest of '${person.familyName}, ${person.givenName}' because person start date: ${person.startDate} and end date ${person.endDate} not within search start date ${searchStartDate} and end date ${searchEndDate}.)`)
-        // }
       } catch (error) {
         console.log(error)
-        const errorMessage = `Error on get papers for author: ${person.familyName}, ${person.givenName}: ${error}`
+        const errorMessage = `Error on get papers for author: ${person.familyName}, ${person.givenName}, , harvestOperationType: ${HarvestOperationType[harvestOperation.harvestOperationType]} start date: ${harvestOperation.startDate} and end date ${harvestOperation.endDate}, error: ${error}`
         if (!harvestSet) {
           harvestSet = {
             sourceName: this.ds.getSourceName(),
@@ -148,8 +138,8 @@ export class Harvester {
     return harvestSets
   }
 
-  private createErrorHarvestSet(harvestOperationName: string): HarvestSet {
-    const error = `'${harvestOperationName}' not supported by datasource harvester ${this.ds.getSourceName()}`
+  private createErrorHarvestSet(harvestOperationTypeName: string): HarvestSet {
+    const error = `'${harvestOperationTypeName}' not supported by datasource harvester ${this.ds.getSourceName()}`
     return {
       sourceName: this.ds.getSourceName(),
       sourcePublications: [],
@@ -161,7 +151,7 @@ export class Harvester {
   /**
    *  @param person a NormedPerson object to harvest for using name values
    * 
-   *  @param harvestBy a HarvestOperation defining the method to retrieve results
+   *  @param harvestOperation a HarvestOperation defining the method, start, end dates to retrieve results
    * 
    *  @param sessionState a hash of session state values as needed by the datasource to maintain state across multiple requests
    * 
@@ -171,27 +161,28 @@ export class Harvester {
    * 
    *  @returns HarvestSet object for current request with both normalized and source publications included
    */
-  async fetchPublications(person: NormedPerson, harvestBy: HarvestOperation, sessionState:{}, offset: number, searchStartDate: Date, searchEndDate: Date): Promise<HarvestSet> {
+  async fetchPublications(person: NormedPerson, harvestOperation: HarvestOperation, sessionState:{}, offset: number): Promise<HarvestSet> {
     let harvestSet: HarvestSet
     // add check to make sure all papers listed in results are actually returned
-    switch(harvestBy) {
-      case HarvestOperation.QUERY_BY_AUTHOR_NAME: {
+    const harvestOperationStrName = HarvestOperationType[harvestOperation.harvestOperationType]
+    switch(harvestOperation.harvestOperationType) {
+      case HarvestOperationType.QUERY_BY_AUTHOR_NAME: {
         if (typeof this.ds['getPublicationsByAuthorName'] === 'function'){
-          harvestSet = await this.ds.getPublicationsByAuthorName(person, sessionState, offset, searchStartDate, searchEndDate)
+          harvestSet = await this.ds.getPublicationsByAuthorName(person, sessionState, offset, harvestOperation.startDate, harvestOperation.endDate)
         } else {
-          harvestSet = this.createErrorHarvestSet('QUERY_BY_AUTHOR_NAME')
+          harvestSet = this.createErrorHarvestSet(harvestOperationStrName)
         }
         break
-      } case HarvestOperation.QUERY_BY_AUTHOR_ID: {
+      } case HarvestOperationType.QUERY_BY_AUTHOR_ID: {
         if (typeof this.ds['getPublicationsByAuthorId'] === 'function'){
-          harvestSet = await this.ds.getPublicationsByAuthorId(person, sessionState, offset, searchStartDate, searchEndDate)
+          harvestSet = await this.ds.getPublicationsByAuthorId(person, sessionState, offset, harvestOperation.startDate, harvestOperation.endDate)
         } else {
-          harvestSet = this.createErrorHarvestSet('QUERY_BY_AUTHOR_ID')
+          harvestSet = this.createErrorHarvestSet(harvestOperationStrName)
         }
         break
       }
     }
-    console.log(`Querying ${this.ds.getSourceName()} with date: ${searchStartDate}, offset: ${offset}, found pubs: ${harvestSet.sourcePublications.length} person: ${person.familyName}, ${person.givenName}`)
+    console.log(`Querying ${this.ds.getSourceName()} with harvestOperationType: ${harvestOperationStrName} date: ${harvestOperation.startDate}, offset: ${offset}, found pubs: ${harvestSet.sourcePublications.length} person: ${person.familyName}, ${person.givenName}`)
     // console.log(`Source pubs are: ${harvestSet.sourcePublications.length}`)
     // this assumes that getNormedPublications will set the sourceMetadata value to the sourcePublication value
     const normedPublications: NormedPublication[] = await this.ds.getNormedPublications(harvestSet.sourcePublications, person)
@@ -204,28 +195,23 @@ export class Harvester {
   /**
    * Runs a harvest against the search persons provided and writes results to a source file of path: 
    *    sourcename.startdateyear.currenttimestamp.csv
+   * @param harvestOperation The harvest operation used defined by the HarvestOperation passed in
    * @param searchPersons an Array of NormedPerson objects to harvest against
-   * @param harvestBy The harvest operation used defined by the HarvestOperation constant passed in
-   * @param searchStartDate The start date range for the harvest
-   * @param searchEndDate The end date range of the harvest (if provided)
+   * @param filePrefix optional parameter if set to use as a prefix for results files
    * 
    * @returns the filepath of the output csv file
    */
-  async harvestToCsv(resultsFileDir: string, searchPersons: NormedPerson[], harvestBy: HarvestOperation, searchStartDate: Date, searchEndDate?: Date, filePrefix?: string): Promise<string> {
-    const harvestSets: HarvestSet[] = await this.harvest(searchPersons, harvestBy, searchStartDate, searchEndDate, 1, this.ds.getDataSourceConfig().requestInterval.valueOf())
+  async harvestToCsv(harvestOperation: HarvestOperation, searchPersons: NormedPerson[], filePrefix?: string): Promise<string> {
+    const harvestSets: HarvestSet[] = await this.harvest(searchPersons, harvestOperation, 1, this.ds.getDataSourceConfig().requestInterval.valueOf())
+  
+    const rawHarvestResultsDir = NormedPublication.getRawHarvestDirPath(harvestOperation.harvestResultsDir)
+    FsHelper.createDirIfNotExists(rawHarvestResultsDir, true)
 
-    // _.each (harvestSets, (harvestSet: HarvestSet) => {
-    //   _.each (harvestSet.normedPublications, (pub: NormedPublication) => {
-    //     console.log(`After harvest, doi:${pub.doi} Normed Pub search person: ${JSON.stringify(pub.searchPerson, null, 2)} doi:${pub.doi}`)
-    //   })
-    // })    
-    FsHelper.createDirIfNotExists(resultsFileDir, true)
-
-    let filePath = resultsFileDir
+    let filePath = `${rawHarvestResultsDir}/`
     if (filePrefix) {
       filePath = `${filePath}${filePrefix}_`
     }
-    filePath = `${filePath}${this.ds.getSourceName()}.${searchStartDate.getFullYear()}.${moment().format('YYYYMMDDHHmmss')}.csv`
+    filePath = `${filePath}${this.ds.getSourceName()}.${harvestOperation.startDate.getFullYear()}.${moment().format('YYYYMMDDHHmmss')}.csv`
     let normedPubs = []
     let counter = 0
     _.each(harvestSets, (harvestSet) => {
@@ -240,10 +226,10 @@ export class Harvester {
       // console.log(`Writing normed pubs to csv: ${JSON.stringify(normedPubs, null, 2)}`)
       await NormedPublication.writeToCSV(normedPubs, filePath, false, this.ds.getDataSourceConfig().batchSize)
       await pMap (normedPubs, async (normedPub) => {
-        await NormedPublication.writeSourceMetadataToJSON(normedPub, normedPub.sourceMetadata, resultsFileDir)
+        await NormedPublication.writeSourceMetadataToJSON(normedPub, normedPub.sourceMetadata, harvestOperation.harvestResultsDir)
       })
     } catch (error) {
-      console.log(`Error on normed pubs: ${JSON.stringify(normedPubs, null, 2)}`)
+      console.log(`Error on write harvested normed pubs to csv: ${error}`)
       throw error
     }
     // console.log(`No error on normed pubs: ${JSON.stringify(normedPubs)}`)
@@ -308,4 +294,49 @@ export class Harvester {
     }
   }
 
+  async executeHarvest() {
+    let succeededPapers = []
+    let failedPapers = []
+    let succeededAuthors = []
+    let failedAuthors = []
+
+    // returns map of year to array of NormedPersons
+    const harvestOperations: HarvestOperation[] = await this.ds.getHarvestOperations(this.client)
+    // perform all harvest operations for this author, could be more than one like search by author id plus simple name search
+    await pMap(harvestOperations, async (harvestOperation: HarvestOperation) => {
+      const harvestOperationTypeStrName = HarvestOperationType[harvestOperation.harvestOperationType]  
+      let personCounter = 0
+  
+      // const subset = _.slice(harvestOperation.normedPersons, 0, 2)
+      // await pMap(subset, async (person) => {
+      await pMap(harvestOperation.normedPersons, async (person) => {
+        try {
+          personCounter += 1
+          console.log(`Getting papers for ${person.familyName}, ${person.givenName} persons via ${harvestOperationTypeStrName}`)
+          // run for each name plus name variance, put name variance second in case undefined
+          await wait(this.ds.getDataSourceConfig().requestInterval)
+          await this.harvestToCsv(harvestOperation, [person], `${person.familyName}_${person.givenName}`)
+          await wait(1500)
+
+          succeededAuthors.push(person)
+        } catch (error) {
+          const errorMessage = `Error on get CrossRef papers for author: ${JSON.stringify(person, null, 2)}: ${error}`
+          failedPapers.push(errorMessage)
+          failedAuthors.push(person)
+          console.log(errorMessage)
+        }
+      }, {concurrency: 1})
+
+      const rawHarvestDir = NormedPublication.getRawHarvestDirPath(harvestOperation.harvestResultsDir)
+  
+      console.log(`Deduping publications to path: ${harvestOperation.harvestResultsDir}`)
+      // make this call be something standardized for every harvester
+      await this.dedupHarvestedPublications(rawHarvestDir,harvestOperation.harvestResultsDir)
+
+      console.log(`Failed authors: ${failedAuthors.length}`)
+      console.log(`Succeeded authors: ${succeededAuthors.length}`)
+      console.log(`Failed papers: ${failedPapers.length}`)
+      // change fetch script to be just datasource config input, move most of above code routine to harvester class so pubs harvested are in standard raw search result format, and deduped record manifests in root dir alongside source_metadata
+    }, { concurrency: 1 })
+  }
 }

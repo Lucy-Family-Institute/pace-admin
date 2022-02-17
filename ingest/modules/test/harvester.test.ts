@@ -1,13 +1,17 @@
-import { Harvester, HarvestOperation } from '../harvester'
+import Harvester from '../harvester'
 import { ScopusDataSource } from '../scopusDataSource'
 import {CrossRefDataSource } from '../crossrefDataSource'
 import NormedPublication from '../normedPublication'
 import { randomWait } from '../../units/randomWait'
-import { getDateObject } from '../../units/dateRange'
+import DateHelper from '../../units/dateHelper'
+import { HarvestOperationType, HarvestOperation } from '../harvestOperation'
 import HarvestSet from '../harvestSet'
 import DataSource from '../dataSource'
 import NormedPerson from '../normedPerson'
 import DataSourceConfig from '../dataSourceConfig'
+import ApolloClient from 'apollo-client'
+import { InMemoryCache } from 'apollo-cache-inmemory'
+import { createHttpLink } from 'apollo-link-http'
 
 import dotenv from 'dotenv'
 const fs = require('fs');
@@ -45,7 +49,9 @@ const scopusConfig: DataSourceConfig = {
     apiKey: process.env.SCOPUS_API_KEY,
     sourceName: 'Scopus',
     pageSize: '25',  // page size must be a string for the request to work
-    requestInterval: 1000
+    requestInterval: 1000,
+    harvestDataDir: '../data/test',
+    batchSize: 200
 }
 
 const wosConfig: DataSourceConfig = {
@@ -55,7 +61,9 @@ const wosConfig: DataSourceConfig = {
     password: process.env.WOS_PASSWORD,
     sourceName: 'WebOfScience',
     pageSize: '5',  // page size must be a string for the request to work
-    requestInterval: 10000 // number milliseconds to wait between requests
+    requestInterval: 10000, // number milliseconds to wait between requests
+    harvestDataDir: '../data/test',
+    batchSize: 200
 }
 
 const crossrefConfig: DataSourceConfig = {
@@ -63,24 +71,40 @@ const crossrefConfig: DataSourceConfig = {
     queryUrl: 'https://api.crossref.org/works',
     sourceName: 'CrossRef',
     pageSize: '5',  // page size must be a string for the request to work
-    requestInterval: 10000
+    requestInterval: 10000,
+    harvestDataDir: '../data/test',
+    batchSize: 200
 }
 
 const scopusDS: DataSource = new ScopusDataSource(scopusConfig)
 const wosDS: DataSource = new WosDataSource(wosConfig)
 const crossrefDS: DataSource = new CrossRefDataSource(crossrefConfig)
 
+const hasuraSecret = process.env.HASURA_SECRET
+const graphQlEndPoint = process.env.GRAPHQL_END_POINT
+
+const client = new ApolloClient({
+  link: createHttpLink({
+    uri: graphQlEndPoint,
+    headers: {
+      'x-hasura-admin-secret': hasuraSecret
+    },
+    fetch: fetch as any
+  }),
+  cache: new InMemoryCache()
+})
+
 beforeAll(async () => {
-    scopusHarvester = new Harvester(scopusDS)
-    wosHarvester = new Harvester(wosDS)
-    crossrefHarvester = new Harvester(crossrefDS)
+    scopusHarvester = new Harvester(scopusDS, client)
+    wosHarvester = new Harvester(wosDS, client)
+    crossrefHarvester = new Harvester(crossrefDS, client)
 
     defaultNormedPerson = {
         id: 94,
         familyName: 'Zhang',
         givenNameInitial: 'S',
         givenName: 'Siyuan',
-        startDate: getDateObject('2017-01-01'),
+        startDate: DateHelper.getDateObject('2017-01-01'),
         endDate: undefined,
         sourceIds: {
             scopusAffiliationId: '60021508'
@@ -97,7 +121,7 @@ beforeAll(async () => {
 
     const testPersonsFilePath = './test/fixtures/persons_2020.csv'
     const expectedScopusPubCSVPath = './test/fixtures/scopus.2019.csv'
-    expectedScopusNormedPublications = await NormedPublication.loadFromCSV(expectedScopusPubCSVPath)
+    expectedScopusNormedPublications = await NormedPublication.loadFromCSV(expectedScopusPubCSVPath, scopusConfig.harvestDataDir)
 
     // get map of 'lastname, first initial' to normed publications
     expectedScopusNormedPubsByAuthor = _.groupBy(expectedScopusNormedPublications, (normedPub: NormedPublication) => {
@@ -105,7 +129,7 @@ beforeAll(async () => {
     })
 
     const expectedWosPubCSVPath = './test/fixtures/wos.2020.csv'
-    expectedWosNormedPublications = await NormedPublication.loadFromCSV(expectedWosPubCSVPath)
+    expectedWosNormedPublications = await NormedPublication.loadFromCSV(expectedWosPubCSVPath, wosConfig.harvestDataDir)
     // get map of 'lastname, first initial' to normed publications
     expectedWosNormedPubsByAuthor = _.groupBy(expectedWosNormedPublications, (normedPub: NormedPublication) => {
         return `${normedPub.searchPerson.familyName}, ${normedPub.searchPerson.givenNameInitial}`
@@ -140,8 +164,16 @@ test('test Scopus harvester.fetchPublications by Author Name', async () => {
         pageSize: Number.parseInt(scopusConfig.pageSize),
         totalResults: expectedScopusNormedPubsByAuthor[`${defaultNormedPerson.familyName}, ${defaultNormedPerson.givenNameInitial}`].length
     }
+
+    const harvestOperation: HarvestOperation = {
+        harvestOperationType: HarvestOperationType.QUERY_BY_AUTHOR_NAME,
+        normedPersons: [defaultNormedPerson],
+        harvestResultsDir: scopusConfig.harvestDataDir,
+        startDate: DateHelper.getDateObject('2019-01-01'),
+        endDate: undefined
+    }
     // for date need to call getDateObject to make sure time zone is set correctly and not accidentally setting to previous date because of hour difference in local timezone
-    const results = await scopusHarvester.fetchPublications(defaultNormedPerson, HarvestOperation.QUERY_BY_AUTHOR_NAME, {}, 0, getDateObject('2019-01-01'), undefined)
+    const results = await scopusHarvester.fetchPublications(defaultNormedPerson, harvestOperation, {}, 0)
     // as new publications may be added to available, just test that current set includes expected pubs
     expect(results.sourceName).toEqual(expectedHarvestSet.sourceName)
     expect(results.searchPerson).toEqual(expectedHarvestSet.searchPerson)
@@ -171,7 +203,14 @@ test('test Scopus harvester.harvest by author name', async () => {
     if ((expectedHarvestSet.totalResults.valueOf() % expectedHarvestSet.pageSize.valueOf()) > 0) {
       expectedHarvestSetArraySize += 1
     }
-    const results: HarvestSet[] = await scopusHarvester.harvest([defaultNormedPerson], HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2019-01-01'))
+    const harvestOperation: HarvestOperation = {
+        harvestOperationType: HarvestOperationType.QUERY_BY_AUTHOR_NAME,
+        normedPersons: [defaultNormedPerson],
+        harvestResultsDir: scopusConfig.harvestDataDir,
+        startDate: DateHelper.getDateObject('2019-01-01'),
+        endDate: undefined
+    }
+    const results: HarvestSet[] = await scopusHarvester.harvest([defaultNormedPerson], harvestOperation)
     // as new publications may be added to available, just test that current set includes expected pubs
     // and that total harvested is in the same power of 10 and less than double the expected amount
     // expect(results.length).toEqual(expectedHarvestSetArraySize) // checking the right number of harvest sets return (in chunks based on page size)
@@ -210,8 +249,15 @@ test('test Scopus harvester.harvest by author name', async () => {
 
 //TODO load in list of people to test against expected results for 2019
 test('test Web of Science harvester.harvest by author name', async () => {
+    const harvestOperation: HarvestOperation = {
+        harvestOperationType: HarvestOperationType.QUERY_BY_AUTHOR_NAME,
+        normedPersons: testWoSPersons,
+        harvestResultsDir: wosConfig.harvestDataDir,
+        startDate: DateHelper.getDateObject('2020-01-01'),
+        endDate: undefined
+    }
 
-    const results: HarvestSet[] = await wosHarvester.harvest(testWoSPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2020-01-01'))
+    const results: HarvestSet[] = await wosHarvester.harvest(testWoSPersons, harvestOperation)
 
     const resultsByPerson = _.groupBy(results, (harvestSet) => {
         const person = harvestSet.searchPerson
@@ -271,7 +317,14 @@ test('test Web of Science harvester.harvest by author name', async () => {
 //TODO load in list of people to test against expected results for 2019
 test('test CrossRef harvester.harvest by author name', async () => {
 
-    const results: HarvestSet[] = await crossrefHarvester.harvest(testPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2020-01-01'), getDateObject('2020-12-31'))
+    const harvestOperation: HarvestOperation = {
+        harvestOperationType: HarvestOperationType.QUERY_BY_AUTHOR_NAME,
+        normedPersons: testPersons,
+        harvestResultsDir: crossrefConfig.harvestDataDir,
+        startDate: DateHelper.getDateObject('2020-01-01'),
+        endDate: DateHelper.getDateObject('2020-12-31')
+    }
+    const results: HarvestSet[] = await crossrefHarvester.harvest(testPersons, harvestOperation)
 
     const resultsByPerson = _.groupBy(results, (harvestSet) => {
         const person = harvestSet.searchPerson
@@ -327,5 +380,12 @@ test('test CrossRef harvester.harvest by author name', async () => {
 })
 
 test('test CrossRef harvester.harvestToCsv', async () => {
-    await crossrefHarvester.harvestToCsv('../data/', testPersons, HarvestOperation.QUERY_BY_AUTHOR_NAME, getDateObject('2020-01-01'), getDateObject('2020-12-31'))
+    const harvestOperation: HarvestOperation = {
+        harvestOperationType: HarvestOperationType.QUERY_BY_AUTHOR_NAME,
+        normedPersons: testPersons,
+        harvestResultsDir: crossrefConfig.harvestDataDir,
+        startDate: DateHelper.getDateObject('2020-01-01'),
+        endDate: DateHelper.getDateObject('2020-12-31')
+    }
+    await crossrefHarvester.harvestToCsv(harvestOperation, testPersons)
 })
