@@ -6,11 +6,14 @@ import NormedPerson from './normedPerson'
 import NormedAuthor from './normedAuthor'
 import HarvestSet from './HarvestSet'
 import DataSource from './dataSource'
-import { getDateString, getDateObject } from '../units/dateRange'
+import DateHelper from '../units/dateHelper'
 import { wait } from '../units/randomWait';
 import DataSourceConfig from './dataSourceConfig'
 import pMap from 'p-map'
 import DataSourceHelper from './dataSourceHelper';
+import ApolloClient from 'apollo-client';
+import { NormalizedCacheObject } from 'apollo-cache-inmemory';
+import { HarvestOperation } from './harvestOperation';
 
 const nameParser = require('../units/nameParser').command;
 export class PubMedDataSource implements DataSource {
@@ -138,6 +141,12 @@ export class PubMedDataSource implements DataSource {
 
   getDataSourceConfig() {
     return this.dsConfig
+  }
+
+  async getHarvestOperations(client: ApolloClient<NormalizedCacheObject>): Promise<HarvestOperation[]> {
+    let harvestOperations: HarvestOperation[] = []
+    // not doing anything for now
+    return harvestOperations
   }
   
 }

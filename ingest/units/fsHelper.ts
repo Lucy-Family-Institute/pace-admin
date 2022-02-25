@@ -62,6 +62,10 @@ export default class FsHelper {
     return path.dirname(filePath)
   }
 
+  public static getBaseDirName(filePath) {
+    return path.basename(filePath)
+  }
+
   public static createDirIfNotExists(dirPath, recursive = false) {
     if (!fs.existsSync(dirPath)){
       fs.mkdirSync(dirPath, { recursive: recursive });

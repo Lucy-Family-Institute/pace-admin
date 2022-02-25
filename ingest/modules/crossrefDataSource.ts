@@ -5,11 +5,17 @@ import NormedPerson from './normedPerson'
 import NormedAuthor from './normedAuthor'
 import DataSource from './dataSource'
 import HarvestSet from './HarvestSet'
+import { HarvestOperation, HarvestOperationType } from './harvestOperation'
 import DataSourceConfig from './dataSourceConfig'
 import { PossibleFragmentSpreadsRule } from 'graphql'
 import DataSourceHelper from './dataSourceHelper'
 import Csl from './csl'
 import pMap from 'p-map'
+import path from 'path'
+import moment from 'moment'
+import ApolloClient from 'apollo-client'
+import { NormalizedCacheObject } from 'apollo-cache-inmemory'
+import DateHelper from '../units/dateHelper'
 
 export class CrossRefDataSource implements DataSource {
 
@@ -265,6 +271,24 @@ export class CrossRefDataSource implements DataSource {
 
   getDataSourceConfig() {
     return this.dsConfig
+  }
+
+  async getHarvestOperations(client: ApolloClient<NormalizedCacheObject>): Promise<HarvestOperation[]> {
+    let harvestOperations: HarvestOperation[] = []
+    const years = this.dsConfig.harvestYears
+    await pMap(years, async (year) => {
+      const normedPersons: NormedPerson[] = await NormedPerson.getAllNormedPersonsByYear(year.valueOf(), client)
+      const resultsDir = path.join(this.dsConfig.harvestDataDir, `${this.dsConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`)
+      const harvestOperation: HarvestOperation = {
+        harvestOperationType: HarvestOperationType.QUERY_BY_AUTHOR_NAME,
+        normedPersons: normedPersons,
+        harvestResultsDir: resultsDir,
+        startDate: DateHelper.getDateObject(`${year}-01-01`),
+        endDate: DateHelper.getDateObject(`${year}-12-31`)
+      }
+      harvestOperations.push(harvestOperation)
+    }, { concurrency: 1 })
+    return harvestOperations
   }
   
 }

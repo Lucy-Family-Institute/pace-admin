@@ -7,12 +7,14 @@ const moment = require('moment');
 const { default: readPersonPublicationsByYear } = require('./gql/readPersonPublicationsByYear');
 
 import dotenv from 'dotenv'
+import Harvester from './modules/harvester';
 
 const writeCsv = require('./units/writeCsv').command;
 const loadCsv = require('./units/loadCsv').command;
 const fuzzyMatchName = require('./units/fuzzyMatchName').command;
 const nameParser = require('./units/nameParser').command;
 const { default: NormedPublication } = require('./modules/normedPublication');
+const { default: FsHelper } = require('./units/fsHelper')
 
 dotenv.config({
   path: '../.env'
@@ -31,7 +33,8 @@ const pubmedConfig = {
   memberFilePath: process.env.PUBMED_CENTER_MEMBER_FILE_PATH,
   awardFilePath: process.env.PUBMED_AWARD_FILE_PATH,
   dataFolderPath: process.env.PUBMED_HARVEST_DATA_DIR,
-  batchSize: (process.env.HARVEST_BATCH_SIZE ? Number.parseInt(process.env.HARVEST_BATCH_SIZE) : 200)
+  batchSize: (process.env.HARVEST_BATCH_SIZE ? Number.parseInt(process.env.HARVEST_BATCH_SIZE) : 200),
+  harvestFileBatchSize: (process.env.HARVEST_DIR_FILE_BATCH_SIZE ? Number.parseInt(process.env.HARVEST_DIR_FILE_BATCH_SIZE) : 10)
 }
 
 // return map of identifier type to id
@@ -162,6 +165,16 @@ async function go() {
       data: csvBatch
     });
   }, {concurrency: 1})
+
+  // now dedup the results
+  const rawHarvestDir = pubmedDataDir
+  
+  console.log(`Deduping publications to path: ${pubmedDataDir}`)
+  // make this call be something standardized for every harvester
+  const baseDirName = FsHelper.getBaseDirName(pubmedDataDir)
+  const dedupTargetBasePath = `${pubmedDataDir}/deduped/${baseDirName}/`
+  const dataDir = pubmedDataDir
+  await Harvester.dedupHarvestedPublications(rawHarvestDir, dedupTargetBasePath,dataDir, pubmedConfig.batchSize, pubmedConfig.harvestFileBatchSize)
 }
 
 go();

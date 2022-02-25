@@ -3,6 +3,9 @@ import NormedPerson from './normedPerson'
 import HarvestSet from './HarvestSet'
 import DataSourceConfig from './dataSourceConfig'
 import NormedAuthor from './normedAuthor'
+import { HarvestOperation } from './harvestOperation'
+import ApolloClient from 'apollo-client'
+import { NormalizedCacheObject } from 'apollo-cache-inmemory'
 export default interface DataSource {
 
   // return the query passed to scopus for searching for given author
@@ -31,4 +34,6 @@ export default interface DataSource {
   getCSLStyleAuthorList(sourceMetadata): Promise<any[]>
 
   getDataSourceConfig(): DataSourceConfig
+
+  getHarvestOperations(client: ApolloClient<NormalizedCacheObject>): Promise<HarvestOperation[]>
 }

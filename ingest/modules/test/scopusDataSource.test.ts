@@ -1,5 +1,5 @@
 import { ScopusDataSource } from '../scopusDataSource'
-import { getDateObject } from '../../units/dateRange'
+import DateHelper from '../../units/dateHelper'
 import dotenv from 'dotenv'
 const fs = require('fs');
 import _ from 'lodash'
@@ -38,7 +38,10 @@ beforeAll(async () => {
     apiKey: process.env.SCOPUS_API_KEY,
     sourceName: 'Scopus',
     pageSize: '25',  // page size must be a string for the request to work
-    requestInterval: 1000
+    requestInterval: 1000,
+    harvestFileBatchSize: 100,
+    harvestDataDir: '../data/test',
+    batchSize: 200
   }
   ds = new ScopusDataSource(dsConfig)
 
@@ -70,7 +73,7 @@ beforeAll(async () => {
     familyName: 'Zhang',
     givenNameInitial: 'S',
     givenName: 'Suyaun',
-    startDate: getDateObject('2017-01-01'),
+    startDate: DateHelper.getDateObject('2017-01-01'),
     endDate: undefined,
     sourceIds: {
       scopusAffiliationId: '60021508'
@@ -161,7 +164,7 @@ test('testing get publication from Scopus with no affiliation id', async () => {
     const person: NormedPerson = _.cloneDeep(defaultNormedPerson)
     person.sourceIds = {}
     const sessionState = undefined
-    const results: HarvestSet = await ds.getPublicationsByAuthorName(person, sessionState, 0, getDateObject(`${defaultYear}-01-01`))
+    const results: HarvestSet = await ds.getPublicationsByAuthorName(person, sessionState, 0, DateHelper.getDateObject(`${defaultYear}-01-01`))
     const expectedSet = {
         sourceName: ds.getSourceName(),
         offset: 0,
@@ -179,7 +182,7 @@ test('testing get publication from Scopus with affiliation id', async () => {
     expect.hasAssertions()
     //
     const sessionState = undefined
-    const results: HarvestSet = await ds.getPublicationsByAuthorName(defaultNormedPerson, sessionState, 0, getDateObject(`${defaultYear}-01-01`))
+    const results: HarvestSet = await ds.getPublicationsByAuthorName(defaultNormedPerson, sessionState, 0, DateHelper.getDateObject(`${defaultYear}-01-01`))
     const expectedSet = {
         sourceName: ds.getSourceName(),
         offset: 0,
@@ -197,7 +200,7 @@ test('testing get publication from Scopus with affiliation id', async () => {
 test('testing get publication from Scopus with affiliation id and end date set', async () => {
   expect.hasAssertions()
   const sessionState = undefined
-  const results: HarvestSet = await ds.getPublicationsByAuthorName(defaultNormedPerson, sessionState, 0, getDateObject(`${defaultYear}-01-01`), getDateObject(`${parseInt(defaultYear)+1}-01-01`))
+  const results: HarvestSet = await ds.getPublicationsByAuthorName(defaultNormedPerson, sessionState, 0, DateHelper.getDateObject(`${defaultYear}-01-01`), DateHelper.getDateObject(`${parseInt(defaultYear)+1}-01-01`))
   const expectedSet = {
       sourceName: ds.getSourceName(),
       offset: 0,
