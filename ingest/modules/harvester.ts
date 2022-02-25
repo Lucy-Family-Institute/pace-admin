@@ -236,7 +236,7 @@ export default class Harvester {
     return filePath
   }
 
-  async loadPublicationsFromManifestFile(manifestFilePath, dataDirPath): Promise<NormedPublication[]> {
+  public static async loadPublicationsFromManifestFile(manifestFilePath, dataDirPath): Promise<NormedPublication[]> {
     let normedPubs: NormedPublication[]
     try {
       console.log(`Loading publications from ${manifestFilePath}`)
@@ -251,7 +251,7 @@ export default class Harvester {
     return normedPubs
   }
 
-  async dedupPublicationsFromDir(sourceDir: string): Promise<NormedPublication[]> {
+  public static async dedupPublicationsFromDir(sourceDir: string): Promise<NormedPublication[]> {
     let normedPubs: NormedPublication[] = []
     let origPubCount = 0
     try {
@@ -261,7 +261,7 @@ export default class Harvester {
         console.log(`Loading publications file (${(fileIndex + 1)} of ${loadPaths.length}) with path: ${filePath}`)
         const fileName = FsHelper.getFileName(filePath)
         const dataDir = FsHelper.getParentDir(filePath)
-        const curNormedPubs = await this.loadPublicationsFromManifestFile(filePath, dataDir)
+        const curNormedPubs = await Harvester.loadPublicationsFromManifestFile(filePath, dataDir)
         origPubCount = origPubCount + curNormedPubs.length
         normedPubs = NormedPublication.mergeNormedPublicationLists(normedPubs, curNormedPubs)
         console.log(`Normed pubs list length currently: ${normedPubs.length}`)
@@ -274,35 +274,33 @@ export default class Harvester {
     return normedPubs    
   }
 
-  async dedupHarvestedPublications(sourceHarvestDir, targetDedupedDirBasePath, dataDir, fileBatchSize?, dirBatchSize?) {
+  public static async dedupHarvestedPublications(sourceHarvestDir, targetDedupedDirBasePath, dataDir, filePubBatchSize, dirBatchSize) {
     console.log(`Deduping publications for source dir: ${sourceHarvestDir}`)
-    const dedupedNormedPubs: NormedPublication[] = await this.dedupPublicationsFromDir(sourceHarvestDir)
+    const dedupedNormedPubs: NormedPublication[] = await Harvester.dedupPublicationsFromDir(sourceHarvestDir)
     try {
-      const harvestFileBatchSize = (dirBatchSize ? dirBatchSize: this.ds.getDataSourceConfig().harvestFileBatchSize)
-      const filePubBatchSize = (fileBatchSize ? fileBatchSize : this.ds.getDataSourceConfig().batchSize)
-      // now chunk the dedupedPubs by harvestFileBatchSize * fileBatchSize => total number of pubs in each results dir
+      // now chunk the dedupedPubs by dirBatchSize * filePubBatchSize => total number of pubs in each results dir
       // to break them into managable chunks to load balance the amount of pubs pushed through the ingest process at once
-      const dedupBatchSize = harvestFileBatchSize * filePubBatchSize
+      const dedupBatchSize = dirBatchSize * filePubBatchSize
       const dedupBatches = _.chunk(dedupedNormedPubs, dedupBatchSize)
       await pMap(dedupBatches, async (dedupedPubs, index) => {
 
         const targetDedupBaseParent = FsHelper.getParentDir(targetDedupedDirBasePath)
-        const targetDedubBaseName = FsHelper.getFileName(targetDedupedDirBasePath)
-        const targetDedupedDir = `${targetDedupBaseParent}/${targetDedubBaseName}_${index}`
+        const targetDedupBaseName = FsHelper.getBaseDirName(targetDedupedDirBasePath)
+        const targetDedupedDir = `${targetDedupBaseParent}/${targetDedupBaseName}_${index}`
         // now output each dedupedBatch to an output results dir, use the 
-        console.log(`Writing deduped batch (${index+1} of ${dedupBatches.length}) pubs back to csv target deduped dir: ${targetDedupedDir} with batch size: ${this.ds.getDataSourceConfig().batchSize}`)
-        const filePath = `${targetDedupedDir}/${this.ds.getSourceName()}.deduped.${moment().format('YYYYMMDDHHmmss')}.csv`
+        console.log(`Writing deduped batch (${index+1} of ${dedupBatches.length}) pubs back to csv target deduped dir: ${targetDedupedDir} with batch size: ${filePubBatchSize}`)
+        const filePath = `${targetDedupedDir}/${targetDedupBaseName}.deduped.${moment().format('YYYYMMDDHHmmss')}.csv`
 
         console.log(`Target deduped dir is: ${targetDedupedDir}`)
         FsHelper.createDirIfNotExists(targetDedupedDir, true)
 
-        await NormedPublication.writeToCSV(dedupedPubs, filePath, false, this.ds.getDataSourceConfig().batchSize)
+        await NormedPublication.writeToCSV(dedupedPubs, filePath, false, filePubBatchSize)
         console.log(`Writing source metadata for deduped batch (${index+1} of ${dedupBatches.length}) pubs to target dir: ${targetDedupedDir}...`)
         await pMap (dedupedPubs, async (normedPub) => {
           const sourceMetadata = NormedPublication.getSourceMetadata(normedPub, dataDir)
           await NormedPublication.writeSourceMetadataToJSON(normedPub, sourceMetadata, targetDedupedDir)
         })
-        console.log(`Finished writing batch (${index+1} of ${dedupBatches.length}) pubs back to csv target deduped dir: ${targetDedupedDir} with batch size: ${this.ds.getDataSourceConfig().batchSize}`)
+        console.log(`Finished writing batch (${index+1} of ${dedupBatches.length}) pubs back to csv target deduped dir: ${targetDedupedDir} with batch size: ${filePubBatchSize}`)
       }, { concurrency: 1})
     } catch (error) {
       console.log(`Error on dedup normed pubs: ${error}`)
@@ -350,7 +348,7 @@ export default class Harvester {
       const baseDirName = FsHelper.getBaseDirName(harvestOperation.harvestResultsDir)
       const dedupTargetBasePath = `${harvestOperation.harvestResultsDir}/deduped/${baseDirName}/`
       const dataDir = harvestOperation.harvestResultsDir
-      await this.dedupHarvestedPublications(rawHarvestDir,dedupTargetBasePath,dataDir)
+      await Harvester.dedupHarvestedPublications(rawHarvestDir,dedupTargetBasePath,dataDir, this.ds.getDataSourceConfig().batchSize, this.ds.getDataSourceConfig().harvestFileBatchSize)
 
       console.log(`Failed authors: ${failedAuthors.length}`)
       console.log(`Succeeded authors: ${succeededAuthors.length}`)
