@@ -59,6 +59,7 @@ async function main (): Promise<void> {
     harvestYears: harvestYears,
     harvestDataDir: process.env.SEMANTIC_SCHOLAR_HARVEST_DATA_DIR,
     batchSize: Number.parseInt(process.env.HARVEST_BATCH_SIZE),
+    harvestFileBatchSize: Number.parseInt(process.env.HARVEST_DIR_FILE_BATCH_SIZE),
     harvestThreadCount: Number.parseInt(process.env.SEMANTIC_SCHOLAR_HARVEST_THREAD_COUNT)
   }
 

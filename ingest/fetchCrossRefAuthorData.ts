@@ -56,6 +56,7 @@ async function main (): Promise<void> {
     requestInterval: Number.parseInt(process.env.CROSSREF_REQUEST_INTERVAL),
     harvestDataDir: process.env.CROSSREF_HARVEST_DATA_DIR,
     batchSize: Number.parseInt(process.env.HARVEST_BATCH_SIZE),
+    harvestFileBatchSize: Number.parseInt(process.env.HARVEST_DIR_FILE_BATCH_SIZE),
     harvestThreadCount: Number.parseInt(process.env.CROSSREF_HARVEST_THREAD_COUNT)
   }
 

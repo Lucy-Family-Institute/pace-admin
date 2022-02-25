@@ -274,20 +274,36 @@ export default class Harvester {
     return normedPubs    
   }
 
-  async dedupHarvestedPublications(sourceHarvestDir, targetDedupedDir) {
-    console.log(`Deduping publications for source dir: ${sourceHarvestDir} to target dir: ${targetDedupedDir}`)
+  async dedupHarvestedPublications(sourceHarvestDir, targetDedupedDirBasePath, dataDir, fileBatchSize?, dirBatchSize?) {
+    console.log(`Deduping publications for source dir: ${sourceHarvestDir}`)
     const dedupedNormedPubs: NormedPublication[] = await this.dedupPublicationsFromDir(sourceHarvestDir)
     try {
-      console.log(`Writing deduped pubs back to csv target deduped dir: ${targetDedupedDir} with batch size: ${this.ds.getDataSourceConfig().batchSize}`)
-      const filePath = `${targetDedupedDir}/${this.ds.getSourceName()}.deduped.${moment().format('YYYYMMDDHHmmss')}.csv`
+      const harvestFileBatchSize = (dirBatchSize ? dirBatchSize: this.ds.getDataSourceConfig().harvestFileBatchSize)
+      const filePubBatchSize = (fileBatchSize ? fileBatchSize : this.ds.getDataSourceConfig().batchSize)
+      // now chunk the dedupedPubs by harvestFileBatchSize * fileBatchSize => total number of pubs in each results dir
+      // to break them into managable chunks to load balance the amount of pubs pushed through the ingest process at once
+      const dedupBatchSize = harvestFileBatchSize * filePubBatchSize
+      const dedupBatches = _.chunk(dedupedNormedPubs, dedupBatchSize)
+      await pMap(dedupBatches, async (dedupedPubs, index) => {
 
-      FsHelper.createDirIfNotExists(targetDedupedDir, true)
+        const targetDedupBaseParent = FsHelper.getParentDir(targetDedupedDirBasePath)
+        const targetDedubBaseName = FsHelper.getFileName(targetDedupedDirBasePath)
+        const targetDedupedDir = `${targetDedupBaseParent}/${targetDedubBaseName}_${index}`
+        // now output each dedupedBatch to an output results dir, use the 
+        console.log(`Writing deduped batch (${index+1} of ${dedupBatches.length}) pubs back to csv target deduped dir: ${targetDedupedDir} with batch size: ${this.ds.getDataSourceConfig().batchSize}`)
+        const filePath = `${targetDedupedDir}/${this.ds.getSourceName()}.deduped.${moment().format('YYYYMMDDHHmmss')}.csv`
 
-      await NormedPublication.writeToCSV(dedupedNormedPubs, filePath, false, this.ds.getDataSourceConfig().batchSize)
-      // await pMap (normedPubs, async (normedPub) => {
-      //   await NormedPublication.writeSourceMetadataToJSON(normedPub, normedPub.sourceMetadata, resultsFileDir)
-      // })
-      console.log(`Finished writing deduped pubs back to csv target deduped dir: ${targetDedupedDir}`)
+        console.log(`Target deduped dir is: ${targetDedupedDir}`)
+        FsHelper.createDirIfNotExists(targetDedupedDir, true)
+
+        await NormedPublication.writeToCSV(dedupedPubs, filePath, false, this.ds.getDataSourceConfig().batchSize)
+        console.log(`Writing source metadata for deduped batch (${index+1} of ${dedupBatches.length}) pubs to target dir: ${targetDedupedDir}...`)
+        await pMap (dedupedPubs, async (normedPub) => {
+          const sourceMetadata = NormedPublication.getSourceMetadata(normedPub, dataDir)
+          await NormedPublication.writeSourceMetadataToJSON(normedPub, sourceMetadata, targetDedupedDir)
+        })
+        console.log(`Finished writing batch (${index+1} of ${dedupBatches.length}) pubs back to csv target deduped dir: ${targetDedupedDir} with batch size: ${this.ds.getDataSourceConfig().batchSize}`)
+      }, { concurrency: 1})
     } catch (error) {
       console.log(`Error on dedup normed pubs: ${error}`)
       throw error
@@ -331,7 +347,10 @@ export default class Harvester {
   
       console.log(`Deduping publications to path: ${harvestOperation.harvestResultsDir}`)
       // make this call be something standardized for every harvester
-      await this.dedupHarvestedPublications(rawHarvestDir,harvestOperation.harvestResultsDir)
+      const baseDirName = FsHelper.getBaseDirName(harvestOperation.harvestResultsDir)
+      const dedupTargetBasePath = `${harvestOperation.harvestResultsDir}/deduped/${baseDirName}/`
+      const dataDir = harvestOperation.harvestResultsDir
+      await this.dedupHarvestedPublications(rawHarvestDir,dedupTargetBasePath,dataDir)
 
       console.log(`Failed authors: ${failedAuthors.length}`)
       console.log(`Succeeded authors: ${succeededAuthors.length}`)

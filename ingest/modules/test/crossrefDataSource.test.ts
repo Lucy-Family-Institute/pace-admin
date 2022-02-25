@@ -46,6 +46,7 @@ const dsConfig: DataSourceConfig = {
     sourceName: 'CrossRef',
     pageSize: '100',  // page size must be a string for the request to work
     requestInterval: 10000,
+    harvestFileBatchSize: 100,
     harvestDataDir: process.env.CROSSREF_HARVEST_DATA_DIR,
     batchSize: 200
 }

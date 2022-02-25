@@ -48,6 +48,7 @@ const dsConfig: DataSourceConfig = {
     sourceName: 'SemanticScholar',
     pageSize: '100',  // page size must be a string for the request to work
     requestInterval: 3500,
+    harvestFileBatchSize: 100,
     harvestDataDir: process.env.SEMANTIC_SCHOLAR_HARVEST_DATA_DIR,
     batchSize: 200
 }

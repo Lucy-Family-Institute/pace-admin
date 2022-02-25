@@ -39,6 +39,7 @@ beforeAll(async () => {
     sourceName: 'Scopus',
     pageSize: '25',  // page size must be a string for the request to work
     requestInterval: 1000,
+    harvestFileBatchSize: 100,
     harvestDataDir: '../data/test',
     batchSize: 200
   }
