@@ -10,6 +10,7 @@
       "scopusAffiliationId": "search_person_source_ids_scopus_affiliation_id"
     }
   },
+  "searchPersonIds": "search_person_ids",
   "title": "title",
   "journalTitle": "journal", 
   "doi": "doi",

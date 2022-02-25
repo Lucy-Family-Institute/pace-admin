@@ -5,7 +5,7 @@ import gql from 'graphql-tag'
 import fetch from 'node-fetch'
 import _ from 'lodash'
 import { command as loadCsv } from './units/loadCsv'
-import { getAllSimplifiedPersons, getAllCenterMembers, getNameKey } from './modules/queryNormalizedPeople'
+import NormedPerson from './modules/normedPerson'
 import readInstitutions from './gql/readInstitutions'
 import updatePersonDates from './gql/updatePersonDates'
 import updateMemberDates from './gql/updateMemberDates'
@@ -206,11 +206,11 @@ async function main (): Promise<void> {
       // console.log(`Load Center member objects for center '${center}': ${JSON.stringify(loadCenterMembers, null, 2)}`)
   
       // check for existing authors
-      let authorsExisting = await getAllSimplifiedPersons(client)
+      let authorsExisting = await NormedPerson.getAllSimplifiedPersons(client)
 
       //group the authors by lastname and firstname
       let authorsByName = _.mapKeys(authorsExisting, (author) => {
-        return getNameKey(author['lastName'], author['firstName'])
+        return NormedPerson.getNameKey(author['lastName'], author['firstName'])
       })
 
       // console.log(`Authors by name: ${_.keys(authorsByName)}`)
@@ -227,7 +227,7 @@ async function main (): Promise<void> {
             familyNameIndex = index
           }
         })   
-        const authorKey = getNameKey(loadMember[_.keys(loadMember)[familyNameIndex]], loadMember['given_name'])
+        const authorKey = NormedPerson.getNameKey(loadMember[_.keys(loadMember)[familyNameIndex]], loadMember['given_name'])
         if (!authorsByName[authorKey]){
           // use key to make sure no duplicates
           newAuthors[authorKey] = loadMember
@@ -241,12 +241,12 @@ async function main (): Promise<void> {
         insertedAuthors = await insertNewAuthors(_.values(newAuthors))
       }
       // just reload authors
-      authorsExisting = await getAllSimplifiedPersons(client)
+      authorsExisting = await NormedPerson.getAllSimplifiedPersons(client)
       //group the authors by lastname and firstname
 
       // console.log(`Authors by name before reload: ${_.keys(authorsByName).length}`)
       authorsByName = _.mapKeys(authorsExisting, (author) => {
-        return getNameKey(author['lastName'], author['firstName'])
+        return NormedPerson.getNameKey(author['lastName'], author['firstName'])
       })
       // console.log(`Authors by name after reload: ${_.keys(authorsByName).length}`)
 
@@ -263,11 +263,11 @@ async function main (): Promise<void> {
             familyNameIndex = index
           }
         })   
-        return  getNameKey(loadMember[_.keys(loadMember)[familyNameIndex]], loadMember['given_name'])
+        return  NormedPerson.getNameKey(loadMember[_.keys(loadMember)[familyNameIndex]], loadMember['given_name'])
       })
 
       // get existing members in DB
-      const existingCenterMembers = await getAllCenterMembers(client)
+      const existingCenterMembers = await NormedPerson.getAllCenterMembers(client)
 
       // console.log(`Existing center members retrievied: ${JSON.stringify(existingCenterMembers, null, 2)}`)
       // group existing members by center by name
@@ -278,7 +278,7 @@ async function main (): Promise<void> {
       const existingMembersByNameByCenter = {}
       _.each(_.keys(existingMembersByCenter), (center) => {
         existingMembersByNameByCenter[center] = _.mapKeys(existingMembersByCenter[center], (member) => {
-          return getNameKey(member['familyName'], member['givenName'])
+          return NormedPerson.getNameKey(member['familyName'], member['givenName'])
         })
       })
 

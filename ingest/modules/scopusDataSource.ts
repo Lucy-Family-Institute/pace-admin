@@ -5,13 +5,19 @@ import NormedPublication from './normedPublication'
 import NormedPerson from './normedPerson'
 import DataSource from './dataSource'
 import HarvestSet from './HarvestSet'
+import DateHelper from '../units/dateHelper'
+import { HarvestOperation, HarvestOperationType } from './harvestOperation'
 import DataSourceConfig from './dataSourceConfig'
 import DataSourceHelper from './dataSourceHelper'
 import NormedAuthor from './normedAuthor'
+import ApolloClient from 'apollo-client'
+import { NormalizedCacheObject } from 'apollo-cache-inmemory'
+import path from 'path'
+import moment from 'moment'
 
 export class ScopusDataSource implements DataSource {
 
-  private dsConfig: DataSourceConfig 
+  private dsConfig: DataSourceConfig
 
   constructor (dsConfig?: DataSourceConfig) {
     this.dsConfig = dsConfig
@@ -137,6 +143,24 @@ export class ScopusDataSource implements DataSource {
 
   getDataSourceConfig() {
     return this.dsConfig
+  }
+
+  async getHarvestOperations(client: ApolloClient<NormalizedCacheObject>): Promise<HarvestOperation[]> {
+    let harvestOperations: HarvestOperation[] = []
+    const years = this.dsConfig.harvestYears
+    await pMap(years, async (year) => {
+      const normedPersons: NormedPerson[] = await NormedPerson.getAllNormedPersonsByYear(year.valueOf(), client)
+      const resultsDir = path.join(this.dsConfig.harvestDataDir, `${this.dsConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`)
+      const harvestOperation: HarvestOperation = {
+        harvestOperationType: HarvestOperationType.QUERY_BY_AUTHOR_NAME,
+        normedPersons: normedPersons,
+        harvestResultsDir: resultsDir,
+        startDate: DateHelper.getDateObject(`${year}-01-01`),
+        endDate: DateHelper.getDateObject(`${year}-12-31`)
+      }
+      harvestOperations.push(harvestOperation)
+    }, { concurrency: 1 })
+    return harvestOperations
   }
   
 }

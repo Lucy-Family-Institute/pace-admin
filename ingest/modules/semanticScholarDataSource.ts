@@ -6,13 +6,16 @@ import NormedAuthor from './normedAuthor'
 import DataSource from './dataSource'
 import HarvestSet from './HarvestSet'
 import DataSourceConfig from './dataSourceConfig'
-import { HarvestOperation } from './harvester'
-import { PossibleFragmentSpreadsRule } from 'graphql'
+import { HarvestOperation, HarvestOperationType } from './harvestOperation'
 import { wait } from '../units/randomWait'
 import pMap from 'p-map'
-import { getDateObject } from '../units/dateRange'
+import path from 'path'
+import moment from 'moment'
 import { command as loadCsv} from '../units/loadCsv'
 import DataSourceHelper from './dataSourceHelper'
+import ApolloClient from 'apollo-client'
+import { NormalizedCacheObject } from 'apollo-cache-inmemory'
+import DateHelper from '../units/dateHelper'
 
 const nameParser = require('../units/nameParser').command;
 export class SemanticScholarDataSource implements DataSource {
@@ -33,7 +36,7 @@ export class SemanticScholarDataSource implements DataSource {
   }
 
   async getPublicationsByAuthorName(person: NormedPerson, sessionState: {}, offset: Number, startDate?: Date, endDate?: Date) : Promise<HarvestSet> {
-    throw (`Unsupported operation ${HarvestOperation.QUERY_BY_AUTHOR_NAME}`)
+    throw (`Unsupported operation ${HarvestOperationType.QUERY_BY_AUTHOR_NAME}`)
   }
 
   // assumes that if only one of startDate or endDate provided it would always be startDate first and then have endDate undefined
@@ -306,12 +309,31 @@ export class SemanticScholarDataSource implements DataSource {
     return authorIdsByPersonId
   }
 
-  // getAuthorIdsByConfidence(publication, minConfidence) {
+  async getHarvestOperations(client: ApolloClient<NormalizedCacheObject>): Promise<HarvestOperation[]> {
+    let harvestOperations: HarvestOperation[] = []
+    const minYear = this.dsConfig.harvestYears[0].valueOf()
+    const maxYear = this.dsConfig.harvestYears.reverse()[0].valueOf()
+ 
+    let normedPersonsById = {}
+    for (let index = 0; index <= maxYear - minYear; index++) {
+      const normedPersonsByYear: NormedPerson[] = await NormedPerson.getAllNormedPersonsByYear((minYear + index), client)
+      _.each (normedPersonsByYear, (normedPerson: NormedPerson) => {
+        if (normedPerson.sourceIds && normedPerson.sourceIds.semanticScholarIds) {
+          normedPersonsById[`${normedPerson.id}`] = normedPerson 
+        }
+      })
+    }
 
-  // }
-  // matchPeopleToCoauthors(coAuthorList, personMap) {
-  //   const conf: CalculateConfidence = new CalculateConfidence()
-  //   conf.calculateConfidence()
-  // }
-  
+    const normedPersons: NormedPerson[] = _.values(normedPersonsById)
+    const resultsDir = path.join(this.dsConfig.harvestDataDir, `${this.dsConfig.sourceName}_${minYear}-${maxYear}_${moment().format('YYYYMMDDHHmmss')}/`)
+    const harvestOperation: HarvestOperation = {
+      harvestOperationType: HarvestOperationType.QUERY_BY_AUTHOR_ID,
+      normedPersons: normedPersons,
+      harvestResultsDir: resultsDir,
+      startDate: DateHelper.getDateObject(`${minYear}-01-01`),
+      endDate: DateHelper.getDateObject(`${maxYear}-12-31`)
+    }
+    harvestOperations.push(harvestOperation)
+    return harvestOperations
+  }
 }
