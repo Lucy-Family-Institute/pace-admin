@@ -44,6 +44,7 @@ const dsConfig: DataSourceConfig = {
     sourceName: 'WebOfScience',
     pageSize: '5',  // page size must be a string for the request to work
     requestInterval: 10000,
+    harvestFileBatchSize: 100,
     harvestDataDir: '../data/test',
     batchSize: 200
 }

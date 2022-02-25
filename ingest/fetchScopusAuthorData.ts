@@ -270,6 +270,7 @@ async function main (): Promise<void> {
     harvestYears: harvestYears,
     requestInterval: Number.parseInt(process.env.SCOPUS_REQUEST_INTERVAL),
     harvestDataDir: process.env.SCOPUS_HARVEST_DATA_DIR,
+    harvestFileBatchSize: Number.parseInt(process.env.HARVEST_DIR_FILE_BATCH_SIZE),
     batchSize: Number.parseInt(process.env.HARVEST_BATCH_SIZE)
   }
 

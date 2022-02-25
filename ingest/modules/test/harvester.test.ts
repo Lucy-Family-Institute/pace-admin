@@ -51,6 +51,7 @@ const scopusConfig: DataSourceConfig = {
     pageSize: '25',  // page size must be a string for the request to work
     requestInterval: 1000,
     harvestDataDir: '../data/test',
+    harvestFileBatchSize: 100,
     batchSize: 200
 }
 
@@ -63,6 +64,7 @@ const wosConfig: DataSourceConfig = {
     pageSize: '5',  // page size must be a string for the request to work
     requestInterval: 10000, // number milliseconds to wait between requests
     harvestDataDir: '../data/test',
+    harvestFileBatchSize: 100,
     batchSize: 200
 }
 
@@ -72,6 +74,7 @@ const crossrefConfig: DataSourceConfig = {
     sourceName: 'CrossRef',
     pageSize: '5',  // page size must be a string for the request to work
     requestInterval: 10000,
+    harvestFileBatchSize: 100,
     harvestDataDir: '../data/test',
     batchSize: 200
 }
