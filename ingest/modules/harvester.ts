@@ -346,7 +346,7 @@ export default class Harvester {
       console.log(`Deduping publications to path: ${harvestOperation.harvestResultsDir}`)
       // make this call be something standardized for every harvester
       const baseDirName = FsHelper.getBaseDirName(harvestOperation.harvestResultsDir)
-      const dedupTargetBasePath = `${harvestOperation.harvestResultsDir}/deduped/${baseDirName}/`
+      const dedupTargetBasePath = `${harvestOperation.harvestResultsDir}/${baseDirName}_deduped/${baseDirName}/`
       const dataDir = harvestOperation.harvestResultsDir
       await Harvester.dedupHarvestedPublications(rawHarvestDir,dedupTargetBasePath,dataDir, this.ds.getDataSourceConfig().batchSize, this.ds.getDataSourceConfig().harvestFileBatchSize)
 
