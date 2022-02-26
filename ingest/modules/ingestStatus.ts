@@ -199,6 +199,11 @@ export default class IngestStatus {
     const failedDirPath = path.join(this.ingesterConfig.outputIngestDir, this.csvBaseLogDir, this.csvBaseFailedLogDir)
     FsHelper.createDirIfNotExists(path.join(process.cwd(), failedDirPath), true)
     await NormedPublication.writeSourceMetadataToJSON(normedPub, sourceMetadata, failedDirPath)
+    if (this.ingesterConfig && this.ingesterConfig.combinedFailedOutputDir){
+      console.log(`Write failed source_metadata of doi to combined output dir ${this.ingesterConfig.combinedFailedOutputDir}...`)
+      FsHelper.createDirIfNotExists(this.ingesterConfig.combinedFailedOutputDir, true)
+      await NormedPublication.writeSourceMetadataToJSON(normedPub, sourceMetadata, this.ingesterConfig.combinedFailedOutputDir)
+    }
   }
 
   private getCSVRows(pubStatuses: PublicationStatus[]): any[] {
@@ -229,6 +234,17 @@ export default class IngestStatus {
       path: csvFilePath,
       data: this.getCSVRows(this.combinedFailed),
     })
+
+    // if a combined failed output dir, also write output to there
+    if (this.ingesterConfig && this.ingesterConfig.combinedFailedOutputDir){
+      console.log(`Write failed status of doi's to csv file: ${csvFailedFileName} to combined output dir ${this.ingesterConfig.combinedFailedOutputDir}...`)
+      FsHelper.createDirIfNotExists(this.ingesterConfig.combinedFailedOutputDir, true)
+      const csvCombinedFilePath = path.join(this.ingesterConfig.combinedFailedOutputDir, csvFailedFileName)
+      await writeCsv({
+        path: csvCombinedFilePath,
+        data: this.getCSVRows(this.combinedFailed),
+      })
+    }
 
     // if written successfully clear it out
     this.combinedFailed = []
