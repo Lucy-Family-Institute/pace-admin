@@ -13,4 +13,6 @@ export default interface DataSourceConfig {
   memberFilePath?: string
   harvestDataDir: string
   batchSize: number
+  harvestFileBatchSize: number // the number of files to have in harvest folder if total files greater than this it will create multiple harvest dirs
+  harvestThreadCount?: number
 }

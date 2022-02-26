@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { getDateObject } from '../../units/dateRange'
+import DateHelper from '../../units/dateHelper'
 import NormedPublication from '../normedPublication'
 import NormedPerson from '../normedPerson'
 
@@ -10,7 +10,7 @@ const defaultNormedPerson: NormedPerson = {
   familyName: 'Zhang',
   givenNameInitial: 'S',
   givenName: 'Siyuan',
-  startDate: getDateObject('2017-01-01'),
+  startDate: DateHelper.getDateObject('2017-01-01'),
   endDate: undefined,
   sourceIds: {
     scopusAffiliationId: '60021508'
@@ -84,7 +84,7 @@ const publicationColumnMap = {
 
 test('test NormedPublication.loadFromCSV works with property map with no lowerCase keys or values', async () => {
   expect.hasAssertions()
-  const publications: NormedPublication[] = await NormedPublication.loadFromCSV(testCSVPath)
+  const publications: NormedPublication[] = await NormedPublication.loadFromCSV(testCSVPath, undefined)
   expect(publications).toEqual(expect.arrayContaining([defaultExpectedNormedPublication]))
 })
 

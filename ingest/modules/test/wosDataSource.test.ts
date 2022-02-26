@@ -1,13 +1,16 @@
-import { Harvester, HarvestOperation } from '../harvester'
+import Harvester from '../harvester'
 import { WosDataSource } from '../wosDataSource'
 import DataSource from '../dataSource'
 import NormedPublication from '../normedPublication'
 import HarvestSet from '../HarvestSet'
 import NormedPerson from '../normedPerson'
 import { randomWait } from '../../units/randomWait'
-import { getDateObject } from '../../units/dateRange'
-import { escapeForRegEx } from '../../units/normalizer'
+import DateHelper from '../../units/dateHelper'
+import Normalizer from '../../units/normalizer'
 import DataSourceConfig from '../dataSourceConfig'
+import ApolloClient from 'apollo-client'
+import { InMemoryCache } from 'apollo-cache-inmemory'
+import { createHttpLink } from 'apollo-link-http'
 
 import dotenv from 'dotenv'
 const fs = require('fs');
@@ -40,21 +43,39 @@ const dsConfig: DataSourceConfig = {
     password: process.env.WOS_PASSWORD,
     sourceName: 'WebOfScience',
     pageSize: '5',  // page size must be a string for the request to work
-    requestInterval: 10000
+    requestInterval: 10000,
+    harvestFileBatchSize: 100,
+    harvestDataDir: '../data/test',
+    batchSize: 200
 }
+
+
+const hasuraSecret = process.env.HASURA_SECRET
+const graphQlEndPoint = process.env.GRAPHQL_END_POINT
+
+const client = new ApolloClient({
+    link: createHttpLink({
+      uri: graphQlEndPoint,
+      headers: {
+        'x-hasura-admin-secret': hasuraSecret
+      },
+      fetch: fetch as any
+    }),
+    cache: new InMemoryCache()
+  })
 
 const wosDS: WosDataSource = new WosDataSource(dsConfig)
 
 beforeAll(async () => {
     // const wosDS: DataSource = new WosDataSource(dsConfig)
-    wosHarvester = new Harvester(wosDS)
+    wosHarvester = new Harvester(wosDS, client)
 
     defaultNormedPerson = {
         id: 94,
         familyName: 'Zhang',
         givenNameInitial: 'S',
         givenName: 'Siyuan',
-        startDate: getDateObject('2019-01-01'),
+        startDate: DateHelper.getDateObject('2019-01-01'),
         endDate: undefined,
         sourceIds: {
             scopusAffiliationId: '60021508'
@@ -104,9 +125,9 @@ test('test Web of Science generate query soap string correctly sets end date if 
     const person = testPersons[0]
     const query = wosDS.getAuthorQuery(person)
     const startDateString = '2019-01-01'
-    const soapString = wosDS.getWoSQuerySOAPString(query,getDateObject(startDateString), undefined)
-    expect(soapString).toMatch(new RegExp(`[^]*<begin>${escapeForRegEx(startDateString)}<\/begin>[^]*`))
-    expect(soapString).toMatch(new RegExp(`[^]*<end>${escapeForRegEx('2019-12-31')}<\/end>[^]*`))
+    const soapString = wosDS.getWoSQuerySOAPString(query,DateHelper.getDateObject(startDateString), undefined)
+    expect(soapString).toMatch(new RegExp(`[^]*<begin>${Normalizer.escapeForRegEx(startDateString)}<\/begin>[^]*`))
+    expect(soapString).toMatch(new RegExp(`[^]*<end>${Normalizer.escapeForRegEx('2019-12-31')}<\/end>[^]*`))
    
 })
 
@@ -116,7 +137,7 @@ test('test Web of Science generate query soap string', () => {
     const query = wosDS.getAuthorQuery(person)
     const startDateString = '2019-01-01'
     const endDateString = '2020-12-31'
-    const soapString = wosDS.getWoSQuerySOAPString(query,getDateObject(startDateString), getDateObject(endDateString))
+    const soapString = wosDS.getWoSQuerySOAPString(query,DateHelper.getDateObject(startDateString), DateHelper.getDateObject(endDateString))
     expect(soapString).toMatch(new RegExp(`[^]*<soapenv:Envelope[^]*`))
     expect(soapString).toMatch(new RegExp(`[^]*<soapenv:Header/>[^]*`))
     expect(soapString).toMatch(new RegExp(`[^]*<soapenv:Body>[^]*`))
@@ -128,9 +149,9 @@ test('test Web of Science generate query soap string', () => {
     expect(soapString).toMatch(new RegExp(`[^]*<edition>SCI<\/edition>[^]*`))
     expect(soapString).toMatch(new RegExp(`[^]*<\/editions>[^]*`))
     expect(soapString).toMatch(new RegExp(`[^]*<timeSpan>[^]*`))
-    expect(soapString).toMatch(new RegExp(`[^]*<userQuery>${escapeForRegEx(query)}<\/userQuery>[^]*`))
-    expect(soapString).toMatch(new RegExp(`[^]*<begin>${escapeForRegEx(startDateString)}<\/begin>[^]*`))
-    expect(soapString).toMatch(new RegExp(`[^]*<end>${escapeForRegEx(endDateString)}<\/end>[^]*`))
+    expect(soapString).toMatch(new RegExp(`[^]*<userQuery>${Normalizer.escapeForRegEx(query)}<\/userQuery>[^]*`))
+    expect(soapString).toMatch(new RegExp(`[^]*<begin>${Normalizer.escapeForRegEx(startDateString)}<\/begin>[^]*`))
+    expect(soapString).toMatch(new RegExp(`[^]*<end>${Normalizer.escapeForRegEx(endDateString)}<\/end>[^]*`))
     expect(soapString).toMatch(new RegExp(`[^]*<\/timeSpan>[^]*`))
     expect(soapString).toMatch(new RegExp(`[^]*<queryLanguage>en</queryLanguage>[^]*`))
     expect(soapString).toMatch(new RegExp(`[^]*</queryParameters>[^]*`))
@@ -156,7 +177,7 @@ test('test Web of Science harvester.fetchPublications by Author Name', async () 
         totalResults: 4
     }
     // for date need to call getDateObject to make sure time zone is set correctly and not accidentally setting to previous date because of hour difference in local timezone
-    const results = await wosDS.getPublicationsByAuthorName(defaultNormedPerson, {}, 0, getDateObject('2019-01-01'))
+    const results = await wosDS.getPublicationsByAuthorName(defaultNormedPerson, {}, 0, DateHelper.getDateObject('2019-01-01'))
     // as new publications may be added to available, just test that current set includes expected pubs
     expect(results.sourceName).toEqual(expectedHarvestSet.sourceName)
     expect(results.searchPerson).toEqual(expectedHarvestSet.searchPerson)

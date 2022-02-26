@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { removeSpaces, normalizeString, normalizeObjectProperties } from '../normalizer'
+import Normalizer from '../normalizer'
 
 const theNormalizeStringScenarios = [
   { given: "Björk", expected: "bjork" },
@@ -15,12 +15,12 @@ test('normalizeString(): test the various scenarios', () => {
   expect.hasAssertions();
   _.each(theNormalizeStringScenarios, (scenario) => {
     let options = _.get(scenario, "options", {})
-    expect(normalizeString(scenario.given, options)).toEqual(scenario.expected)
+    expect(Normalizer.normalizeString(scenario.given, options)).toEqual(scenario.expected)
   })
 })
 
 test('normalizeString() without options passed', () => {
-  expect(normalizeString("Björk")).toEqual("bjork")
+  expect(Normalizer.normalizeString("Björk")).toEqual("bjork")
 })
 
 const theRemoveSpacesScenarios = [
@@ -33,7 +33,7 @@ const theRemoveSpacesScenarios = [
 test('removeSpaces(): test the various scenarios', () => {
   expect.hasAssertions();
   _.each(theRemoveSpacesScenarios, (scenario) => {
-    expect(removeSpaces(scenario.given)).toEqual(scenario.expected)
+    expect(Normalizer.removeSpaces(scenario.given)).toEqual(scenario.expected)
   })
 })
 
@@ -46,6 +46,6 @@ test('normalizeObjectProperties(): test the various scenarios', () => {
   expect.hasAssertions();
   _.each(theNormalizeObjectPropertiesScenarios, (scenario) => {
     let options = _.get(scenario, "options", {})
-    expect(normalizeObjectProperties(scenario.givenObject, scenario.givenProperties, options)).toEqual(scenario.expected)
+    expect(Normalizer.normalizeObjectProperties(scenario.givenObject, scenario.givenProperties, options)).toEqual(scenario.expected)
   })
 })

@@ -56,6 +56,7 @@ const loggingBatchSize = process.env.INGESTER_LOGGING_BATCH_SIZE
 const loadPageSize = process.env.INGESTER_LOAD_BATCH_SIZE
 const threadCount = process.env.INGESTER_THREAD_COUNT
 const types = _.split(process.env.INGESTER_PUBLICATION_TYPES, ',')
+const combinedFailedOutputDir = `${outputIngestDir}/combined_failed_${moment().format('YYYYMMDDHHmmss')}`
 
 //returns status map of what was done
 async function main() {
@@ -72,6 +73,7 @@ async function main() {
     dedupByDoi: Normalizer.stringToBoolean(dedupByDoi),
     stagedIngestDir: stagedIngestDir,
     outputIngestDir: outputIngestDir,
+    combinedFailedOutputDir: combinedFailedOutputDir,
     centerMemberYear: Number.parseInt(centerMemberYear),
     loggingBatchSize: Number.parseInt(loggingBatchSize),
     loadPageSize: Number.parseInt(loadPageSize),
