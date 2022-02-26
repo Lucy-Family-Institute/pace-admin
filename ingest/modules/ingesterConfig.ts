@@ -10,7 +10,8 @@ export default interface IngesterConfig {
   defaultToBibTex: boolean,
   dedupByDoi: boolean,
   stagedIngestDir: string,
-  outputIngestDir: string
+  outputIngestDir: string,
+  combinedFailedOutputDir: string,
   centerMemberYear: number,
   loggingBatchSize: number,
   loadPageSize?: number,
