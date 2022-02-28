@@ -210,7 +210,7 @@ export class WosDataSource implements DataSource {
   }
 
   getAuthors(sourceMetadata) {
-    console.log(`Getting authors from source metadata: ${JSON.stringify(sourceMetadata, null, 2)}`)
+    // console.log(`Getting authors from source metadata: ${JSON.stringify(sourceMetadata, null, 2)}`)
     let authors = []
     if (sourceMetadata && sourceMetadata['authors']){
       const sourceAuthors = this.getWoSMapLabelsToValues(sourceMetadata['authors'])
