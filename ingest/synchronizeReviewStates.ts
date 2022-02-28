@@ -172,7 +172,7 @@ async function main() {
 
   await pMap(organizations, async (org) => {
     await synchronizeReviewsForOrganization(simplifiedPersons, org['value'])
-  }, { concurrency: 4 })
+  }, { concurrency: 1 })
 }
 
 main()
