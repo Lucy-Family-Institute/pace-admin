@@ -183,7 +183,7 @@
                               rounded
                               dense
                               size="sm"
-                              v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(getPersonPubSet(getPersonPubSetId(item.id)).personPublications)"
+                              v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationGraph.getPersonPubSetByPersonPubId(item.id).personPublications)"
                               :key="index"
                               :color="getSourceNameChipColor(personPub.publication.source_name)"
                               text-color="white"
@@ -230,7 +230,7 @@
                             dense
                             no-wrap
                             size="md"
-                            v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(getPersonPubSet(getPersonPubSetId(personPublication.id)).personPublications)"
+                            v-for="(personPub, index) in getSortedPersonPublicationsBySourceName(publicationGraph.getPersonPubSetByPersonPubId(personPublication.id).personPublications)"
                             :key="index"
                             :color="getSourceNameChipColor(personPub.publication.source_name)"
                             text-color="white"
@@ -451,6 +451,7 @@ import PublicationFilter from '../components/PublicationFilter.vue'
 import PeopleAuthorSortFilter from '../components/PeopleAuthorSortFilter.vue'
 import MainFilter from '../components/MainFilter.vue'
 import sanitize from 'sanitize-filename'
+import PublicationGraph from '../../../ingest/modules/publicationGraph.ts'
 
 import VueFriendlyIframe from 'vue-friendly-iframe'
 
@@ -481,17 +482,9 @@ export default {
     reviewsByPersonPubId: {},
     personPublicationsCombinedMatches: [],
     personReviewedPubCounts: {},
-    // these are helper objects to connect personPubSets together
-    // PersonPubId -> Person Pub Set ID Pointers
-    personPubSetPointer: {},
-    // PersonPubSet Id -> Person Pub Id list (i.e., the set itself)
-    personPubSetsById: {},
-    // the current index for personPubSets, will increment whenever adding a new one
-    personPubSetIdIndex: 0,
-    personPublicationsById: {},
     personPubSetsByReviewType: {},
-    publicationsGroupedByTitleByReview: {},
-    publicationsGroupedByDoiByReview: {},
+    publicationGraph: PublicationGraph.createPublicationGraph(),
+
     // this will contain the main publication used for display for pubsets
     personPublicationsCombinedMatchesByReview: {},
     filteredPersonPublicationsCombinedMatchesByReview: {},
@@ -606,179 +599,6 @@ export default {
     }
   },
   methods: {
-    getPersonPublicationsInSet (pubSet) {
-      return _.map(pubSet.personPublicationIds, (pubId) => {
-        return this.getPersonPublicationById(pubId)
-      })
-    },
-    getMainPersonPubFromSet (pubSet) {
-      return pubSet.mainPersonPub
-    },
-    // will link all personPubs in this list together
-    linkPersonPubs (personPubList, reviewType) {
-      // link all person pubs together in this list
-      const totalPubs = personPubList.length
-      _.each(personPubList, (personPub, index) => {
-        // at last item do nothing
-        try {
-          if (index === 0 && totalPubs === 1) {
-            // will start a new personpub set list if not already in one
-            this.startPersonPubSet(personPub['id'], reviewType)
-          } else if (index !== (totalPubs - 1)) {
-            const nextPersonPub = _.nth(personPubList, (index + 1))
-            this.linkPersonPubPair(personPub.id, nextPersonPub.id, reviewType)
-          }
-        } catch (error) {
-          console.warn(`Warning, error on linking publications: ${error}`)
-          throw error
-        }
-      })
-    },
-    // this method will link person pubs by putting them in a person pub set
-    // together.  If neither are already in a person pub set, they will be grouped together in a new set
-    // If only one has a set, the other will be added to that set
-    // If both are currently within a set, it will merge the two sets together
-    linkPersonPubPair (personPub1Id, personPub2Id, reviewType) {
-      const notInPersonPub1SetId = this.notInPersonPubSet(personPub1Id)
-      const notInPersonPub2SetId = this.notInPersonPubSet(personPub2Id)
-      const personPubSet1Id = this.getPersonPubSetId(personPub1Id)
-      const personPubSet2Id = this.getPersonPubSetId(personPub2Id)
-      if (notInPersonPub1SetId && notInPersonPub2SetId) {
-        // neither one is in a set yet and just add to set list
-        const newSetId = this.startPersonPubSet(personPub1Id, reviewType)
-        this.addPersonPubToSet(newSetId, personPub2Id, reviewType)
-      } else if (notInPersonPub2SetId) {
-        this.addPersonPubToSet(personPubSet1Id, personPub2Id, reviewType)
-      } else if (notInPersonPub1SetId) {
-        this.addPersonPubToSet(personPubSet2Id, personPub1Id, reviewType)
-      } else {
-        // they are both in existing sets and need to merge them
-        // do nothing if they have the same pubsetid as they are already
-        // in the same set
-        this.mergePersonPubSets(personPubSet1Id, personPubSet2Id, reviewType)
-      }
-    },
-    mergePersonPubSets (set1Id, set2Id, reviewType) {
-      // do nothing if they are the same set id
-      if (set1Id !== set2Id) {
-        // add items from set2 into set1 if not already there, assumes everything is up to date with pointers
-        const set1 = this.getPersonPubSet(set1Id)
-        const set2 = this.getPersonPubSet(set2Id)
-        if (set1.reviewType !== reviewType || set2.reviewType !== reviewType) {
-          const error = `Error: Mismatch in reviewType for sets to be merged.  Expected: ${reviewType}, found set 1: ${set1.reviewType} set 2: ${set2.reviewType}`
-          console.error(error)
-          throw error
-        }
-        const set2List = set2.personPublicationIds
-        _.each(set2List, (personPubId) => {
-          this.addPersonPubToSet(set1Id, personPubId, reviewType)
-        })
-        // destroy the set2List
-        this.removePersonPubSet(set2Id)
-      }
-    },
-    removePersonPubSet (setId) {
-      // only works if personPubs in this set already pointing to another one, else throw error
-      // do nothing if set already gone
-      const set = this.getPersonPubSet(setId)
-      if (set) {
-        _.each(set, (personPubId) => {
-          if (setId && this.getPersonPubSetId(personPubId) === setId) {
-            const error = `Cannot remove person Pub Set (on merge), personPubId: ${personPubId} not in any other set`
-            console.error(error)
-            throw error
-          }
-        })
-        // if we get this far no errors encountered, and all person pubs are now in another set
-        // go ahead and delete it
-        _.unset(this.personPubSetsById, setId)
-      }
-    },
-    addPersonPubToSet (setId, personPubId, reviewType) {
-      // proceed if set exists
-      const set = this.getPersonPubSet(setId)
-      if (set) {
-        // do nothing if already in the set
-        if (this.getPersonPubSetId(personPubId) !== setId) {
-          if (set.reviewType !== reviewType) {
-            const error = `Failed to add person pub to set with mismatched review types. Expected ${reviewType}, found: ${set.reviewType}`
-            console.error(error)
-            throw error
-          }
-          const addPub = this.getPersonPublicationById(personPubId)
-          this.personPubSetsById[setId].personPublicationIds = _.concat(this.personPubSetsById[setId].personPublicationIds, personPubId)
-          this.personPubSetsById[setId].personPublications = _.concat(this.personPubSetsById[setId].personPublications, addPub)
-          this.personPubSetPointer[personPubId] = setId
-          const mainPersonPub = this.getPersonPublicationById(set.mainPersonPubId)
-          if (!set.mainPersonPubId || this.getPublicationConfidence(mainPersonPub) < this.getPublicationConfidence(addPub)) {
-            _.set(set, 'mainPersonPub', addPub)
-            _.set(set, 'mainPersonPubId', addPub.id)
-          }
-        }
-      } else {
-        const error = `Failed to add personPub with id: ${personPubId} to set id: ${setId}, personPubSet does not exist`
-        console.error(error)
-        throw error
-      }
-    },
-    notInPersonPubSet (personPubId) {
-      // true if already in a set
-      return !this.personPubSetPointer[personPubId]
-    },
-    getPersonPubSet (setId) {
-      return this.personPubSetsById[setId]
-    },
-    // this method is not currently thread-safe
-    // creates a new person pub set if one does not already exist for the given
-    // person Pub Id
-    startPersonPubSet (personPubId, reviewType) {
-      if (this.notInPersonPubSet(personPubId)) {
-        const personPubSetId = this.getNextPersonPubSetId()
-        this.personPubSetPointer[personPubId] = personPubSetId
-        const personPub = this.getPersonPublicationById(personPubId)
-        this.personPubSetsById[personPubSetId] = {
-          personPublicationIds: [personPubId],
-          personPublications: [personPub],
-          mainPersonPubId: personPubId,
-          mainPersonPub: personPub,
-          reviewType: reviewType
-        }
-        return personPubSetId
-      } else {
-        const currentSetId = this.getPersonPubSetId(personPubId)
-        const currentSet = this.getPersonPubSet(currentSetId)
-        if (currentSet.reviewType !== reviewType) {
-          const error = `Error: Mismatch on review type for person Pub set for personPub id: ${personPubId}, expected review type: ${reviewType} and found review type: ${currentSet.reviewType}`
-          console.error(error)
-          throw error
-        } else {
-          return this.getPersonPubSetId(personPubId)
-        }
-      }
-    },
-    getPersonPublicationById (personPubId) {
-      return this.personPublicationsById[personPubId]
-    },
-    // returns a person Pub set if it exists for that personPub, else returns undefined
-    getPersonPubSetId (personPubId) {
-      return this.personPubSetPointer[personPubId]
-    },
-    // this method is not currently thread-safe
-    getNextPersonPubSetId () {
-      this.personPubSetIdIndex += 1
-      return this.personPubSetIdIndex
-    },
-    getPublicationDoiKey (publication) {
-      let doiKey
-      if (!publication.doi || publication.doi === null || this.removeSpaces(publication.doi) === '') {
-        if (publication.source_name && publication.source_id) {
-          doiKey = `${publication.source_name}_${publication.source_id}`
-        }
-      } else {
-        doiKey = publication.doi
-      }
-      return doiKey
-    },
     async startProgressBar () {
       this.publicationsLoaded = false
       this.publicationsLoadedError = false
@@ -1241,15 +1061,8 @@ export default {
       this.filteredPersonPublicationsCombinedMatchesByReview = {}
       this.confSetsByPersonPubId = {}
       this.reviewsByPersonPubId = {}
-      this.publicationsGroupedByTitleByReview = {}
-      this.publicationsGroupedByDoiByReview = {}
-      this.personPubSetPointer = {}
-      this.personPubSetsById = {}
-      this.personPubSetIdIndex = 0
-      this.personPublicationsById = {}
+      this.publicationGraph = PublicationGraph.createPublicationGraph()
       this.personPubSetsByReviewType = {}
-      this.publicationsGroupedByTitleByReview = {}
-      this.publicationsGroupedByDoiByReview = {}
       this.personPublicationsKeys = {}
       this.confidenceSetItems = []
       this.confidenceSet = undefined
@@ -1272,8 +1085,6 @@ export default {
       console.log('here')
       const indexThis = this
       this.publicationsGroupedByReview = _.groupBy(this.publications, function (pub) {
-        if (!indexThis.personPublicationsById) indexThis.personPublicationsById = {}
-        indexThis.personPublicationsById[pub.id] = pub
         if (indexThis.reviewsByPersonPubId[pub.id]) {
           return indexThis.reviewsByPersonPubId[pub.id].review_type
         } else {
@@ -1284,91 +1095,31 @@ export default {
       // check for any doi's with reviews out of sync,
       // if more than one review type found add doi mapped to array of reviewtype to array pub list
       // map both by shared title and by shared doi and merged lists together later
-      let publicationTitlesByReviewType = {}
-      let publicationDoisByReviewType = {}
       // put in pubs grouped by doi for each review status
       _.each(this.reviewStates, (reviewType) => {
         const publications = this.publicationsGroupedByReview[reviewType]
 
         // seed the personPublication keys
         _.each(publications, (personPub) => {
-          this.personPublicationsKeys[personPub.id] = {
-            titleKey: this.getPublicationTitleKey(personPub.publication.title),
-            doiKey: this.getPublicationDoiKey(personPub.publication)
+          // console.log(`Add pub to ${reviewType}, pub: ${personPub.id}`)
+          const normedPersonPub = {
+            id: personPub.id,
+            person: personPub.person,
+            publication: personPub.publication,
+            confidence: personPub.confidence,
+            reviewTypeStatus: reviewType
           }
+          // console.log(`Created normed person pub: ${JSON.stringify(normedPersonPub, null, 2)}`)
+          this.publicationGraph.addToGraph([normedPersonPub])
         })
-        this.publicationsGroupedByTitleByReview[reviewType] = _.groupBy(publications, (personPub) => {
-          // let title = personPub.publication.title
-          const titleKey = this.personPublicationsKeys[personPub.id].titleKey
-          if (!publicationTitlesByReviewType[titleKey]) {
-            publicationTitlesByReviewType[titleKey] = {}
-          }
-          if (!publicationTitlesByReviewType[titleKey][reviewType]) {
-            publicationTitlesByReviewType[titleKey][reviewType] = reviewType
-          }
-          if (titleKey) {
-            return `${titleKey}`
-          } else {
-            return undefined
-          }
-        })
-
-        this.publicationsGroupedByDoiByReview[reviewType] = _.groupBy(publications, (personPub) => {
-          // let doi = personPub.publication.doi
-          const doiKey = this.personPublicationsKeys[personPub.id].doiKey
-          if (!publicationDoisByReviewType[doiKey]) {
-            publicationDoisByReviewType[doiKey] = {}
-          }
-          if (!publicationDoisByReviewType[doiKey][reviewType]) {
-            publicationDoisByReviewType[doiKey][reviewType] = reviewType
-          }
-          // publicationDoisByReviewType[doiKey][reviewType].push(personPub)
-          return doiKey
-        })
-
-        // grab one with highest confidence to display and grab others via title later when changing status
-
-        // this.personPublicationsCombinedMatchesByReview[reviewType] = {}
-
-        // keep a map of personPubId to set id in order to find the set that something should be added to if found as same pub
-        // merge personPubs together by title and then doi
-        _.each(_.keys(this.publicationsGroupedByTitleByReview[reviewType]), (titleKey) => {
-          if (titleKey && titleKey.length > 0) {
-            this.linkPersonPubs(this.publicationsGroupedByTitleByReview[reviewType][titleKey], reviewType)
-          } else {
-            // make independent pub sets for each
-            _.each(this.publicationsGroupedByTitleByReview[reviewType][titleKey], (pubSet) => {
-              this.linkPersonPubs([pubSet], reviewType)
-            })
-          }
-        })
-
-        // now link together if same doi (if already found above will add to existing set)
-        _.each(_.keys(this.publicationsGroupedByDoiByReview[reviewType]), (doiKey) => {
-          if (doiKey !== undefined && doiKey !== 'undefined' && doiKey !== null && this.removeSpaces(doiKey) !== '') {
-            this.linkPersonPubs(this.publicationsGroupedByDoiByReview[reviewType][doiKey], reviewType)
-          } else {
-            // do separate pubset for each doi
-            _.each(this.publicationsGroupedByDoiByReview[reviewType][doiKey], (pubSet) => {
-              this.linkPersonPubs([pubSet], reviewType)
-            })
-          }
-        })
-
-        // get match with highest confidence level and use that one
-        //     let currentPersonPub
-        //   _.each(personPubs, (personPub, index) => {
-        //     if (!currentPersonPub || this.getPublicationConfidence(currentPersonPub) < this.getPublicationConfidence(personPub)) {
-        //       currentPersonPub = personPub
-        //     }
-        //   })
-        //   return currentPersonPub
-        // })
       })
 
       // group pub sets by review type
-      this.personPubSetsByReviewType = _.groupBy(_.values(this.personPubSetsById), (pubSet) => {
-        return pubSet.reviewType
+      const allPublicationSets = this.publicationGraph.getAllPublicationSets()
+      // console.log(`All publication sets are: ${JSON.stringify(allPublicationSets, null, 2)}`)
+      this.personPubSetsByReviewType = _.groupBy(allPublicationSets, (pubSet) => {
+        // console.log(`Group pub by review type: ${pubSet['reviewType']}, pubset is: ${JSON.stringify(pubSet, null, 2)}`)
+        return pubSet['reviewType']
       })
 
       // now group main pubs from pubset into separate combined matches map for display to make faster (fixes flicker in chip color for source)
@@ -1378,21 +1129,21 @@ export default {
         })
       })
 
-      // check for any doi's with reviews out of sync
-      const publicationTitlesOutOfSync = []
+      // // check for any doi's with reviews out of sync
+      // const publicationTitlesOutOfSync = []
 
-      _.each(_.keys(publicationTitlesByReviewType), (titleKey) => {
-        if (_.keys(publicationTitlesByReviewType[titleKey]).length > 1) {
-          console.warn(`Title out of sync found: ${titleKey} for person id: ${this.person.id} title record: ${JSON.stringify(publicationTitlesByReviewType[titleKey], null, 2)}`)
-          publicationTitlesOutOfSync.push(titleKey)
-        }
-      })
+      // _.each(_.keys(publicationTitlesByReviewType), (titleKey) => {
+      //   if (_.keys(publicationTitlesByReviewType[titleKey]).length > 1) {
+      //     console.warn(`Title out of sync found: ${titleKey} for person id: ${this.person.id} title record: ${JSON.stringify(publicationTitlesByReviewType[titleKey], null, 2)}`)
+      //     publicationTitlesOutOfSync.push(titleKey)
+      //   }
+      // })
 
-      if (publicationTitlesOutOfSync.length > 0) {
-        console.warn(`Titles found with reviews out of sync: ${JSON.stringify(publicationTitlesOutOfSync, null, 2)}`)
-      }
+      // if (publicationTitlesOutOfSync.length > 0) {
+      //   console.warn(`Titles found with reviews out of sync: ${JSON.stringify(publicationTitlesOutOfSync, null, 2)}`)
+      // }
 
-      console.log(`Person pub sets by review type: ${JSON.stringify(this.personPubSetsByReviewType, null, 2)}`)
+      // console.log(`Person pub sets by review type: ${JSON.stringify(this.personPubSetsByReviewType, null, 2)}`)
 
       // initialize the list in view
       this.setCurrentPersonPublicationsCombinedMatches()
@@ -1642,7 +1393,7 @@ export default {
       // const personPubs = this.publicationsGroupedByTitleByReview[this.reviewTypeFilter][titleKey]
 
       try {
-        const pubSet = this.getPersonPubSet(this.getPersonPubSetId(personPublication.id))
+        const pubSet = this.publicationGraph.getPersonPubSetByPersonPubId(personPublication.id)
         const personPubs = pubSet.personPublications
         let mutateResults = []
         await _.each(personPubs, async (personPub) => {

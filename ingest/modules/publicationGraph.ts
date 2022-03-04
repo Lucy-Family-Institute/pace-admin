@@ -13,6 +13,8 @@ export default class PublicationGraph {
   personPubSetIdIndex: Number
   personPublicationsById: {}
   outputLogs: boolean
+  personPubSetIdsByTitleKey: {}
+  personPubSetIdsByDoiKey: {}
   
   constructor (outputLogs= false) {
     this.outputLogs = outputLogs
@@ -20,6 +22,12 @@ export default class PublicationGraph {
     this.personPubSetPointer = {}
     this.personPubSetsById = {}
     this.personPublicationsById = {}
+    this.personPubSetIdsByTitleKey = {}
+    this.personPubSetIdsByDoiKey = {}
+  }
+
+  public static createPublicationGraph(outputLogs = false) {
+    return new PublicationGraph(outputLogs)
   }
 
   addToGraph (personPubs: NormedPersonPublication[]) {
@@ -29,60 +37,31 @@ export default class PublicationGraph {
     // seed the personPublication keys
     const personPublicationsKeys = {}
     _.each(personPubs, (personPub) => {
-      personPublicationsKeys[`${personPub.id}`] = {
-        titleKey: this.getPublicationTitleKey(personPub.publication.title),
-        doiKey: this.getPublicationDoiKey(personPub.publication)
-      }
-    })
-    const publicationsGroupedByTitle = _.groupBy(personPubs, (personPub) => {
-      // let title = personPub.publication.title
-      const titleKey = personPublicationsKeys[`${personPub.id}`].titleKey
-      if (titleKey) {
-        return `${titleKey}`
+      const pubSet = this.findPublicationSetForPersonPublication(personPub)
+      if (pubSet && pubSet.personPublicationIds.length > 0) {
+        this.linkPersonPubPair(personPub, pubSet.personPublications[0])
       } else {
-        return undefined
+        // if no relevant pubset found, start a new one
+        this.startPersonPubSet(personPub)
       }
     })
-
-    const publicationsGroupedByDoi = _.groupBy(personPubs, (personPub) => {
-      // let doi = personPub.publication.doi
-      const doiKey = personPublicationsKeys[`${personPub.id}`].doiKey
-      return doiKey
-    })
-
     if (this.outputLogs) {
-      console.log(`Create publication graph...`)
+      console.log(`Finished add to publication graph.`)
     }
-    // keep a map of personPubId to set id in order to find the set that something should be added to if found as same pub
-    // merge personPubs together by title and then doi
-    _.each(_.keys(publicationsGroupedByTitle), (titleKey) => {
-      if (titleKey && titleKey.length > 0) {
-        // console.log(`Linking person pubs by titleKey: '${titleKey}' personpubs: ${JSON.stringify(publicationsGroupedByTitle[titleKey], null, 2)}`)
-        this.linkPersonPubs(publicationsGroupedByTitle[titleKey])
-      } else {
-        // make independent pub sets for each
-        _.each(publicationsGroupedByTitle[titleKey], (pubSet) => {
-          this.linkPersonPubs([pubSet])
-        })
-      }
-    })
+  }
 
-    // now link together if same doi (if already found above will add to existing set)
-    _.each(_.keys(publicationsGroupedByDoi), (doiKey) => {
-      if (doiKey !== undefined && doiKey !== 'undefined' && doiKey !== null && this.removeSpaces(doiKey) !== '') {
-        if (this.outputLogs) {
-          console.log(`Linking person pubs by doiKey: '${doiKey}' personpubs: ${JSON.stringify(publicationsGroupedByDoi[doiKey], null, 2)}`)
-        }
-        this.linkPersonPubs(publicationsGroupedByDoi[doiKey])
-      } else {
-        // do separate pubset for each doi
-        _.each(publicationsGroupedByDoi[doiKey], (pubSet) => {
-          this.linkPersonPubs([pubSet])
-        })
-      }
-    })
-    if (this.outputLogs) {
-      console.log(`Finished publication graph.`)
+  // will return undefined if no relevant publication set exists yet
+  findPublicationSetForPersonPublication(personPub: NormedPersonPublication): PublicationSet {
+    const titleKey = this.getPublicationTitleKey(personPub.publication.title)
+    const doiKey = this.getPublicationDoiKey(personPub.publication)
+    if (titleKey && this.personPubSetIdsByTitleKey[titleKey]){
+      const setId = this.personPubSetIdsByTitleKey[titleKey]
+      return this.getPersonPubSet(setId)
+    } else if (doiKey && this.personPubSetIdsByDoiKey[doiKey]) {
+      const setId = this.personPubSetIdsByDoiKey[doiKey]
+      return this.getPersonPubSet(setId)
+    } else {
+      return undefined
     }
   }
 
@@ -169,6 +148,10 @@ export default class PublicationGraph {
     return this.personPubSetsById[`${setId}`]
   }
 
+  getPersonPubSetByPersonPubId ( personPublicationId: Number) : PublicationSet {
+    return this.getPersonPubSet(this.getPersonPubSetId(personPublicationId))
+  }
+
   // this method will link person pubs by putting them in a person pub set
   // together.  If neither are already in a person pub set, they will be grouped together in a new set
   // If only one has a set, the other will be added to that set
@@ -176,8 +159,8 @@ export default class PublicationGraph {
   private linkPersonPubPair (personPub1: NormedPersonPublication, personPub2: NormedPersonPublication) {
     const notInPersonPub1SetId: boolean = this.notInPersonPubSet(personPub1.id)
     const notInPersonPub2SetId: boolean = this.notInPersonPubSet(personPub2.id)
-    const personPubSet1Id: Number = this.getPersonPubSetId(personPub1)
-    const personPubSet2Id: Number = this.getPersonPubSetId(personPub2)
+    const personPubSet1Id: Number = this.getPersonPubSetId(personPub1.id)
+    const personPubSet2Id: Number = this.getPersonPubSetId(personPub2.id)
     // console.log(`Linking person pub id 1: ${personPub1.id} to person pub id 2: ${personPub2.id}`)
     if (notInPersonPub1SetId && notInPersonPub2SetId) {
       // neither one is in a set yet and just add to set list
@@ -214,6 +197,7 @@ export default class PublicationGraph {
       }
       const set2List: NormedPersonPublication[] = set2.personPublications
       _.each(set2List, (personPub: NormedPersonPublication) => {
+        // will reset pointers as well
         this.addPersonPubToSet(set1Id, personPub)
       })
       // destroy the set2List
@@ -227,7 +211,7 @@ export default class PublicationGraph {
     const set = this.getPersonPubSet(setId)
     if (set) {
       _.each(set.personPublications, (personPub) => {
-        if (setId && this.getPersonPubSetId(personPub) === setId) {
+        if (setId && this.getPersonPubSetId(personPub.id) === setId) {
           const error = `Cannot remove person Pub Set (on merge), personPubId: ${personPub.id} not in any other set`
           console.log(error)
           throw error
@@ -242,11 +226,13 @@ export default class PublicationGraph {
   private addPersonPubToSet (setId: Number, personPub: NormedPersonPublication) {
     const setIdKey = `${setId}`
     const personPubIdKey = `${personPub.id}`
+    const titleKey = this.getPublicationTitleKey(personPub.publication.title)
+    const doiKey = this.getPublicationDoiKey(personPub.publication)
     // proceed if set exists
     const set = this.getPersonPubSet(setId)
     if (set) {
       // do nothing if already in the set
-      if (this.getPersonPubSetId(personPub) !== setId) {
+      if (this.getPersonPubSetId(personPub.id) !== setId) {
         if (set.reviewType !== personPub.reviewTypeStatus) {
           const error = `Warning person pub added to set with mismatched review types. Expected ${personPub.reviewTypeStatus}, found set type: ${set.reviewType}`
           console.log(error)
@@ -254,6 +240,8 @@ export default class PublicationGraph {
         this.personPubSetsById[setIdKey].personPublicationIds = _.concat(this.personPubSetsById[setIdKey].personPublicationIds, personPub.id)
         this.personPubSetsById[setIdKey].personPublications = _.concat(this.personPubSetsById[setIdKey].personPublications, personPub)
         this.personPubSetPointer[personPubIdKey] = setId
+        if (titleKey) this.personPubSetIdsByTitleKey[titleKey] = setId
+        if (doiKey) this.personPubSetIdsByDoiKey[doiKey] = setId
         // console.log(`After add personpub: ${personPubId} to setid: ${setId} pubset pointers are: ${JSON.stringify(this.personPubSetPointer, null, 2)}`)
         const mainPersonPub: NormedPersonPublication = set.mainPersonPub
         if (!set.mainPersonPubId || NormedPersonPublication.getPublicationConfidence(mainPersonPub) < NormedPersonPublication.getPublicationConfidence(personPub)) {
@@ -278,6 +266,8 @@ export default class PublicationGraph {
   // creates a new person pub set if one does not already exist for the given
   // person Pub Id
   private startPersonPubSet (personPub: NormedPersonPublication): Number {
+    const titleKey = this.getPublicationTitleKey(personPub.publication.title)
+    const doiKey = this.getPublicationDoiKey(personPub.publication)
     if (this.notInPersonPubSet(personPub.id)) {
       // console.log(`Creating person pub set for pub id: ${personPub.id}`)
       const personPubSetId: Number = this.getNextPersonPubSetId()
@@ -290,22 +280,28 @@ export default class PublicationGraph {
         reviewType: personPub.reviewTypeStatus
       }
       this.personPubSetsById[`${personPubSetId}`] = pubSet
+      if (titleKey) {
+        this.personPubSetIdsByTitleKey[titleKey] = personPubSetId
+      }
+      if (doiKey) {
+        this.personPubSetIdsByDoiKey[doiKey] = personPubSetId
+      }
       return personPubSetId
     } else {
-      const currentSetId: Number = this.getPersonPubSetId(personPub)
+      const currentSetId: Number = this.getPersonPubSetId(personPub.id)
       const currentSet: PublicationSet = this.getPersonPubSet(currentSetId)
       if (currentSet.reviewType !== personPub.reviewTypeStatus) {
         const error = `Warning: Mismatch on review type for person Pub set for personPub id: ${personPub.id}, expected review type: ${personPub.reviewTypeStatus} and found review type: ${currentSet.reviewType}`
         console.log(error)
       } else {
-        return this.getPersonPubSetId(personPub)
+        return this.getPersonPubSetId(personPub.id)
       }
     }
   }
 
   // returns a person Pub set if it exists for that personPub, else returns undefined
-  private getPersonPubSetId (personPub: NormedPersonPublication): Number {
-    return this.personPubSetPointer[`${personPub.id}`]
+  private getPersonPubSetId (personPubId: Number) : Number {
+    return this.personPubSetPointer[`${personPubId}`]
   }
 
   // this method is not currently thread-safe
