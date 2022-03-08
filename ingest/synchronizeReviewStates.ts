@@ -87,19 +87,15 @@ async function synchronizeReviewsForOrganization(persons, reviewOrgValue) {
       }
       const normedPersonPub: NormedPersonPublication = {
         id: personPub.id,
-        person_id: personPub.person.id,
+        person: personPub.person,
         publication: personPub.publication,
-        title: personPub.publication.title,
-        doi: personPub.publication.doi,
-        sourceName: personPub.publication.source_name,
-        sourceId: personPub.publication.source_id,
         reviewTypeStatus: reviewTypeStatus,
         mostRecentReview: mostRecentReview
       }
       return normedPersonPub
     })
 
-    const pubGraph: PublicationGraph = new PublicationGraph(reviewStates)
+    const pubGraph: PublicationGraph = new PublicationGraph()
     pubGraph.addToGraph(normedPersonPubs)
 
     const pubSets: PublicationSet[] = pubGraph.getAllPublicationSets()
@@ -176,7 +172,7 @@ async function main() {
 
   await pMap(organizations, async (org) => {
     await synchronizeReviewsForOrganization(simplifiedPersons, org['value'])
-  }, { concurrency: 1 })
+  }, { concurrency: 4 })
 }
 
 main()
