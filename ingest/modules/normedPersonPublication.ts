@@ -4,12 +4,8 @@ import ConfidenceSet from './confidenceSet'
 export default class NormedPersonPublication {
   // ------ begin declare properties used when using NormedPerson like an interface
   id: Number
-  person_id: number
-  publication?  // will be initialized if populating with full pub object, otherwise rely on properties below
-  title: string
-  doi: string
-  sourceName: string
-  sourceId: string
+  person
+  publication
   confidence?: Number
   reviewTypeStatus?: string
   mostRecentReview?
