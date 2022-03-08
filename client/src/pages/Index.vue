@@ -483,8 +483,7 @@ export default {
     personPublicationsCombinedMatches: [],
     personReviewedPubCounts: {},
     personPubSetsByReviewType: {},
-    publicationGraph: PublicationGraph.createPublicationGraph(),
-
+    publicationGraph: PublicationGraph,
     // this will contain the main publication used for display for pubsets
     personPublicationsCombinedMatchesByReview: {},
     filteredPersonPublicationsCombinedMatchesByReview: {},
@@ -638,10 +637,10 @@ export default {
       }, 700)
     },
     changedPendingCounts: function (personIndex) {
-      // this.personSortKey += 1
-      // this.peopleScrollKey += 1
-      // this.$refs['personScroll'].refresh()
-      // this.showCurrentSelectedPerson()
+      this.personSortKey += 1
+      this.peopleScrollKey += 1
+      this.$refs['personScroll'].refresh()
+      this.showCurrentSelectedPerson()
     },
     drawerClick (e) {
       // if in "mini" state and user
@@ -875,6 +874,7 @@ export default {
       let includeCount = 0
       let titles = {}
       let dois = {}
+      let foundPersonPubId = {}
       _.each(person.confidencesets_persons_publications_aggregate.nodes, (node) => {
         const title = node.title
         const titleKey = this.getPublicationTitleKey(title)
@@ -883,6 +883,7 @@ export default {
           if (!titles[titleKey] && (doi === null || !dois[doi])) {
             titles[titleKey] = 1
             if (doi != null) dois[doi] = doi
+            foundPersonPubId[node.persons_publications_id] = 1
             includeCount += 1
           }
         }
@@ -890,9 +891,15 @@ export default {
       if (this.selectedPersonTotal === 'All') {
         return includeCount
       } else {
-        let pendingCount = includeCount - this.personReviewedPubCounts[person.id]
-        return (pendingCount >= 0 ? pendingCount : 0)
-        // return pendingCount
+        let nonPendingCount = 0
+        _.each(person.reviews_persons_publications_aggregate.nodes, (node) => {
+          if (foundPersonPubId[node.persons_publications_id]) {
+            if (node.review_type !== 'pending') {
+              nonPendingCount = nonPendingCount + 1
+            }
+          }
+        })
+        return includeCount - nonPendingCount
       }
     },
     async loadPersonsWithFilter () {
@@ -908,12 +915,12 @@ export default {
         let minConfidence = 0
         if (this.selectedPersonConfidence === '50%') minConfidence = 0.5
         if (!this.selectedCenter || !this.selectedCenter.value || this.selectedCenter.value === 'ND') {
-          const personResult = await this.$apollo.query(readPersonsByInstitutionByYearAllCenters(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, minConfidence), { fetchPolicy: 'network-only' })
+          const personResult = await this.$apollo.query(readPersonsByInstitutionByYearAllCenters(this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max), { fetchPolicy: 'network-only' })
           if (currentLoadCount === this.personLoadCount) {
             this.people = personResult.data.persons
           }
         } else {
-          const personResult = await this.$apollo.query(readPersonsByInstitutionByYearByOrganization(this.selectedCenter.value, this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, minConfidence), { fetchPolicy: 'network-only' })
+          const personResult = await this.$apollo.query(readPersonsByInstitutionByYearByOrganization(this.selectedCenter.value, this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max), { fetchPolicy: 'network-only' })
           if (currentLoadCount === this.personLoadCount) {
             this.people = personResult.data.persons
           }
@@ -921,28 +928,6 @@ export default {
         if (currentLoadCount === this.personLoadCount) {
           // calculate the total count to show
           this.personReviewedPubCounts = {}
-          _.each(this.people, (person) => {
-            const reviewedTitles = {}
-            // const reviewedDOIs = {}
-            _.each(person.reviews_persons_publications, (review) => {
-              if (review.review_type && review.review_type !== 'pending') {
-                reviewedTitles[this.getPublicationTitleKey(review.title)] = review
-                // if (review.doi) reviewedDOIs[_.toLower(review.doi)] = review.doi
-              }
-            })
-
-            // check for dois that are in the confidence set list and keep those, all others ignore
-            let filteredReviewedTitlesCount = 0
-            _.each(person.confidencesets_persons_publications_aggregate.nodes, (confidenceSet) => {
-              const title = confidenceSet.title
-              if (reviewedTitles[this.getPublicationTitleKey(title)]) { // } || reviewedDOIs[_.toLower(confidenceSet.doi)]) {
-                filteredReviewedTitlesCount += 1
-              }
-            })
-
-            // this.personReviewedPubCounts[person.id] = 10000
-            this.personReviewedPubCounts[person.id] = filteredReviewedTitlesCount
-          })
 
           // set the pub counts for person
           this.people = _.map(this.people, (person) => {
@@ -1052,6 +1037,7 @@ export default {
 
       // this.ndReviewer = _.includes(this.userOrgs, 'ND')
       await this.loadReviewStates()
+      this.publicationGraph = PublicationGraph.createPublicationGraph(this.reviewStates)
       await this.loadPersonsWithFilter()
     },
     async clearPublications () {
@@ -1061,7 +1047,7 @@ export default {
       this.filteredPersonPublicationsCombinedMatchesByReview = {}
       this.confSetsByPersonPubId = {}
       this.reviewsByPersonPubId = {}
-      this.publicationGraph = PublicationGraph.createPublicationGraph()
+      this.publicationGraph = PublicationGraph.createPublicationGraph(this.reviewStates)
       this.personPubSetsByReviewType = {}
       this.personPublicationsKeys = {}
       this.confidenceSetItems = []
@@ -1082,7 +1068,6 @@ export default {
     },
     async loadPersonPublicationsCombinedMatches () {
       // this.fundersByDoi = {}
-      console.log('here')
       const indexThis = this
       this.publicationsGroupedByReview = _.groupBy(this.publications, function (pub) {
         if (indexThis.reviewsByPersonPubId[pub.id]) {
@@ -1104,8 +1089,12 @@ export default {
           // console.log(`Add pub to ${reviewType}, pub: ${personPub.id}`)
           const normedPersonPub = {
             id: personPub.id,
-            person: personPub.person,
+            person_id: personPub.person.id,
             publication: personPub.publication,
+            title: personPub.publication.title,
+            doi: personPub.publication.doi,
+            sourceName: personPub.publication.source_name,
+            sourceId: personPub.publication.source_id,
             confidence: personPub.confidence,
             reviewTypeStatus: reviewType
           }
@@ -1115,12 +1104,19 @@ export default {
       })
 
       // group pub sets by review type
-      const allPublicationSets = this.publicationGraph.getAllPublicationSets()
+      // const allPublicationSets = this.publicationGraph.getAllPublicationSets()
       // console.log(`All publication sets are: ${JSON.stringify(allPublicationSets, null, 2)}`)
-      this.personPubSetsByReviewType = _.groupBy(allPublicationSets, (pubSet) => {
-        // console.log(`Group pub by review type: ${pubSet['reviewType']}, pubset is: ${JSON.stringify(pubSet, null, 2)}`)
-        return pubSet['reviewType']
+      // console.log(`Person pub set title key index: ${JSON.stringify(_.keys(this.publicationGraph.personPubSetIdsByTitleKey), null, 2)}`)
+
+      this.personPubSetsByReviewType = {}
+      _.each(this.reviewStates, (reviewState) => {
+        this.personPubSetsByReviewType[reviewState] = this.publicationGraph.getPersonPublicationSets(this.person.id, reviewState)
       })
+      // console.log(`Person pub sets by review type from graph are: ${JSON.stringify(this.personPubSetsByReviewType, null, 2)}`)
+      // this.personPubSetsByReviewType = _.groupBy(allPublicationSets, (pubSet) => {
+      //   // console.log(`Group pub by review type: ${pubSet['reviewType']}, pubset is: ${JSON.stringify(pubSet, null, 2)}`)
+      //   return pubSet['reviewType']
+      // })
 
       // now group main pubs from pubset into separate combined matches map for display to make faster (fixes flicker in chip color for source)
       this.personPublicationsCombinedMatchesByReview = _.mapValues(this.personPubSetsByReviewType, (pubSets) => {
@@ -1128,6 +1124,8 @@ export default {
           return pubSet.mainPersonPub
         })
       })
+
+      // console.log(`Person publications combined matches by review are: ${JSON.stringify(this.personPublicationsCombinedMatchesByReview, null, 2)}`)
 
       // // check for any doi's with reviews out of sync
       // const publicationTitlesOutOfSync = []
@@ -1433,8 +1431,6 @@ export default {
           const currentPersonIndex = _.findIndex(this.people, (person) => {
             return person.id === this.person.id
           })
-          this.personReviewedPubCounts[this.person.id] += 1
-          this.people[currentPersonIndex].person_publication_count -= 1
           this.changedPendingCounts(currentPersonIndex)
           // this.people[currentPersonIndex].reviews_persons_publications_aggregate.aggregate.count = 1
           // this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
@@ -1442,17 +1438,54 @@ export default {
           const currentPersonIndex = _.findIndex(this.people, (person) => {
             return person.id === this.person.id
           })
-          this.personReviewedPubCounts[this.person.id] -= 1
+          // this.personReviewedPubCounts[this.person.id] -= 1
           this.people[currentPersonIndex].person_publication_count += 1
           this.changedPendingCounts(currentPersonIndex)
           // this.people[currentPersonIndex].reviews_persons_publications_aggregate.aggregate.count += 1
           // this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
         }
+        this.updateCachedPendingCount(personPublication, this.reviewTypeFilter, reviewType)
+        let minConfidence = 0
+        if (this.selectedPersonConfidence === '50%') minConfidence = 0.5
+        // reset the pub counts for person
+        this.people = _.map(this.people, (person) => {
+          return _.set(person, 'person_publication_count', this.getPersonPublicationCount(person, minConfidence))
+        })
         this.publicationsReloadPending = true
         this.clearPublication()
         return mutateResults
       } catch (error) {
         console.error(error)
+      }
+    },
+    updateCachedPendingCount (personPublication, prevReviewType, newReviewType) {
+      if (prevReviewType === 'pending') {
+        let newNodes = []
+        const newNode = {
+          persons_publications_id: personPublication.id,
+          doi: personPublication.doi,
+          person_id: this.person.id,
+          title: personPublication.title,
+          review_type: newReviewType
+        }
+        newNodes.push(newNode)
+        _.each(this.person.reviews_persons_publications_aggregate.nodes, (node) => {
+          if (node.persons_publications_id !== personPublication.id) {
+            newNodes.push(node)
+          }
+        })
+        this.person.reviews_persons_publications_aggregate.nodes = newNodes
+      } else if (newReviewType === 'pending') {
+        let newNodes = []
+        _.each(this.person.reviews_persons_publications_aggregate.nodes, (node) => {
+          if (node.persons_publications_id !== personPublication.id) {
+            newNodes.push(node)
+          } else {
+            node.review_type = newReviewType
+            newNodes.push(node)
+          }
+        })
+        this.person.reviews_persons_publications_aggregate.nodes = newNodes
       }
     },
     async clickReviewPending (index, person, personPublication) {

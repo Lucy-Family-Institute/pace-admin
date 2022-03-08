@@ -1,7 +1,7 @@
 import gql from 'graphql-tag'
 import _ from 'lodash'
 
-export default function readPersonsByInstitutionByYearByOrganization (organizationValue, institutionNames, pubYearMin, pubYearMax, memberYearMin, memberYearMax, minConfidence) {
+export default function readPersonsByInstitutionByYearByOrganization (organizationValue, institutionNames, pubYearMin, pubYearMax, memberYearMin, memberYearMax) {
   const startDateLT = `1/1/${memberYearMax + 1}`
   const endDateGT = `12/31/${memberYearMin - 1}`
   let namesString = ''
@@ -55,8 +55,7 @@ export default function readPersonsByInstitutionByYearByOrganization (organizati
               datetime: desc
             }, 
             where: {
-              year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}},
-              value: {_gte: "${minConfidence}"},
+              year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}
             }
           ) {
             persons_publications_id
@@ -65,32 +64,38 @@ export default function readPersonsByInstitutionByYearByOrganization (organizati
             title
             year
           }
-          confidencesets_persons_publications_aggregate(distinct_on: title, order_by: {title: asc, datetime: desc}, where: {year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}}) {
+          confidencesets_persons_publications_aggregate(distinct_on: persons_publications_id, order_by: {persons_publications_id: asc, datetime: desc}, where: {year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}}) {
             nodes {
               datetime
               doi
               id
+              persons_publications_id
               publication_id
               value
               version
               title
+              source_name
+              source_id
             }
           }
-          reviews_persons_publications(
-            distinct_on: title, 
+          reviews_persons_publications_aggregate(
+            distinct_on: persons_publications_id, 
             order_by: {
-              title: asc, 
+              persons_publications_id: asc, 
               datetime: desc
             }, 
             where: {
               review_organization_value: {_eq: "ND"},
               year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}
             }
-          ){
-            doi
-            person_id
-            title
-            review_type
+          ) {
+              nodes {
+                persons_publications_id
+                doi
+                person_id
+                title
+                review_type
+              }
           }
           persons_publications_metadata_aggregate (distinct_on: title, where: {year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}}) {
             aggregate {

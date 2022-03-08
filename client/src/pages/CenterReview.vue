@@ -1758,6 +1758,13 @@ export default {
         }
       })
     },
+    addFilteredPersonPubPendingCounts (reviewType, authors) {
+      _.each(authors, (author) => {
+        if (this.filteredPersonPubPendingCounts[reviewType][author.id]) {
+          this.filteredPersonPubPendingCounts[reviewType][author.id] += 1
+        }
+      })
+    },
     removeFilteredPersonPubPendingCounts (reviewType, authors) {
       _.each(authors, (author) => {
         if (this.filteredPersonPubPendingCounts[reviewType][author.id]) {
@@ -2119,6 +2126,16 @@ export default {
           }
           mutateResults.push(mutateResult)
           this.publicationsReloadPending = true
+          if (this.reviewTypeFilter === 'pending' && this.selectedPersonTotal === 'Pending') {
+            this.removeFilteredPersonPubPendingCounts(reviewType, [personPub.person])
+          //   // const currentPersonIndex = _.findIndex(this.people, (person) => {
+          //   //   console.log('persons', person, this.person)
+          //   //   return person.id === this.person.id // todo Rick, this.person never defined, right?
+          //   // })
+          //   // this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
+          } else if (this.selectedPersonTotal === 'Pending' && reviewType === 'pending') {
+            this.addFilteredPersonPubPendingCounts(reviewType, [personPub.person])
+          }
         })
         // remove set from related lists
         this.personPublicationsCombinedMatchesByOrgReview[this.reviewTypeFilter] = _.filter(this.personPublicationsCombinedMatchesByOrgReview[this.reviewTypeFilter], (personPub) => {
@@ -2131,16 +2148,18 @@ export default {
         this.personPublicationsCombinedMatchesByOrgReview[reviewType].push(pubSet.mainPersonPub)
         this.filteredPersonPublicationsCombinedMatchesByOrgReview[reviewType].push(pubSet.mainPersonPub)
         // if (this.reviewTypeFilter === 'pending' && this.selectedPersonTotal === 'Pending') {
-        //   // const currentPersonIndex = _.findIndex(this.people, (person) => {
-        //   //   console.log('persons', person, this.person)
-        //   //   return person.id === this.person.id // todo Rick, this.person never defined, right?
-        //   // })
-        //   // this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
+        //   this.removeFilteredPersonPubPendingCounts(reviewType, [personPub.person])
+        // //   // const currentPersonIndex = _.findIndex(this.people, (person) => {
+        // //   //   console.log('persons', person, this.person)
+        // //   //   return person.id === this.person.id // todo Rick, this.person never defined, right?
+        // //   // })
+        // //   // this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
         // } else if (this.selectedPersonTotal === 'Pending' && reviewType === 'pending') {
-        //   // const currentPersonIndex = _.findIndex(this.people, (person) => {
-        //   //   return person.id === this.person.id // todo Rick, this.person never defined, right?
-        //   // })
-        //   // this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
+        //   this.addFilteredPersonPubPendingCounts(reviewType, [personPub.person])
+        // //   // const currentPersonIndex = _.findIndex(this.people, (person) => {
+        // //   //   return person.id === this.person.id // todo Rick, this.person never defined, right?
+        // //   // })
+        // //   // this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
         // }
         // reload in case any pending counts changed
         const titleKey = this.getPublicationTitleKey(pubSet.mainPersonPub.publication.title)
