@@ -1457,7 +1457,7 @@ export default {
       this.confidenceSetItems = []
       this.confidenceSet = undefined
       this.filteredPersonPubCounts = {}
-      this.filteredPersonPubPendingCounts = {}
+      // this.filteredPersonPubPendingCounts = {}
       this.sortAuthorsByTitle = {}
     },
     setCurrentPersonMembershipList () {
@@ -1579,7 +1579,7 @@ export default {
       // this.combinedFundersByDoi = {}
       // this.uniqueFunders = {}
       this.filteredPersonPubCounts = {}
-      this.filteredPersonPubPendingCounts = {}
+      // this.filteredPersonPubPendingCounts = {}
       // group by institution (i.e., ND author) review and then by doi
       // let pubsByTitle = {}
       const thisVue = this
@@ -1760,15 +1760,20 @@ export default {
     },
     addFilteredPersonPubPendingCounts (reviewType, authors) {
       _.each(authors, (author) => {
-        if (this.filteredPersonPubPendingCounts[reviewType][author.id]) {
-          this.filteredPersonPubPendingCounts[reviewType][author.id] += 1
+        if (this.filteredPersonPubPendingCounts[reviewType] && this.filteredPersonPubPendingCounts[reviewType][author.id]) {
+          this.filteredPersonPubPendingCounts[reviewType][author.id] = this.filteredPersonPubPendingCounts[reviewType][author.id] + 1
+        } else {
+          if (!this.filteredPersonPubPendingCounts[reviewType]) {
+            this.filteredPersonPubPendingCounts[reviewType] = {}
+          }
+          this.filteredPersonPubPendingCounts[reviewType][author.id] = 1
         }
       })
     },
     removeFilteredPersonPubPendingCounts (reviewType, authors) {
       _.each(authors, (author) => {
         if (this.filteredPersonPubPendingCounts[reviewType][author.id]) {
-          this.filteredPersonPubPendingCounts[reviewType][author.id] -= 1
+          this.filteredPersonPubPendingCounts[reviewType][author.id] = this.filteredPersonPubPendingCounts[reviewType][author.id] - 1
         }
       })
     },
@@ -2111,7 +2116,7 @@ export default {
       const personPubs = pubSet.personPublications
       try {
         let mutateResults = []
-        await _.each(personPubs, async (personPub) => {
+        await pMap(personPubs, async (personPub) => {
           // const personPub = personPubs[0]
           let selectedCenterValue = this.selectedCenter.value
           if (!selectedCenterValue) {
@@ -2126,17 +2131,19 @@ export default {
           }
           mutateResults.push(mutateResult)
           this.publicationsReloadPending = true
-          if (this.reviewTypeFilter === 'pending' && this.selectedPersonTotal === 'Pending') {
+          const showPendingCounts = (this.selectedPersonTotal && _.startsWith(this.selectedPersonTotal.toLowerCase(), 'pending'))
+          if (this.reviewTypeFilter === 'pending' && showPendingCounts) {
             this.removeFilteredPersonPubPendingCounts(reviewType, [personPub.person])
           //   // const currentPersonIndex = _.findIndex(this.people, (person) => {
           //   //   console.log('persons', person, this.person)
           //   //   return person.id === this.person.id // todo Rick, this.person never defined, right?
           //   // })
           //   // this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
-          } else if (this.selectedPersonTotal === 'Pending' && reviewType === 'pending') {
+          } else if (showPendingCounts && reviewType === 'pending') {
             this.addFilteredPersonPubPendingCounts(reviewType, [personPub.person])
           }
-        })
+        }, { concurrency: 1 })
+        await this.loadCenterAuthorOptions()
         // remove set from related lists
         this.personPublicationsCombinedMatchesByOrgReview[this.reviewTypeFilter] = _.filter(this.personPublicationsCombinedMatchesByOrgReview[this.reviewTypeFilter], (personPub) => {
           return pubSet.mainPersonPub.id !== personPub.id
@@ -2162,10 +2169,9 @@ export default {
         // //   // this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count += 1
         // }
         // reload in case any pending counts changed
-        const titleKey = this.getPublicationTitleKey(pubSet.mainPersonPub.publication.title)
-        const matchedAuthors = (this.authorsByTitle[titleKey] ? this.authorsByTitle[titleKey] : [])
-        this.removeFilteredPersonPubPendingCounts('accepted', matchedAuthors)
-        await this.loadCenterAuthorOptions()
+        // const titleKey = this.getPublicationTitleKey(pubSet.mainPersonPub.publication.title)
+        // const matchedAuthors = (this.authorsByTitle[titleKey] ? this.authorsByTitle[titleKey] : [])
+        // this.removeFilteredPersonPubPendingCounts('accepted', matchedAuthors)
         this.clearPublication()
         return mutateResults
       } catch (error) {
