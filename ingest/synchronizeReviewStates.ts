@@ -87,15 +87,19 @@ async function synchronizeReviewsForOrganization(persons, reviewOrgValue) {
       }
       const normedPersonPub: NormedPersonPublication = {
         id: personPub.id,
-        person: personPub.person,
+        person_id: personPub.person.id,
         publication: personPub.publication,
+        title: personPub.publication.title,
+        doi: personPub.publication.doi,
+        sourceName: personPub.publication.source_name,
+        sourceId: personPub.publication.source_id,
         reviewTypeStatus: reviewTypeStatus,
         mostRecentReview: mostRecentReview
       }
       return normedPersonPub
     })
 
-    const pubGraph: PublicationGraph = new PublicationGraph()
+    const pubGraph: PublicationGraph = new PublicationGraph(reviewStates)
     pubGraph.addToGraph(normedPersonPubs)
 
     const pubSets: PublicationSet[] = pubGraph.getAllPublicationSets()
