@@ -1,7 +1,7 @@
 import gql from 'graphql-tag'
 import _ from 'lodash'
 
-export default function readPersonsByInstitutionByYearAllCenters (institutionNames, pubYearMin, pubYearMax, memberYearMin, memberYearMax) {
+export default function readPersonsByInstitutionByYearAllCenters (institutionNames, pubYearMin, pubYearMax, memberYearMin, memberYearMax, minConfidence) {
   const startDateLT = `1/1/${memberYearMax + 1}`
   const endDateGT = `12/31/${memberYearMin - 1}`
   let namesString = ''
@@ -46,37 +46,30 @@ export default function readPersonsByInstitutionByYearAllCenters (institutionNam
           institution {
             name
           }
-          reviews_persons_publications_aggregate(
-            distinct_on: persons_publications_id, 
+          reviews_persons_publications(
+            distinct_on: title, 
             order_by: {
-              persons_publications_id: asc, 
+              title: asc, 
               datetime: desc
             }, 
             where: {
               review_organization_value: {_eq: "ND"}, 
               year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}
-            }
-          ) {
-              nodes {
-                persons_publications_id
-                doi
-                person_id
-                title
-                review_type
-              }
+            }) {
+            doi
+            person_id
+            title
+            review_type
           }
-          confidencesets_persons_publications_aggregate(distinct_on: persons_publications_id, order_by: {persons_publications_id: asc, datetime: desc}, where: {year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}}) {
+          confidencesets_persons_publications_aggregate(distinct_on: title, order_by: {title: asc, datetime: desc}, where: {year: {_gte: ${pubYearMin}, _lte: ${pubYearMax}}}) {
             nodes {
               datetime
               doi
               id
-              persons_publications_id
               publication_id
               value
               version
               title
-              source_name
-              source_id
             }
           }
           persons_namevariances {
