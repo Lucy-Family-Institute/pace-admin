@@ -5,6 +5,7 @@ export default class NormedPersonPublication {
   // ------ begin declare properties used when using NormedPerson like an interface
   id: Number
   person_id: number
+  person?
   publication?  // will be initialized if populating with full pub object, otherwise rely on properties below
   title: string
   doi: string
