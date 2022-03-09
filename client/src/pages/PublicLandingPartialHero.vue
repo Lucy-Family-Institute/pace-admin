@@ -254,7 +254,7 @@ export default {
         holderUrl: 'https://www.nd.edu'
       },
       hero: {
-        imageUrl: '/statics/graph16x9wVig.jpg',
+        imageUrl: '../statics/graph16x9wVig.jpg',
         alt: `
           Network visualizatin of publication and funding activity 
           at the University of Notre Dame's Harper Cancer Reach 
@@ -317,7 +317,7 @@ export default {
         hero: {
           rel: 'preload',
           as: 'image',
-          href: '/statics/graph16x9wVig.jpg'
+          href: '../statics/graph16x9wVig.jpg'
         }
       },
 
