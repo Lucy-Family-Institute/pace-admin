@@ -1089,6 +1089,7 @@ export default {
           // console.log(`Add pub to ${reviewType}, pub: ${personPub.id}`)
           const normedPersonPub = {
             id: personPub.id,
+            person: personPub.person,
             person_id: personPub.person.id,
             publication: personPub.publication,
             title: personPub.publication.title,
