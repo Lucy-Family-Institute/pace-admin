@@ -20,7 +20,7 @@
     "@vue/composition-api": "^1.0.4",
     "apexcharts": "^3.19.2",
     "apollo-link-context": "^1.0.19",
-    "axios": "^0.18.1",
+    "axios": "^0.21.2",
     "citation-js": "^0.5.0-alpha.5",
     "combinations": "^1.0.0",
     "cross-fetch": "^3.1.4",
