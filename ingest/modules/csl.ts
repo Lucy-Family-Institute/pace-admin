@@ -1,7 +1,9 @@
 import _ from 'lodash'
 import NormedAuthor from './normedAuthor'
+import DateHelper from '../units/dateHelper'
 import Cite from 'citation-js'
 import pMap from 'p-map'
+import CslDate from './cslDate'
 
 export default class Csl {
 
@@ -97,6 +99,70 @@ export default class Csl {
     }
   
   }
+
+  public static getPublicationDate (csl): CslDate {
+    // look for both online and print dates, and make newer date win if different
+    // put in array sorted by date
+  
+    let dates: CslDate[] = []
+    const dateBases = [
+      'journal-issue.published-print.date-parts[0]',
+      'journal-issue.published-online.date-parts[0]',
+      'published.date-parts[0]',
+      'issued.date-parts[0]',
+      'published-print.date-parts[0]',
+      'published-online.date-parts[0]'
+    ]
+    _.each(dateBases, (dateBase) => {
+      const year = _.get(csl, `${dateBase}[0]`, null)
+      const month = _.get(csl, `${dateBase}[1]`, null)
+      const day = _.get(csl, `${dateBase}[2]`, null)
+      if (year !== null && !Number.isNaN(year) && _.toLower(year) !== 'nan') {
+        const date: CslDate = {
+          year: (!Number.isNaN(year) && _.toLower(year) !== 'nan' ? Number.parseInt(year) : undefined),
+          month: (month !== null ? Number.parseInt(month) : undefined),
+          day: (day !== null ? Number.parseInt(day) : undefined)
+        }
+        dates.push(date)
+      }
+    })
+  
+    // check graph nodes as well
+    const graphNodes = _.get(csl, '_graph', [])
+    if (graphNodes.length > 0) {
+      _.each(graphNodes, (node) => {
+        if (node['data'] && _.keys(node['data'].length > 0)) {
+          _.each(dateBases, (dateBase) => {
+            const year = _.get(csl, `${dateBase}[0]`, null)
+            const month = _.get(csl, `${dateBase}[1]`, null)
+            const day = _.get(csl, `${dateBase}[2]`, null)
+            if (year !== null && !Number.isNaN(year) && _.toLower(year) !== 'nan') {
+              const date: CslDate = {
+                year: (!Number.isNaN(year) && _.toLower(year) !== 'nan' ? Number.parseInt(year) : undefined),
+                month: (month !== null ? Number.parseInt(month) : undefined),
+                day: (day !== null ? Number.parseInt(day) : undefined)
+              }
+              dates.push(date)
+            }
+          })
+        }
+      })
+    }
+  
+    dates = _.sortBy(dates, (date: CslDate) => { 
+      let year = date.year
+      let month = (date.month ? date.month : 1)
+      let day = (date.day ? date.day : 1)
+      return DateHelper.getDateObject(`${year}-${month}-${day}`).getTime()
+    }).reverse()
+    if (dates.length > 0) {
+      // return the most recent year
+      return dates[0]
+    } else {
+      return null
+    }
+  }
+  
 
   public static async getCslAuthors(csl: Csl): Promise<any[]> {
     const authMap = {
