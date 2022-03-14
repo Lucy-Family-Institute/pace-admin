@@ -150,7 +150,7 @@ async function main (): Promise<void> {
   let dayNaNCount = 0
   await pMap(allPubs, async (publication) => {
     pubCounter += 1
-    const updatedPubDate: CslDate = Csl.getPublicationDate(publication['csl'])
+    const updatedPubDate: CslDate = Csl.getPublicationDate(new Csl(publication['csl']))
     if (updatedPubDate !== null){
       totalCount += 1
       try {
