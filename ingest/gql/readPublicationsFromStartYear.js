@@ -9,6 +9,8 @@ export default function readPublicationsFromStartYear (startYear) {
           title
           doi
           year
+          month
+          day
           csl
           source_name
         }
