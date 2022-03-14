@@ -37,6 +37,7 @@ import IngestStatus from './ingestStatus'
 import { ConfidenceSetStatusValue, PersonPublicationStatusValue, PublicationStatus, PublicationStatusValue } from './publicationStatus'
 import FsHelper from '../units/fsHelper'
 import DataSourceHelper from './dataSourceHelper'
+import CslDate from './cslDate'
 export class Ingester {
   client: ApolloClient<NormalizedCacheObject>
   normedPersons: Array<NormedPerson>
@@ -111,8 +112,10 @@ export class Ingester {
   async insertPublicationAndAuthors (title, doi, csl: Csl, authors, sourceName, sourceId, sourceMetadata, minPublicationYear?) {
     //console.log(`trying to insert pub: ${JSON.stringify(title,null,2)}, ${JSON.stringify(doi,null,2)}`)
     try  {
-      const publicationYear = Csl.getPublicationYear(csl)
-      if (minPublicationYear != undefined && publicationYear < minPublicationYear) {
+      // const publicationYear = Csl.getPublicationYear(csl)
+      const publicationDate: CslDate = Csl.getPublicationDate(csl)
+      const publicationYear = (publicationDate ? publicationDate.year : undefined)
+      if (minPublicationYear != undefined && publicationYear && publicationYear < minPublicationYear) {
         console.log(`Skipping adding publication from year: ${publicationYear}`)
         return
       }
@@ -121,6 +124,8 @@ export class Ingester {
         title: title,
         doi: doi,
         year: publicationYear,
+        month: publicationDate.month,
+        day: publicationDate.day,
         csl: csl.valueOf(),  // put these in as JSONB
         source_name: sourceName,
         source_id: sourceId,

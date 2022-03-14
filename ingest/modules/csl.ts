@@ -100,10 +100,11 @@ export default class Csl {
   
   }
 
-  public static getPublicationDate (csl): CslDate {
+  public static getPublicationDate (cslParent: Csl): CslDate {
     // look for both online and print dates, and make newer date win if different
     // put in array sorted by date
   
+    const csl = cslParent.valueOf()
     let dates: CslDate[] = []
     const dateBases = [
       'journal-issue.published-print.date-parts[0]',
