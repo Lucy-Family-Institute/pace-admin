@@ -8,10 +8,13 @@ import _, { update } from 'lodash'
 import { command as loadCsv } from './units/loadCsv'
 import readPersons from './gql/readPersons'
 import updatePersonSemanticScholarIds from './gql/updatePersonSemanticScholarIds'
+import updatePersonDates from './gql/updatePersonDates'
+import updatePersonStartDateEndDateIsNull from './gql/updatePersonStartDateEndDateIsNull'
 import { __EnumValue } from 'graphql'
 import NormedPerson from './modules/normedPerson'
 
 import dotenv from 'dotenv'
+import DateHelper from './units/dateHelper'
 
 dotenv.config({
   path: '../.env'
@@ -34,16 +37,16 @@ const client = new ApolloClient({
 })
 
 async function main (): Promise<void> {
-  const authorsWithVariances: any = await loadCsv({
+  const authorsAttributes: any = await loadCsv({
     path: authorAttributeFilePath
   })
 
   // get the set of persons to add variances to
-  const authors = await NormedPerson.getAllSimplifiedPersons(client)
+  const authors: NormedPerson[] = await NormedPerson.getAllNormedPersons(client)
   
   //create map of 'last_name, first_name' to array of related persons with same last name
   const personMap = _.transform(authors, function (result, value) {
-    (result[NormedPerson.getNameKey(value.lastName, value.firstName)] || (result[NormedPerson.getNameKey(value.lastName, value.firstName)] = [])).push(value)
+    (result[NormedPerson.getNameKey(value.familyName, value.givenName)] || (result[NormedPerson.getNameKey(value.familyName, value.givenName)] = [])).push(value)
   }, {})
 
   console.log(`Person Map is: ${JSON.stringify(personMap, null, 2)}`)
@@ -52,7 +55,9 @@ async function main (): Promise<void> {
   let updateSourceIds = {}
 
   // now add author variances
-  const insertAuthorVariances = _.transform(authorsWithVariances, (result, author) => {
+  const insertAuthorVariances = []
+  const sortedPersonDates = {}
+  _.each(authorsAttributes, (author) => {
     let familyNameIndex = -1
     _.each(_.keys(author), (key, index) => {
       // console.log(`Key is ${key}, index is: ${index}`)
@@ -65,7 +70,7 @@ async function main (): Promise<void> {
     // console.log(`Person map is: ${JSON.stringify(_.keys(personMap).length, null, 2)}`)
     console.log(`Name key is: ${nameKey}`)
     const personId = personMap[nameKey][0].id
-    if (personMap[nameKey]) {
+    if (personMap[nameKey] && personMap[nameKey].length > 0) {
       if (author['semantic_scholar_id']){
         if (!updateSourceIds[personId]){
           updateSourceIds[personId] = {}
@@ -102,14 +107,41 @@ async function main (): Promise<void> {
           // console.log(`Current variances: ${JSON.stringify(variancesByName, null, 2)}`)
           if (!variancesByName[NormedPerson.getNameKey(obj['family_name'], obj['given_name'])]) {
             console.log(`Staging insert Name Variance ${JSON.stringify(obj, null, 2)} for ${NormedPerson.getNameKey(author['family_name'], author['given_name'])}`)
-            result.push(obj)
+            insertAuthorVariances.push(obj)
           } else {
             console.log(`Skipping Already Existing Name Variance '${obj['family_name']}, ${obj['given_name']}' for ${NormedPerson.getNameKey(author['family_name'], author['given_name'])}`)
           }
         })
-      } 
+      }
+      // now do start and end dates
+      // if start date not defined just set one likely older than pubs harvested
+      const newStartDate: Date = (author['start_date'] ? DateHelper.getDateObject(author['start_date']) : DateHelper.getDateObject('2016-01-01'))
+      const newEndDate: Date = (author['end_date'] ? DateHelper.getDateObject(author['end_date']) : undefined)
+      const prevStartDate: Date = personMap[nameKey][0].startDate
+      const prevEndDate: Date = personMap[nameKey][0].endDate
+      const testNewStartDate = (newStartDate ? newStartDate.getTime() : undefined)
+      const testNewEndDate = (newEndDate ? newEndDate.getTime() : undefined)
+      const testPrevStartDate = (prevStartDate ? prevStartDate.getTime() : undefined)
+      const testPrevEndDate = (prevEndDate ? prevEndDate.getTime() : undefined)
+      if (testNewStartDate !== testPrevStartDate) {
+        console.log(`Found different start date.  prev start: ${prevStartDate.getTime()} new start: ${newStartDate.getTime()}, prev end: ${(prevEndDate ? prevEndDate.getTime(): undefined)} new end: ${(newEndDate? newEndDate.getTime() : undefined)}`)
+      }
+      if (testNewEndDate !== testPrevEndDate) {
+        console.log(`Found different end date.  prev start: ${prevStartDate.getTime()} new start: ${newStartDate.getTime()}, prev end: ${(prevEndDate ? prevEndDate.getTime(): undefined)} new end: ${(newEndDate? newEndDate.getTime() : undefined)}`)
+      }
+      if (testNewStartDate !== testPrevStartDate ||
+           testNewEndDate !== testPrevEndDate) {
+        if (!sortedPersonDates['update']) sortedPersonDates['update'] = {}
+        sortedPersonDates['update'][nameKey] = author
+      } else {
+        if (!sortedPersonDates['nochange']) sortedPersonDates['nochange'] = []
+        sortedPersonDates['nochange'][nameKey] = author
+      }
     }
-  }, [])
+  })
+
+  console.log(`Person list no change to dates needed: ${( sortedPersonDates['nochange'] ?  _.keys(sortedPersonDates['nochange']).length : 0)} of ${authorsAttributes.length}`)
+  console.log(`Person list update to dates needed: ${(sortedPersonDates['update'] ? _.keys(sortedPersonDates['update']).length : 0)} of ${authorsAttributes.length}`)
 
   console.log(`Staging ${insertAuthorVariances.length} Name Variances for Insert`)
 
@@ -142,7 +174,33 @@ async function main (): Promise<void> {
       updatedSourceIds += resultUpdateScholarId.data.update_persons.returning.length
     }
   }, { concurrency: 1 })
-  console.log(`Done updating other attributes for authors. Updated ${updatedSourceIds} authors.`)
+  console.log(`Done updating semantic scholar ids for authors. Updated ${updatedSourceIds} authors.`)
+
+  console.log('Begin updating start and end dates for authors...')
+  // update existing members if dates changed
+  let updatedCount = 0
+
+  await pMap(_.keys(sortedPersonDates['update']), async (nameKey) => {
+    const author: NormedPerson = sortedPersonDates['update'][nameKey]
+    const newStartDate = (author['start_date'] ? DateHelper.getDateObject(author['start_date']) : DateHelper.getDateObject('2016-01-01'))
+    const newEndDate = (author['end_date'] ? DateHelper.getDateObject(author['end_date']) : undefined)
+    if (personMap[nameKey] && personMap[nameKey].length > 0) {
+      const id = personMap[nameKey][0].id
+      if (newEndDate) {
+        console.log(`Updating person with id: ${id}, start date: ${newStartDate} with end date: ${newEndDate}`)
+        const resultUpdatePersonDates = await client.mutate(updatePersonDates(id, newStartDate, (newEndDate ? newEndDate : undefined)))
+        updatedCount += resultUpdatePersonDates.data.update_persons.returning.length
+      } else {
+        console.log(`Updating person with id: ${id}, with start date: ${newStartDate}, end date: null`)
+        const resultUpdatePersonStartDates = await client.mutate(updatePersonStartDateEndDateIsNull(id, newStartDate))
+        updatedCount += resultUpdatePersonStartDates.data.update_persons.returning.length
+      }
+    } else {
+      console.log(`Warning no existing person found on update dates for nameKey: ${nameKey}, nothing updated`)
+    }
+  }, { concurrency: 1 })
+
+  console.log(`Done updating start and end dates for authors. Updated ${updatedCount} authors.`)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
