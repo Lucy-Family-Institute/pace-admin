@@ -11,6 +11,8 @@ export default function readPublicationsYearNull () {
           title
           doi
           year
+          month
+          day
           csl
           source_name
         }
