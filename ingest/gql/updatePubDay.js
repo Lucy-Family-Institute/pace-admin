@@ -1,10 +1,10 @@
 import gql from 'graphql-tag'
 
-export default function updatePubYear (id, year) {
+export default function updatePubDay (id, day) {
   return {
     mutation: gql`
-      mutation MyMutation($id: Int!, $year: Int!) {
-        update_publications(where: {id: {_eq: $id}}, _set: {year: $year}) {
+      mutation MyMutation($id: Int!, $day: Int!) {
+        update_publications(where: {id: {_eq: $id}}, _set: {day: $day}) {
           returning {
             doi
             id
@@ -20,7 +20,7 @@ export default function updatePubYear (id, year) {
     `,
     variables: {
       id,
-      year
+      day
     }
   }
 }
