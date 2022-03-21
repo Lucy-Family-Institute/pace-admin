@@ -181,7 +181,7 @@ export class SemanticScholarDataSource implements DataSource {
         title: pub['title'],
         doi: pub['doi'],
         journalTitle: pub['venue'],
-        publicationDate: `${pub['year']}`,  // force to be string
+        publishedYear: Number.parseInt(`${pub['year']}`),
         datasourceName: this.getSourceName(),
         sourceId: pub['paperId'],
         sourceMetadata: pub
@@ -326,12 +326,13 @@ export class SemanticScholarDataSource implements DataSource {
 
     const normedPersons: NormedPerson[] = _.values(normedPersonsById)
     const resultsDir = path.join(this.dsConfig.harvestDataDir, `${this.dsConfig.sourceName}_${minYear}-${maxYear}_${moment().format('YYYYMMDDHHmmss')}/`)
+    const dateHelper = DateHelper.createDateHelper()
     const harvestOperation: HarvestOperation = {
       harvestOperationType: HarvestOperationType.QUERY_BY_AUTHOR_ID,
       normedPersons: normedPersons,
       harvestResultsDir: resultsDir,
-      startDate: DateHelper.getDateObject(`${minYear}-01-01`),
-      endDate: DateHelper.getDateObject(`${maxYear}-12-31`)
+      startDate: dateHelper.getDateObject(`${minYear}-01-01`),
+      endDate: dateHelper.getDateObject(`${maxYear}-12-31`)
     }
     harvestOperations.push(harvestOperation)
     return harvestOperations
