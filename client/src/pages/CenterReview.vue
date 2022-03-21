@@ -148,7 +148,8 @@
                     </q-item-section>
                   </template>
                   <q-card side>
-                    <q-card-section>
+                    <q-card-section v-if="datesByPerson[getSimpleFormatAuthorName(item)]">
+                      <q-item-label>Notre Dame End Date: {{ (datesByPerson[getSimpleFormatAuthorName(item)].end_date ? datesByPerson[getSimpleFormatAuthorName(item)].end_date: 'NA')}}</q-item-label>
                       <q-list top align="left" dense class="q-pt-sm q-pb-sm" v-if="(selectedPersonMembership && selectedPersonMembership.length > 0)">
                         Cross-Center Membership:
                         <q-btn
@@ -218,7 +219,7 @@
                       </q-item-section>
                       <q-item-section top class="q-pa-xs">
                         <q-item-label style="width:100%" class="text-grey-9" lines="1"><strong>Title:</strong> {{ decode(item.publication.title) }}</q-item-label>
-                        <q-item-label v-if="selectedInstitutionReviewState === 'Accepted'" style="width:100%" class="text-grey-9" lines="1"><strong>{{selectedInstitutionReviewState}} Authors:</strong> {{ sortAuthorsByTitle[selectedInstitutionReviewState.toLowerCase()][getPublicationTitleKey(item.publication.title)] }}</q-item-label>
+                        <q-item-label v-if="selectedInstitutionReviewState === 'Accepted'" style="width:100%" class="text-grey-9" lines="1"><strong>Published: </strong>{{ getPublicationDate(item.publication) }},&nbsp;&nbsp;<strong>{{selectedInstitutionReviewState}} Authors:</strong> {{ sortAuthorsByTitle[selectedInstitutionReviewState.toLowerCase()][getPublicationTitleKey(item.publication.title)] }}</q-item-label>
                         <q-list class="q-pt-sm">
                           <q-btn
                             @click.capture.stop
@@ -296,6 +297,9 @@
                     </q-card-section>
                     <q-card-section>
                       <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
+                    </q-card-section>
+                    <q-card-section>
+                      <q-item-label><b>Publication Date:&nbsp;</b>{{ getPublicationDate(publication) }}</q-item-label>
                     </q-card-section>
                     <q-card-section v-if="publication&&publication.journal_title" class="text-left">
                       <q-item-label><b>Journal Title:&nbsp;</b>{{ publication.journal_title }}</q-item-label>
@@ -535,6 +539,9 @@ import sanitize from 'sanitize-filename'
 import pMap from 'p-map'
 import readPersonsByInstitutionByYearByOrganization from '../gql/readPersonsByInstitutionByYearByOrganization'
 import readOrganizationsCenters from '../../../gql/readOrganizationsCenters.gql'
+// import NormedPerson from '../../../ingest/modules/normedPerson.ts'
+// import NormedPublication from '../../../ingest/modules/normedPublication.ts'
+import DateHelper from '../../../ingest/units/dateHelper.ts'
 
 import VueFriendlyIframe from 'vue-friendly-iframe'
 // import CenterSelect from '@/components/widgets/CenterSelect.vue'
@@ -589,6 +596,7 @@ export default {
     publicationsGroupedByDoiByInstitutionReview: {},
     publicationsGroupedByDoiByOrgReview: {},
     centerMembershipByPerson: {},
+    datesByPerson: {},
     selectedPersonMembership: [],
     sortAuthorsByTitle: {}, // map of title's to the matched author to sort by (i.e., the matched author with the lowest matched position)
     institutions: [],
@@ -660,7 +668,8 @@ export default {
     publicationsReloadPending: false,
     drawer: false,
     miniState: false,
-    firstFetch: true
+    firstFetch: true,
+    dateHelper: DateHelper
   }),
   beforeDestroy () {
     clearInterval(this.interval)
@@ -925,6 +934,19 @@ export default {
       } else {
         return undefined
       }
+    },
+    getPublicationDate (publication) {
+      let date = ''
+      if (publication.year) {
+        date = `${date}${publication.year}`
+        if (publication.month) {
+          date = `${date}-${publication.month}`
+          if (publication.day) {
+            date = `${date}-${publication.day}`
+          }
+        }
+      }
+      return date
     },
     // sort person pubs by source so chips in screen always in same order
     getSortedPersonPublicationsBySourceName (personPublications) {
@@ -1224,6 +1246,10 @@ export default {
           centersMap[org.organization_value] = 0
           return org.organization_value
         })
+        this.datesByPerson[this.getSimpleFormatAuthorName(authorString)] = {
+          start_date: person.start_date,
+          end_date: person.end_date
+        }
         obj.push(`${authorString} (${pubCount})`)
       })
       this.centerAuthorOptions = obj
@@ -1392,6 +1418,7 @@ export default {
     //   }
     // },
     async fetchData () {
+      this.dateHelper = DateHelper.createDateHelper()
       this.selectedCenterAuthor = this.preferredSelectedCenterAuthor
       const results = await this.$apollo.query({
         query: readOrganizationsCenters
@@ -1498,9 +1525,22 @@ export default {
       const personPublicationsByReview = this.getTitlePersonPublicationsByReview(titleKey)
       const reviewedAuthors = []
       _.map(personPublicationsByReview['accepted'], (personPub) => {
-        const reviewedAuthor = this.getReviewedAuthor(personPub)
-        reviewedAuthors.push(reviewedAuthor)
-        return reviewedAuthor
+        // // add check here on publication date and person start end date and only add if publication within employment range
+        // const publications = NormedPublication.getNormedPublicationsFromDBRows([personPub.publication])
+        // const persons = NormedPerson.mapToNormedPersons([personPub.person])
+        // if (publications.length > 0 && persons.length > 0 && NormedPublication.publishedDuringPersonEmploymentDates(publications[0], persons[0])) {
+        const pubCslDate = {
+          year: personPub.publication.year,
+          month: personPub.publication.month,
+          day: personPub.publication.day
+        }
+        // const add = false
+        // for now ignore the start date for people and just look at end date
+        if (this.dateHelper.publishedDuringPersonEmploymentDates(pubCslDate, undefined, this.dateHelper.getDateObject(personPub.person.end_date))) {
+          const reviewedAuthor = this.getReviewedAuthor(personPub)
+          reviewedAuthors.push(reviewedAuthor)
+          return reviewedAuthor
+        }
       })
       // console.log(`Reviewed authors for title '${title}' authors: '${JSON.stringify(reviewedAuthors, null, 2)}'`)
       return reviewedAuthors
@@ -1672,21 +1712,35 @@ export default {
         return pubSet.reviewType
       })
 
-      // now group main pubs from pubset into separate combined matches map for display to make faster (fixes flicker in chip color for source)
-      this.personPublicationsCombinedMatchesByReview = _.mapValues(this.personPubSetsByReviewType, (pubSets) => {
-        return _.map(pubSets, (pubSet) => {
-          return pubSet.mainPersonPub
-        })
-      })
       // end add code for pubsets
       // initialize the pub author matches
-      this.matchedPublicationAuthorsByTitle = _.mapValues(this.authorsByTitle, (cslAuthors, titleKey) => {
-        return this.getPublicationAcceptedAuthors(titleKey)
+      this.matchedPublicationAuthorsByTitle = {}
+      // need to remove pubs with empty author list
+      // need to check that start person end dates correct, some look wrong
+      _.map(_.keys(this.authorsByTitle), (titleKey) => {
+        // need to handle removing publication if all authors removed because of date filters
+        const acceptedAuthors = this.getPublicationAcceptedAuthors(titleKey)
+        if (acceptedAuthors && acceptedAuthors.length > 0) {
+          this.matchedPublicationAuthorsByTitle[titleKey] = acceptedAuthors
+        }
       })
       this.sortAuthorsByTitle = {}
       this.sortAuthorsByTitle['accepted'] = _.mapValues(this.matchedPublicationAuthorsByTitle, (matchedAuthors) => {
         this.updateFilteredPersonPubCounts('accepted', matchedAuthors)
         return this.getAuthorsString(matchedAuthors)
+      })
+
+      // now group main pubs from pubset into separate combined matches map for display to make faster (fixes flicker in chip color for source)
+      // only add if was not already removed because no matched authors through filter
+      this.personPublicationsCombinedMatchesByReview = _.mapValues(this.personPubSetsByReviewType, (pubSets) => {
+        let mainPersonPubs = []
+        _.map(pubSets, (pubSet) => {
+          const titleKey = this.getPublicationTitleKey(pubSet.mainPersonPub.publication.title)
+          if (this.matchedPublicationAuthorsByTitle[titleKey]) {
+            mainPersonPubs.push(pubSet.mainPersonPub)
+          }
+        })
+        return mainPersonPubs
       })
 
       // now group by org review according to the selected institution review state
@@ -1791,7 +1845,8 @@ export default {
               const testAuthor = this.selectedCenterAuthor.toLowerCase().split('(')[0].trim()
               includedInSelectedAuthors = authorString.toLowerCase().includes(testAuthor)
             }
-            const includedInAuthors = authorString.toLowerCase().includes(this.pubSearch.toLowerCase().trim())
+            // if authorstring is empty string than no authors are a match and should be filtered out, esp. if authors removed bec publication is outside their employment range at ND
+            const includedInAuthors = (authorString !== '' && authorString.toLowerCase().includes(this.pubSearch.toLowerCase().trim()))
             const includedInTitle = item.publication.title.toLowerCase().includes(this.pubSearch.toLowerCase().trim())
             const includePublication = includedInSelectedAuthors && (includedInTitle || includedInAuthors)
             if (!includePublication && this.personPublication && item.id === this.personPublication.id) {
