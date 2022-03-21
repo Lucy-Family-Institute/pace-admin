@@ -10,6 +10,7 @@ import DataSourceConfig from './dataSourceConfig'
 import { PossibleFragmentSpreadsRule } from 'graphql'
 import DataSourceHelper from './dataSourceHelper'
 import Csl from './csl'
+import CslDate from './cslDate'
 import pMap from 'p-map'
 import path from 'path'
 import moment from 'moment'
@@ -201,22 +202,13 @@ export class CrossRefDataSource implements DataSource {
   async getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): Promise<NormedPublication[]>{
     let normedPubs: NormedPublication[] = []
     await pMap(sourcePublications, async (pub) => {
-      let publicationDate = ''
-      if (pub['issued'] && pub['issued']['date-parts'] && pub['issued']['date-parts'][0] && pub['issued']['date-parts'][0][0]) {
-        const dateParts = pub['issued']['date-parts'][0]
-        let first = true
-        _.each (dateParts, (datePart) => {
-          if (!first) {
-            publicationDate = `${publicationDate}-`
-          }
-          publicationDate = `${publicationDate}${datePart}`
-          first = false
-        })
-      }
+      let publicationDate: CslDate = Csl.getPublicationDate(await Csl.getCsl(pub))
       let normedPub: NormedPublication = {
           title: pub['title'][0],
           journalTitle: pub['container-title'] ? pub['container-title'][0] : (pub['short-container-title'] ? pub['short-containter-title'] : ''),
-          publicationDate: publicationDate,
+          publishedYear: publicationDate.year,
+          publishedMonth: publicationDate.month,
+          publishedDay: publicationDate.day,
           datasourceName: this.getSourceName(),
           doi: pub['DOI'] ? pub['DOI'] : '',
           sourceId: pub['DOI'] ? pub['DOI'] : '',
@@ -274,6 +266,7 @@ export class CrossRefDataSource implements DataSource {
   }
 
   async getHarvestOperations(client: ApolloClient<NormalizedCacheObject>): Promise<HarvestOperation[]> {
+    const dateHelper = DateHelper.createDateHelper()
     let harvestOperations: HarvestOperation[] = []
     const years = this.dsConfig.harvestYears
     await pMap(years, async (year) => {
@@ -283,8 +276,8 @@ export class CrossRefDataSource implements DataSource {
         harvestOperationType: HarvestOperationType.QUERY_BY_AUTHOR_NAME,
         normedPersons: normedPersons,
         harvestResultsDir: resultsDir,
-        startDate: DateHelper.getDateObject(`${year}-01-01`),
-        endDate: DateHelper.getDateObject(`${year}-12-31`)
+        startDate: dateHelper.getDateObject(`${year}-01-01`),
+        endDate: dateHelper.getDateObject(`${year}-12-31`)
       }
       harvestOperations.push(harvestOperation)
     }, { concurrency: 1 })

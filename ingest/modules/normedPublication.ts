@@ -12,6 +12,7 @@ import readPublicationsCSLByYear from '../gql/readPublicationsCSLByYear'
 import FsHelper from '../units/fsHelper'
 import BibTex from './bibTex'
 import Csl from './csl'
+import CslDate from './cslDate'
 import { SemanticScholarDataSource } from './semanticScholarDataSource'
 import { PubMedDataSource } from './pubmedDataSource'
 import { WosDataSource } from './wosDataSource'
@@ -34,7 +35,12 @@ export default class NormedPublication {
   journalIssn?: string
   journalEIssn?: string
   doi: string
-  publicationDate: string
+  // need to update to be complete date or separate year, month, and day
+  // and update references to publicationDate in other code files do grep
+  publishedYear: number
+  publishedMonth?: number
+  publishedDay?: number
+  publicationDate?: Date
   datasourceName: string
   sourceId?: string
   sourceUrl?: string
@@ -231,7 +237,7 @@ export default class NormedPublication {
     row[objectToCSVMap['title']] = pub.title
     row[objectToCSVMap['journalTitle']] = pub.journalTitle
     row[objectToCSVMap['doi']] = pub.doi
-    row[objectToCSVMap['publicationDate']] = pub.publicationDate
+    row[objectToCSVMap['publishedYear']] = `${pub.publishedYear}`
     row[objectToCSVMap['datasourceName']] = pub.datasourceName
 
     if (pub.abstract) {
@@ -273,6 +279,15 @@ export default class NormedPublication {
     // }
 
     return row
+  }
+
+  public static getCslDate(normedPub: NormedPublication): CslDate{
+    const date: CslDate = {
+      year: normedPub.publishedYear,
+      month: normedPub.publishedMonth,
+      day: normedPub.publishedDay
+    }
+    return date
   }
 
   /**
@@ -345,11 +360,20 @@ export default class NormedPublication {
    */
   public static getNormedPublicationObjectFromCSVRow(row, objectToCSVMap): NormedPublication {
     // assumes all column names in row passed in have been converted to lowercase
+    const dateHelper = DateHelper.createDateHelper()
     const searchPersonFamilyNameColumn = (objectToCSVMap['searchPerson'] && objectToCSVMap['searchPerson']['familyName'] ? objectToCSVMap['searchPerson']['familyName'] : undefined)
+    let publishedYear = (row[_.toLower(objectToCSVMap['publishedYear'])] ? row[_.toLower(objectToCSVMap['publishedYear'])] : undefined)
+    if (!publishedYear) {
+      // check for published date if this was harvested before the addition of month and day to published date
+      const publicationDate = (row[_.toLower(objectToCSVMap['publicationDate'])] ? row[_.toLower(objectToCSVMap['publicationDate'])] : undefined)
+      if (publicationDate){
+        publishedYear = dateHelper.getDateObject(publicationDate).getFullYear()
+      }
+    }
     let pub: NormedPublication = {
       title: (row[_.toLower(objectToCSVMap['title'])] ? row[_.toLower(objectToCSVMap['title'])] : row[_.keys(row)[0]]),
       doi: row[_.toLower(objectToCSVMap['doi'])],
-      publicationDate: row[_.toLower(objectToCSVMap['publicationDate'])],
+      publishedYear: (publishedYear ? publishedYear : undefined),
       datasourceName: row[_.toLower(objectToCSVMap['datasourceName'])],
       authors: (row[_.toLower(objectToCSVMap['authors'])] ? JSON.parse(row[_.toLower(objectToCSVMap['authors'])]) : undefined)
     }
@@ -360,8 +384,8 @@ export default class NormedPublication {
         familyName: row[_.toLower(searchPersonFamilyNameColumn)],
         givenName: row[_.toLower(objectToCSVMap['searchPerson']['givenName'])] ? row[_.toLower(objectToCSVMap['searchPerson']['givenName'])] : undefined,
         givenNameInitial: row[_.toLower(objectToCSVMap['searchPerson']['givenNameInitial'])] ? row[_.toLower(objectToCSVMap['searchPerson']['givenNameInitial'])] : undefined,
-        startDate: row[_.toLower(objectToCSVMap['searchPerson']['startDate'])] ? DateHelper.getDateObject(row[_.toLower(objectToCSVMap['searchPerson']['startDate'])]) : undefined,
-        endDate: row[_.toLower(objectToCSVMap['searchPerson']['endDate'])] ? DateHelper.getDateObject(row[_.toLower(objectToCSVMap['searchPerson']['endDate'])]) : undefined,
+        startDate: row[_.toLower(objectToCSVMap['searchPerson']['startDate'])] ? dateHelper.getDateObject(row[_.toLower(objectToCSVMap['searchPerson']['startDate'])]) : undefined,
+        endDate: row[_.toLower(objectToCSVMap['searchPerson']['endDate'])] ? dateHelper.getDateObject(row[_.toLower(objectToCSVMap['searchPerson']['endDate'])]) : undefined,
         sourceIds: row[_.toLower(objectToCSVMap['searchPerson']['sourceIds']['scopusAffiliationId'])] ? 
           { scopusAffiliationId: row[_.toLower(objectToCSVMap['searchPerson']['sourceIds']['scopusAffiliationId'])] } : {}
       }
@@ -632,14 +656,12 @@ export default class NormedPublication {
     return csl 
   }
 
-  public static async getBibTex (normedPub: NormedPublication, sourceMetadata?): Promise<BibTex> {
-    const date: Date = DateHelper.getDateObject(normedPub.publicationDate)
-    
+  public static async getBibTex (normedPub: NormedPublication, sourceMetadata?): Promise<BibTex> {    
     const authors = await NormedPublication.getAuthors(normedPub, sourceMetadata)
     let bib: BibTex = {
       title: normedPub.title,
       journal: normedPub.journalTitle,
-      year: (date ? `${date.getFullYear()}` : ''),
+      year: (normedPub.publishedYear ? `${normedPub.publishedYear}` : ''),
       author: BibTex.getBibTexAuthors(authors),
     }
     

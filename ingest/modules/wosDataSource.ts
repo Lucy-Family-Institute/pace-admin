@@ -40,13 +40,14 @@ export class WosDataSource implements DataSource {
    * @returns The soap query string
    */
   getWoSQuerySOAPString(query, startDate: Date, endDate: Date) {
-    let startDateString = DateHelper.getDateString(startDate)
+    const dateHelper = DateHelper.createDateHelper()
+    let startDateString = dateHelper.getDateString(startDate)
     let endDateString = undefined
     // if no end date defined default to the end of the year of the start date
     if (!endDate) {
       endDateString = `${startDate.getFullYear()}-12-31`
     } else {
-      endDateString = DateHelper.getDateString(endDate)
+      endDateString = dateHelper.getDateString(endDate)
     }
     let soapquery = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"\
                       xmlns:woksearchlite="http://woksearchlite.v3.wokmws.thomsonreuters.com">\
@@ -268,7 +269,7 @@ export class WosDataSource implements DataSource {
         let normedPub: NormedPublication = {
             title: pub['title'] && pub['title']['value'] && pub['title']['value']['_text'] ? pub['title']['value']['_text'] : '',
             journalTitle: sourceProps && sourceProps['SourceTitle'] && sourceProps['SourceTitle']['_text'] ? sourceProps['SourceTitle']['_text'] : '',
-            publicationDate: sourceProps && sourceProps['Published.BiblioYear'] && sourceProps['Published.BiblioYear']['_text'] ? sourceProps['Published.BiblioYear']['_text'] : '',
+            publishedYear: sourceProps && sourceProps['Published.BiblioYear'] && sourceProps['Published.BiblioYear']['_text'] ? sourceProps['Published.BiblioYear']['_text'] : '',
             datasourceName: this.getSourceName(),
             doi: otherProps && otherProps['Identifier.Doi'] && otherProps['Identifier.Doi']['_text'] ? otherProps['Identifier.Doi']['_text'] : '',
             sourceId: pub['uid'] && pub['uid']['_text'] ? `${Number.parseInt(_.replace(pub['uid']['_text'], 'WOS:', ''))}` : '',
@@ -359,6 +360,7 @@ export class WosDataSource implements DataSource {
   async getHarvestOperations(client: ApolloClient<NormalizedCacheObject>): Promise<HarvestOperation[]> {
     let harvestOperations: HarvestOperation[] = []
     const years = this.dsConfig.harvestYears
+    const dateHelper = DateHelper.createDateHelper()
     await pMap(years, async (year) => {
       const normedPersons: NormedPerson[] = await NormedPerson.getAllNormedPersonsByYear(year.valueOf(), client)
       const resultsDir = path.join(this.dsConfig.harvestDataDir, `${this.dsConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`)
@@ -366,8 +368,8 @@ export class WosDataSource implements DataSource {
         harvestOperationType: HarvestOperationType.QUERY_BY_AUTHOR_NAME,
         normedPersons: normedPersons,
         harvestResultsDir: resultsDir,
-        startDate: DateHelper.getDateObject(`${year}-01-01`),
-        endDate: DateHelper.getDateObject(`${year}-12-31`)
+        startDate: dateHelper.getDateObject(`${year}-01-01`),
+        endDate: dateHelper.getDateObject(`${year}-12-31`)
       }
       harvestOperations.push(harvestOperation)
     }, { concurrency: 1 })

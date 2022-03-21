@@ -99,10 +99,22 @@ export class ScopusDataSource implements DataSource {
   async getNormedPublications(sourcePublications: any[], searchPerson?: NormedPerson): Promise<NormedPublication[]>{
     let normedPubs: NormedPublication[] = []
     await pMap(sourcePublications, async (pub) => {
+        const dateParts = (pub['prism:coverDate'] ? _.split(pub['prism:coverDate'], '-') : [])
+        const publishedYear = dateParts[0]
+        let publishedMonth
+        let publishedDay
+        if (dateParts.length > 1) {
+          publishedMonth = dateParts[1]
+          if (dateParts.length > 2) {
+            publishedDay = dateParts[2]
+          }
+        }
         let normedPub: NormedPublication = {
             title: pub['dc:title'],
             journalTitle: pub['prism:publicationName'],
-            publicationDate: pub['prism:coverDate'],
+            publishedYear: Number.parseInt(`${publishedYear}`),
+            publishedMonth: publishedMonth,
+            publishedDay: publishedDay,
             datasourceName: this.getSourceName(),
             doi: pub['prism:doi'] ? pub['prism:doi'] : '',
             sourceId: _.replace(pub['dc:identifier'], 'SCOPUS_ID:', ''),
@@ -146,6 +158,7 @@ export class ScopusDataSource implements DataSource {
   }
 
   async getHarvestOperations(client: ApolloClient<NormalizedCacheObject>): Promise<HarvestOperation[]> {
+    const dateHelper = DateHelper.createDateHelper()
     let harvestOperations: HarvestOperation[] = []
     const years = this.dsConfig.harvestYears
     await pMap(years, async (year) => {
@@ -155,8 +168,8 @@ export class ScopusDataSource implements DataSource {
         harvestOperationType: HarvestOperationType.QUERY_BY_AUTHOR_NAME,
         normedPersons: normedPersons,
         harvestResultsDir: resultsDir,
-        startDate: DateHelper.getDateObject(`${year}-01-01`),
-        endDate: DateHelper.getDateObject(`${year}-12-31`)
+        startDate: dateHelper.getDateObject(`${year}-01-01`),
+        endDate: dateHelper.getDateObject(`${year}-12-31`)
       }
       harvestOperations.push(harvestOperation)
     }, { concurrency: 1 })

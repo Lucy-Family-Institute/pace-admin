@@ -43,6 +43,8 @@ export default function readPersonsByInstitutionByYearAllCenters (institutionNam
           id
           given_name
           family_name
+          start_date
+          end_date
           institution {
             name
           }
