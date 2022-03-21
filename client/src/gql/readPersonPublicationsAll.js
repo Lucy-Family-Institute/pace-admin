@@ -57,11 +57,15 @@ export default function readPersonPublicationsAllJS (institutionNames, organizat
             journal_title: csl(path:"container-title")
             abstract
             year
+            month
+            day
           }
           person {
             id
             family_name
             given_name
+            start_date
+            end_date
           }
           confidence
         }

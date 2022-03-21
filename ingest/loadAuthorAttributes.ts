@@ -37,6 +37,7 @@ const client = new ApolloClient({
 })
 
 async function main (): Promise<void> {
+  const dateHelper = DateHelper.createDateHelper()
   const authorsAttributes: any = await loadCsv({
     path: authorAttributeFilePath
   })
@@ -115,8 +116,8 @@ async function main (): Promise<void> {
       }
       // now do start and end dates
       // if start date not defined just set one likely older than pubs harvested
-      const newStartDate: Date = (author['start_date'] ? DateHelper.getDateObject(author['start_date']) : DateHelper.getDateObject('2016-01-01'))
-      const newEndDate: Date = (author['end_date'] ? DateHelper.getDateObject(author['end_date']) : undefined)
+      const newStartDate: Date = (author['start_date'] ? dateHelper.getDateObject(author['start_date']) : dateHelper.getDateObject('2016-01-01'))
+      const newEndDate: Date = (author['end_date'] ? dateHelper.getDateObject(author['end_date']) : undefined)
       const prevStartDate: Date = personMap[nameKey][0].startDate
       const prevEndDate: Date = personMap[nameKey][0].endDate
       const testNewStartDate = (newStartDate ? newStartDate.getTime() : undefined)
@@ -124,10 +125,10 @@ async function main (): Promise<void> {
       const testPrevStartDate = (prevStartDate ? prevStartDate.getTime() : undefined)
       const testPrevEndDate = (prevEndDate ? prevEndDate.getTime() : undefined)
       if (testNewStartDate !== testPrevStartDate) {
-        console.log(`Found different start date.  prev start: ${prevStartDate.getTime()} new start: ${newStartDate.getTime()}, prev end: ${(prevEndDate ? prevEndDate.getTime(): undefined)} new end: ${(newEndDate? newEndDate.getTime() : undefined)}`)
+        console.log(`Found different start date.  prev start: ${(prevStartDate ? prevStartDate.getTime() : undefined)} new start: ${(newStartDate ? newStartDate.getTime() : undefined)}, prev end: ${(prevEndDate ? prevEndDate.getTime(): undefined)} new end: ${(newEndDate? newEndDate.getTime() : undefined)}`)
       }
       if (testNewEndDate !== testPrevEndDate) {
-        console.log(`Found different end date.  prev start: ${prevStartDate.getTime()} new start: ${newStartDate.getTime()}, prev end: ${(prevEndDate ? prevEndDate.getTime(): undefined)} new end: ${(newEndDate? newEndDate.getTime() : undefined)}`)
+        console.log(`Found different end date.  prev start: ${(prevStartDate ? prevStartDate.getTime() : undefined)} new start: ${(newStartDate ? newStartDate.getTime() : undefined)}, prev end: ${(prevEndDate ? prevEndDate.getTime(): undefined)} new end: ${(newEndDate? newEndDate.getTime() : undefined)}`)
       }
       if (testNewStartDate !== testPrevStartDate ||
            testNewEndDate !== testPrevEndDate) {
@@ -182,8 +183,8 @@ async function main (): Promise<void> {
 
   await pMap(_.keys(sortedPersonDates['update']), async (nameKey) => {
     const author: NormedPerson = sortedPersonDates['update'][nameKey]
-    const newStartDate = (author['start_date'] ? DateHelper.getDateObject(author['start_date']) : DateHelper.getDateObject('2016-01-01'))
-    const newEndDate = (author['end_date'] ? DateHelper.getDateObject(author['end_date']) : undefined)
+    const newStartDate = (author['start_date'] ? dateHelper.getDateObject(author['start_date']) : dateHelper.getDateObject('2016-01-01'))
+    const newEndDate = (author['end_date'] ? dateHelper.getDateObject(author['end_date']) : undefined)
     if (personMap[nameKey] && personMap[nameKey].length > 0) {
       const id = personMap[nameKey][0].id
       if (newEndDate) {
