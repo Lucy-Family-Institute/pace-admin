@@ -150,11 +150,12 @@ export default class Csl {
       })
     }
   
+    const dateHelper = DateHelper.createDateHelper()
     dates = _.sortBy(dates, (date: CslDate) => { 
       let year = date.year
       let month = (date.month ? date.month : 1)
       let day = (date.day ? date.day : 1)
-      return DateHelper.getDateObject(`${year}-${month}-${day}`).getTime()
+      return dateHelper.getDateObject(`${year}-${month}-${day}`).getTime()
     }).reverse()
     if (dates.length > 0) {
       // return the most recent year

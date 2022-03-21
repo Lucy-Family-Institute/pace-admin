@@ -45,6 +45,8 @@ export default function readPersonsByInstitutionByYearByOrganization (organizati
           id
           given_name
           family_name
+          start_date
+          end_date
           institution {
             name
           }
