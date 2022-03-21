@@ -77,14 +77,15 @@ export default class NormedPerson {
    * @return NormedPerson
    **/
   public static getNormedPersonObjectFromCSVRow(personRow): NormedPerson {
+    const dateHelper = DateHelper.createDateHelper()
     const givenName = personRow['given_name']
     let person: NormedPerson = {
       id: personRow['id'] ? Number.parseInt(personRow['id']) : undefined,
       familyName: personRow['family_name'],
       givenNameInitial: personRow['given_name_initial'] ? personRow['given_name_initial'] : (givenName) ? givenName.charAt(0) : undefined,
       givenName: givenName,
-      startDate: DateHelper.getDateObject(personRow['start_date']),
-      endDate: DateHelper.getDateObject(personRow['end_date']),
+      startDate: dateHelper.getDateObject(personRow['start_date']),
+      endDate: dateHelper.getDateObject(personRow['end_date']),
       sourceIds: {
         scopusAffiliationId: personRow['scopus_affiliation_id']
       }
@@ -93,6 +94,7 @@ export default class NormedPerson {
   }
   
   public static mapToNormedPersons(people: Array<any>) : Array<NormedPerson> {
+    const dateHelper = DateHelper.createDateHelper()
     const normedPersons = _.map(people, (person) => {
       const names = []
       names.push({
@@ -115,8 +117,8 @@ export default class NormedPerson {
         familyName: _.toLower(person.family_name),
         givenNameInitial: _.toLower(person.given_name[0]),
         givenName: _.toLower(person.given_name),
-        startDate: DateHelper.getDateObject(person.start_date),
-        endDate: DateHelper.getDateObject(person.end_date),
+        startDate: dateHelper.getDateObject(person.start_date),
+        endDate: dateHelper.getDateObject(person.end_date),
         names: names,
         nameVariances: person.persons_namevariances,
         sourceIds: { semanticScholarIds: JSON.parse(person.semantic_scholar_ids) }

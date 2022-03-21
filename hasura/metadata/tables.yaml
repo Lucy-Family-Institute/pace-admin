@@ -1174,42 +1174,48 @@
       - abstract
       - journal_id
       - source_id
+      - month
+      - day
       filter: {}
       allow_aggregations: true
   - role: VIEWER
     permission:
       columns:
-      - id
-      - title
-      - doi
-      - provenance_id
       - data_id
-      - source_name
+      - day
+      - id
+      - journal_id
+      - month
+      - provenance_id
+      - year
       - csl
       - source_metadata
-      - csl_string
-      - year
       - abstract
-      - journal_id
+      - csl_string
+      - doi
       - source_id
+      - source_name
+      - title
       filter: {}
       allow_aggregations: true
   - role: anonymous
     permission:
       columns:
-      - id
-      - title
-      - doi
-      - provenance_id
       - data_id
-      - source_name
+      - day
+      - id
+      - journal_id
+      - month
+      - provenance_id
+      - year
       - csl
       - source_metadata
-      - csl_string
-      - year
       - abstract
-      - journal_id
+      - csl_string
+      - doi
       - source_id
+      - source_name
+      - title
       filter: {}
       allow_aggregations: true
 - table:
