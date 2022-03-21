@@ -113,6 +113,7 @@
                           <li v-bind:key="name" v-for="name in nameVariants">{{ name }}</li>
                         </ul>
                       </p>
+                      <q-item-label>Notre Dame End Date: {{ (item.end_date ? item.end_date: 'NA')}}</q-item-label>
                       <!--<p>Common Co-authors (expandable list): {{ getCommonCoauthors(item) }}</p>-->
                     </q-card-section>
                   </q-card>
@@ -177,6 +178,7 @@
                         </q-item-section>
                         <q-item-section top class="q-pa-xs">
                           <q-item-label style="width:100%" class="text-grey-9" lines="1"><strong>Title:</strong> {{ decode(item.publication.title) }}</q-item-label>
+                          <q-item-label style="width:100%" class="text-grey-9" lines="1"><strong>Published: </strong>{{ getPublicationDate(item.publication) }}</q-item-label>
                           <q-list class="q-pt-sm">
                             <q-btn
                               @click.capture.stop
@@ -255,6 +257,9 @@
                       </q-card-section>
                       <q-card-section>
                         <q-item-label><b>Citation:</b> {{ publicationCitation }}</q-item-label>
+                      </q-card-section>
+                      <q-card-section>
+                        <q-item-label><b>Publication Date:&nbsp;</b>{{ getPublicationDate(publication) }}</q-item-label>
                       </q-card-section>
                       <q-card-section v-if="publication && publication.journal_title" class="text-left">
                         <q-item-label><b>Journal Title:&nbsp;</b>{{ publication.journal_title }}</q-item-label>
@@ -1039,6 +1044,19 @@ export default {
       await this.loadReviewStates()
       this.publicationGraph = PublicationGraph.createPublicationGraph(this.reviewStates)
       await this.loadPersonsWithFilter()
+    },
+    getPublicationDate (publication) {
+      let date = ''
+      if (publication.year) {
+        date = `${date}${publication.year}`
+        if (publication.month) {
+          date = `${date}-${publication.month}`
+          if (publication.day) {
+            date = `${date}-${publication.day}`
+          }
+        }
+      }
+      return date
     },
     async clearPublications () {
       this.publications = []
