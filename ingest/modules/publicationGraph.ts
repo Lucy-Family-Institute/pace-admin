@@ -135,7 +135,8 @@ export default class PublicationGraph {
     let pubSets = []
     // console.log(`Pub set ids found for person id: ${personId}, review type: ${reviewType}, pubsetids: ${JSON.stringify(pubSetIds, null, 2)}`)
     _.each(pubSetIds, (pubSetId) => {
-      pubSets.push(this.getPersonPubSet(pubSetId))
+      const pubSet = this.getPersonPubSet(pubSetId)
+      if (pubSet) pubSets.push(pubSet)
     })
     return pubSets
   }
