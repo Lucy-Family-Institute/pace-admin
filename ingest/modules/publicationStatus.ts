@@ -29,7 +29,10 @@ export class PublicationStatus implements NormedPublication{
   doi: string
   title: string
   journalTitle: string
-  publicationDate: string
+  publishedYear: number
+  publishedMonth?: number
+  publishedDay?: number
+  publicationDate: Date
   bibtex?: string			
   publicationId?: number
   errorMessage?: string
