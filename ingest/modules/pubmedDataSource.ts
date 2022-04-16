@@ -110,6 +110,7 @@ export class PubMedDataSource implements DataSource {
         journalTitle: '',
         doi: doi,
         publicationDate: pub.publicationYear,
+        publishedYear: pub.publicationYear,
         datasourceName: 'PubMed',
         sourceId: pubmedId,
         authors: await this.getNormedAuthorsFromSourceMetadata(pub),
