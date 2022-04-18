@@ -101,15 +101,6 @@ export default {
           events: {
             dataPointSelection: function (event, chartContext, config) {
               this.addFacetFilter('year', config.w.globals.labels[config.dataPointIndex])
-            }.bind(this),
-            click: function ({ clientX, clientY }, chartContext, { config, globals }) {
-              const xCoords = globals.seriesXvalues[0]
-              const categories = config.xaxis.categories
-              // Find the x-axis + translation closest to the click
-              const categoryIndex = _.indexOf(xCoords, _.reduce(xCoords, function (prev, curr) {
-                return (Math.abs(curr + globals.translateX - clientX) < Math.abs(prev + globals.translateX - clientX) ? curr : prev)
-              }))
-              this.addFacetFilter('year', categories[categoryIndex])
             }.bind(this)
           }
         },
@@ -117,10 +108,9 @@ export default {
           enabled: false
         },
         xaxis: {
-          categories: [2017, 2018, 2019, 2020],
+          categories: [2017, 2018, 2019, 2020, 2021],
           labels: {
             style: {
-              cssClass: 'clickable'
             }
           }
         },
@@ -325,7 +315,9 @@ export default {
     graphKey: sync('dashboard/graphKey'),
     dashboardMiniState: sync('dashboard/dashboardMiniState'),
     facetFilters: sync('dashboard/facetFilters'),
-    facetsDistribution: sync('dashboard/facetsDistribution')
+    facetsDistribution: sync('dashboard/facetsDistribution'),
+    selectedCenter: sync('dashboard/selectedCenter'),
+    selectedYear: sync('dashboard/selectedYear')
     // refreshCharts: sync('dashboard/refreshCharts')
   },
   watch: {
@@ -379,15 +371,6 @@ export default {
           events: {
             dataPointSelection: function (event, chartContext, config) {
               this.addFacetFilter('year', config.w.globals.labels[config.dataPointIndex])
-            }.bind(this),
-            click: function ({ clientX, clientY }, chartContext, { config, globals }) {
-              const xCoords = globals.seriesXvalues[0]
-              const categories = config.xaxis.categories
-              // Find the x-axis + translation closest to the click
-              const categoryIndex = _.indexOf(xCoords, _.reduce(xCoords, function (prev, curr) {
-                return (Math.abs(curr + globals.translateX - clientX) < Math.abs(prev + globals.translateX - clientX) ? curr : prev)
-              }))
-              this.addFacetFilter('year', categories[categoryIndex])
             }.bind(this)
           }
         },
@@ -397,9 +380,6 @@ export default {
         xaxis: {
           categories: _.keys(this.facetsDistribution.year),
           labels: {
-            style: {
-              cssClass: 'clickable'
-            }
           }
         },
         title: {
