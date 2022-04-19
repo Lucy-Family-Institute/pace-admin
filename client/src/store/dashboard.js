@@ -5,7 +5,9 @@ const state = {
   graphKey: 0,
   facetFilters: [],
   facetsDistribution: null,
-  results: []
+  results: [],
+  selectedCenter: undefined,
+  selectedYear: undefined
   // refreshCharts: 0
 }
 

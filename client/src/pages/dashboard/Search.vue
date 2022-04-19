@@ -123,11 +123,11 @@ export default {
           enabled: false
         },
         xaxis: {
-          categories: [2017, 2018, 2019, 2020]
+          categories: [2017, 2018, 2019, 2020, 2021]
         }
       },
       series: [{
-        data: [1, 2, 3, 4]
+        data: [1, 2, 3, 4, 5]
       }],
       paOptions: {
         chart: {
