@@ -36,6 +36,24 @@
               class="white"
               style="min-width: 250px"
             />
+            &nbsp;&nbsp;
+            <q-select
+              v-if="dashboardMiniState"
+              v-model="selectedYear"
+              :options="yearOptions"
+              label="Select Year Published:"
+              class="white"
+              style="min-width: 250px"
+            />
+          </q-item>
+          <q-item v-if="!dashboardMiniState">
+            <q-select
+              v-model="selectedYear"
+              :options="yearOptions"
+              label="Select Year Published:"
+              class="white"
+              style="min-width: 250px"
+            />
           </q-item>
         </div>
       </div>
@@ -255,6 +273,7 @@ export default {
   },
   data () {
     return {
+      yearOptions: [],
       yearsInitialized: false,
       search: '',
       processingTime: undefined,
@@ -262,8 +281,7 @@ export default {
       facetLists: {},
       filters: '',
       review_organizations: {},
-      reviewOptions: [],
-      selectedCenter: undefined
+      reviewOptions: []
     }
   },
   async created () {
@@ -275,6 +293,8 @@ export default {
     facetFilters: sync('dashboard/facetFilters'),
     facetsDistribution: sync('dashboard/facetsDistribution'),
     results: sync('dashboard/results'),
+    selectedCenter: sync('dashboard/selectedCenter'),
+    selectedYear: sync('dashboard/selectedYear'),
     queryOptions: function () {
       return this.facetFilters // _.concat
     }
@@ -289,6 +309,9 @@ export default {
     },
     selectedCenter: function () {
       this.addFacetFilter('review_organization_label', this.selectedCenter.value)
+    },
+    selectedYear: function () {
+      this.toggleFacetFilter('year', this.selectedYear.value)
     }
   },
   methods: {
@@ -298,6 +321,12 @@ export default {
         apiKey: process.env.MEILI_PUBLIC_KEY
       })
       this.indexPublications = await searchClient.getIndex('publications')
+      if (this.selectedYear) {
+        this.addFacetFilter('year', this.selectedYear.value)
+      }
+      if (this.selectedCenter) {
+        this.addFacetFilter('review_organization_label', this.selectedCenter.value)
+      }
       this.runSearch()
     },
     makeAuthorList (authors) {
@@ -341,7 +370,27 @@ export default {
           label: label,
           value: _.toUpper(reviewOrg.name)
         }
-      }) // todo is this working?
+      })
+      this.years = Object.freeze(_.orderBy(
+        _.map(results.facetsDistribution.year, (value, key) => {
+          return { name: key, count: value }
+        }), 'count', 'desc'
+      ))
+      this.yearOptions = _.map(this.years, (yearOption) => {
+        let label
+        if (this.selectedYear === undefined) {
+          label = `${yearOption.name} (${yearOption.count})`
+        } else {
+          label = yearOption.name
+        }
+        return {
+          label: label,
+          value: yearOption.name
+        }
+      })
+      this.yearOptions = _.sortBy(this.yearOptions, (yearOption) => {
+        return yearOption.value
+      })
 
       this.sortFacets(['classifications', 'authors', 'journal', 'journal_type', 'publisher', 'funder', 'impact_factor_range', 'review_organization_value', 'review_organization_label'], this.facetsDistribution)
       // if (!this.selectedCenter) {
@@ -351,6 +400,24 @@ export default {
       //   }
       // }
       // }
+      if (!this.selectedYear) {
+        const yearFacetValue = this.getFacetFilterValue('year')
+        if (yearFacetValue) {
+          this.selectedYear = {
+            label: yearFacetValue,
+            value: yearFacetValue
+          }
+        }
+      }
+      if (!this.selectedCenter) {
+        const centerFacetValue = this.getFacetFilterValue('review_organization_label')
+        if (centerFacetValue) {
+          this.selectedCenter = {
+            label: centerFacetValue,
+            value: centerFacetValue
+          }
+        }
+      }
     },
     makeStartCase (word) {
       // doing this instead of lodash startcase as that removes characters
@@ -404,6 +471,19 @@ export default {
       this.search = ''
       await this.runSearch()
     },
+    // returns undefined if not set
+    getFacetFilterValue (key) {
+      let value
+      _.find(this.facetFilters, (facetFilter) => {
+        const filter = facetFilter.split(':')
+        const filterKey = filter[0]
+        const filterValue = filter[1]
+        if (key === filterKey) {
+          value = filterValue
+        }
+      })
+      return value
+    },
     async removeSelectedFacet (key) {
       this.facetFilters = _.filter(this.facetFilters, (facetFilter) => {
         const testKey = facetFilter.split(':')[0]
@@ -420,6 +500,12 @@ export default {
       if (key === 'year' || key === 'review_organization_value' || key === 'review_organization_label') {
         this.removeFacetFilter(_.find(this.facetFilters, (val) => _.startsWith(val, key)), false)
       }
+      if (key === 'year') {
+        const index = _.find(this.yearOptions, (yearOption, index) => {
+          return yearOption.value === value
+        })
+        this.selectedYear = this.yearOptions[index]
+      }
       this.facetFilters.push(`${key}:${value}`)
       this.dashboardMiniState = true
     },
@@ -429,6 +515,9 @@ export default {
     async removeFacetFilter (key, clearValue) {
       if (clearValue && (_.startsWith(key, 'review_organization_value') || _.startsWith(key, 'review_organization_label'))) {
         this.selectedCenter = undefined
+      }
+      if (clearValue && (_.startsWith(key, 'year') || _.startsWith(key, 'year'))) {
+        this.selectedYear = undefined
       }
       this.$delete(this.facetFilters, _.indexOf(this.facetFilters, key))
     },
