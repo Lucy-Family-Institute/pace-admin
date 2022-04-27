@@ -114,7 +114,7 @@
         <template v-slot:before>
           <q-separator/>
             <q-virtual-scroll
-              :style="{'max-height': ($q.screen.height-1600)+'px'}"
+              :style="{'max-height': ($q.screen.height-74)+'px'}"
               :items="centerAuthorOptions"
               bordered
               separator
