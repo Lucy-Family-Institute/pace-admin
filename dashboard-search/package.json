@@ -17,7 +17,7 @@
     "lodash": "^4.17.19",
     "meilisearch": "^0.11.0",
     "moment": "^2.29.3",
-    "node-fetch": "^2.6.1",
+    "node-fetch": "^2.6.7",
     "p-map": "^5.3.0",
     "ts-node": "^8.10.2",
     "typescript": "^3.9.5",
