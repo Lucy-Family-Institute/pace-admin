@@ -58,11 +58,16 @@ function journalMatchFuzzy (journalTitle, titleKey, journalMap){
     threshold: 0.001,
   });
 
-  const journalResults = lastFuzzy.search(testTitle)
-  const reducedResults = _.map(journalResults, (result) => {
-    return result['item'] ? result['item'] : result
-  })
-  return reducedResults
+  try {
+    const journalResults = lastFuzzy.search(testTitle)
+    const reducedResults = _.map(journalResults, (result) => {
+      return result['item'] ? result['item'] : result
+    })
+    return reducedResults
+  } catch (error) {
+    console.log(`Error on match journal title: ${testTitle} error: ${error}`)
+    return []
+  }
 }
 
 async function getPublications (startYear?) {
@@ -84,7 +89,7 @@ async function main (): Promise<void> {
 
   // default to startYear undefined to check all missing journals
   let startYear
-  // startYear = 2020
+  startYear = 2021
   const publications = await getPublications(startYear)
   const journals = await getJournals()
 
@@ -145,7 +150,7 @@ async function main (): Promise<void> {
     await randomWait(loopCounter)
     console.log(`Updating journal of pub ${loopCounter} ${matched['Article']}`)
     const resultUpdatePubJournal = await client.mutate(updatePubJournal(matched['doi'], matched['Matches'][0]['id']))
-  }, {concurrency: 10})
+  }, {concurrency: 2})
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises

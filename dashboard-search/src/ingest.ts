@@ -7,8 +7,21 @@ import gql from 'graphql-tag'
 import MeiliSearch from 'meilisearch'
 import util from 'util'
 import Cite from 'citation-js'
+import PublicationGraph from '../../ingest/modules/publicationGraph'
+import PublicationSet from '../../ingest/modules/publicationSet'
+// import pMap from 'p-map'
+
+import readOrganizationValues from './gql/readOrganizationValues'
+import readPersonPublicationsReviewsOrgYear from './gql/readPersonPublicationsReviewsOrgYear'
+import readPublicationsJournals from './gql/readPublicationsJournals'
+import readPublicationsAwards from './gql/readPublicationsAwards'
+import readPersonPublicationsReviews from '../../client/src/gql/readPersonPublicationsReviews'
+import readPublicationsCSL from '../../client/src/gql/readPublicationsCSL'
 
 import dotenv from 'dotenv'
+import moment from 'moment'
+import NormedPersonPublication from '../../ingest/modules/normedPersonPublication'
+import PublicationSetGraphNode from '../../ingest/modules/publicationSetGraphNode'
 
 dotenv.config({
   path: '../.env'
@@ -43,7 +56,7 @@ function getImpactFactorValue (doc) {
     function ( factor ) {
       // console.log(`Processing impact factors: ${JSON.stringify(factor, null, 2)}`)
       // console.log(`Testing ${JSON.stringify(factor, null, 2)} against ${_.get(doc.publication, 'year')}`)
-      return Number.parseInt(factor.year) === Number.parseInt(_.get(doc.publication, 'year'))
+      return Number.parseInt(factor.year) === (Number.parseInt(_.get(doc.publication, 'year')) - 1)
     }
   )
 }
@@ -105,6 +118,142 @@ function getCitationApa (cslString) {
   return _.trim(apaCitation.replace(/(\r\n|\n|\r)/gm, ' '))
 }
 
+async function getPublicationsReviewsOrgYear(organizationValue, year) {
+  const pubsWithReviewResult = await gqlClient.query({
+    query: readPersonPublicationsReviewsOrgYear(organizationValue, year),
+    fetchPolicy: 'network-only'
+  })
+  return pubsWithReviewResult.data.reviews_persons_publications
+}
+
+async function loadPubsWithJournals(publicationIds) {
+  const pubsWithJournals = await gqlClient.query({
+    query: readPublicationsJournals(publicationIds),
+    fetchPolicy: 'network-only'
+  })
+  return pubsWithJournals.data.publications
+}
+
+async function loadPubsWithAwards(publicationIds) {
+  const pubsWithJournals = await gqlClient.query({
+    query: readPublicationsAwards(publicationIds),
+    fetchPolicy: 'network-only'
+  })
+  return pubsWithJournals.data.publications
+}
+
+async function loadPubsWithCSL(publicationIds) {
+  const pubsWithCSL = await gqlClient.query({
+    query: readPublicationsCSL(publicationIds),
+    fetchPolicy: 'network-only'
+  })
+  return pubsWithCSL.data.publications
+}
+
+async function loadPublications (organizationValue, years) {
+  
+  // const result = await this.$apollo.query(readPublicationsByPerson(item.id))
+  // this.publications = result.data.publications
+  let publications = []
+  for (let i=0; i < years.length; i++) {
+    console.log(`Query publications for org: ${organizationValue} year: ${years[i]}...`)
+    const pubsWithReviewResult = await getPublicationsReviewsOrgYear(organizationValue, years[i])
+    // console.log(`Pubs with review result year: ${years[i]} count: ${pubsWithReviewResult.length}`)
+
+    const personPubOrgReviewsByType = _.groupBy(pubsWithReviewResult, (reviewPersonPub) => {
+      return reviewPersonPub.review_type
+    })
+
+    // console.log(`Person Pubs with review: ${JSON.stringify(personPubOrgReviewsByType["accepted"].length)}`)
+
+    const personPubByIds = _.mapKeys(personPubOrgReviewsByType['accepted'], (personPub) => {
+      return personPub.persons_publications_id
+    })
+
+    // // for now assume only one review, needs to be fixed later
+    const pubsWithNDReviewsResult = await gqlClient.query({
+      query: readPersonPublicationsReviews(_.keys(personPubByIds), 'ND'),
+      fetchPolicy: 'network-only'
+    })
+
+    const personPubNDReviewsByType = _.groupBy(pubsWithNDReviewsResult.data.reviews_persons_publications, (reviewPersonPub) => {
+      return reviewPersonPub.review_type
+    })
+
+    const personPubNDReviews = _.groupBy(pubsWithNDReviewsResult.data.reviews_persons_publications, (reviewPersonPub) => {
+      return reviewPersonPub.persons_publications_id
+    })
+
+    const personPubNDReviewsAccepted = personPubNDReviewsByType['accepted']
+
+    // load journals and awards for publications, break these into separate queries bc too slow to do at once
+    const publicationIds = _.uniq(_.map(pubsWithReviewResult, (pub) => {
+      return pub.publication.id
+    }))
+
+    const pubsWithJournals = await loadPubsWithJournals(publicationIds)
+    let journalsByPubIds = {}
+    _.each(pubsWithJournals, (pub) => {
+      journalsByPubIds[pub.id] = pub.journal
+    })
+    const pubsWithAwards = await loadPubsWithAwards(publicationIds)
+    let awardsByPubIds = {}
+    _.each(pubsWithAwards, (pub) => {
+      awardsByPubIds[pub.id] = pub.awards
+    })
+    // now get csl
+    const pubsWithCSL = await loadPubsWithCSL(publicationIds)
+    let cslByPubIds = {}
+    _.each(pubsWithCSL, (pub) => {
+      cslByPubIds[pub.id] = pub.csl_string
+    })
+
+
+    publications = _.concat(publications, _.map(personPubNDReviewsAccepted, (personPubReview) => {
+      const personPub = personPubByIds[personPubReview.persons_publications_id]
+      _.set(personPub.publication, 'journal', journalsByPubIds[personPub.publication.id])
+      _.set(personPub.publication, 'awards', awardsByPubIds[personPub.publication.id])
+      _.set(personPub.publication, 'csl_string', cslByPubIds[personPub.publication.id])
+  //       _.set(personPub, 'confidencesets', _.cloneDeep(personPubConfidenceSets[personPubReview.persons_publications_id]))
+  //       _.set(personPub, 'reviews', _.cloneDeep(personPubNDReviews[personPubReview.persons_publications_id]))
+  //       _.set(personPub, 'org_reviews', _.cloneDeep(personPubCenterReviews[personPubReview.persons_publications_id]))
+  //    
+      return personPub
+    }))
+  }
+  return publications
+}
+
+async function getOrganizationValues() {
+  const results = await gqlClient.query({
+    query: readOrganizationValues()
+  })
+
+  const orgValues = _.map(results.data.review_organization, (reviewOrg) => {
+   return reviewOrg.value
+  })
+  return orgValues
+}
+
+function getNormedPersonPublications(reviewPersonPublications) {
+  let normedPersonPubs: NormedPersonPublication[] = []
+  _.each(reviewPersonPublications, (pub) => {
+    const normedPersonPub: NormedPersonPublication = {
+      id: pub.persons_publications_id,
+      person_id: pub.person_id,
+      person: pub.person,
+      title: pub.title,
+      doi: pub.doi,
+      sourceName: pub.source_name,
+      sourceId: pub.publication.source_id,
+      reviewTypeStatus: pub.review_type,
+      personPublication: pub
+    }
+    normedPersonPubs.push(normedPersonPub)
+  })
+  return normedPersonPubs
+}
+
 async function main() {
   console.log(await searchClient.getKeys())
   try {
@@ -122,105 +271,31 @@ async function main() {
 
   console.log(index)
 
-  let lowerLimit = 0
-  const increment = 400
-  const resultsCount = await gqlClient.query({
-    query: gql`
-      query MyQuery {
-        persons_publications_aggregate {
-          aggregate {
-            max {
-              id
-            }
-          }
-        }
-      }
-    `
-  })
-  const maxId = resultsCount.data.persons_publications_aggregate.aggregate.max.id
-  console.log(`Max id found: ${maxId}`)
-  const times = maxId / increment
-  let loops = Number.parseInt(`${times}`)
-  const mod = maxId % increment
-  if (mod > 0) loops = loops + 1
-  console.log(`Will query '${loops}' times for max id: '${maxId}' and max result size: '${increment}'`)
-  const publications = []
-  for (let index = 0; index < loops; index++) {
-    console.log(`Query for personPublications ${lowerLimit+1} to ${lowerLimit + increment}...`)
-    const results = await gqlClient.query({
-      query: gql`
-      query MyQuery {
-        persons_publications(limit: ${increment}, order_by: {id: asc}, 
-          where: {
-            id: {_gt: ${lowerLimit}}, 
-            reviews: {review_type: {_eq: accepted},
-            review_organization_value: {_neq: ND}},
-            org_reviews: {review_type: {_eq: "accepted"}, 
-            review_organization_value: {_eq: "ND"}}}
-        ){
-          id
-          org_reviews(where: {review_organization_value: {_eq: "ND"}}, order_by: {datetime: desc}, limit: 1) {
-            review_type
-            review_organization_value
-          }
-          reviews(where: {review_organization_value: {_neq: ND}}, order_by: {datetime: desc}, limit: 1) {
-            review_type
-            review_organization_value
-            review_organization {
-              comment
-            }
-          }
-          publication {
-            id
-            abstract
-            doi
-            title
-            year
-            csl_string
-            journal_title: csl(path:"container-title")
-            journal {
-              title
-              journal_type
-              journals_classifications {
-                classification {
-                  identifier
-                  name
-                }
-              }
-              journals_impactfactors {
-                year
-                impactfactor
-              }
-              publisher
-            }
-            awards {
-              id
-              funder_award_identifier
-              funder_name
-              source_name
-            }
-          }
-          person {
-            family_name
-            given_name
-            id
-          }
-        }
-      }  
-      `
-    })
-    publications.push(results.data.persons_publications)
-    lowerLimit = lowerLimit + increment
+  const thisYear = Number.parseInt(moment().format('YYYY'))
+  const startYear = thisYear - 4
+  const years = []
+  for (let j=0; j < 5; j++) {
+    years.push(startYear + j)
   }
-  
-  const flatPublications = _.flatten(publications)
 
-  // now map them to person publication by id
-  const mapById = {}
-  _.each(flatPublications, (publication) => {
-    mapById[publication.id] = publication
-  })
-  console.log(`Found '${_.keys(mapById).length}' personPubs`)
+  const reviewTypes = ["accepted"]
+  const organizationValues = await getOrganizationValues()
+  const publicationGraphs: PublicationGraph[] = []
+
+  // const organizationValues = ['NDNANO']
+  for (let i=0; i < organizationValues.length; i++) {
+    for (let j=0; j < years.length; j++) {
+      const flatPublications = await loadPublications(organizationValues[i], [years[j]])
+      const normedPersonPubs = getNormedPersonPublications(flatPublications)
+
+      const publicationGraph = PublicationGraph.createPublicationGraph(reviewTypes,false)
+
+      publicationGraph.addToGraph(normedPersonPubs)
+      console.log(`pub sets total: ${publicationGraph.getAllPublicationSets().length}`)
+
+      publicationGraphs.push(publicationGraph)
+    }
+  }
 
   const topLevelClassifications = {
     '10': 'Multidisciplinary',
@@ -252,14 +327,25 @@ async function main() {
     '36' : 'Health Professions'
   }
 
-  const documents = _.chain(_.values(mapById))
-    .map((doc) => {
-      if (doc.reviews[0].review_type !== 'accepted')
-        return null
+
+  const documents = []
+  _.each(publicationGraphs, (publicationGraph) => {
+    const pubSets = publicationGraph.getAllPublicationSets()
+    _.each(pubSets, (pubSet: PublicationSet) => {
+      let authors = []
+      _.each(pubSet.personPublications, (personPub) => {
+        const author = `${_.get(personPub.person, 'family_name')}, ${_.get(personPub.person, 'given_name')}`
+        authors.push(author)
+      })
+      authors = _.uniq(authors)
+
+      const doc = pubSet.mainPersonPub.personPublication
+      // if (doc.reviews[0].review_type !== 'accepted')
+      //   return null
       const impactFactor =  getImpactFactorValue(doc)
       //set range value for impact factor
       const impactFactorLevel = getImpactFactorRange(impactFactor)
-      return {
+      const addDoc =  {
         id: `${doc.publication.id}`,
         type: 'publication',
         doi: _.get(doc.publication, 'doi'),
@@ -278,7 +364,8 @@ async function main() {
         impact_factor: (impactFactor) ? impactFactor['impactfactor'] : 'Unavailable',
         impact_factor_range: impactFactorLevel,
         classifications: _.map(_.get(doc.publication, 'journal.journals_classifications', []), c => c.classification.name),
-        authors: `${_.get(doc.person, 'family_name')}, ${_.get(doc.person, 'given_name')}`,
+        authors: authors,
+        // authors: `${_.get(doc.person, 'family_name')}, ${_.get(doc.person, 'given_name')}`,
         publisher: _.get(doc.publication, 'journal.publisher', null),
         funder: _.uniq(_.map(
           _.get(doc.publication, 'awards', []),
@@ -287,19 +374,13 @@ async function main() {
           }
         )),
         citation: getCitationApa(doc.publication.csl_string),
-        review_organization_value: _.get(doc.reviews[0], 'review_organization_value', null),
-        review_organization_label: _.get(doc.reviews[0].review_organization, 'comment', null),
+        review_organization_value: _.get(doc.review_organization, 'review_organization_value', null),
+        review_organization_label: _.get(doc.review_organization, 'comment', null),
         wildcard: "*" // required for empty search (i.e., return all)
       }
+      documents.push(addDoc)
     })
-    .compact()
-    .groupBy('id')
-    .map(doc => _.mergeWith(
-      {authors: []}, ...doc, (o, v, k) =>  k === 'authors' ? o.concat(v) : v)
-    )
-    .uniqBy('doi')
-    .value()
-
+  })
   console.log(`Mapped #: ${documents.length}`)
 
   await index.addDocuments(documents)
