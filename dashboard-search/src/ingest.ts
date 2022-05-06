@@ -56,7 +56,7 @@ function getImpactFactorValue (doc) {
     function ( factor ) {
       // console.log(`Processing impact factors: ${JSON.stringify(factor, null, 2)}`)
       // console.log(`Testing ${JSON.stringify(factor, null, 2)} against ${_.get(doc.publication, 'year')}`)
-      return Number.parseInt(factor.year) === Number.parseInt(_.get(doc.publication, 'year'))
+      return Number.parseInt(factor.year) === (Number.parseInt(_.get(doc.publication, 'year')) - 1)
     }
   )
 }
