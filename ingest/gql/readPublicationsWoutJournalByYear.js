@@ -1,10 +1,10 @@
 import gql from 'graphql-tag'
 
-export default function readPublicationsWoutJournalByYear (startYear) {
+export default function readPublicationsWoutJournalByYear (year) {
   return {
     query: gql`
-      query MyQuery ($startYear: Int!){
-        publications (where: {journal_id: {_is_null: true}, year: {_gte: $startYear}}) {
+      query MyQuery ($year: Int!){
+        publications (where: {journal_id: {_is_null: true}, year: {_eq: $year}}) {
           id
           title
           doi
@@ -22,7 +22,7 @@ export default function readPublicationsWoutJournalByYear (startYear) {
       }
     `,
     variables: {
-      startYear
+      year
     }
   }
 }

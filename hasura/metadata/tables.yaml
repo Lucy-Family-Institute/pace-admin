@@ -1048,6 +1048,15 @@
         insertion_order: null
         column_mapping:
           id: persons_publications_id
+  - name: org_reviews
+    using:
+      manual_configuration:
+        remote_table:
+          schema: public
+          name: org_reviews
+        insertion_order: null
+        column_mapping:
+          id: persons_publications_id
   - name: reviews
     using:
       manual_configuration:
@@ -1418,6 +1427,15 @@
     schema: public
     name: reviews_persons_publications
   object_relationships:
+  - name: person
+    using:
+      manual_configuration:
+        remote_table:
+          schema: public
+          name: persons
+        insertion_order: null
+        column_mapping:
+          person_id: id
   - name: persons_publications
     using:
       manual_configuration:
@@ -1436,6 +1454,15 @@
         insertion_order: null
         column_mapping:
           publication_id: id
+  - name: review_organization
+    using:
+      manual_configuration:
+        remote_table:
+          schema: public
+          name: review_organization
+        insertion_order: null
+        column_mapping:
+          review_organization_value: value
   - name: type_review
     using:
       manual_configuration:
