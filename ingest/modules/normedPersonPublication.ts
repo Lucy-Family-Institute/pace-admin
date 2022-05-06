@@ -7,6 +7,7 @@ export default class NormedPersonPublication {
   person_id: number
   person?
   publication?  // will be initialized if populating with full pub object, otherwise rely on properties below
+  personPublication? // full object if helpful
   title: string
   doi: string
   sourceName: string
