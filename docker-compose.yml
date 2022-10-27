@@ -14,7 +14,7 @@ services:
     restart: unless-stopped
 
   hasura:
-    image: hasura/graphql-engine:v2.0.7.cli-migrations-v2
+    image: hasura/graphql-engine:v2.1.1.cli-migrations-v2
     ports:
       - ${HASURA_PORT}:${HASURA_DOCKER_PORT}
       # - 9695:9695
@@ -30,7 +30,7 @@ services:
     restart: unless-stopped
 
   keycloak:
-    image: jboss/keycloak:15.0.2
+    image: jboss/keycloak:15.1.1
     environment:
       DB_VENDOR: POSTGRES
       DB_ADDR: postgres
@@ -57,7 +57,7 @@ services:
     restart: unless-stopped
 
   search:
-    image: getmeili/meilisearch:v0.11.0
+    image: getmeili/meilisearch:v0.28.0
     environment:
       MEILI_MASTER_KEY: ${MEILI_KEY}
     ports:

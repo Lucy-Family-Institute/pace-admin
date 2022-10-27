@@ -10,8 +10,14 @@ This pilot project will prototype a new process that automates data collection f
 1. Make sure you have [Docker](https://docs.docker.com/engine/install/) and [Docker Compose](https://docs.docker.com/compose/install/).
 1. Also install the [Hasura CLI](https://github.com/hasura/graphql-engine/tree/master/cli). Run the following comme to ensure you have the correct version:
     ```bash
-    hasura update-cli --version v2.0.0-beta.2
+    hasura update-cli --version v2.1.1
     ```
+1. If you are using a Mac with the M1 chip (AMR64) you will need to manually build Keycloak.  Change to your root git directory on your machine and run the following commands"
+    git clone https://github.com/keycloak/keycloak-containers.git
+    cd keycloak-containers/server
+    git checkout tags/15.1.1 -b 15.1.1 
+    git fetch --all --tags 
+    docker build -t jboss/keycloak:15.1.1 .
 1. You may already have Node on your system but installing the recommended version via [NVM](https://github.com/nvm-sh/nvm) or [NVM Windows](https://github.com/coreybutler/nvm-windows) is preferred. Please install NVM.
 1. Clone the repository from [Github](https://github.com/share-research/pace-admin)
 1. Run the following to enter the pace-admin directory and initiate a new environment variable file by copying environment template:

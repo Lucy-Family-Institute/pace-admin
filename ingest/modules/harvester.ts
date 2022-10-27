@@ -1,7 +1,6 @@
 import _ from 'lodash'
 import pMap from 'p-map'
 import pTimes from 'p-times'
-import path from 'path'
 import { command as writeCsv } from '../units/writeCsv'
 import { wait, randomWait } from '../units/randomWait'
 import moment from 'moment'
