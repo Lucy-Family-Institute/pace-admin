@@ -137,6 +137,12 @@ export class Ingester {
         //for now convert csl json object to a string when storing in DB
         insertPublication ([publication])
       )
+      if (mutatePubResult.data.insert_publications && mutatePubResult.data.insert_publications.returning[0]){
+        console.log("Pass")
+      }
+      else{
+        console.log("Failing here")
+      }
       const publicationId = 0+parseInt(`${ mutatePubResult.data.insert_publications.returning[0].id }`);
       // console.log(`Added publication with id: ${ publicationId }`)
   
