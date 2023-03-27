@@ -51,6 +51,9 @@ reharvest: ingest/node_modules
 update_crossref_data: ingest/node_modules
 	cd ingest && ts-node fetchCrossRefAuthorData.ts && cd ..
 
+update_google_scholar_data: ingest/node_modules
+	cd ingest && ts-node fetchGoogleScholarAuthorData.ts && cd ..
+
 update_semantic_scholar_data: ingest/node_modules
 	cd ingest && ts-node fetchSemanticScholarAuthorData.ts && cd ..
 
