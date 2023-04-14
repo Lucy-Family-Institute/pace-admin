@@ -8,6 +8,7 @@ import _, { update } from 'lodash'
 import { command as loadCsv } from './units/loadCsv'
 import readPersons from './gql/readPersons'
 import updatePersonSemanticScholarIds from './gql/updatePersonSemanticScholarIds'
+import updatePersonGoogleScholarId from './gql/updatePersonGoogleScholarId'
 import updatePersonDates from './gql/updatePersonDates'
 import updatePersonStartDateEndDateIsNull from './gql/updatePersonStartDateEndDateIsNull'
 import { __EnumValue } from 'graphql'
@@ -82,6 +83,17 @@ async function main (): Promise<void> {
           return _.trim(id)
         })
         updateSourceIds[personId]['semanticScholarIds'] = semanticScholarIds
+      }
+      if (author['google_scholar_id']){
+        if (!updateSourceIds[personId]){
+          updateSourceIds[personId] = {}
+        }
+        // add multiples as array delimited by ';'
+        let googleScholarId = _.split(author['google_scholar_id'], ';')
+        googleScholarId = _.map(googleScholarId, (id) => {
+          return _.trim(id)
+        })
+        updateSourceIds[personId]['googleScholarId'] = googleScholarId
       }
       if (author['name_variances']) {
         const existingNameVariances = personMap[nameKey][0].nameVariances
@@ -177,6 +189,16 @@ async function main (): Promise<void> {
   }, { concurrency: 1 })
   console.log(`Done updating semantic scholar ids for authors. Updated ${updatedSourceIds} authors.`)
 
+  let updatedSourceIds1 = 0
+  await pMap(_.keys(updateSourceIds), async (updatePersonId) => {
+    const sourceIds = updateSourceIds[updatePersonId]
+    if (sourceIds['googleScholarId']){
+      const resultUpdateScholarId = await client.mutate(updatePersonGoogleScholarId(updatePersonId, sourceIds['googleScholarId']))
+      updatedSourceIds1 += resultUpdateScholarId.data.update_persons.returning.length
+    }
+  }, { concurrency: 1 })
+  console.log(`Done updating google scholar ids for authors. Updated ${updatedSourceIds1} authors.`)
+  
   console.log('Begin updating start and end dates for authors...')
   // update existing members if dates changed
   let updatedCount = 0

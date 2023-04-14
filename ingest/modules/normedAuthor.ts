@@ -5,6 +5,7 @@ export default interface NormedAuthor {
   affiliations: any[]
   sourceIds: {
     scopusAffiliationId?: string,
-    semanticScholarIds?: string[]
+    semanticScholarIds?: string[],
+    googleScholarId?: string[]
   }
 }
