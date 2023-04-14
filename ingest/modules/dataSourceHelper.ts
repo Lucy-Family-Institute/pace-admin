@@ -7,6 +7,7 @@ import DataSourceConfig from './dataSourceConfig'
 import { ScopusDataSource } from './scopusDataSource'
 import { CrossRefDataSource } from './crossrefDataSource'
 import { WosDataSource } from './wosDataSource'
+import { GoogleScholarDataSource } from './googleScholarDataSource'
 
 // given a datasource name returns the correct datasource object
 // put this code in one class to avoid hard-coded the datasource name variants everywhere
@@ -32,6 +33,8 @@ export default class DataSourceHelper {
         return new CrossRefDataSource(dsConfig)
       } else if (lowerDSName === 'webofscience') {
         return new WosDataSource(dsConfig)
+      } else if (lowerDSName === 'googlescholar') {
+        return new GoogleScholarDataSource(dsConfig)
       }
     } else {
       return undefined

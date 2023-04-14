@@ -25,6 +25,7 @@ export default function readPersonsByYear (year) {
           start_date
           end_date
           semantic_scholar_ids
+          google_scholar_id
           institution {
             name
           }

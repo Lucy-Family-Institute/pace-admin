@@ -27,7 +27,8 @@ interface NormedCenterMember {
   endDate: Date
   sourceIds: {
     scopusAffiliationId?: string,
-    semanticScholarIds?: []
+    semanticScholarIds?: [],
+    googleScholarId?: []
   }
 }
 export default class NormedPerson {
@@ -42,7 +43,8 @@ export default class NormedPerson {
   names?: any[] // includes main name and name variances in one array
   sourceIds: {
     scopusAffiliationId?: string,
-    semanticScholarIds?: string[]
+    semanticScholarIds?: string[],
+    googleScholarId?: string[]
   }
   // ------ end declare properties used when using NormedPerson like an interface
 
@@ -121,7 +123,9 @@ export default class NormedPerson {
         endDate: dateHelper.getDateObject(person.end_date),
         names: names,
         nameVariances: person.persons_namevariances,
-        sourceIds: { semanticScholarIds: JSON.parse(person.semantic_scholar_ids) }
+        sourceIds: { semanticScholarIds: JSON.parse(person.semantic_scholar_ids),
+                    googleScholarId: (person.google_scholar_id ? JSON.parse(person.google_scholar_id) : '')
+        }
       }
       return np
     })
@@ -156,7 +160,9 @@ export default class NormedPerson {
         givenNameInitial: _.toLower(member.person.given_name[0]),
         startDate: member.start_date,
         endDate: member.end_date,
-        sourceIds: { semanticScholarIds: member.person.semantic_scholar_ids }
+        sourceIds: { semanticScholarIds: member.person.semantic_scholar_ids,
+                    googleScholarId: member.person.google_scholar_id
+        }
       }
       normedMembers.push(normedMember)
     })

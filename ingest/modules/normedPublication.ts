@@ -14,6 +14,7 @@ import BibTex from './bibTex'
 import Csl from './csl'
 import CslDate from './cslDate'
 import { SemanticScholarDataSource } from './semanticScholarDataSource'
+import { GoogleScholarDataSource } from './googleScholarDataSource'
 import { PubMedDataSource } from './pubmedDataSource'
 import { WosDataSource } from './wosDataSource'
 import { CrossRefDataSource } from './crossrefDataSource'
@@ -205,6 +206,7 @@ export default class NormedPublication {
       fs.mkdirSync(jsonFileDir);
     }
     const filePath = path.join(jsonFileDir, NormedPublication.getSourceMetadataFileName(pub))
+    // console.log(filePath)
     if (sourceMetadata) {
       console.log(`Writing source metadata file: ${filePath}`)
       await writeToJSONFile(sourceMetadata, filePath)

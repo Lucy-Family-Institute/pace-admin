@@ -57,6 +57,9 @@ update_semantic_scholar_data: ingest/node_modules
 update_wos_data: ingest/node_modules
 	cd ingest && ts-node fetchWoSAuthorDataNewModel.ts && cd ..
 
+update_google_scholar_data: ingest/node_modules
+	cd ingest && ts-node fetchGoogleScholarAuthorData.ts && cd ..
+
 update_pubmed_data: ingest/node_modules
 	cd ingest && ts-node fetchPubmedData.js && cd ..
 	cd ingest && ts-node joinAuthorAwards.js && cd ..
