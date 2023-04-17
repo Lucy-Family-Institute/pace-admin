@@ -11,5 +11,6 @@ export default interface HarvestSet {
     query?: string,
     offset?: Number,
     pageSize?: Number,
-    totalResults: Number
+    totalResults: Number,
+    nextPageExist?: boolean
 }

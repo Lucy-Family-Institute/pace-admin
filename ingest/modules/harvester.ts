@@ -1,7 +1,6 @@
 import _ from 'lodash'
 import pMap from 'p-map'
 import pTimes from 'p-times'
-import path from 'path'
 import { command as writeCsv } from '../units/writeCsv'
 import { wait, randomWait } from '../units/randomWait'
 import moment from 'moment'
@@ -77,6 +76,7 @@ export default class Harvester {
           }
           const pageSize = this.ds.getRequestPageSize().valueOf()
           const totalResults = harvestSet.totalResults.valueOf()
+          const nextPageExist = harvestSet.nextPageExist.valueOf()
 
           sessionState = harvestSet.sessionState
 
@@ -104,7 +104,14 @@ export default class Harvester {
                 currentHarvestSets.push(harvestSet)
               }
             }, { concurrency: 1})
+          } else if (nextPageExist){
+            offset += pageSize
+            harvestSet = await thisHarvester.fetchPublications(searchPerson, harvestOperation, sessionState, offset)
+              if (harvestSet) {
+                currentHarvestSets.push(harvestSet)
+              }
           }
+          
           // check total retrieved result matches what was returned
           let totalRetrieved = 0
           _.each (currentHarvestSets, (harvestSet) => {
@@ -226,6 +233,7 @@ export default class Harvester {
       // console.log(`Writing normed pubs to csv: ${JSON.stringify(normedPubs, null, 2)}`)
       await NormedPublication.writeToCSV(normedPubs, filePath, false, this.ds.getDataSourceConfig().batchSize)
       await pMap (normedPubs, async (normedPub) => {
+        console.log(JSON.stringify(normedPub, null, 2))
         await NormedPublication.writeSourceMetadataToJSON(normedPub, normedPub.sourceMetadata, harvestOperation.harvestResultsDir)
       })
     } catch (error) {

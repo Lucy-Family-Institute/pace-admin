@@ -14,7 +14,7 @@ services:
     restart: unless-stopped
 
   hasura:
-    image: hasura/graphql-engine:v2.0.7.cli-migrations-v2
+    image: hasura/graphql-engine:v2.1.1.cli-migrations-v2
     ports:
       - ${HASURA_PORT}:${HASURA_DOCKER_PORT}
       # - 9695:9695
@@ -30,7 +30,7 @@ services:
     restart: unless-stopped
 
   keycloak:
-    image: jboss/keycloak:15.0.2
+    image: jboss/keycloak:15.1.1
     environment:
       DB_VENDOR: POSTGRES
       DB_ADDR: postgres
@@ -43,7 +43,7 @@ services:
       KEYCLOAK_PASSWORD: ${KEYCLOAK_PASSWORD}
       # KEYCLOAK_IMPORT: /opt/jbss/keycloak/realm-export.json
       # Uncomment the line below if you want to specify JDBC parameters. The parameter below is just an example, and it shouldn't be used in production without knowledge. It is highly recommended that you read the PostgreSQL JDBC driver documentation in order to use it.
-      #JDBC_PARAMS: "ssl=true"
+      #JDBC_PARAMS: "ssl=false"
     # volumes: 
       # - ./build/templates/keycloak/realm-export.json:/opt/jboss/keycloak/realm-export.json
       # - ./build/templates/keycloak/standalone.xml:/opt/jboss/keycloak/standalone/configuration/standalone.xml
@@ -57,7 +57,7 @@ services:
     restart: unless-stopped
 
   search:
-    image: getmeili/meilisearch:v0.11.0
+    image: getmeili/meilisearch:v0.28.0
     environment:
       MEILI_MASTER_KEY: ${MEILI_KEY}
     ports:

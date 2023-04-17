@@ -54,6 +54,7 @@ export default function readPersonPublicationsAllJS (institutionNames, organizat
             title
             doi
             source_name
+            source_id
             journal_title: csl(path:"container-title")
             abstract
             year
