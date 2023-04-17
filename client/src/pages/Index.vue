@@ -740,7 +740,7 @@ export default {
     getGoogleScholarUri (sourceId) {
       const sourceIdParts = _.split(sourceId, ':')
       const authorId = sourceIdParts[0]
-      return `$(process.env.GOOGLE_SCHOLAR_VieW_PUBLICATION}${authorId}&citation_for_view=${sourceId}`
+      return `${process.env.GOOGLE_SCHOLAR_VIEW_PUBLICATION}${authorId}&citation_for_view=${sourceId}`
     },
     getWebOfScienceUri (wosId) {
       return `${process.env.WOS_PUBLICATION_URL}${wosId}`
