@@ -681,6 +681,8 @@ export default {
         return (personPublication.publication.doi ? personPublication.publication.doi : personPublication.publication.source_id)
       } else if (personPublication.publication.source_name.toLowerCase() === 'webofscience') {
         return personPublication.publication.wos_id['_text']
+      } else if (personPublication.publication.source_name.toLowerCase() === 'googlescholar') {
+        return personPublication.publication.source_id
       } else {
         return undefined
       }
@@ -718,6 +720,8 @@ export default {
           return this.getWebOfScienceUri(sourceId)
         } else if (personPublication.publication.source_name.toLowerCase() === 'semanticscholar') {
           return this.getSemanticScholarUri(sourceId)
+        } else if (personPublication.publication.source_name.toLowerCase() === 'googlescholar') {
+          return this.getGoogleScholarUri(sourceId)
         }
       } else {
         return undefined
@@ -732,6 +736,11 @@ export default {
     },
     getSemanticScholarUri (paperId) {
       return `${process.env.SEMANTIC_SCHOLAR_VIEW_PUBLICATION_URL}${paperId}`
+    },
+    getGoogleScholarUri (sourceId) {
+      const sourceIdParts = _.split(sourceId, ':')
+      const authorId = sourceIdParts[0]
+      return `https://scholar.google.com/citations?view_op=view_citation&hl=en&user=${authorId}&citation_for_view=${sourceId}`
     },
     getWebOfScienceUri (wosId) {
       return `${process.env.WOS_PUBLICATION_URL}${wosId}`
@@ -754,6 +763,8 @@ export default {
           return 'purple'
         } else if (sourceName.toLowerCase() === 'webofscience') {
           return 'teal'
+        } else if (sourceName.toLowerCase() === 'googlescholar') {
+          return 'blue-11'
         } else {
           return 'indigo'
         }
