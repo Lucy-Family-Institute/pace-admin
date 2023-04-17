@@ -125,18 +125,18 @@ async function main (): Promise<void> {
   const publications = await getPublications(startYear)
   console.log(`Found ${publications.length} publications >= ${startYear}`)
 
-  console.log(`Querying for publications NUll Year...`)
-  const publicationsNullYear = await getPublicationsNullYear()
-  console.log(`Found ${publicationsNullYear.length} publications Null Year`)
+  // console.log(`Querying for publications NUll Year...`)
+  // const publicationsNullYear = await getPublicationsNullYear()
+  // console.log(`Found ${publicationsNullYear.length} publications Null Year`)
 
   const pubsNeedUpdateYear = []
   const pubsNeedUpdateMonth = []
   const pubsNeedUpdateDay = []
 
-  const allPubs = _.concat(publications, publicationsNullYear)
+  // const allPubs = _.concat(publications, publicationsNullYear)
 
   let pubCounter = 0
-  console.log(`Checking publication dates for ${allPubs.length} >= ${startYear} and Null publications...`)
+  console.log(`Checking publication dates for ${publications.length} >= ${startYear} and Null publications...`)
   let differentYearCount = 0
   let totalCount = 0
   let yearFoundCount = 0
@@ -148,7 +148,7 @@ async function main (): Promise<void> {
   let yearNaNCount = 0
   let monthNaNCount = 0
   let dayNaNCount = 0
-  await pMap(allPubs, async (publication) => {
+  await pMap(publications, async (publication) => {
     pubCounter += 1
     const updatedPubDate: CslDate = Csl.getPublicationDate(new Csl(publication['csl']))
     if (updatedPubDate !== null){

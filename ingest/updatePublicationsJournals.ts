@@ -136,7 +136,7 @@ async function main (): Promise<void> {
         singleMatches.push(matchedInfo)
       }
     }
-  }, {concurrency: 60})
+  }, {concurrency: 30})
 
   console.log(`Multiple Matches: ${JSON.stringify(multipleMatches, null, 2)}`)
   console.log(`Multiple Matches Count: ${multipleMatches.length}`)

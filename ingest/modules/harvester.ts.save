@@ -280,8 +280,11 @@ export default class Harvester {
     try {
       // now chunk the dedupedPubs by dirBatchSize * filePubBatchSize => total number of pubs in each results dir
       // to break them into managable chunks to load balance the amount of pubs pushed through the ingest process at once
+      console.log('hereeee')
       const dedupBatchSize = dirBatchSize * filePubBatchSize
       const dedupBatches = _.chunk(dedupedNormedPubs, dedupBatchSize)
+      console.log(dedupBatches)
+      console.log(dedupBatchSize)
       await pMap(dedupBatches, async (dedupedPubs, index) => {
 
         const targetDedupBaseParent = FsHelper.getParentDir(targetDedupedDirBasePath)
@@ -316,39 +319,26 @@ export default class Harvester {
 
     // returns map of year to array of NormedPersons
     const harvestOperations: HarvestOperation[] = await this.ds.getHarvestOperations(this.client)
-    // perform all harvest operations for this author, could be more than one like search by author id plus simple name search
     await pMap(harvestOperations, async (harvestOperation: HarvestOperation) => {
-      const harvestOperationTypeStrName = HarvestOperationType[harvestOperation.harvestOperationType]  
-      let personCounter = 0
-  
-      // const subset = _.slice(harvestOperation.normedPersons, 0, 2)
-      // await pMap(subset, async (person) => {
-      await pMap(harvestOperation.normedPersons, async (person) => {
-        try {
-          personCounter += 1
-          console.log(`Getting papers for ${person.familyName}, ${person.givenName} persons via ${harvestOperationTypeStrName}`)
-          // run for each name plus name variance, put name variance second in case undefined
-          await wait(this.ds.getDataSourceConfig().requestInterval)
-          await this.harvestToCsv(harvestOperation, [person], `${person.familyName}_${person.givenName}`)
-          await wait(1500)
-
-          succeededAuthors.push(person)
-        } catch (error) {
-          const errorMessage = `Error on get CrossRef papers for author: ${JSON.stringify(person, null, 2)}: ${error}`
-          failedPapers.push(errorMessage)
-          failedAuthors.push(person)
-          console.log(errorMessage)
-        }
-      }, {concurrency: 1})
-
-      const rawHarvestDir = NormedPublication.getRawHarvestDirPath(harvestOperation.harvestResultsDir)
-  
-      console.log(`Deduping publications to path: ${harvestOperation.harvestResultsDir}`)
+      //const rawHarvestDir = NormedPublication.getRawHarvestDirPath(harvestOperation.harvestResultsDir)
+      const rawHarvestDir = '../data/harvester/Crossref/CrossRef_2021_20230213223200/raw_harvest/'
+      console.log(rawHarvestDir)
+      //console.log(`Deduping publications to path: ${harvestOperation.harvestResultsDir}`)
       // make this call be something standardized for every harvester
-      const baseDirName = FsHelper.getBaseDirName(harvestOperation.harvestResultsDir)
-      const dedupTargetBasePath = `${harvestOperation.harvestResultsDir}/${baseDirName}_deduped/${baseDirName}/`
-      const dataDir = harvestOperation.harvestResultsDir
-      await Harvester.dedupHarvestedPublications(rawHarvestDir,dedupTargetBasePath,dataDir, this.ds.getDataSourceConfig().batchSize, this.ds.getDataSourceConfig().harvestFileBatchSize)
+      //const baseDirName = FsHelper.getBaseDirName(harvestOperation.harvestResultsDir)
+      const baseDirName = 'CrossRef_2021_20230213223200'
+      console.log(baseDirName)
+      console.log(harvestOperation.harvestResultsDir)
+      //const dedupTargetBasePath = `${harvestOperation.harvestResultsDir}/${baseDirName}_deduped/${baseDirName}/`
+      const dedupTargetBasePath = '../data/harvester/SemanticScholar/SemanticScholar_2021-2023_20230214011939/SemanticScholar_2021-2023_20230214011939_deduped/SemanticScholar_2021-2023_20230214011939/'
+      console.log(dedupTargetBasePath)
+      //const dataDir = harvestOperation.harvestResultsDir
+      const dataDir = '../data/harvester/SemanticScholar/SemanticScholar_2021-2023_20230214011939/'
+      console.log('datadir')
+      console.log(dataDir)
+      console.log(this.ds.getDataSourceConfig().batchSize)
+      console.log(this.ds.getDataSourceConfig().harvestFileBatchSize)
+      await Harvester.dedupHarvestedPublications(rawHarvestDir,dedupTargetBasePath,dataDir,200,10 )
 
       console.log(`Failed authors: ${failedAuthors.length}`)
       console.log(`Succeeded authors: ${succeededAuthors.length}`)
