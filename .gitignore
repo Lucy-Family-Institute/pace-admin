@@ -17,6 +17,7 @@ dashboard-search/data.ms/*
 scratch/*
 build/*
 
+backup.tar
 # Ignore files and folders recursively
 /build/**
 # Then exclude folders

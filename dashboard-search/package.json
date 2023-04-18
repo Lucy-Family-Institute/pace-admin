@@ -15,7 +15,7 @@
     "graphql-tag": "^2.10.3",
     "jsonlines": "^0.1.1",
     "lodash": "^4.17.19",
-    "meilisearch": "^0.11.0",
+    "meilisearch": "^0.28.0",
     "moment": "^2.29.3",
     "node-fetch": "^2.6.1",
     "p-map": "^5.3.0",

@@ -109,7 +109,7 @@ export class Ingester {
     }
   }
 
-  async insertPublicationAndAuthors (title, doi, csl: Csl, authors, sourceName, sourceId, sourceMetadata, minPublicationYear?) {
+  async insertPublicationAndAuthors (title, doi, csl: Csl, authors, sourceName, sourceId, abstract, sourceMetadata, minPublicationYear?) {
     //console.log(`trying to insert pub: ${JSON.stringify(title,null,2)}, ${JSON.stringify(doi,null,2)}`)
     try  {
       // const publicationYear = Csl.getPublicationYear(csl)
@@ -129,6 +129,7 @@ export class Ingester {
         csl: csl.valueOf(),  // put these in as JSONB
         source_name: sourceName,
         source_id: sourceId,
+        abstract: abstract,
         source_metadata: sourceMetadata, // put these in as JSONB,
         csl_string: JSON.stringify(csl.valueOf())
       }
@@ -137,6 +138,12 @@ export class Ingester {
         //for now convert csl json object to a string when storing in DB
         insertPublication ([publication])
       )
+      if (mutatePubResult.data.insert_publications && mutatePubResult.data.insert_publications.returning[0]){
+        console.log("Pass")
+      }
+      else{
+        console.log("Failing here")
+      }
       const publicationId = 0+parseInt(`${ mutatePubResult.data.insert_publications.returning[0].id }`);
       // console.log(`Added publication with id: ${ publicationId }`)
   
@@ -384,16 +391,21 @@ export class Ingester {
         const sourceId = normedPub.sourceId
         // reset doi if it is a placeholder
         let checkDoi = normedPub.doi
-        if (_.toLower(normedPub.doi) === _.toLower(`${normedPub.datasourceName}_${sourceId}`)){
+        if (_.toLower(normedPub.doi) === _.toLower(`${normedPub.datasourceName}_${sourceId}`) || !normedPub.doi || _.trim(normedPub.doi).length == 0){
           checkDoi = null
         }
-
+        // handle abstracts
+        let checkabstract = normedPub.abstract
+        if (!normedPub.abstract || _.trim(normedPub.abstract).length == 0){
+          checkabstract = null
+        }
+        
         try {
           await this.pubExistsMutex.dispatch( async () => {
             publicationId = await this.getPublicationIdIfAlreadyInDB(checkDoi, sourceId, csl, normedPub.datasourceName)
             if (!publicationId) {
               console.log(`Inserting Publication DOI: ${normedPub.doi} from source: ${normedPub.datasourceName}`)
-              publicationId = await this.insertPublicationAndAuthors(normedPub.title, checkDoi, csl, authors, normedPub.datasourceName, sourceId, sourceMetadata)
+              publicationId = await this.insertPublicationAndAuthors(normedPub.title, checkDoi, csl, authors, normedPub.datasourceName, sourceId, checkabstract, sourceMetadata)
               publicationStatusValue = PublicationStatusValue.ADDED_PUBLICATION
               addedPub = true
             } else {
