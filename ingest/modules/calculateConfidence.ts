@@ -538,6 +538,22 @@ export class CalculateConfidence {
     return matchedAuthors
   }
 
+  testAuthorId (author: NormedPerson, publicationAuthorMap: Map<string, NormedAuthor[]>, sourceName, sourceMetadata) {
+    let matchedAuthors = new Map()
+    if (sourceName === process.env.GOOGLE_SCHOLAR_SOURCE_NAME){
+      if (author.sourceIds.googleScholarId && author.sourceIds.googleScholarId.length > 0){
+        const authorId = author.sourceIds.googleScholarId[0]
+        const ds: DataSource = DataSourceHelper.getDataSource(sourceName)
+        const googleRecordAuthorId = ds.getPublicationSourceAuthorId(sourceMetadata)
+        if (authorId === googleRecordAuthorId) { 
+          // return the full list of matched authors with same last name if id is the same
+          matchedAuthors = this.testAuthorFamilyName(author, publicationAuthorMap)
+        }
+      }
+    }
+    return matchedAuthors
+  }
+
   // returns true/false from a test called for the specific name passed in
   async performConfidenceTest (confidenceType, testPerson: NormedPerson, publicationAuthorMap: Map<string, NormedAuthor[]>, confirmedAuthors: NormedAuthor[], sourceName, sourceMetadata?): Promise<Map<string, NormedAuthor[]>>{
     if (confidenceType.name === 'lastname') {
@@ -588,6 +604,8 @@ export class CalculateConfidence {
     } else if (confidenceType.name === 'subject_area') {
       // do nothing for now and return an empty set
       return new Map()
+    } else if (confidenceType.name === 'author_id') {
+      return this.testAuthorId(testPerson, publicationAuthorMap, sourceName, sourceMetadata)
     } else {
       return new Map()
     }
@@ -712,6 +730,10 @@ export class CalculateConfidence {
     confirmed_by_author: {
       base: 0.99,
       additiveCoefficient: 1.0
+    },
+    author_id: {
+      base: 0.99,
+      additiveCoefficient: 1.0
     }
   }
 
@@ -792,7 +814,7 @@ export class CalculateConfidence {
           })
         })
         // set ceiling to 99%
-        if (confidenceTotal >= 1.0) confidenceTotal = 0.99
+        if (confidenceTotal >= 0.99) confidenceTotal = 0.99
         // have to do some weird conversion stuff to keep the decimals correct
         confidenceTotal = Number.parseFloat(confidenceTotal.toFixed(3))
         //update to current matched authors before proceeding with next tests

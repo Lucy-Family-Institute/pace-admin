@@ -146,6 +146,18 @@ export class GoogleScholarDataSource implements DataSource {
     }
   }
 
+  getPublicationSourceAuthorId (sourceMetadata: string): string {
+    if (sourceMetadata && sourceMetadata['citation_id']) {
+      const citationId = sourceMetadata['citation_id']
+      const sourceIdParts = citationId.split(':')
+      if (sourceIdParts && sourceIdParts[0]) {
+        return sourceIdParts[0]
+      }
+    } 
+    return undefined
+  }
+
+
   async fetchGoogleScholarPaperData(paperId) : Promise<any> {
     // must check that config is initialized
     DataSourceHelper.checkDataSourceConfig(this)
