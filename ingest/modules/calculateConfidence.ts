@@ -548,6 +548,10 @@ export class CalculateConfidence {
         if (authorId === googleRecordAuthorId) { 
           // return the full list of matched authors with same last name if id is the same
           matchedAuthors = this.testAuthorFamilyName(author, publicationAuthorMap)
+          if (!matchedAuthors || _.keys(matchedAuthors).length <= 0) {
+            // just return everything because something failed in the match
+            matchedAuthors = publicationAuthorMap
+          }
         }
       }
     }
