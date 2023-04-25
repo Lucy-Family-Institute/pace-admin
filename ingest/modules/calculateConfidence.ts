@@ -216,7 +216,7 @@ export class CalculateConfidence {
       
       //console.log(`Testing Author for match: ${author.family}, ${author.given}`)
 
-      const passedConfidenceTests: ConfidenceTest[] = await this.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank, sourceName)
+      const passedConfidenceTests: ConfidenceTest[] = await this.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank, sourceName, sourceMetadata)
       // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
       // returns a new map of rank -> confidenceTestName -> calculatedValue
       const passedConfidenceTestsWithConf = await this.calculateAuthorConfidence(passedConfidenceTests)
@@ -538,6 +538,27 @@ export class CalculateConfidence {
     return matchedAuthors
   }
 
+  testAuthorId (author: NormedPerson, publicationAuthorMap: Map<string, NormedAuthor[]>, sourceName, sourceMetadata) {
+    let matchedAuthors = new Map()
+    if (sourceName === process.env.GOOGLE_SCHOLAR_SOURCE_NAME){
+      if (author.sourceIds.googleScholarId && author.sourceIds.googleScholarId.length > 0){
+        const authorId = author.sourceIds.googleScholarId[0]
+        const ds: DataSource = DataSourceHelper.getDataSource(sourceName)
+        const googleRecordAuthorId = ds.getPublicationSourceAuthorId(sourceMetadata)
+        if (authorId === googleRecordAuthorId) {
+          console.log(`Found a google scholar id match for author: ${author.familyName}, ${author.givenName}, google scholar id: ${authorId}`)
+          // return the full list of matched authors with same last name if id is the same00
+          matchedAuthors = this.testAuthorFamilyName(author, publicationAuthorMap)
+          if (!matchedAuthors || _.keys(matchedAuthors).length <= 0) {
+            // just return everything because something failed in the match
+            matchedAuthors = publicationAuthorMap
+          }
+        }
+      }
+    }
+    return matchedAuthors
+  }
+
   // returns true/false from a test called for the specific name passed in
   async performConfidenceTest (confidenceType, testPerson: NormedPerson, publicationAuthorMap: Map<string, NormedAuthor[]>, confirmedAuthors: NormedAuthor[], sourceName, sourceMetadata?): Promise<Map<string, NormedAuthor[]>>{
     if (confidenceType.name === 'lastname') {
@@ -588,6 +609,8 @@ export class CalculateConfidence {
     } else if (confidenceType.name === 'subject_area') {
       // do nothing for now and return an empty set
       return new Map()
+    } else if (confidenceType.name === 'author_id') {
+      return this.testAuthorId(testPerson, publicationAuthorMap, sourceName, sourceMetadata)
     } else {
       return new Map()
     }
@@ -712,6 +735,10 @@ export class CalculateConfidence {
     confirmed_by_author: {
       base: 0.99,
       additiveCoefficient: 1.0
+    },
+    author_id: {
+      base: 0.99,
+      additiveCoefficient: 1.0
     }
   }
 
@@ -792,7 +819,7 @@ export class CalculateConfidence {
           })
         })
         // set ceiling to 99%
-        if (confidenceTotal >= 1.0) confidenceTotal = 0.99
+        if (confidenceTotal >= 0.99) confidenceTotal = 0.99
         // have to do some weird conversion stuff to keep the decimals correct
         confidenceTotal = Number.parseFloat(confidenceTotal.toFixed(3))
         //update to current matched authors before proceeding with next tests
