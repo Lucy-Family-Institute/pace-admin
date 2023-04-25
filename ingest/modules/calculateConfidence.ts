@@ -216,7 +216,7 @@ export class CalculateConfidence {
       
       //console.log(`Testing Author for match: ${author.family}, ${author.given}`)
 
-      const passedConfidenceTests: ConfidenceTest[] = await this.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank, sourceName)
+      const passedConfidenceTests: ConfidenceTest[] = await this.performAuthorConfidenceTests (person, publicationCSL, confirmedAuthors, confidenceTypesByRank, sourceName, sourceMetadata)
       // console.log(`Passed confidence tests: ${JSON.stringify(passedConfidenceTests, null, 2)}`)
       // returns a new map of rank -> confidenceTestName -> calculatedValue
       const passedConfidenceTestsWithConf = await this.calculateAuthorConfidence(passedConfidenceTests)
@@ -545,8 +545,9 @@ export class CalculateConfidence {
         const authorId = author.sourceIds.googleScholarId[0]
         const ds: DataSource = DataSourceHelper.getDataSource(sourceName)
         const googleRecordAuthorId = ds.getPublicationSourceAuthorId(sourceMetadata)
-        if (authorId === googleRecordAuthorId) { 
-          // return the full list of matched authors with same last name if id is the same
+        if (authorId === googleRecordAuthorId) {
+          console.log(`Found a google scholar id match for author: ${author.familyName}, ${author.givenName}, google scholar id: ${authorId}`)
+          // return the full list of matched authors with same last name if id is the same00
           matchedAuthors = this.testAuthorFamilyName(author, publicationAuthorMap)
           if (!matchedAuthors || _.keys(matchedAuthors).length <= 0) {
             // just return everything because something failed in the match
