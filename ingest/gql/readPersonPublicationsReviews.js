@@ -17,6 +17,9 @@ export default function readPersonPublicationsReviews (id, orgValue) {
           source_name
           source_id
         }
+        person{
+          id
+        }
         reviews_aggregate(where: {review_organization_value: {_eq: $review_organization_value}}, limit: 1, order_by: {datetime: desc}) {
           nodes {
             datetime

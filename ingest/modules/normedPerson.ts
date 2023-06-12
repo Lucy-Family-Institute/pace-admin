@@ -5,6 +5,7 @@ import ApolloClient from 'apollo-client'
 import { NormalizedCacheObject } from 'apollo-cache-inmemory'
 import readPersons from '../gql/readPersons'
 import readPersonsByYearAllCenters from '../gql/readPersonsByYearAllCenters'
+import readPersonsByYearByCenter from '../gql/readPersonsByYearByCenter'
 import readCenterMembers from '../gql/readCenterMembers'
 export interface SimplifiedPerson {
   id: number;
@@ -192,9 +193,22 @@ export default class NormedPerson {
     const queryResult = await client.query(readPersonsByYearAllCenters(year))
     return NormedPerson.mapToNormedPersons(queryResult.data.persons)
   }
+
+  public static async getAllNormedPersonsByYearByCenter (year: number, organizationValue: string, client: ApolloClient<NormalizedCacheObject>) : Promise<Array<NormedPerson>> {
+    const queryResult = await client.query(readPersonsByYearByCenter(year, organizationValue))
+    return NormedPerson.mapToNormedPersons(queryResult.data.persons)
+  }
   
   public static async getAllNormedPersons (client: ApolloClient<NormalizedCacheObject>) : Promise<Array<NormedPerson>> {
     const queryResult = await client.query(readPersons())
     return NormedPerson.mapToNormedPersons(queryResult.data.persons)
+  }
+
+  public static async getNormedPersons(year: number, organizationValue: string, client: ApolloClient<NormalizedCacheObject>): Promise<Array<NormedPerson>> {
+    if (organizationValue.trim() !== "") {
+      return NormedPerson.getAllNormedPersonsByYearByCenter(year, organizationValue, client)
+    } else {
+      return NormedPerson.getAllNormedPersonsByYear(year, client)
+    }
   }
 }

@@ -38,5 +38,5 @@ export default interface DataSource {
   // returns the author id associated with the record retrieved from the 
   getPublicationSourceAuthorId?(sourceMetadata): string
 
-  getHarvestOperations(client: ApolloClient<NormalizedCacheObject>): Promise<HarvestOperation[]>
+  getHarvestOperations(organizationValue: string, client: ApolloClient<NormalizedCacheObject>): Promise<HarvestOperation[]>
 }
