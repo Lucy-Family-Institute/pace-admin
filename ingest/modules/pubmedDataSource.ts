@@ -144,7 +144,7 @@ export class PubMedDataSource implements DataSource {
     return this.dsConfig
   }
 
-  async getHarvestOperations(client: ApolloClient<NormalizedCacheObject>): Promise<HarvestOperation[]> {
+  async getHarvestOperations(organizationValue, client: ApolloClient<NormalizedCacheObject>): Promise<HarvestOperation[]> {
     let harvestOperations: HarvestOperation[] = []
     // not doing anything for now
     return harvestOperations

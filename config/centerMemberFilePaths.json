@@ -19,5 +19,8 @@
   ],
   "IPH": [
     "../data/input/iph_members_2017-2023.csv"
+  ],
+  "LFIDS": [
+    "../data/input/lfids_members_2017-2023.csv"
   ]
 }

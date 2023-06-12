@@ -413,14 +413,14 @@ export class GoogleScholarDataSource implements DataSource {
     return authorIdsByPersonId
   }
 
-  async getHarvestOperations(client: ApolloClient<NormalizedCacheObject>): Promise<HarvestOperation[]> {
+  async getHarvestOperations(organizationValue, client: ApolloClient<NormalizedCacheObject>): Promise<HarvestOperation[]> {
     let harvestOperations: HarvestOperation[] = []
     const minYear = this.dsConfig.harvestYears[0].valueOf()
     const maxYear = this.dsConfig.harvestYears.reverse()[0].valueOf()
  
     let normedPersonsById = {}
     for (let index = 0; index <= maxYear - minYear; index++) {
-      const normedPersonsByYear: NormedPerson[] = await NormedPerson.getAllNormedPersonsByYear((minYear + index), client)
+      const normedPersonsByYear: NormedPerson[] = await NormedPerson.getNormedPersons((minYear + index), organizationValue, client)
       _.each (normedPersonsByYear, (normedPerson: NormedPerson) => {
         if (normedPerson.sourceIds && normedPerson.sourceIds.googleScholarId) {
           normedPersonsById[`${normedPerson.id}`] = normedPerson 

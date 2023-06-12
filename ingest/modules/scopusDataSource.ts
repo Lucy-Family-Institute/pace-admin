@@ -157,12 +157,12 @@ export class ScopusDataSource implements DataSource {
     return this.dsConfig
   }
 
-  async getHarvestOperations(client: ApolloClient<NormalizedCacheObject>): Promise<HarvestOperation[]> {
+  async getHarvestOperations(organizationValue, client: ApolloClient<NormalizedCacheObject>): Promise<HarvestOperation[]> {
     const dateHelper = DateHelper.createDateHelper()
     let harvestOperations: HarvestOperation[] = []
     const years = this.dsConfig.harvestYears
     await pMap(years, async (year) => {
-      const normedPersons: NormedPerson[] = await NormedPerson.getAllNormedPersonsByYear(year.valueOf(), client)
+      const normedPersons: NormedPerson[] = await NormedPerson.getNormedPersons(year.valueOf(),organizationValue,  client)
       const resultsDir = path.join(this.dsConfig.harvestDataDir, `${this.dsConfig.sourceName}_${year}_${moment().format('YYYYMMDDHHmmss')}/`)
       const harvestOperation: HarvestOperation = {
         harvestOperationType: HarvestOperationType.QUERY_BY_AUTHOR_NAME,
