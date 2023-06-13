@@ -115,7 +115,7 @@
           <meta property="parentOrganization" resource="#parentorg" content="University of Notre Dame">
           <!-- Organizational Breadcrumbs -->
           <ul class="footer-breadcrumbs">
-            <li><a :href="hesburghUrl">Hesburgh Libraries</a></li>
+            <li><a :href="hesburghUrl">Hesburger Libraries</a></li>
             <li><a :href="labUrl">Stragegic Innovation Lab</a></li>
           </ul>
           <p><a href="/" class="site-link" property="url"><span property="name">{{ siteName }}</span></a></p>

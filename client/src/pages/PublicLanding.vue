@@ -285,22 +285,25 @@ export default {
     return {
       siteName: `PACE`,
       title: `Publication Activity Collection Environment`,
-      description: `A pilot project in partnership between the Hesburgh Libraries and Notre Dame Research
-        to collect publication data for centers,
-        institutes, and departments to measure impact and highlight
-        examples of research excellence.`,
+      description: 'A project hosted by the Lucy Family Institute for Data & Society to collect publication data for centers, institutes, and departments to measure impact and highlight examples of research excellence.',
+      // Previously was
+      // description: `A pilot project in partnership between the Hesburgh Libraries and Notre Dame Research
+      //  to collect publication data for centers,
+      //  institutes, and departments to measure impact and highlight
+      //  examples of research excellence.`,
       address: {
-        street1: '271A Hesburgh Library',
+        street1: '384E Nieuwland Science Hall & 610 Flanner Hall',
         city: 'Notre Dame',
         state: 'IN',
         zip: 46556,
         country: 'USA'
       },
-      phone: '(574) 631-1086',
+      phone: '(574) 631-9985',
       email: 'rjohns14@nd.edu',
       hesburghUrl: 'https://library.nd.edu/',
       labUrl: 'https://directory.library.nd.edu/directory/departments/1194',
       ndResearchUrl: 'https://research.nd.edu/',
+      LucyUrl: 'https://lucyinstitute.nd.edu',
       '221BUrl': 'https://221b.io',
       social: {
         facebookUrl: '#',
@@ -328,7 +331,7 @@ export default {
     },
     intro () {
       return `
-        PACE is being developed and run by the
+        PACE, hosted by the <a href="${this.LucyUrl}"> Lucy Family Institute for Data & Society</a>, was developed in partnership with the
         <a href="${this.hesburghUrl}">Hesburgh Libraries</a>' <a href="${this.labUrl}">Strategic Innvotation Lab</a>
         in partnership with <a href="${this.ndResearchUrl}">ND Research</a>
         and <a href="${this['221BUrl']}">221B Consulting</a>
