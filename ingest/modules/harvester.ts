@@ -1,4 +1,5 @@
 import _ from 'lodash'
+import dotenv from 'dotenv'
 import pMap from 'p-map'
 import pTimes from 'p-times'
 import { command as writeCsv } from '../units/writeCsv'
@@ -13,6 +14,10 @@ import { HarvestOperationType, HarvestOperation } from './harvestOperation'
 import FsHelper from '../units/fsHelper'
 import ApolloClient from 'apollo-client'
 import { InMemoryCache, NormalizedCacheObject } from 'apollo-cache-inmemory'
+
+dotenv.config({
+  path: '../.env'
+})
 
 export default class Harvester {
   ds: DataSource
@@ -323,8 +328,9 @@ export default class Harvester {
     let succeededAuthors = []
     let failedAuthors = []
 
+    const organizationValue = process.env.ORGANIZATION_VALUE
     // returns map of year to array of NormedPersons
-    const harvestOperations: HarvestOperation[] = await this.ds.getHarvestOperations(this.client)
+    const harvestOperations: HarvestOperation[] = await this.ds.getHarvestOperations(organizationValue,this.client)
     // perform all harvest operations for this author, could be more than one like search by author id plus simple name search
     await pMap(harvestOperations, async (harvestOperation: HarvestOperation) => {
       const harvestOperationTypeStrName = HarvestOperationType[harvestOperation.harvestOperationType]  
