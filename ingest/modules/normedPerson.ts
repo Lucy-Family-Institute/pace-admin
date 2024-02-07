@@ -168,6 +168,23 @@ export default class NormedPerson {
     })
     return normedMembers
   }
+
+  public static mapCenterMemberstoPersons(members: Array<NormedCenterMember>) : NormedPerson[] {
+    let normedPersons: NormedPerson[] = []
+    _.each(members, (member: NormedCenterMember) => {
+      const normedPerson: NormedPerson = {
+        id: member.personId.valueOf(),
+        familyName: member.familyName,
+        givenName: member.givenName,
+        givenNameInitial: member.givenNameInitial,
+        startDate: member.startDate,
+        endDate: member.endDate,
+        sourceIds: member.sourceIds
+      }
+      normedPersons.push(normedPerson)
+    })
+    return normedPersons
+  }
   
   public static getNameKey (lastName: string, firstName: string) : string {
     return `${_.trim(_.toLower(lastName))}, ${_.trim(_.toLower(firstName))}`
@@ -186,6 +203,17 @@ export default class NormedPerson {
   public static async getAllCenterMembers(client: ApolloClient<NormalizedCacheObject>) : Promise<Array<NormedCenterMember>> {
     const queryResult = await client.query(readCenterMembers())
     return NormedPerson.mapToCenterMembers(queryResult.data.persons_organizations)
+  }
+
+  public static async getCenterMemberPersons(organizationValue: string, client: ApolloClient<NormalizedCacheObject>) : Promise<Array<NormedPerson>> {
+    const centerMembers : NormedCenterMember[] = await NormedPerson.getAllCenterMembers(client)
+    let selectedCenterMembers: NormedCenterMember[] = []
+    _.each(centerMembers, (member) => {
+      if (member.organizationValue == organizationValue){
+        selectedCenterMembers.push(member)
+      }
+    })
+    return NormedPerson.mapCenterMemberstoPersons(selectedCenterMembers)
   }
   
   public static async getAllNormedPersonsByYear (year: number, client: ApolloClient<NormalizedCacheObject>) : Promise<Array<NormedPerson>> {
