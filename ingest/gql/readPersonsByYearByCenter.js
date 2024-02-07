@@ -1,6 +1,6 @@
 import gql from 'graphql-tag'
 
-export default function readPersonsByYearAllCenters (year, organizationValue) {
+export default function readPersonsByYearByCenter (year, organizationValue) {
   const startDateLT = `1/1/${year + 1}`
   const endDateGT = `12/31/${year - 1}`
   return {

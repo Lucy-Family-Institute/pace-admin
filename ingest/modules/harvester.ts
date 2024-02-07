@@ -9,6 +9,7 @@ import NormedPublication from './normedPublication'
 import NormedPerson from './normedPerson'
 import DataSource from './dataSource'
 import HarvestSet from './HarvestSet'
+import Normalizer from '../units/normalizer'
 import { HarvestOperationType, HarvestOperation } from './harvestOperation'
 import FsHelper from '../units/fsHelper'
 import ApolloClient from 'apollo-client'
@@ -337,33 +338,37 @@ export default class Harvester {
   
       // const subset = _.slice(harvestOperation.normedPersons, 0, 2)
       // await pMap(subset, async (person) => {
-      await pMap(harvestOperation.normedPersons, async (person) => {
-        try {
-          personCounter += 1
-          console.log(`Getting papers for ${person.familyName}, ${person.givenName} persons via ${harvestOperationTypeStrName}`)
-          // run for each name plus name variance, put name variance second in case undefined
-          await wait(this.ds.getDataSourceConfig().requestInterval)
-          await this.harvestToCsv(harvestOperation, [person], `${person.familyName}_${person.givenName}`)
-          await wait(1500)
+      console.log(`Normed Person size: ${harvestOperation.normedPersons.length}`)
+      if (harvestOperation && harvestOperation.normedPersons && harvestOperation.normedPersons.length > 0){ 
+        await pMap(harvestOperation.normedPersons, async (person) => {
+          try {
+            personCounter += 1
+            console.log(`Getting papers for ${person.familyName}, ${person.givenName} persons via ${harvestOperationTypeStrName}`)
+            // run for each name plus name variance, put name variance second in case undefined
+            await wait(this.ds.getDataSourceConfig().requestInterval)
+            await this.harvestToCsv(harvestOperation, [person], `${person.familyName}_${person.givenName}`)
+            await wait(1500)
 
-          succeededAuthors.push(person)
-        } catch (error) {
-          const errorMessage = `Error on get CrossRef papers for author: ${JSON.stringify(person, null, 2)}: ${error}`
-          failedPapers.push(errorMessage)
-          failedAuthors.push(person)
-          console.log(errorMessage)
-        }
-      }, {concurrency: 1})
+            succeededAuthors.push(person)
+          } catch (error) {
+            const errorMessage = `Error on get CrossRef papers for author: ${JSON.stringify(person, null, 2)}: ${error}`
+            failedPapers.push(errorMessage)
+            failedAuthors.push(person)
+            console.log(errorMessage)
+          }
+        }, {concurrency: 1})
 
-      const rawHarvestDir = NormedPublication.getRawHarvestDirPath(harvestOperation.harvestResultsDir)
+        const rawHarvestDir = NormedPublication.getRawHarvestDirPath(harvestOperation.harvestResultsDir)
   
-      console.log(`Deduping publications to path: ${harvestOperation.harvestResultsDir}`)
-      // make this call be something standardized for every harvester
-      const baseDirName = FsHelper.getBaseDirName(harvestOperation.harvestResultsDir)
-      const dedupTargetBasePath = `${harvestOperation.harvestResultsDir}/${baseDirName}_deduped/${baseDirName}/`
-      const dataDir = harvestOperation.harvestResultsDir
-      await Harvester.dedupHarvestedPublications(rawHarvestDir,dedupTargetBasePath,dataDir, this.ds.getDataSourceConfig().batchSize, this.ds.getDataSourceConfig().harvestFileBatchSize)
-
+        console.log(`Deduping publications to path: ${harvestOperation.harvestResultsDir}`)
+        // make this call be something standardized for every harvester
+        const baseDirName = FsHelper.getBaseDirName(harvestOperation.harvestResultsDir)
+        const dedupTargetBasePath = `${harvestOperation.harvestResultsDir}/${baseDirName}_deduped/${baseDirName}/`
+        const dataDir = harvestOperation.harvestResultsDir
+        await Harvester.dedupHarvestedPublications(rawHarvestDir,dedupTargetBasePath,dataDir, this.ds.getDataSourceConfig().batchSize, this.ds.getDataSourceConfig().harvestFileBatchSize)
+      } else {
+        console.log(`No persons retrieved to fetch publications for harvest operation results dir ${harvestOperation.harvestResultsDir}.  Skipping this operation...`)
+      }
       console.log(`Failed authors: ${failedAuthors.length}`)
       console.log(`Succeeded authors: ${succeededAuthors.length}`)
       console.log(`Failed papers: ${failedPapers.length}`)

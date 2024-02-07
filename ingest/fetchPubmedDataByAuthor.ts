@@ -17,7 +17,9 @@ import moment from 'moment'
 import dotenv from 'dotenv'
 import resolve from 'path'
 import fetch from 'node-fetch'
+import Normalizer from './units/normalizer'
 import readPersonsByYearAllCenters from './gql/readPersonsByYearAllCenters'
+import readPersonsByYearByCenter from './gql/readPersonsByYearByCenter'
 import { randomWait, wait } from './units/randomWait'
 
 dotenv.config({
@@ -196,8 +198,13 @@ async function getFileData(filePath){
   })
 }
 
-async function getSimplifiedPersons(year) {
-  const queryResult = await client.query(readPersonsByYearAllCenters(year))
+async function getSimplifiedPersons(year, center?) {
+  let queryResult
+  if (center){
+    queryResult = await client.query(readPersonsByYearByCenter(year,center))
+  } else {
+    queryResult = await client.query(readPersonsByYearAllCenters(year))
+  }
 
   const simplifiedPersons = _.map(queryResult.data.persons, (person) => {
     return {
@@ -235,6 +242,15 @@ async function main(): Promise<void> {
 
 
   const harvestYearStr = process.env.PUBMED_HARVEST_YEARS
+  let harvestCenter
+  const harvestSingleOrgOnlyStr = process.env.HARVEST_SINGLE_ORGANIZATION_ONLY
+  const harvestSingleOrgValue = process.env.HARVEST_ORGANIZATION_ID
+  if (harvestSingleOrgOnlyStr && harvestSingleOrgValue){
+    const harvestSingleOrgOnly = Normalizer.stringToBoolean(harvestSingleOrgOnlyStr)
+    if (harvestSingleOrgOnly) {
+      harvestCenter = harvestSingleOrgValue
+    }
+  }
   const harvestYearStrArr = _.split(harvestYearStr, ',')
   const harvestYears = _.map(harvestYearStrArr, (yearStr) => {
     return Number.parseInt(yearStr)
@@ -243,7 +259,7 @@ async function main(): Promise<void> {
   const years = harvestYears
   // const years = [ 2020 ]
   await pMap(years, async (year) => {
-    const simplifiedPersons = await getSimplifiedPersons(year)
+    const simplifiedPersons = await getSimplifiedPersons(year, harvestCenter)
     console.log(`Simplified persons for ${year} are: ${JSON.stringify(simplifiedPersons,null,2)}`)
 
     //create map of last name to array of related persons with same last name
