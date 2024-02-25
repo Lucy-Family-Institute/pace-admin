@@ -355,15 +355,19 @@ export default {
       this.firstModel = this.getFirstModelWidth(this.dashboardMiniState)
     },
     async addFacetFilter (key, value) {
-      if (_.includes(this.facetFilters, `${key}:${value}`)) return
+      if (_.includes(this.facetFilters, `${key}="${value}"`)) return
       if (key === 'year') {
         this.removeFacetFilter(_.find(this.facetFilters, (val) => _.startsWith(val, key)))
       }
-      this.facetFilters.push(`${key}:${value}`)
+      this.facetFilters.push(`${key}="${value}"`)
       this.dashboardMiniState = true
     },
     async removeFacetFilter (key) {
-      this.$delete(this.facetFilters, _.indexOf(this.facetFilters, key))
+      this.facetFilters = _.filter(this.facetFilters, (facetFilter) => {
+        const testKey = facetFilter.split('=')[0]
+        return (key !== testKey)
+      })
+      // this.$delete(this.facetFilters, _.indexOf(this.facetFilters, key))
     },
     async updateGraphs () {
       this.yearBarOptions = {
