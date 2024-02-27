@@ -257,7 +257,8 @@ function getNormedPersonPublications(reviewPersonPublications) {
 async function main() {
   console.log(await searchClient.getKeys())
   try {
-    await searchClient.getIndex('publications').deleteIndex()
+    let index = await searchClient.getIndex('publications')
+    index.delete()
   } catch ( err ) {
     
   }
@@ -269,7 +270,9 @@ async function main() {
     index = await searchClient.getIndex('publications')
   }
 
+  console.log("-------------index is:-------------")
   console.log(index)
+  console.log("--------------end index is:-----------------")
 
   const thisYear = Number.parseInt(moment().format('YYYY'))
   const startYear = thisYear - 4
@@ -282,7 +285,7 @@ async function main() {
   const organizationValues = await getOrganizationValues()
   const publicationGraphs: PublicationGraph[] = []
 
-  // const organizationValues = ['NDNANO']
+  // const organizationValues = ['NDNANO','IPH']
   for (let i=0; i < organizationValues.length; i++) {
     for (let j=0; j < years.length; j++) {
       const flatPublications = await loadPublications(organizationValues[i], [years[j]])
@@ -381,20 +384,50 @@ async function main() {
       documents.push(addDoc)
     })
   })
+
+  // need to add swapping indexes instead of blowing away and ability to roll-back if needed -> keep last
   console.log(`Mapped #: ${documents.length}`)
+  const indexes = await searchClient.getIndexes() 
+  console.log(`${JSON.stringify(indexes['results'])}`)
+  //index = await searchClient.getIndex('publications')
+  
+  const status = await searchClient.index('publications').addDocuments(documents)
+  //indexes['results'].
 
-  await index.addDocuments(documents)
-
+  console.log(`Add Document Task Created: ${JSON.stringify(status)}`)
   console.log(`Documents added`)
 
-  let status
-  const { updateId } = await index.updateAttributesForFaceting([
+  let task
+  // await searchClient.index('publications').updateFilterableAttributes([
+  //   'year', 'type', 'journal', 'classifications', 'authors', 'journal_type', 'publisher', 'classificationsTopLevel', 'funder', 'impact_factor_range', 'review_organization_value', 'review_organization_label'
+  // ])
+
+  
+  
+  do {
+    console.log(".")
+    await sleep(10)
+    task = await searchClient.getTask(status.taskUid)
+    console.log(`${JSON.stringify(task)}`)
+  } while (task.status == 'processing' || task.status == 'enqueued')
+  const addedDocuments = await searchClient.index('publications').getDocuments()
+  console.log(`Added Documents Total: ${JSON.stringify(addedDocuments.results.length)}`)
+
+  const facetTask = await searchClient.index('publications').updateFilterableAttributes([
     'year', 'type', 'journal', 'classifications', 'authors', 'journal_type', 'publisher', 'classificationsTopLevel', 'funder', 'impact_factor_range', 'review_organization_value', 'review_organization_label'
   ])
+
+  let facetStatus
   do {
     await sleep(10)
-    status = await index.getUpdateStatus(updateId)
-  } while (status.status !== 'processed')
+    facetStatus = await searchClient.getTask(facetTask.taskUid)
+    console.log(`Updating facets...${JSON.stringify(facetStatus.status)}`)
+  } while (facetStatus.status == 'processing' || facetStatus.status == 'enqueued')
+  console.log(`${JSON.stringify(facetStatus)}`)
+
+  const filterableAttributes = await searchClient.index('publications').getFilterableAttributes()
+  console.log(`Filterable attributes are: ${JSON.stringify(filterableAttributes)}`)
+
 }
 
 main()

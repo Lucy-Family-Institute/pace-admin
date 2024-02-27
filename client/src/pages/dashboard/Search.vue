@@ -180,53 +180,57 @@ export default {
   },
   methods: {
     async init () {
+      const searchHost = `${process.env.MEILI_HOST}:${process.env.MEILI_PORT}`
       const searchClient = new MeiliSearch({
-        host: '/api/search'
+        host: searchHost,
+        apiKey: process.env.MEILI_PUBLIC_KEY
       })
-      this.indexPublications = await searchClient.getIndex('publications')
+      this.indexPublications = await searchClient.index('publications')
       this.runSearch()
     },
     async runSearch () {
       const searchfor = this.search ? this.search : '*'
 
       const options = {
-        facetsDistribution: ['year', 'author', 'classifications', 'journal', 'funder'],
+        facets: ['year', 'author', 'classifications', 'journal', 'funder'],
         attributesToHighlight: ['title', 'abstract']
       }
       // if (filter) {
-      //   options.filters = filter
+      //  options.filter = filter
       // }
       if (!_.isEmpty(this.facetFilters)) {
-        options.facetFilters = this.facetFilters
+        options.filter = this.facetFilters
       }
       const results = await this.indexPublications.search(searchfor, options)
       this.results = results.hits
+      console.log(`results are: ${results}`)
+
       this.processingTime = results.processingTimeMs
       this.numberOfHits = results.nbHits
 
       this.classifications = Object.freeze(_.orderBy(
-        _.map(results.facetsDistribution.classifications, (value, key) => {
+        _.map(results.facetDistribution.classifications, (value, key) => {
           return { name: key, count: value }
         }), 'count', 'desc'
       ))
       this.authors = Object.freeze(_.orderBy(
-        _.map(results.facetsDistribution.author, (value, key) => {
+        _.map(results.facetDistribution.author, (value, key) => {
           return { name: key, count: value }
         }), 'count', 'desc'
       ))
       this.journals = Object.freeze(_.orderBy(
-        _.map(results.facetsDistribution.journal, (value, key) => {
+        _.map(results.facetDistribution.journal, (value, key) => {
           return { name: key, count: value }
         }), 'count', 'desc'
       ))
       this.funders = Object.freeze(_.orderBy(
-        _.map(results.facetsDistribution.funder, (value, key) => {
+        _.map(results.facetDistribution.funder, (value, key) => {
           return { name: key, count: value }
         }), 'count', 'desc'
       ))
       this.series = [{
         name: 'series-1',
-        data: _.values(results.facetsDistribution.year)
+        data: _.values(results.facetDistribution.year)
       }]
     },
     async reset () {
@@ -235,7 +239,8 @@ export default {
       this.runSearch()
     },
     async addFacetFilter (key, value) {
-      this.facetFilters.push(`${key}:${value}`)
+      if (_.includes(this.facetFilters, `${key}="${value}"`)) return
+      this.facetFilters.push(`${key}="${value}"`)
       this.runSearch()
     }
   }

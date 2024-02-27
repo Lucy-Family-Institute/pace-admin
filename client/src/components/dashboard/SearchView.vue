@@ -311,16 +311,17 @@ export default {
       this.addFacetFilter('review_organization_label', this.selectedCenter.value)
     },
     selectedYear: function () {
-      this.toggleFacetFilter('year', this.selectedYear.value)
+      this.addFacetFilter('year', this.selectedYear.value)
     }
   },
   methods: {
     async init () {
+      const searchHost = `${process.env.MEILI_HOST}:${process.env.MEILI_PORT}`
       const searchClient = new MeiliSearch({
-        host: '/api/search',
+        host: searchHost,
         apiKey: process.env.MEILI_PUBLIC_KEY
       })
-      this.indexPublications = await searchClient.getIndex('publications')
+      this.indexPublications = await searchClient.index('publications')
       if (this.selectedYear) {
         this.addFacetFilter('year', this.selectedYear.value)
       }
@@ -335,16 +336,16 @@ export default {
     async runSearch () {
       const searchfor = this.search ? this.search : '*'
       const options = {
-        facetsDistribution: ['year', 'authors', 'classifications', 'journal', 'journal_type', 'publisher', 'classificationsTopLevel', 'funder', 'impact_factor_range', 'review_organization_value', 'review_organization_label'],
+        facets: ['year', 'authors', 'classifications', 'journal', 'journal_type', 'publisher', 'classificationsTopLevel', 'funder', 'impact_factor_range', 'review_organization_value', 'review_organization_label'],
         attributesToHighlight: ['title', 'abstract', 'authors'],
         limit: 1000
       }
       if (!_.isEmpty(this.facetFilters)) {
-        options.facetFilters = this.facetFilters
+        options.filter = this.facetFilters
       }
-      if (this.filters !== '') {
-        options.filters = this.filters
-      }
+      // if (this.filters !== '') {
+      //  options.filter = this.filters
+      // }
 
       // options.filters = 'classifications_identifiers < 2000'
       const results = await this.indexPublications.search(searchfor, options)
@@ -352,18 +353,19 @@ export default {
       //   this.downloadResults = results.hits
       // } else {
       this.results = results.hits
+      console.log(`results are: ${JSON.stringify(this.results)}`)
       this.processingTime = results.processingTimeMs
       this.numberOfHits = results.nbHits
-      this.facetsDistribution = Object.freeze(results.facetsDistribution)
+      this.facetsDistribution = Object.freeze(results.facetDistribution)
 
       this.review_organizations = Object.freeze(_.orderBy(
-        _.map(results.facetsDistribution.review_organization_label, (value, key) => {
+        _.map(results.facetDistribution.review_organization_label, (value, key) => {
           return { name: key, count: value }
         }), 'count', 'desc'
       ))
       this.reviewOptions = _.map(this.review_organizations, (reviewOrg) => {
         let label = _.toUpper(reviewOrg.name)
-        if (!_.find(this.facetFilters, (val) => _.startsWith(val, 'review_organization_label'))) {
+        if (this.selectedCenter === undefined) {
           label = `${label} (${reviewOrg.count})`
         }
         return {
@@ -372,7 +374,7 @@ export default {
         }
       })
       this.years = Object.freeze(_.orderBy(
-        _.map(results.facetsDistribution.year, (value, key) => {
+        _.map(results.facetDistribution.year, (value, key) => {
           return { name: key, count: value }
         }), 'count', 'desc'
       ))
@@ -424,6 +426,7 @@ export default {
       return word.replace(/\w+/g, _.capitalize)
     },
     async sortFacets (fields, data) {
+      console.log(`sorting facets: fields are: ${JSON.stringify(fields)}, data is: ${JSON.stringify(data)}`)
       pMap(fields, async (field) => {
         this.$set(this.facetLists, field, Object.freeze(
           _.orderBy(
@@ -475,38 +478,44 @@ export default {
     getFacetFilterValue (key) {
       let value
       _.find(this.facetFilters, (facetFilter) => {
-        const filter = facetFilter.split(':')
+        const filter = facetFilter.split('=')
         const filterKey = filter[0]
         const filterValue = filter[1]
         if (key === filterKey) {
-          value = filterValue
+          value = _.trim(filterValue, '"')
         }
       })
       return value
     },
     async removeSelectedFacet (key) {
       this.facetFilters = _.filter(this.facetFilters, (facetFilter) => {
-        const testKey = facetFilter.split(':')[0]
+        const testKey = facetFilter.split('=')[0]
         return (key !== testKey)
       })
     },
     async toggleFacetFilter (key, value) {
       this.removeSelectedFacet(key)
-      this.facetFilters.push(`${key}:${value}`)
+      this.facetFilters.push(`${key}="${value}"`)
       await this.runSearch()
     },
     async addFacetFilter (key, value) {
-      if (_.includes(this.facetFilters, `${key}:${value}`)) return
+      if (_.includes(this.facetFilters, `${key}="${value}"`)) return
       if (key === 'year' || key === 'review_organization_value' || key === 'review_organization_label') {
         this.removeFacetFilter(_.find(this.facetFilters, (val) => _.startsWith(val, key)), false)
       }
+      if (key === 'review_organization_label') {
+        const index = _.find(this.reviewOptions, (reviewOption, index) => {
+          return reviewOption.value === _.trim(value, '"')
+        })
+        this.selectedCenter = this.reviewOptions[index]
+      }
       if (key === 'year') {
         const index = _.find(this.yearOptions, (yearOption, index) => {
-          return yearOption.value === value
+          return yearOption.value === _.trim(value, '"')
         })
         this.selectedYear = this.yearOptions[index]
       }
-      this.facetFilters.push(`${key}:${value}`)
+      this.facetFilters.push(`${key}="${value}"`)
       this.dashboardMiniState = true
     },
     async setFilter () {
