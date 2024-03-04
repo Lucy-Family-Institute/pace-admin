@@ -1,26 +1,26 @@
 {
   "HCRI": [
-    "../data/input/hcri_members_2017-2023.csv"
+    "../data/input/hcri_members_2017-2024.csv"
   ],
   "NDENERGY": [
-    "../data/input/ndenergy_members_2017-2023.csv"
+    "../data/input/ndenergy_members_2017-2024.csv"
   ],
   "EIGH": [
-    "../data/input/eigh_members_2017-2023.csv"
+    "../data/input/eigh_members_2017-2024.csv"
   ],
   "NDNANO": [
-    "../data/input/ndnano_members_2017-2023.csv"
+    "../data/input/ndnano_members_2017-2024.csv"
   ],
   "ECI": [
-    "../data/input/eci_members_2017-2023.csv"
+    "../data/input/eci_members_2017-2024.csv"
   ],
   "CRC": [
-    "../data/input/crc_members_2017-2023.csv"
+    "../data/input/crc_members_2017-2024.csv"
   ],
   "IPH": [
-    "../data/input/iph_members_2017-2023.csv"
+    "../data/input/iph_members_2017-2024.csv"
   ],
   "LFIDS": [
-    "../data/input/lfids_members_2017-2023.csv"
+    "../data/input/lfids_members_2017-2024.csv"
   ]
 }
