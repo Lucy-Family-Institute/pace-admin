@@ -180,7 +180,7 @@ export default {
   },
   methods: {
     async init () {
-      const searchHost = `${process.env.MEILI_HOST}:${process.env.MEILI_PORT}`
+      const searchHost = `${process.env.MEILI_HOST}`
       const searchClient = new MeiliSearch({
         host: searchHost,
         apiKey: process.env.MEILI_PUBLIC_KEY
