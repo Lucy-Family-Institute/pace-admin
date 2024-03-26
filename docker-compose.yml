@@ -57,13 +57,14 @@ services:
     restart: unless-stopped
 
   search:
-    image: getmeili/meilisearch:v0.28.0
+    image: getmeili/meilisearch:v1.7.3
     environment:
       MEILI_MASTER_KEY: ${MEILI_KEY}
+      
     ports:
       - ${MEILI_PORT}:${MEILI_DOCKER_PORT}
     volumes:
-      - search_data:/data.ms
+      - '/opt/meili_data:/meili_data'
     restart: unless-stopped
   
   nginx:
@@ -78,4 +79,4 @@ services:
 
 volumes:
   postgres_data:
-  search_data:
+  meili_data:
