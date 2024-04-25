@@ -917,7 +917,18 @@ export default {
         publication.semantic_scholar_id) {
         return publication.semantic_scholar_id
       } else if (publication.source_name.toLowerCase() === 'webofscience') {
-        return (publication.wos_id && publication.wos_id['_text'] ? publication.wos_id['_text'] : undefined)
+        if (publication.wos_id && publication.wos_id['_text']) {
+          return publication.wos_id['_text']
+        } else if (publication.source_id) {
+          // pad zeroes if needed
+          var strSourceId = `${publication.source_id}`
+          while (strSourceId.length < 15) {
+            strSourceId = `0${strSourceId}
+          }
+          return `WOS:${publication.source_id}`
+        } else {
+          return ''
+        }
       } else if (publication.source_name.toLowerCase() === 'pubmed' &&
         publication.pubmed_resource_identifiers &&
         _.isArray(publication.pubmed_resource_identifiers)) {
