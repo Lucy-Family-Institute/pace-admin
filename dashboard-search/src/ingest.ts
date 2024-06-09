@@ -35,7 +35,7 @@ const meiliUrl = `${process.env.APP_BASE_URL}/api/search/`
 const sleep = util.promisify(setTimeout)
 
 const searchClient = new MeiliSearch({
-  host: 'http://127.0.0.1:7700', // todo fix this sometime
+  host: `${process.env.MEILI_HOST}`, // todo fix this sometime
   apiKey: meiliKey
 })
 
@@ -257,6 +257,7 @@ function getNormedPersonPublications(reviewPersonPublications) {
 async function main() {
   console.log(await searchClient.getKeys())
   try {
+    console.log("-------------get publications index to refresh if exists-------------")
     let index = await searchClient.getIndex('publications')
     index.delete()
   } catch ( err ) {
@@ -265,8 +266,10 @@ async function main() {
 
   let index
   try {
+    console.log("-------------try creating publications index-------------")
     index = await searchClient.createIndex('publications')
   } catch ( err ) {
+    console.log("-------------get existing publications index-------------")
     index = await searchClient.getIndex('publications')
   }
 

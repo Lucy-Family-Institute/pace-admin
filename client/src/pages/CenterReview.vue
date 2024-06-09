@@ -917,7 +917,18 @@ export default {
         publication.semantic_scholar_id) {
         return publication.semantic_scholar_id
       } else if (publication.source_name.toLowerCase() === 'webofscience') {
-        return (publication.wos_id && publication.wos_id['_text'] ? publication.wos_id['_text'] : undefined)
+        if (publication.wos_id && publication.wos_id['_text']) {
+          return publication.wos_id['_text']
+        } else if (publication.source_id) {
+          // pad zeroes if needed
+          var strSourceId = `${publication.source_id}`
+          while (strSourceId.length < 15) {
+            strSourceId = `0${strSourceId}`
+          }
+          return `WOS:${publication.source_id}`
+        } else {
+          return ''
+        }
       } else if (publication.source_name.toLowerCase() === 'pubmed' &&
         publication.pubmed_resource_identifiers &&
         _.isArray(publication.pubmed_resource_identifiers)) {
@@ -1837,7 +1848,7 @@ export default {
     },
     removeFilteredPersonPubPendingCounts (reviewType, authors) {
       _.each(authors, (author) => {
-        if (this.filteredPersonPubPendingCounts[reviewType][author.id]) {
+        if (this.filteredPersonPubPendingCounts && reviewType && author && author.id && this.filteredPersonPubPendingCounts[reviewType] && this.filteredPersonPubPendingCounts[reviewType][author.id]) {
           this.filteredPersonPubPendingCounts[reviewType][author.id] = this.filteredPersonPubPendingCounts[reviewType][author.id] - 1
         }
       })
@@ -2198,14 +2209,14 @@ export default {
           mutateResults.push(mutateResult)
           this.publicationsReloadPending = true
           const showPendingCounts = (this.selectedPersonTotal && _.startsWith(this.selectedPersonTotal.toLowerCase(), 'pending'))
-          if (this.reviewTypeFilter === 'pending' && showPendingCounts) {
+          if (this.reviewTypeFilter === 'pending' && showPendingCounts && reviewType && personPub && personPub.person) {
             this.removeFilteredPersonPubPendingCounts(reviewType, [personPub.person])
           //   // const currentPersonIndex = _.findIndex(this.people, (person) => {
           //   //   console.log('persons', person, this.person)
           //   //   return person.id === this.person.id // todo Rick, this.person never defined, right?
           //   // })
           //   // this.people[currentPersonIndex].persons_publications_metadata_aggregate.aggregate.count -= 1
-          } else if (showPendingCounts && reviewType === 'pending') {
+          } else if (showPendingCounts && reviewType === 'pending' && personPub && personPub.person) {
             this.addFilteredPersonPubPendingCounts(reviewType, [personPub.person])
           }
         }, { concurrency: 1 })
