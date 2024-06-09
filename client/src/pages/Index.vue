@@ -686,7 +686,7 @@ export default {
           // pad zeroes if needed
           var strSourceId = `${personPublication.publication.source_id}`
           while (strSourceId.length < 15) {
-            strSourceId = `0${strSourceId}
+            strSourceId = `0${strSourceId}`
           }
           return `WOS:${personPublication.publication.source_id}`
         } else {
