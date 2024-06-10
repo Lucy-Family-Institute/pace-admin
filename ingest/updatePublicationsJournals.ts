@@ -89,7 +89,7 @@ async function main (): Promise<void> {
 
   // default to startYear undefined to check all missing journals
   let startYear
-  startYear = 2021
+  startYear = 2023
   const publications = await getPublications(startYear)
   const journals = await getJournals()
 
@@ -135,22 +135,33 @@ async function main (): Promise<void> {
       } else {
         singleMatches.push(matchedInfo)
       }
+      let loopCounter = 0
+      await pMap(singleMatches, async (matched) => {
+        loopCounter += 1
+        await randomWait(loopCounter)
+        console.log(`Updating journal of pub ${loopCounter} ${matched['Article']}`)
+        try {
+          const resultUpdatePubJournal = await client.mutate(updatePubJournal(matched['doi'], matched['Matches'][0]['id']))
+        } catch (error) {
+          console.log(error)
+        }
+      }, {concurrency: 1})
     }
-  }, {concurrency: 60})
+  }, {concurrency: 10})
 
   console.log(`Multiple Matches: ${JSON.stringify(multipleMatches, null, 2)}`)
   console.log(`Multiple Matches Count: ${multipleMatches.length}`)
   console.log(`No Matches Count: ${zeroMatches.length}`)
   console.log(`Single Matches Count: ${singleMatches.length}`)
 
-  //insert single matches
-  let loopCounter = 0
-  await pMap(singleMatches, async (matched) => {
-    loopCounter += 1
-    await randomWait(loopCounter)
-    console.log(`Updating journal of pub ${loopCounter} ${matched['Article']}`)
-    const resultUpdatePubJournal = await client.mutate(updatePubJournal(matched['doi'], matched['Matches'][0]['id']))
-  }, {concurrency: 2})
+  // //insert single matches
+  // let loopCounter = 0
+  // await pMap(singleMatches, async (matched) => {
+  //   loopCounter += 1
+  //   await randomWait(loopCounter)
+  //   console.log(`Updating journal of pub ${loopCounter} ${matched['Article']}`)
+  //   const resultUpdatePubJournal = await client.mutate(updatePubJournal(matched['doi'], matched['Matches'][0]['id']))
+  // }, {concurrency: 2})
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
