@@ -103,5 +103,9 @@ update-pdfs: ingest/node_modules
 dashboard-ingest: dashboard-search/node_modules
 	cd dashboard-search && ts-node src/ingest.ts && cd ..
 
+.PHONY: dashboard-keys
+dashboard-keys: dashboard-search/node_modules
+	cd dashboard-search && ts-node src/initialize.ts && cd ..
+
 detect_duplicate_author_attributes: ingest/node_modules
 	cd ingest && ts-node detectDuplicateAuthorAttributes.ts
