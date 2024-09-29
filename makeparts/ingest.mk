@@ -105,3 +105,12 @@ dashboard-ingest: dashboard-search/node_modules
 
 detect_duplicate_author_attributes: ingest/node_modules
 	cd ingest && ts-node detectDuplicateAuthorAttributes.ts
+
+.PHONY: wos_journals_data_fetch
+wos_journals_data_fetch:
+	cd ingest && ts-node fetchWosJournalsData.ts
+
+.PHONY: wos_journals_doi_data_fetch
+wos_journals_doi_data_fetch:
+	cd ingest && ts-node fetchCrossRefByDOI.ts
+
