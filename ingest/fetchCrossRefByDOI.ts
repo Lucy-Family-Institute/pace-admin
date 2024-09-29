@@ -57,28 +57,28 @@ async function main () {
   let foundCounter = 0
 
   console.log(`Getting ISSN for '${pubs.length}' pubs`)
-  // await pMap(pubs, async (pub) => {
-  const pub = pubs[0]
-  counter += 1
-  const doi = pub['Real DOI']
-  if (doi && doi.length > 0) {
-    const csl = await getCsl(doi)
-    if (csl) {
-      const issn = csl.valueOf()['ISSN']
-      pub['ISSN'] = issn 
-      console.log(`${counter}: Found DOI: '${doi}' and ISSN: '${csl.valueOf()['ISSN']}'`)
-      foundCounter += 1
+  await pMap(pubs, async (pub) => {
+  // const pub = pubs[0]
+    counter += 1
+    const doi = pub['Real DOI']
+    if (doi && doi.length > 0) {
+      const csl = await getCsl(doi)
+      if (csl) {
+        const issn = csl.valueOf()['ISSN']
+        pub['ISSN'] = issn 
+        console.log(`${counter}: Found DOI: '${doi}' and ISSN: '${csl.valueOf()['ISSN']}'`)
+        foundCounter += 1
+      } else {
+        console.log(`${counter}: No ISSN for DOI: '${doi}'`)
+        errorCounter += 1
+      }
     } else {
-      console.log(`${counter}: No ISSN for DOI: '${doi}'`)
-      errorCounter += 1
+      console.log(`${counter}: Skipping with no DOI set`)
+      skippedCounter += 1
     }
-  } else {
-    console.log(`${counter}: Skipping with no DOI set`)
-    skippedCounter += 1
-  }
-  updatedPubs.push(pub)
-  await wait(waitTime)
-  // }, { concurrency: 1 })
+    updatedPubs.push(pub)
+    await wait(waitTime)
+  }, { concurrency: 1 })
 
   console.log(`Getting ISSN Found: ${foundCounter}, Skipped: ${skippedCounter} Errors: ${errorCounter}`)
 
