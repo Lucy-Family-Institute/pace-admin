@@ -64,7 +64,7 @@ services:
     ports:
       - ${MEILI_PORT}:${MEILI_DOCKER_PORT}
     volumes:
-      - '/opt/meili_data:/meili_data'
+      - '${MEILI_DATA_PATH}/meili_data'
     restart: unless-stopped
   
   nginx:
