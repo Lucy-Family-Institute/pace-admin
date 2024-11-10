@@ -50,7 +50,10 @@ async function main () {
   // console.log(`CSV loaded: ${JSON.stringify(pubs, null, 2)}`)
 
   // fetch csl records
+  let tempPub = _.clone(pubs[0])
+  tempPub['ISSN'] = 'XXXX'
   let updatedPubs = []
+  updatedPubs.push(tempPub)
   let counter = 0
   let skippedCounter = 0
   let errorCounter = 0
@@ -93,7 +96,7 @@ async function main () {
     path: filePath,
     data: updatedPubs
   });
-  // console.log(`CSV updated: ${JSON.stringify(updatedPubs, null, 2)}`)
+  console.log(`CSV updated: ${JSON.stringify(updatedPubs, null, 2)}`)
   // output csv with issn
   // let doi = '10.14359/51738457'
   // await getCsl(doi)
