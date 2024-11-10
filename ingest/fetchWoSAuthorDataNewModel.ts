@@ -50,6 +50,7 @@ async function main (): Promise<void> {
     queryUrl: process.env.WOS_QUERY_URL,
     userName: process.env.WOS_USERNAME,
     password: process.env.WOS_PASSWORD,
+    apiKey: process.env.WOS_API_LITE_KEY,
     sourceName: process.env.WOS_SOURCE_NAME,
     pageSize: process.env.WOS_PAGE_SIZE,  // page size must be a string for the request to work,
     harvestYears: harvestYears,
