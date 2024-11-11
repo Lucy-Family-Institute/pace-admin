@@ -328,7 +328,15 @@ export default class Harvester {
     let succeededAuthors = []
     let failedAuthors = []
 
-    const organizationValue = process.env.ORGANIZATION_VALUE
+    let organizationValue = ""
+    const harvestSingleOrgOnlyStr = process.env.HARVEST_SINGLE_ORGANIZATION_ONLY
+    const harvestSingleOrgValue = process.env.HARVEST_ORGANIZATION_ID
+    if (harvestSingleOrgOnlyStr && harvestSingleOrgValue){
+      const harvestSingleOrgOnly = Normalizer.stringToBoolean(harvestSingleOrgOnlyStr)
+      if (harvestSingleOrgOnly) {
+        organizationValue = harvestSingleOrgValue
+      }
+    }
     // returns map of year to array of NormedPersons
     const harvestOperations: HarvestOperation[] = await this.ds.getHarvestOperations(organizationValue,this.client)
     // perform all harvest operations for this author, could be more than one like search by author id plus simple name search

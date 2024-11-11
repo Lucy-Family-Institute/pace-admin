@@ -2,1835 +2,1835 @@
     schema: public
     name: awards
   object_relationships:
-  - name: funder
-    using:
-      foreign_key_constraint_on: funder_id
-  - name: publication
-    using:
-      foreign_key_constraint_on: publication_id
-  - name: subfunder
-    using:
-      foreign_key_constraint_on: subfunder_id
+    - name: funder
+      using:
+        foreign_key_constraint_on: funder_id
+    - name: publication
+      using:
+        foreign_key_constraint_on: publication_id
+    - name: subfunder
+      using:
+        foreign_key_constraint_on: subfunder_id
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - publication_id
-      - funder_name
-      - funder_award_identifier
-      - source_metadata
-      - source_name
-      - funder_id
-      - subfunder_id
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - publication_id
-      - funder_name
-      - funder_award_identifier
-      - source_metadata
-      - source_name
-      - funder_id
-      - subfunder_id
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - publication_id
-      - funder_name
-      - funder_award_identifier
-      - source_metadata
-      - source_name
-      - funder_id
-      - subfunder_id
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - publication_id
+          - funder_name
+          - funder_award_identifier
+          - source_metadata
+          - source_name
+          - funder_id
+          - subfunder_id
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - publication_id
+          - funder_name
+          - funder_award_identifier
+          - source_metadata
+          - source_name
+          - funder_id
+          - subfunder_id
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - publication_id
+          - funder_name
+          - funder_award_identifier
+          - source_metadata
+          - source_name
+          - funder_id
+          - subfunder_id
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: classifications
   array_relationships:
-  - name: journals_classifications
-    using:
-      foreign_key_constraint_on:
-        column: classification_id
-        table:
-          schema: public
-          name: journals_classifications
+    - name: journals_classifications
+      using:
+        foreign_key_constraint_on:
+          column: classification_id
+          table:
+            schema: public
+            name: journals_classifications
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - name
-      - identifier
-      - scheme
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - name
-      - identifier
-      - scheme
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - name
-      - identifier
-      - scheme
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - name
+          - identifier
+          - scheme
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - name
+          - identifier
+          - scheme
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - name
+          - identifier
+          - scheme
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: confidence_type
   array_relationships:
-  - name: confidencesets_items
-    using:
-      foreign_key_constraint_on:
-        column: confidence_type_id
-        table:
-          schema: public
-          name: confidencesets_items
+    - name: confidencesets_items
+      using:
+        foreign_key_constraint_on:
+          column: confidence_type_id
+          table:
+            schema: public
+            name: confidencesets_items
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - stop_testing_if_passed
-      - id
-      - rank
-      - description
-      - name
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - stop_testing_if_passed
-      - id
-      - rank
-      - description
-      - name
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - stop_testing_if_passed
-      - id
-      - rank
-      - description
-      - name
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - stop_testing_if_passed
+          - id
+          - rank
+          - description
+          - name
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - stop_testing_if_passed
+          - id
+          - rank
+          - description
+          - name
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - stop_testing_if_passed
+          - id
+          - rank
+          - description
+          - name
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: confidencesets
   object_relationships:
-  - name: persons_publication
-    using:
-      foreign_key_constraint_on: persons_publications_id
+    - name: persons_publication
+      using:
+        foreign_key_constraint_on: persons_publications_id
   array_relationships:
-  - name: confidencesets_items
-    using:
-      foreign_key_constraint_on:
-        column: confidenceset_id
-        table:
-          schema: public
-          name: confidencesets_items
+    - name: confidencesets_items
+      using:
+        foreign_key_constraint_on:
+          column: confidenceset_id
+          table:
+            schema: public
+            name: confidencesets_items
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - persons_publications_id
-      - value
-      - datetime
-      - version
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - persons_publications_id
-      - value
-      - datetime
-      - version
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - persons_publications_id
-      - value
-      - datetime
-      - version
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - persons_publications_id
+          - value
+          - datetime
+          - version
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - persons_publications_id
+          - value
+          - datetime
+          - version
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - persons_publications_id
+          - value
+          - datetime
+          - version
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: confidencesets_items
   object_relationships:
-  - name: confidence_type
-    using:
-      foreign_key_constraint_on: confidence_type_id
-  - name: confidenceset
-    using:
-      foreign_key_constraint_on: confidenceset_id
+    - name: confidence_type
+      using:
+        foreign_key_constraint_on: confidence_type_id
+    - name: confidenceset
+      using:
+        foreign_key_constraint_on: confidenceset_id
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - confidenceset_id
-      - comment
-      - confidence_type_id
-      - value
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - confidenceset_id
-      - comment
-      - confidence_type_id
-      - value
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - confidenceset_id
-      - comment
-      - confidence_type_id
-      - value
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - confidenceset_id
+          - comment
+          - confidence_type_id
+          - value
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - confidenceset_id
+          - comment
+          - confidence_type_id
+          - value
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - confidenceset_id
+          - comment
+          - confidence_type_id
+          - value
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: confidencesets_persons_publications
   object_relationships:
-  - name: person
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: persons
-        insertion_order: null
-        column_mapping:
-          person_id: id
-  - name: persons_publication
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: persons_publications
-        insertion_order: null
-        column_mapping:
-          persons_publications_id: id
-  - name: publication
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: publications
-        insertion_order: null
-        column_mapping:
-          publication_id: id
+    - name: person
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: persons
+          insertion_order: null
+          column_mapping:
+            person_id: id
+    - name: persons_publication
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: persons_publications
+          insertion_order: null
+          column_mapping:
+            persons_publications_id: id
+    - name: publication
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: publications
+          insertion_order: null
+          column_mapping:
+            publication_id: id
   array_relationships:
-  - name: reviews
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: reviews
-        insertion_order: null
-        column_mapping:
-          persons_publications_id: persons_publications_id
-  - name: reviews_persons_publications
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: reviews_persons_publications
-        insertion_order: null
-        column_mapping:
-          persons_publications_id: persons_publications_id
+    - name: reviews
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: reviews
+          insertion_order: null
+          column_mapping:
+            persons_publications_id: persons_publications_id
+    - name: reviews_persons_publications
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: reviews_persons_publications
+          insertion_order: null
+          column_mapping:
+            persons_publications_id: persons_publications_id
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - persons_publications_id
-      - value
-      - datetime
-      - version
-      - person_id
-      - publication_id
-      - title
-      - doi
-      - source_name
-      - year
-      - source_id
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - persons_publications_id
-      - value
-      - datetime
-      - version
-      - person_id
-      - publication_id
-      - title
-      - doi
-      - source_name
-      - year
-      - source_id
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - persons_publications_id
-      - value
-      - datetime
-      - version
-      - person_id
-      - publication_id
-      - title
-      - doi
-      - source_name
-      - year
-      - source_id
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - persons_publications_id
+          - value
+          - datetime
+          - version
+          - person_id
+          - publication_id
+          - title
+          - doi
+          - source_name
+          - year
+          - source_id
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - persons_publications_id
+          - value
+          - datetime
+          - version
+          - person_id
+          - publication_id
+          - title
+          - doi
+          - source_name
+          - year
+          - source_id
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - persons_publications_id
+          - value
+          - datetime
+          - version
+          - person_id
+          - publication_id
+          - title
+          - doi
+          - source_name
+          - year
+          - source_id
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: data
   array_relationships:
-  - name: persons
-    using:
-      foreign_key_constraint_on:
-        column: data_id
-        table:
-          schema: public
-          name: persons
-  - name: persons_publications
-    using:
-      foreign_key_constraint_on:
-        column: data_id
-        table:
-          schema: public
-          name: persons_publications
-  - name: publications
-    using:
-      foreign_key_constraint_on:
-        column: data_id
-        table:
-          schema: public
-          name: publications
+    - name: persons
+      using:
+        foreign_key_constraint_on:
+          column: data_id
+          table:
+            schema: public
+            name: persons
+    - name: persons_publications
+      using:
+        foreign_key_constraint_on:
+          column: data_id
+          table:
+            schema: public
+            name: persons_publications
+    - name: publications
+      using:
+        foreign_key_constraint_on:
+          column: data_id
+          table:
+            schema: public
+            name: publications
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: funders
   array_relationships:
-  - name: awards
-    using:
-      foreign_key_constraint_on:
-        column: funder_id
-        table:
-          schema: public
-          name: awards
-  - name: funders_namevariances
-    using:
-      foreign_key_constraint_on:
-        column: funder_id
-        table:
-          schema: public
-          name: funders_namevariances
-  - name: subfunders
-    using:
-      foreign_key_constraint_on:
-        column: funder_id
-        table:
-          schema: public
-          name: subfunders
+    - name: awards
+      using:
+        foreign_key_constraint_on:
+          column: funder_id
+          table:
+            schema: public
+            name: awards
+    - name: funders_namevariances
+      using:
+        foreign_key_constraint_on:
+          column: funder_id
+          table:
+            schema: public
+            name: funders_namevariances
+    - name: subfunders
+      using:
+        foreign_key_constraint_on:
+          column: funder_id
+          table:
+            schema: public
+            name: subfunders
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - name
-      - short_name
-      - uri
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - name
-      - short_name
-      - uri
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - name
-      - short_name
-      - uri
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - name
+          - short_name
+          - uri
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - name
+          - short_name
+          - uri
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - name
+          - short_name
+          - uri
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: funders_namevariances
   object_relationships:
-  - name: funder
-    using:
-      foreign_key_constraint_on: funder_id
+    - name: funder
+      using:
+        foreign_key_constraint_on: funder_id
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - name
-      - funder_id
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - name
-      - funder_id
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - name
-      - funder_id
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - name
+          - funder_id
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - name
+          - funder_id
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - name
+          - funder_id
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: harvests
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - source_name
-      - source_uid
-      - source_response
-      - datetime
-      - ingest_id
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - source_name
-      - source_uid
-      - source_response
-      - datetime
-      - ingest_id
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - source_name
-      - source_uid
-      - source_response
-      - datetime
-      - ingest_id
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - source_name
+          - source_uid
+          - source_response
+          - datetime
+          - ingest_id
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - source_name
+          - source_uid
+          - source_response
+          - datetime
+          - ingest_id
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - source_name
+          - source_uid
+          - source_response
+          - datetime
+          - ingest_id
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: institutions
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - name
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - name
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - name
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - name
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - name
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - name
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: journals
   array_relationships:
-  - name: journals_classifications
-    using:
-      foreign_key_constraint_on:
-        column: journal_id
-        table:
-          schema: public
-          name: journals_classifications
-  - name: journals_impactfactors
-    using:
-      foreign_key_constraint_on:
-        column: journal_id
-        table:
-          schema: public
-          name: journals_impactfactors
-  - name: publications
-    using:
-      foreign_key_constraint_on:
-        column: journal_id
-        table:
-          schema: public
-          name: publications
+    - name: journals_classifications
+      using:
+        foreign_key_constraint_on:
+          column: journal_id
+          table:
+            schema: public
+            name: journals_classifications
+    - name: journals_impactfactors
+      using:
+        foreign_key_constraint_on:
+          column: journal_id
+          table:
+            schema: public
+            name: journals_impactfactors
+    - name: publications
+      using:
+        foreign_key_constraint_on:
+          column: journal_id
+          table:
+            schema: public
+            name: publications
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - title
-      - publisher
-      - issn
-      - e_issn
-      - journal_type
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - title
-      - publisher
-      - issn
-      - e_issn
-      - journal_type
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - title
-      - publisher
-      - issn
-      - e_issn
-      - journal_type
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - title
+          - publisher
+          - issn
+          - e_issn
+          - journal_type
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - title
+          - publisher
+          - issn
+          - e_issn
+          - journal_type
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - title
+          - publisher
+          - issn
+          - e_issn
+          - journal_type
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: journals_classifications
   object_relationships:
-  - name: classification
-    using:
-      foreign_key_constraint_on: classification_id
-  - name: journal
-    using:
-      foreign_key_constraint_on: journal_id
+    - name: classification
+      using:
+        foreign_key_constraint_on: classification_id
+    - name: journal
+      using:
+        foreign_key_constraint_on: journal_id
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - journal_id
-      - classification_id
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - journal_id
-      - classification_id
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - journal_id
-      - classification_id
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - journal_id
+          - classification_id
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - journal_id
+          - classification_id
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - journal_id
+          - classification_id
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: journals_impactfactors
   object_relationships:
-  - name: journal
-    using:
-      foreign_key_constraint_on: journal_id
+    - name: journal
+      using:
+        foreign_key_constraint_on: journal_id
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - journal_id
-      - year
-      - impactfactor
-      - title
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - journal_id
-      - year
-      - impactfactor
-      - title
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - journal_id
-      - year
-      - impactfactor
-      - title
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - journal_id
+          - year
+          - impactfactor
+          - title
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - journal_id
+          - year
+          - impactfactor
+          - title
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - journal_id
+          - year
+          - impactfactor
+          - title
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: org_reviews
   object_relationships:
-  - name: persons_publication
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: persons_publications
-        insertion_order: null
-        column_mapping:
-          persons_publications_id: id
-  - name: type_review
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: type_review
-        insertion_order: null
-        column_mapping:
-          review_type: value
-  - name: user
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: users
-        insertion_order: null
-        column_mapping:
-          user_id: id
+    - name: persons_publication
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: persons_publications
+          insertion_order: null
+          column_mapping:
+            persons_publications_id: id
+    - name: type_review
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: type_review
+          insertion_order: null
+          column_mapping:
+            review_type: value
+    - name: user
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: users
+          insertion_order: null
+          column_mapping:
+            user_id: id
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - user_id
-      - persons_publications_id
-      - datetime
-      - review_type
-      - review_organization_value
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - user_id
-      - persons_publications_id
-      - datetime
-      - review_type
-      - review_organization_value
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - user_id
-      - persons_publications_id
-      - datetime
-      - review_type
-      - review_organization_value
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - user_id
+          - persons_publications_id
+          - datetime
+          - review_type
+          - review_organization_value
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - user_id
+          - persons_publications_id
+          - datetime
+          - review_type
+          - review_organization_value
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - user_id
+          - persons_publications_id
+          - datetime
+          - review_type
+          - review_organization_value
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: persons
   object_relationships:
-  - name: datum
-    using:
-      foreign_key_constraint_on: data_id
-  - name: institution
-    using:
-      foreign_key_constraint_on: institution_id
+    - name: datum
+      using:
+        foreign_key_constraint_on: data_id
+    - name: institution
+      using:
+        foreign_key_constraint_on: institution_id
   array_relationships:
-  - name: confidencesets_persons_publications
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: confidencesets_persons_publications
-        insertion_order: null
-        column_mapping:
-          id: person_id
-  - name: persons_namevariances
-    using:
-      foreign_key_constraint_on:
-        column: person_id
-        table:
-          schema: public
-          name: persons_namevariances
-  - name: persons_organizations
-    using:
-      foreign_key_constraint_on:
-        column: person_id
-        table:
-          schema: public
-          name: persons_organizations
-  - name: persons_publications
-    using:
-      foreign_key_constraint_on:
-        column: person_id
-        table:
-          schema: public
-          name: persons_publications
-  - name: persons_publications_metadata
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: persons_publications_metadata
-        insertion_order: null
-        column_mapping:
-          id: person_id
-  - name: persons_units
-    using:
-      foreign_key_constraint_on:
-        column: person_id
-        table:
-          schema: public
-          name: persons_units
-  - name: reviews_persons_publications
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: reviews_persons_publications
-        insertion_order: null
-        column_mapping:
-          id: person_id
+    - name: confidencesets_persons_publications
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: confidencesets_persons_publications
+          insertion_order: null
+          column_mapping:
+            id: person_id
+    - name: persons_namevariances
+      using:
+        foreign_key_constraint_on:
+          column: person_id
+          table:
+            schema: public
+            name: persons_namevariances
+    - name: persons_organizations
+      using:
+        foreign_key_constraint_on:
+          column: person_id
+          table:
+            schema: public
+            name: persons_organizations
+    - name: persons_publications
+      using:
+        foreign_key_constraint_on:
+          column: person_id
+          table:
+            schema: public
+            name: persons_publications
+    - name: persons_publications_metadata
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: persons_publications_metadata
+          insertion_order: null
+          column_mapping:
+            id: person_id
+    - name: persons_units
+      using:
+        foreign_key_constraint_on:
+          column: person_id
+          table:
+            schema: public
+            name: persons_units
+    - name: reviews_persons_publications
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: reviews_persons_publications
+          insertion_order: null
+          column_mapping:
+            id: person_id
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - given_name
-      - family_name
-      - email
-      - position_title
-      - institution_id
-      - provenance_id
-      - data_id
-      - start_date
-      - end_date
-      - semantic_scholar_ids
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - given_name
-      - family_name
-      - email
-      - position_title
-      - institution_id
-      - provenance_id
-      - data_id
-      - start_date
-      - end_date
-      - semantic_scholar_ids
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - given_name
-      - family_name
-      - email
-      - position_title
-      - institution_id
-      - provenance_id
-      - data_id
-      - start_date
-      - end_date
-      - semantic_scholar_ids
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - given_name
+          - family_name
+          - email
+          - position_title
+          - institution_id
+          - provenance_id
+          - data_id
+          - start_date
+          - end_date
+          - semantic_scholar_ids
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - given_name
+          - family_name
+          - email
+          - position_title
+          - institution_id
+          - provenance_id
+          - data_id
+          - start_date
+          - end_date
+          - semantic_scholar_ids
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - given_name
+          - family_name
+          - email
+          - position_title
+          - institution_id
+          - provenance_id
+          - data_id
+          - start_date
+          - end_date
+          - semantic_scholar_ids
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: persons_namevariances
   object_relationships:
-  - name: person
-    using:
-      foreign_key_constraint_on: person_id
+    - name: person
+      using:
+        foreign_key_constraint_on: person_id
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - person_id
-      - given_name
-      - family_name
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - person_id
-      - given_name
-      - family_name
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - person_id
-      - given_name
-      - family_name
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - person_id
+          - given_name
+          - family_name
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - person_id
+          - given_name
+          - family_name
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - person_id
+          - given_name
+          - family_name
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: persons_organizations
   object_relationships:
-  - name: person
-    using:
-      foreign_key_constraint_on: person_id
-  - name: review_organization
-    using:
-      foreign_key_constraint_on: organization_value
+    - name: person
+      using:
+        foreign_key_constraint_on: person_id
+    - name: review_organization
+      using:
+        foreign_key_constraint_on: organization_value
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - person_id
-      - organization_value
-      - start_date
-      - end_date
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - person_id
-      - organization_value
-      - start_date
-      - end_date
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - person_id
-      - organization_value
-      - start_date
-      - end_date
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - person_id
+          - organization_value
+          - start_date
+          - end_date
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - person_id
+          - organization_value
+          - start_date
+          - end_date
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - person_id
+          - organization_value
+          - start_date
+          - end_date
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: persons_publications
   object_relationships:
-  - name: datum
-    using:
-      foreign_key_constraint_on: data_id
-  - name: person
-    using:
-      foreign_key_constraint_on: person_id
-  - name: publication
-    using:
-      foreign_key_constraint_on: publication_id
+    - name: datum
+      using:
+        foreign_key_constraint_on: data_id
+    - name: person
+      using:
+        foreign_key_constraint_on: person_id
+    - name: publication
+      using:
+        foreign_key_constraint_on: publication_id
   array_relationships:
-  - name: confidencesets
-    using:
-      foreign_key_constraint_on:
-        column: persons_publications_id
-        table:
-          schema: public
-          name: confidencesets
-  - name: confidencesets_persons_publications
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: confidencesets_persons_publications
-        insertion_order: null
-        column_mapping:
-          id: persons_publications_id
-  - name: org_reviews
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: org_reviews
-        insertion_order: null
-        column_mapping:
-          id: persons_publications_id
-  - name: reviews
-    using:
-      foreign_key_constraint_on:
-        column: persons_publications_id
-        table:
-          schema: public
-          name: reviews
-  - name: reviews_persons_publications
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: reviews_persons_publications
-        insertion_order: null
-        column_mapping:
-          id: persons_publications_id
+    - name: confidencesets
+      using:
+        foreign_key_constraint_on:
+          column: persons_publications_id
+          table:
+            schema: public
+            name: confidencesets
+    - name: confidencesets_persons_publications
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: confidencesets_persons_publications
+          insertion_order: null
+          column_mapping:
+            id: persons_publications_id
+    - name: org_reviews
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: org_reviews
+          insertion_order: null
+          column_mapping:
+            id: persons_publications_id
+    - name: reviews
+      using:
+        foreign_key_constraint_on:
+          column: persons_publications_id
+          table:
+            schema: public
+            name: reviews
+    - name: reviews_persons_publications
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: reviews_persons_publications
+          insertion_order: null
+          column_mapping:
+            id: persons_publications_id
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - person_id
-      - publication_id
-      - confidence
-      - provenance_id
-      - data_id
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - person_id
-      - publication_id
-      - confidence
-      - provenance_id
-      - data_id
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - person_id
-      - publication_id
-      - confidence
-      - provenance_id
-      - data_id
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - person_id
+          - publication_id
+          - confidence
+          - provenance_id
+          - data_id
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - person_id
+          - publication_id
+          - confidence
+          - provenance_id
+          - data_id
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - person_id
+          - publication_id
+          - confidence
+          - provenance_id
+          - data_id
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: persons_publications_metadata
   object_relationships:
-  - name: person
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: persons
-        insertion_order: null
-        column_mapping:
-          person_id: id
-  - name: publication
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: publications
-        insertion_order: null
-        column_mapping:
-          publication_id: id
+    - name: person
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: persons
+          insertion_order: null
+          column_mapping:
+            person_id: id
+    - name: publication
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: publications
+          insertion_order: null
+          column_mapping:
+            publication_id: id
   array_relationships:
-  - name: authors_publications
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: publications_authors
-        insertion_order: null
-        column_mapping:
-          publication_id: publication_id
-  - name: awards
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: awards
-        insertion_order: null
-        column_mapping:
-          publication_id: publication_id
-  - name: confidencesets
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: confidencesets
-        insertion_order: null
-        column_mapping:
-          id: persons_publications_id
-  - name: confidencesets_persons_publications
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: confidencesets_persons_publications
-        insertion_order: null
-        column_mapping:
-          id: persons_publications_id
-  - name: org_reviews
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: org_reviews
-        insertion_order: null
-        column_mapping:
-          id: persons_publications_id
-  - name: reviews
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: reviews
-        insertion_order: null
-        column_mapping:
-          id: persons_publications_id
+    - name: authors_publications
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: publications_authors
+          insertion_order: null
+          column_mapping:
+            publication_id: publication_id
+    - name: awards
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: awards
+          insertion_order: null
+          column_mapping:
+            publication_id: publication_id
+    - name: confidencesets
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: confidencesets
+          insertion_order: null
+          column_mapping:
+            id: persons_publications_id
+    - name: confidencesets_persons_publications
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: confidencesets_persons_publications
+          insertion_order: null
+          column_mapping:
+            id: persons_publications_id
+    - name: org_reviews
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: org_reviews
+          insertion_order: null
+          column_mapping:
+            id: persons_publications_id
+    - name: reviews
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: reviews
+          insertion_order: null
+          column_mapping:
+            id: persons_publications_id
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - person_id
-      - publication_id
-      - confidence
-      - title
-      - doi
-      - source_name
-      - year
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - person_id
-      - publication_id
-      - confidence
-      - title
-      - doi
-      - source_name
-      - year
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - person_id
-      - publication_id
-      - confidence
-      - title
-      - doi
-      - source_name
-      - year
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - person_id
+          - publication_id
+          - confidence
+          - title
+          - doi
+          - source_name
+          - year
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - person_id
+          - publication_id
+          - confidence
+          - title
+          - doi
+          - source_name
+          - year
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - person_id
+          - publication_id
+          - confidence
+          - title
+          - doi
+          - source_name
+          - year
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: persons_units
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - person_id
-      - unit_id
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - person_id
-      - unit_id
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - person_id
-      - unit_id
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - person_id
+          - unit_id
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - person_id
+          - unit_id
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - person_id
+          - unit_id
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: publications
   object_relationships:
-  - name: datum
-    using:
-      foreign_key_constraint_on: data_id
-  - name: journal
-    using:
-      foreign_key_constraint_on: journal_id
+    - name: datum
+      using:
+        foreign_key_constraint_on: data_id
+    - name: journal
+      using:
+        foreign_key_constraint_on: journal_id
   array_relationships:
-  - name: awards
-    using:
-      foreign_key_constraint_on:
-        column: publication_id
-        table:
-          schema: public
-          name: awards
-  - name: persons_publications
-    using:
-      foreign_key_constraint_on:
-        column: publication_id
-        table:
-          schema: public
-          name: persons_publications
-  - name: publications_authors
-    using:
-      foreign_key_constraint_on:
-        column: publication_id
-        table:
-          schema: public
-          name: publications_authors
+    - name: awards
+      using:
+        foreign_key_constraint_on:
+          column: publication_id
+          table:
+            schema: public
+            name: awards
+    - name: persons_publications
+      using:
+        foreign_key_constraint_on:
+          column: publication_id
+          table:
+            schema: public
+            name: persons_publications
+    - name: publications_authors
+      using:
+        foreign_key_constraint_on:
+          column: publication_id
+          table:
+            schema: public
+            name: publications_authors
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - title
-      - doi
-      - provenance_id
-      - data_id
-      - source_name
-      - csl
-      - source_metadata
-      - csl_string
-      - year
-      - abstract
-      - journal_id
-      - source_id
-      - month
-      - day
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - data_id
-      - day
-      - id
-      - journal_id
-      - month
-      - provenance_id
-      - year
-      - csl
-      - source_metadata
-      - abstract
-      - csl_string
-      - doi
-      - source_id
-      - source_name
-      - title
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - data_id
-      - day
-      - id
-      - journal_id
-      - month
-      - provenance_id
-      - year
-      - csl
-      - source_metadata
-      - abstract
-      - csl_string
-      - doi
-      - source_id
-      - source_name
-      - title
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - title
+          - doi
+          - provenance_id
+          - data_id
+          - source_name
+          - csl
+          - source_metadata
+          - csl_string
+          - year
+          - abstract
+          - journal_id
+          - source_id
+          - month
+          - day
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - data_id
+          - day
+          - id
+          - journal_id
+          - month
+          - provenance_id
+          - year
+          - csl
+          - source_metadata
+          - abstract
+          - csl_string
+          - doi
+          - source_id
+          - source_name
+          - title
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - data_id
+          - day
+          - id
+          - journal_id
+          - month
+          - provenance_id
+          - year
+          - csl
+          - source_metadata
+          - abstract
+          - csl_string
+          - doi
+          - source_id
+          - source_name
+          - title
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: publications_authors
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - family_name
-      - given_name
-      - publication_id
-      - position
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - family_name
-      - given_name
-      - publication_id
-      - position
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - family_name
-      - given_name
-      - publication_id
-      - position
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - family_name
+          - given_name
+          - publication_id
+          - position
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - family_name
+          - given_name
+          - publication_id
+          - position
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - family_name
+          - given_name
+          - publication_id
+          - position
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: review_organization
   is_enum: true
   object_relationships:
-  - name: review_organization_level
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: review_organization_level
-        insertion_order: null
-        column_mapping:
-          value: organization_value
+    - name: review_organization_level
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: review_organization_level
+          insertion_order: null
+          column_mapping:
+            value: organization_value
   array_relationships:
-  - name: persons_organizations
-    using:
-      foreign_key_constraint_on:
-        column: organization_value
-        table:
-          schema: public
-          name: persons_organizations
-  - name: review_organization_levels
-    using:
-      foreign_key_constraint_on:
-        column: organization_value
-        table:
-          schema: public
-          name: review_organization_level
-  - name: reviews
-    using:
-      foreign_key_constraint_on:
-        column: review_organization_value
-        table:
-          schema: public
-          name: reviews
-  - name: users_organizations
-    using:
-      foreign_key_constraint_on:
-        column: organization_value
-        table:
-          schema: public
-          name: users_organizations
+    - name: persons_organizations
+      using:
+        foreign_key_constraint_on:
+          column: organization_value
+          table:
+            schema: public
+            name: persons_organizations
+    - name: review_organization_levels
+      using:
+        foreign_key_constraint_on:
+          column: organization_value
+          table:
+            schema: public
+            name: review_organization_level
+    - name: reviews
+      using:
+        foreign_key_constraint_on:
+          column: review_organization_value
+          table:
+            schema: public
+            name: reviews
+    - name: users_organizations
+      using:
+        foreign_key_constraint_on:
+          column: organization_value
+          table:
+            schema: public
+            name: users_organizations
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - value
-      - comment
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - value
-      - comment
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - value
-      - comment
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - value
+          - comment
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - value
+          - comment
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - value
+          - comment
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: review_organization_level
   object_relationships:
-  - name: review_organization
-    using:
-      foreign_key_constraint_on: organization_value
+    - name: review_organization
+      using:
+        foreign_key_constraint_on: organization_value
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - organization_value
-      - level
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - organization_value
-      - level
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - organization_value
-      - level
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - organization_value
+          - level
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - organization_value
+          - level
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - organization_value
+          - level
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: reviews
   object_relationships:
-  - name: persons_publication
-    using:
-      foreign_key_constraint_on: persons_publications_id
-  - name: review_organization
-    using:
-      foreign_key_constraint_on: review_organization_value
-  - name: type_review
-    using:
-      foreign_key_constraint_on: review_type
-  - name: user
-    using:
-      foreign_key_constraint_on: user_id
+    - name: persons_publication
+      using:
+        foreign_key_constraint_on: persons_publications_id
+    - name: review_organization
+      using:
+        foreign_key_constraint_on: review_organization_value
+    - name: type_review
+      using:
+        foreign_key_constraint_on: review_type
+    - name: user
+      using:
+        foreign_key_constraint_on: user_id
   insert_permissions:
-  - role: REVIEWER
-    permission:
-      check:
-        _and:
-        - user_id:
-            _eq: X-Hasura-User-Id
-        - review_organization:
-            users_organizations:
-              user_id:
+    - role: REVIEWER
+      permission:
+        check:
+          _and:
+            - user_id:
                 _eq: X-Hasura-User-Id
-      set:
-        user_id: x-hasura-User-Id
-      columns:
-      - persons_publications_id
-      - review_organization_value
-      - review_type
-      backend_only: false
+            - review_organization:
+                users_organizations:
+                  user_id:
+                    _eq: X-Hasura-User-Id
+        set:
+          user_id: x-hasura-User-Id
+        columns:
+          - persons_publications_id
+          - review_organization_value
+          - review_type
+        backend_only: false
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - user_id
-      - persons_publications_id
-      - datetime
-      - review_type
-      - review_organization_value
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - user_id
-      - persons_publications_id
-      - datetime
-      - review_type
-      - review_organization_value
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - user_id
-      - persons_publications_id
-      - datetime
-      - review_type
-      - review_organization_value
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - user_id
+          - persons_publications_id
+          - datetime
+          - review_type
+          - review_organization_value
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - user_id
+          - persons_publications_id
+          - datetime
+          - review_type
+          - review_organization_value
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - user_id
+          - persons_publications_id
+          - datetime
+          - review_type
+          - review_organization_value
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: reviews_persons_publications
   object_relationships:
-  - name: person
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: persons
-        insertion_order: null
-        column_mapping:
-          person_id: id
-  - name: persons_publications
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: persons_publications
-        insertion_order: null
-        column_mapping:
-          persons_publications_id: id
-  - name: publication
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: publications
-        insertion_order: null
-        column_mapping:
-          publication_id: id
-  - name: review_organization
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: review_organization
-        insertion_order: null
-        column_mapping:
-          review_organization_value: value
-  - name: type_review
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: type_review
-        insertion_order: null
-        column_mapping:
-          review_type: value
-  - name: user
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: users
-        insertion_order: null
-        column_mapping:
-          user_id: id
+    - name: person
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: persons
+          insertion_order: null
+          column_mapping:
+            person_id: id
+    - name: persons_publications
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: persons_publications
+          insertion_order: null
+          column_mapping:
+            persons_publications_id: id
+    - name: publication
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: publications
+          insertion_order: null
+          column_mapping:
+            publication_id: id
+    - name: review_organization
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: review_organization
+          insertion_order: null
+          column_mapping:
+            review_organization_value: value
+    - name: type_review
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: type_review
+          insertion_order: null
+          column_mapping:
+            review_type: value
+    - name: user
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: users
+          insertion_order: null
+          column_mapping:
+            user_id: id
   array_relationships:
-  - name: confidencesets
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: confidencesets
-        insertion_order: null
-        column_mapping:
-          persons_publications_id: persons_publications_id
+    - name: confidencesets
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: confidencesets
+          insertion_order: null
+          column_mapping:
+            persons_publications_id: persons_publications_id
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - user_id
-      - persons_publications_id
-      - datetime
-      - review_organization_value
-      - person_id
-      - publication_id
-      - title
-      - doi
-      - source_name
-      - year
-      - review_type
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - user_id
-      - persons_publications_id
-      - datetime
-      - review_organization_value
-      - person_id
-      - publication_id
-      - title
-      - doi
-      - source_name
-      - year
-      - review_type
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - user_id
-      - persons_publications_id
-      - datetime
-      - review_organization_value
-      - person_id
-      - publication_id
-      - title
-      - doi
-      - source_name
-      - year
-      - review_type
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - user_id
+          - persons_publications_id
+          - datetime
+          - review_organization_value
+          - person_id
+          - publication_id
+          - title
+          - doi
+          - source_name
+          - year
+          - review_type
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - user_id
+          - persons_publications_id
+          - datetime
+          - review_organization_value
+          - person_id
+          - publication_id
+          - title
+          - doi
+          - source_name
+          - year
+          - review_type
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - user_id
+          - persons_publications_id
+          - datetime
+          - review_organization_value
+          - person_id
+          - publication_id
+          - title
+          - doi
+          - source_name
+          - year
+          - review_type
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: subfunders
   object_relationships:
-  - name: funder
-    using:
-      foreign_key_constraint_on: funder_id
+    - name: funder
+      using:
+        foreign_key_constraint_on: funder_id
   array_relationships:
-  - name: awards
-    using:
-      foreign_key_constraint_on:
-        column: subfunder_id
-        table:
-          schema: public
-          name: awards
-  - name: subfunders_namevariances
-    using:
-      foreign_key_constraint_on:
-        column: subfunder_id
-        table:
-          schema: public
-          name: subfunders_namevariances
+    - name: awards
+      using:
+        foreign_key_constraint_on:
+          column: subfunder_id
+          table:
+            schema: public
+            name: awards
+    - name: subfunders_namevariances
+      using:
+        foreign_key_constraint_on:
+          column: subfunder_id
+          table:
+            schema: public
+            name: subfunders_namevariances
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - funder_id
-      - name
-      - short_name
-      - uri
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - funder_id
-      - name
-      - short_name
-      - uri
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - funder_id
-      - name
-      - short_name
-      - uri
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - funder_id
+          - name
+          - short_name
+          - uri
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - funder_id
+          - name
+          - short_name
+          - uri
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - funder_id
+          - name
+          - short_name
+          - uri
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: subfunders_namevariances
   object_relationships:
-  - name: subfunder
-    using:
-      foreign_key_constraint_on: subfunder_id
+    - name: subfunder
+      using:
+        foreign_key_constraint_on: subfunder_id
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - name
-      - subfunder_id
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - name
-      - subfunder_id
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - name
-      - subfunder_id
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - name
+          - subfunder_id
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - name
+          - subfunder_id
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - name
+          - subfunder_id
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: submissions
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - type
-      - data
-      - datetime
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - type
-      - data
-      - datetime
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - type
-      - data
-      - datetime
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - type
+          - data
+          - datetime
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - type
+          - data
+          - datetime
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - type
+          - data
+          - datetime
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: type_review
   is_enum: true
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - value
-      - comment
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - value
-      - comment
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - value
-      - comment
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - value
+          - comment
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - value
+          - comment
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - value
+          - comment
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: units
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - name
-      filter: {}
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - name
-      filter: {}
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - name
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - name
+        filter: {}
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - name
+        filter: {}
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - name
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: users
   object_relationships:
-  - name: users_role
-    using:
-      foreign_key_constraint_on: role
+    - name: users_role
+      using:
+        foreign_key_constraint_on: role
   array_relationships:
-  - name: org_reviews
-    using:
-      manual_configuration:
-        remote_table:
-          schema: public
-          name: org_reviews
-        insertion_order: null
-        column_mapping:
-          id: user_id
-  - name: reviews
-    using:
-      foreign_key_constraint_on:
-        column: user_id
-        table:
-          schema: public
-          name: reviews
-  - name: users_organizations
-    using:
-      foreign_key_constraint_on:
-        column: user_id
-        table:
-          schema: public
-          name: users_organizations
+    - name: org_reviews
+      using:
+        manual_configuration:
+          remote_table:
+            schema: public
+            name: org_reviews
+          insertion_order: null
+          column_mapping:
+            id: user_id
+    - name: reviews
+      using:
+        foreign_key_constraint_on:
+          column: user_id
+          table:
+            schema: public
+            name: reviews
+    - name: users_organizations
+      using:
+        foreign_key_constraint_on:
+          column: user_id
+          table:
+            schema: public
+            name: users_organizations
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - primaryEmail
-      - role
-      filter:
-        id:
-          _eq: X-Hasura-User-Id
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - primaryEmail
-      - role
-      filter:
-        id:
-          _eq: X-Hasura-User-Id
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - primaryEmail
-      - role
-      filter: {}
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - primaryEmail
+          - role
+        filter:
+          id:
+            _eq: X-Hasura-User-Id
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - primaryEmail
+          - role
+        filter:
+          id:
+            _eq: X-Hasura-User-Id
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - primaryEmail
+          - role
+        filter: {}
+        allow_aggregations: true
 - table:
     schema: public
     name: users_organizations
   object_relationships:
-  - name: organization
-    using:
-      foreign_key_constraint_on: organization_value
-  - name: user
-    using:
-      foreign_key_constraint_on: user_id
+    - name: organization
+      using:
+        foreign_key_constraint_on: organization_value
+    - name: user
+      using:
+        foreign_key_constraint_on: user_id
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - id
-      - user_id
-      - organization_value
-      filter:
-        user_id:
-          _eq: X-Hasura-User-Id
-      allow_aggregations: true
-  - role: VIEWER
-    permission:
-      columns:
-      - id
-      - user_id
-      - organization_value
-      filter:
-        user_id:
-          _eq: X-Hasura-User-Id
-      allow_aggregations: true
-  - role: anonymous
-    permission:
-      columns:
-      - id
-      - user_id
-      - organization_value
-      filter:
-        user_id:
-          _eq: X-Hasura-User-Id
-      allow_aggregations: true
+    - role: REVIEWER
+      permission:
+        columns:
+          - id
+          - user_id
+          - organization_value
+        filter:
+          user_id:
+            _eq: X-Hasura-User-Id
+        allow_aggregations: true
+    - role: VIEWER
+      permission:
+        columns:
+          - id
+          - user_id
+          - organization_value
+        filter:
+          user_id:
+            _eq: X-Hasura-User-Id
+        allow_aggregations: true
+    - role: anonymous
+      permission:
+        columns:
+          - id
+          - user_id
+          - organization_value
+        filter:
+          user_id:
+            _eq: X-Hasura-User-Id
+        allow_aggregations: true
 - table:
     schema: public
     name: users_roles
   is_enum: true
   select_permissions:
-  - role: REVIEWER
-    permission:
-      columns:
-      - comment
-      - value
-      filter: {}
-  - role: VIEWER
-    permission:
-      columns:
-      - comment
-      - value
-      filter: {}
-  - role: anonymous
-    permission:
-      columns:
-      - comment
-      - value
-      filter: {}
+    - role: REVIEWER
+      permission:
+        columns:
+          - comment
+          - value
+        filter: {}
+    - role: VIEWER
+      permission:
+        columns:
+          - comment
+          - value
+        filter: {}
+    - role: anonymous
+      permission:
+        columns:
+          - comment
+          - value
+        filter: {}
