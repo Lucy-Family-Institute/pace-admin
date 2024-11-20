@@ -573,7 +573,7 @@ export default {
     personsLoaded: false,
     personsLoadedError: false,
     citationsByTitle: {},
-
+    citationsMLAByTitle: {},
     // these are helper objects to connect personPubSets together
     // PersonPubId -> Person Pub Set ID Pointers
     personPubSetPointer: {},
@@ -1486,6 +1486,7 @@ export default {
       this.publications = []
       this.publicationsByIds = {}
       this.citationsByTitle = {}
+      this.citationsMLAByTitle = {}
       this.people = []
       await this.loadCenterAuthorOptions()
       this.personPubSetsById = {}
@@ -1602,7 +1603,8 @@ export default {
     },
     getPubCSVResultObject (personPublication) {
       const titleKey = this.getPublicationTitleKey(personPublication.publication.title)
-      const citation = (this.citationsByTitle[titleKey] ? this.citationsByTitle[titleKey] : undefined)
+      const citationAPA = (this.citationsByTitle[titleKey] ? this.citationsByTitle[titleKey] : undefined)
+      const citationMLA = (this.citationsMLAByTitle[titleKey] ? this.citationsMLAByTitle[titleKey] : undefined)
       const obj = new Map()
       if (this.selectedPersonMembership && this.selectedPersonMembership.length > 0) {
         _.each(this.selectedPersonMembership, (center) => {
@@ -1617,7 +1619,8 @@ export default {
       obj['source_names'] = JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications), (pub) => { return pub.publication.source_name }))
       obj['sources'] = this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications))
       obj['abstract'] = personPublication.publication.abstract
-      obj['citation'] = citation
+      obj['citation_apa'] = citationAPA
+      obj['citation_mla'] = citationMLA
       // const obj = {
       //   centers: (this.selectedPersonMembership ? _.mapKeys(this.selectedPersonMembership, (center) => { return center }) : []),
       //   authors: this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][titleKey],
@@ -2069,6 +2072,7 @@ export default {
     },
     async loadPublicationsCSLData (publicationIds) {
       this.citationsByTitle = {}
+      this.citationsMLAByTitle = {}
       // break publicationIds into chunks of 50
       const batches = _.chunk(publicationIds, 2000)
       let batchesPubsCSLByTitle = []
@@ -2088,6 +2092,9 @@ export default {
       // generate the citations themselves
       await pMap(batchesPubsCSLByTitle, async (pubsCSLByTitle) => {
         await pMap(_.keys(pubsCSLByTitle), async (titleKey) => {
+          if (!this.citationsMLAByTitle[titleKey]) {
+            this.citationsMLAByTitle[titleKey] = this.getCitationMLA(pubsCSLByTitle[titleKey][0].csl_string)
+          }
           if (!this.citationsByTitle[titleKey]) {
             this.citationsByTitle[titleKey] = this.getCitationApa(pubsCSLByTitle[titleKey][0].csl_string)
           }
@@ -2339,8 +2346,14 @@ export default {
         return null
       }
     },
+    getCitationMLA (cslString) {
+      return this.getCitation(cslString, 'mla')
+    },
     // assumes getting csl as json object from DB
     getCitationApa (cslString) {
+      return this.getCitation(cslString, 'apa')
+    },
+    getCitation (cslString, formatType) {
       const csl = JSON.parse(cslString)
 
       try {
@@ -2356,7 +2369,7 @@ export default {
       const citeObj = new Cite(csl)
       // create formatted citation as test
       const apaCitation = citeObj.format('bibliography', {
-        template: 'apa'
+        template: formatType
       })
       const decodedCitation = this.decode(apaCitation)
       // trim trailing whitespace and remove any newlines in the citation
