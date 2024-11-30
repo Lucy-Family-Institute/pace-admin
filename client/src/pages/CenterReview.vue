@@ -1534,9 +1534,17 @@ export default {
       this.showCurrentSelectedPublication(true)
     },
     getPublicationsCSVResult (personPublications) {
-      return _.map(personPublications, (personPub) => {
-        return this.getPubCSVResultObject(personPub)
+      console.log('Getting CSV data for publications...')
+      const pubArrays = _.map(personPublications, (personPub) => {
+        console.log('Getting formatted CSV result object...')
+        // for each author do a new row and then flatten
+        const pubs = this.getPubCSVResultObject(personPub, true)
+        console.log(`pub arrays are: ${JSON.stringify(pubs, null, 2)}`)
+        return pubs
       })
+      // console.log(`pub arrays are: ${JSON.stringify(pubArrays, null, 2)}`)
+      console.log('Flattening publication download row array...')
+      return _.flatten(pubArrays)
     },
     getCenterMembersCSVResult (centerMembers) {
       return _.map(centerMembers, (member) => {
@@ -1601,39 +1609,64 @@ export default {
       obj['cross_center_membership'] = centerStr
       return obj
     },
-    getPubCSVResultObject (personPublication) {
+    getPubCSVResultObject (personPublication, oneRowPerAuthor) {
       const titleKey = this.getPublicationTitleKey(personPublication.publication.title)
-      const citationAPA = (this.citationsByTitle[titleKey] ? this.citationsByTitle[titleKey] : undefined)
-      const citationMLA = (this.citationsMLAByTitle[titleKey] ? this.citationsMLAByTitle[titleKey] : undefined)
-      const obj = new Map()
-      if (this.selectedPersonMembership && this.selectedPersonMembership.length > 0) {
-        _.each(this.selectedPersonMembership, (center) => {
-          obj[center] = ''
+      const authors = this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][titleKey]
+      if (oneRowPerAuthor) {
+        console.log(`Getting publication per one row for authors: ${JSON.stringify(authors, null, 2)}`)
+        const authorsArray = _.split(authors, ';')
+        return _.map(authorsArray, (author) => {
+          console.log(`Get pub row for author: ${author}`)
+          const obj = new Map()
+          obj['title'] = personPublication.publication.title.replace(/\n/g, ' ')
+          obj['authors'] = author
+          const citationAPA = (this.citationsByTitle[titleKey] ? this.citationsByTitle[titleKey] : undefined)
+          const citationMLA = (this.citationsMLAByTitle[titleKey] ? this.citationsMLAByTitle[titleKey] : undefined)
+          obj['doi'] = this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi))
+          obj['journal'] = (personPublication.publication.journal_title) ? personPublication.publication.journal_title : ''
+          obj['year'] = personPublication.publication.year
+          obj['source_names'] = JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications), (pub) => { return pub.publication.source_name }))
+          obj['sources'] = this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications))
+          obj['abstract'] = personPublication.publication.abstract
+          obj['citation_apa'] = citationAPA
+          obj['citation_mla'] = citationMLA
+          console.log(`Row is ${JSON.stringify(obj, null, 2)}`)
+          return obj
         })
+      } else {
+        const citationAPA = (this.citationsByTitle[titleKey] ? this.citationsByTitle[titleKey] : undefined)
+        const citationMLA = (this.citationsMLAByTitle[titleKey] ? this.citationsMLAByTitle[titleKey] : undefined)
+        const obj = new Map()
+        if (this.selectedPersonMembership && this.selectedPersonMembership.length > 0) {
+          _.each(this.selectedPersonMembership, (center) => {
+            obj[center] = ''
+          })
+        }
+        obj['authors'] = authors
+        obj['authors'] = this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][titleKey]
+        obj['title'] = personPublication.publication.title.replace(/\n/g, ' ')
+        obj['doi'] = this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi))
+        obj['journal'] = (personPublication.publication.journal_title) ? personPublication.publication.journal_title : ''
+        obj['year'] = personPublication.publication.year
+        obj['source_names'] = JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications), (pub) => { return pub.publication.source_name }))
+        obj['sources'] = this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications))
+        obj['abstract'] = personPublication.publication.abstract
+        obj['citation_apa'] = citationAPA
+        obj['citation_mla'] = citationMLA
+        // const obj = {
+        //   centers: (this.selectedPersonMembership ? _.mapKeys(this.selectedPersonMembership, (center) => { return center }) : []),
+        //   authors: this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][titleKey],
+        //   title: personPublication.publication.title.replace(/\n/g, ' '),
+        //   doi: this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi)),
+        //   journal: (personPublication.publication.journal_title) ? personPublication.publication.journal_title : '',
+        //   year: personPublication.publication.year,
+        //   source_names: JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications), (pub) => { return pub.publication.source_name })),
+        //   sources: this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications)),
+        //   abstract: personPublication.publication.abstract,
+        //   citation: citation
+        // }
+        return [obj]
       }
-      obj['authors'] = this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][titleKey]
-      obj['title'] = personPublication.publication.title.replace(/\n/g, ' ')
-      obj['doi'] = this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi))
-      obj['journal'] = (personPublication.publication.journal_title) ? personPublication.publication.journal_title : ''
-      obj['year'] = personPublication.publication.year
-      obj['source_names'] = JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications), (pub) => { return pub.publication.source_name }))
-      obj['sources'] = this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications))
-      obj['abstract'] = personPublication.publication.abstract
-      obj['citation_apa'] = citationAPA
-      obj['citation_mla'] = citationMLA
-      // const obj = {
-      //   centers: (this.selectedPersonMembership ? _.mapKeys(this.selectedPersonMembership, (center) => { return center }) : []),
-      //   authors: this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][titleKey],
-      //   title: personPublication.publication.title.replace(/\n/g, ' '),
-      //   doi: this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi)),
-      //   journal: (personPublication.publication.journal_title) ? personPublication.publication.journal_title : '',
-      //   year: personPublication.publication.year,
-      //   source_names: JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications), (pub) => { return pub.publication.source_name })),
-      //   sources: this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications)),
-      //   abstract: personPublication.publication.abstract,
-      //   citation: citation
-      // }
-      return obj
     },
     getCSVHyperLinkString (showText, url) {
       return `${url}`
