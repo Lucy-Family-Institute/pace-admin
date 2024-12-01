@@ -22,5 +22,11 @@
   ],
   "LFIDS": [
     "../data/input/lfids_members_2017-2024.csv"
+  ],
+  "GRAD": [
+    "../data/input/grad_members_2010-2024.csv"
+  ],
+  "GRADSTUDENT": [
+    "../data/input/grad_students_2013-2024.csv"
   ]
 }
