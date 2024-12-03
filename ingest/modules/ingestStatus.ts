@@ -18,6 +18,7 @@ export default class IngestStatus {
   skippedAddConfidenceSets: Array<PublicationStatus>
   failedAddConfidenceSets: Array<PublicationStatus>
   combinedFailed: Array<PublicationStatus>
+  combinedDedupedFailed: Array<PublicationStatus>
   errorMessages: Array<string>
   warningMessages: Array<string>
   totalRecords: number
@@ -31,6 +32,7 @@ export default class IngestStatus {
   totalAddedConfidenceSets: number
   totalSkippedAddConfidenceSets: number
   totalFailedAddConfidenceSets: number
+  totalDedupedFailedAddPublications: number
 
   csvBaseLogDir: string
   csvBaseFailedLogDir: string
@@ -67,6 +69,7 @@ export default class IngestStatus {
     this.totalAddedConfidenceSets = 0
     this.totalSkippedAddConfidenceSets = 0
     this.totalFailedAddConfidenceSets = 0
+    this.totalDedupedFailedAddPublications = 0
     this.csvDirBaseName = csvDirBaseName
     this.csvBaseLogDir = `${csvDirBaseName}_logs`
     this.csvBaseFailedLogDir = `${this.csvBaseLogDir}_failed`
@@ -229,10 +232,32 @@ export default class IngestStatus {
     const csvFileDir = path.join(process.cwd(), this.ingesterConfig.outputIngestDir, this.csvBaseLogDir, this.csvBaseFailedLogDir)
     FsHelper.createDirIfNotExists(csvFileDir, true)
     const csvFilePath = path.join(csvFileDir, csvFailedFileName)
-    
+
+    // eliminate duplicate titles in the list
+    this.combinedDedupedFailed = []
+    let combinedMap = new Map<string, PublicationStatus>()
+    _.each(this.combinedFailed, pubStatus => {
+      const title = _.toLower(pubStatus.title)
+      combinedMap.set(title, pubStatus)
+    })
+
+    console.log("----Write Combined Map")
+    console.log(`${JSON.stringify(combinedMap)}`)
+    console.log("----Done writing combined map")
+
+    //2. Iterate over map values
+    for (let key of combinedMap.keys()) {
+      console.log(`Key is: ${key}`)
+      this.combinedDedupedFailed.push(combinedMap.get(key))
+    }
+
+
+
+    this.totalDedupedFailedAddPublications = this.combinedDedupedFailed.length
+
     await writeCsv({
       path: csvFilePath,
-      data: this.getCSVRows(this.combinedFailed),
+      data: this.getCSVRows(this.combinedDedupedFailed),
     })
 
     // if a combined failed output dir, also write output to there
@@ -242,7 +267,7 @@ export default class IngestStatus {
       const csvCombinedFilePath = path.join(this.ingesterConfig.combinedFailedOutputDir, csvFailedFileName)
       await writeCsv({
         path: csvCombinedFilePath,
-        data: this.getCSVRows(this.combinedFailed),
+        data: this.getCSVRows(this.combinedDedupedFailed),
       })
     }
 
@@ -291,6 +316,7 @@ export default class IngestStatus {
     console.log(`DOIs skipped add confidence sets for path ${csvFilePath}': ${this.skippedAddConfidenceSets.length}`)
 
     console.log(`Total DOIs failed add publications': ${this.totalFailedAddPublications}`)
+    console.log(`Total DOIs deduped titles failed add publications': ${this.totalDedupedFailedAddPublications}`)
     console.log(`Total DOIs added publications': ${this.totalAddedPublications}`)
     console.log(`Total DOIs skipped add publications': ${this.totalSkippedAddPublications}`)
     console.log(`Total DOIs failed add person publications': ${this.totalFailedAddPersonPublications}`)

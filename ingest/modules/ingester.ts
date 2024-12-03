@@ -65,8 +65,16 @@ export class Ingester {
     // include mutex to make sure this is thread-safe and not initialized simultaneously by multiple threads
     await this.normedPersonMutex.dispatch( async () => {
       if (!this.normedPersons) {
-        this.normedPersons = await NormedPerson.getAllNormedPersons(this.client)
-        // console.log(`Initialized Normed Persons: ${JSON.stringify(this.normedPersons, null, 2)}`)
+        if (this.config.checkForNewPersonMatches && this.config.ingestSingleOrganizationOnly && this.config.ingestOrganizationId != null){
+          console.log('after logic check')
+          // this.normedPersons = await NormedPerson.getAllNormedPersons(this.client)
+          const organizationValue = this.config.ingestOrganizationId
+          console.log(`after get all normed persons and get normed person for year: ${this.config.centerMemberYear} with org value: ${organizationValue}`)
+          this.normedPersons = await NormedPerson.getNormedPersons(this.config.centerMemberYear, organizationValue, this.client)
+        } else {
+          this.normedPersons = await NormedPerson.getAllNormedPersons(this.client)
+          // console.log(`Initialized Normed Persons: ${JSON.stringify(this.normedPersons, null, 2)}`)
+        }
         console.log(`Initialized ${this.normedPersons.length} Normed Persons`)
       }
     })
@@ -310,8 +318,12 @@ export class Ingester {
 
     let csl: Csl = undefined
     try {
-      await wait(this.config.defaultWaitInterval)
-      csl = await NormedPublication.getCsl(normedPub, this.config.defaultToBibTex, sourceMetadata)
+      if (normedPub.csl != null) {
+        await wait(this.config.defaultWaitInterval)
+        csl = await NormedPublication.getCsl(normedPub, this.config.defaultToBibTex, sourceMetadata)
+      } else {
+        csl = new Csl(normedPub.csl)
+      }
     } catch (error) {
       console.log(`Throwing the error for doi: ${normedPub.doi}`)
       throw (error)
@@ -649,11 +661,45 @@ export class Ingester {
     try {
       console.log(`Checking publications in DB for year ${year} for new author matches, with config: ${JSON.stringify(this.config)}`)
 
+      let normedPubs: NormedPublication[]
       // get normed publications from filedir and manifest
       // need to figure out how to not have source metadata be pre-cached so as not to have memory errors, maybe retrieve number of rows with offset? or load source metadata for different batches?
-      const normedPubs: NormedPublication[] = await NormedPublication.loadPublicationsFromDB(this.client, year)
+      if (this.config.checkPersonMatchesConfirmedCenterPubsOnly && this.config.checkPersonMatchesConfirmedPubsCenterName != null){
+        console.log('here1')
+        const organizationValue = this.config.checkPersonMatchesConfirmedPubsCenterName
+        console.log('here2')
+        let personIds = []
+        const normedPersons = await NormedPerson.getNormedPersons(this.config.centerMemberYear, this.config.checkPersonMatchesConfirmedPubsCenterName, this.client)
+        _.each(normedPersons, (normedPerson) => {
+          personIds.push(normedPerson.id)
+        })
+
+        normedPubs = await NormedPublication.loadAuthorConfirmedPublicationsFromDB(this.client, personIds)
+        // normedPubs = await NormedPublication.loadCenterConfirmedPublicationsFromDB(this.client, ['Notre Dame'], organizationValue, this.config.checkPersonMatchesConfirmedPubsStartYear, this.config.checkPersonMatchesConfirmedPubsEndYear, this.config.centerMemberYear, this.config.centerMemberYear)
+        console.log(`Found normed pubs: ${normedPubs.length}`)
+      } else {
+        normedPubs = await NormedPublication.loadPublicationsFromDB(this.client, year)
+      }
       const statusCSVFileBase = `Check_new_matches_${year}_status`
+      // let pageOffset = 0
+      // let pageSize = this.config.loadPageSize
+      // if (!pageSize) pageSize = normedPubs.length
+      // let normedPubs2 = _.slice(normedPubs, 0, pageSize)
+      await this.initializeNormedPersons()
+      console.log(`Initialized Normed Persons: ${this.normedPersons.length}`)
+      
       ingestStatus = await this.ingest(normedPubs, statusCSVFileBase, statusCSVFileBase, normedPubs.length, threadCount)
+      // if (pageSize){
+      //   // iterate over the remaining set until results returned are 0
+      //   while (normedPubs2 && normedPubs2.length > 0) {
+      //     pageOffset += 1
+      //     let start =  (pageSize * pageOffset)
+      //     let end = start + pageSize
+      //     let normedPubs2 = _.slice(normedPubs, (pageSize * pageOffset), pageSize)
+      //     ingestStatus = IngestStatus.merge(ingestStatus, await this.ingest(normedPubs2, statusCSVFileBase, statusCSVFileBase, normedPubs2.length, threadCount))
+      //   }
+      // }
+      // ingestStatus = await this.ingest(normedPubs2, statusCSVFileBase, statusCSVFileBase, normedPubs2.length, threadCount)
       // output remaining results for this path
       await ingestStatus.writeLogsToCSV()
  

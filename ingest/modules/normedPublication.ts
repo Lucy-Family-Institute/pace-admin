@@ -9,6 +9,9 @@ import NormedPerson from './normedPerson'
 import NormedAuthor from './normedAuthor'
 import writeToJSONFile from '../units/writeToJSONFile'
 import readPublicationsCSLByYear from '../gql/readPublicationsCSLByYear'
+import readPersonPublicationsAll from '../gql/readPersonPublicationsAll'
+import readPersonListPublicationsReviews from '../gql/readPersonListPublicationsReviews'
+import readPublicationsCSLById from '../gql/readPublicationsCSLById'
 import FsHelper from '../units/fsHelper'
 import BibTex from './bibTex'
 import Csl from './csl'
@@ -332,6 +335,30 @@ export default class NormedPublication {
     let raw = filesystem.readFileSync(filePath, 'utf8')
     let json = JSON.parse(raw);
     return json
+  }
+
+  public static async loadAuthorConfirmedPublicationsFromDB(client, personIds){
+    console.log(`Loading confirmed pubs for person ids: ${JSON.stringify(personIds)}`)
+    const queryResult = await client.query(readPersonListPublicationsReviews(personIds, 'ND'))
+
+    // return []
+    console.log(`Found reviews ${queryResult.data.reviews_persons_publications.length}`)
+    let pubIds = []
+    _.each(queryResult.data.reviews_persons_publications, (reviewPersonPub) => {
+      pubIds.push(parseInt(reviewPersonPub['publication_id']))
+    })
+
+    console.log(`Pub ids from reviews: ${pubIds.length}`)
+
+    const queryPubResult = await client.query(readPublicationsCSLById(pubIds))
+    return this.getNormedPublicationsFromDBRows(queryPubResult.data.publications) 
+  }
+
+  public static async loadCenterConfirmedPublicationsFromDB(client, institutions, organizationValue, selectedPubYearMin, selectedPubYearMax, selectedMemberYearMin, selectedMemberYearMax): Promise<NormedPublication[]> {
+    const queryResult = await client.query(readPersonPublicationsAll(institutions, organizationValue, selectedPubYearMin, selectedPubYearMax, selectedMemberYearMin, selectedMemberYearMax))
+
+    // const queryResult = await client.query(readPublicationsCSLByYear(year))
+    return this.getNormedPublicationsFromDBRows(queryResult.data.publications) 
   }
 
   // will return a list of publications for the given year

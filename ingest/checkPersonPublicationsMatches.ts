@@ -55,6 +55,15 @@ const centerMemberYear = process.env.INGESTER_CENTER_MEMBER_YEAR
 const loggingBatchSize = process.env.INGESTER_LOGGING_BATCH_SIZE
 const threadCount = Number.parseInt(process.env.INGESTER_THREAD_COUNT)
 const types = _.split(process.env.INGESTER_PUBLICATION_TYPES, ',')
+const combinedFailedOutputDir = `${outputIngestDir}/combined_failed_${moment().format('YYYYMMDDHHmmss')}`
+const ingestSingleOrganizationOnly = process.env.INGEST_SINGLE_ORGANIZATION_ONLY
+const ingestOrganizationId = process.env.INGEST_ORGANIZATION_ID
+const checkPersonMatchesConfirmedCenterPubsOnly = process.env.INGESTER_CHECK_PERSON_MATCHES_FOR_CONFIRMED_CENTER_PUBS_ONLY
+const checkPersonMatchesConfirmedPubsCenterName =process.env.INGESTER_CHECK_PERSON_MATCHES_CONFIRMED_PUBS_ORGANIZATION_ID
+const checkPersonMatchesConfirmedPubsStartYear = process.env.INGESTER_CHECK_PERSON_MATCHES_CONFIRMED_PUBS_START_YEAR
+const checkPersonMatchesConfirmedPubsEndYear = process.env.INGESTER_CHECK_PERSON_MATCHES_CONFIRMED_PUBS_END_YEAR
+const loadPageSize = process.env.INGESTER_LOAD_BATCH_SIZE
+
 
 //returns status map of what was done
 async function main() {
@@ -73,7 +82,15 @@ async function main() {
     outputIngestDir: outputIngestDir,
     centerMemberYear: Number.parseInt(centerMemberYear),
     loggingBatchSize: Number.parseInt(loggingBatchSize),
-    publicationTypes: types
+    publicationTypes: types,
+    combinedFailedOutputDir: combinedFailedOutputDir,
+    ingestSingleOrganizationOnly: Normalizer.stringToBoolean(ingestSingleOrganizationOnly),
+    ingestOrganizationId: ingestOrganizationId,
+    loadPageSize: Number.parseInt(loadPageSize),
+    checkPersonMatchesConfirmedCenterPubsOnly: Normalizer.stringToBoolean(checkPersonMatchesConfirmedCenterPubsOnly),
+    checkPersonMatchesConfirmedPubsCenterName: checkPersonMatchesConfirmedPubsCenterName,
+    checkPersonMatchesConfirmedPubsStartYear: Number.parseInt(checkPersonMatchesConfirmedPubsStartYear),
+    checkPersonMatchesConfirmedPubsEndYear: Number.parseInt(checkPersonMatchesConfirmedPubsEndYear)
   }
   const ingester = new Ingester(config, client)
   
