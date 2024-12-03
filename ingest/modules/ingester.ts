@@ -23,7 +23,7 @@ import { randomWait, wait } from '../units/randomWait'
 import { command as writeCsv } from '../units/writeCsv'
 import Normalizer from '../units/normalizer'
 
-import _ from 'lodash'
+import _, { toInteger } from 'lodash'
 import IngesterConfig from './ingesterConfig'
 import DataSourceConfig from './dataSourceConfig'
 import { PubMedDataSource } from './pubmedDataSource'
@@ -273,7 +273,7 @@ export class Ingester {
     return _.values(pubsByKey)
   }
 
-  async ingest (publications: NormedPublication[], csvDirBaseName: string, csvFileBaseName: string, totalRows: number, threadCount: number, dataDirPath?: string): Promise<IngestStatus> {
+  async ingest (publications: NormedPublication[], csvDirBaseName: string, csvFileBaseName: string, pageOffset: number, totalPages: number, totalRows: number, threadCount: number, dataDirPath?: string): Promise<IngestStatus> {
     let ingestStatus = new IngestStatus(csvFileBaseName, csvDirBaseName, this.config)
     // do for loop
     let dedupedPubs: NormedPublication[]
@@ -286,7 +286,7 @@ export class Ingester {
     await pMap(dedupedPubs, async (publication: NormedPublication, index) => {
       const sourceMetadata = NormedPublication.getSourceMetadata(publication, dataDirPath)
       try {
-        console.log(`Ingesting publication batch: (${index+1} of ${dedupedPubs.length}) of ${totalRows} total publications`)
+        console.log(`Ingesting publication: (${index+1} of ${dedupedPubs.length}) for (${pageOffset} batch of ${totalPages} total batches) for ${totalRows} total publications`)
         await wait(this.config.defaultWaitInterval)
         const pubStatus: PublicationStatus = await this.ingestNormedPublication(publication, sourceMetadata)
         await ingestStatus.log(pubStatus, sourceMetadata)
@@ -596,15 +596,17 @@ export class Ingester {
 
       // get total rows from csv file
       const totalRows = await NormedPublication.getTotalCSVFileRows(manifestFilePath)
+      let totalPages = Math.floor(totalRows / pageSize)
+      if (totalRows % pageSize > 0) totalPages += 1
       // get normed publications from filedir and manifest
       let normedPubs: NormedPublication[] = await NormedPublication.loadFromCSV(manifestFilePath, dataDirPath, pageOffset, pageSize)
-      ingestStatus = await this.ingest(normedPubs, csvOutputFileBase, `${csvOutputFileBase}_${pageOffset}`, totalRows, threadCount, dataDirPath)
+      ingestStatus = await this.ingest(normedPubs, csvOutputFileBase, `${csvOutputFileBase}_${pageOffset}`, pageOffset, totalPages, totalRows, threadCount, dataDirPath)
       if (pageSize){
         // iterate over the remaining set until results returned are 0
         while (normedPubs && normedPubs.length > 0) {
           pageOffset += 1
           normedPubs = await NormedPublication.loadFromCSV(manifestFilePath, dataDirPath, pageOffset, pageSize)
-          ingestStatus = IngestStatus.merge(ingestStatus, await this.ingest(normedPubs, csvOutputFileBase, `${csvOutputFileBase}_${pageOffset}`, totalRows, threadCount, dataDirPath))
+          ingestStatus = IngestStatus.merge(ingestStatus, await this.ingest(normedPubs, csvOutputFileBase, `${csvOutputFileBase}_${pageOffset}`, pageOffset, totalPages, totalRows, threadCount, dataDirPath))
         }
       }
       // console.log(`Ingest status is: ${JSON.stringify(ingestStatus)}`)
@@ -681,24 +683,32 @@ export class Ingester {
         normedPubs = await NormedPublication.loadPublicationsFromDB(this.client, year)
       }
       const statusCSVFileBase = `Check_new_matches_${year}_status`
-      // let pageOffset = 0
-      // let pageSize = this.config.loadPageSize
-      // if (!pageSize) pageSize = normedPubs.length
-      // let normedPubs2 = _.slice(normedPubs, 0, pageSize)
+      let pageOffset = 0
+      let pageSize = this.config.loadPageSize
+      if (!pageSize) pageSize = normedPubs.length
+      let totalPages = Math.floor(normedPubs.length / pageSize)
+      if (normedPubs.length % pageSize > 0) totalPages += 1
+      let normedPubs2 = _.slice(normedPubs, 0, pageSize)
       await this.initializeNormedPersons()
       console.log(`Initialized Normed Persons: ${this.normedPersons.length}`)
       
-      ingestStatus = await this.ingest(normedPubs, statusCSVFileBase, statusCSVFileBase, normedPubs.length, threadCount)
-      // if (pageSize){
-      //   // iterate over the remaining set until results returned are 0
-      //   while (normedPubs2 && normedPubs2.length > 0) {
-      //     pageOffset += 1
-      //     let start =  (pageSize * pageOffset)
-      //     let end = start + pageSize
-      //     let normedPubs2 = _.slice(normedPubs, (pageSize * pageOffset), pageSize)
-      //     ingestStatus = IngestStatus.merge(ingestStatus, await this.ingest(normedPubs2, statusCSVFileBase, statusCSVFileBase, normedPubs2.length, threadCount))
-      //   }
-      // }
+      if (pageSize && normedPubs.length > pageSize) {
+        let start = 0
+        let end = pageSize
+        let normedPubs2 = _.slice(normedPubs, start, pageSize)
+        ingestStatus = await this.ingest(normedPubs2, statusCSVFileBase, statusCSVFileBase, pageOffset, totalPages, normedPubs.length, threadCount)
+        // iterate over the remaining set until results returned are 0
+        while (normedPubs2 && normedPubs.length > end) {
+          pageOffset += 1
+          start =  end + 1
+          end = start + pageSize
+          if (end > normedPubs.length) end = normedPubs.length
+          normedPubs2 = _.slice(normedPubs, start, end)
+          ingestStatus = IngestStatus.merge(ingestStatus, await this.ingest(normedPubs2, statusCSVFileBase, statusCSVFileBase, pageOffset, totalPages, normedPubs.length, threadCount))
+        }
+      } else {
+        ingestStatus = await this.ingest(normedPubs, statusCSVFileBase, statusCSVFileBase, pageOffset, totalPages, normedPubs.length, threadCount)        
+      }
       // ingestStatus = await this.ingest(normedPubs2, statusCSVFileBase, statusCSVFileBase, normedPubs2.length, threadCount)
       // output remaining results for this path
       await ingestStatus.writeLogsToCSV()
