@@ -4,6 +4,7 @@ const state = {
   personSortKey: 0,
   preferredSelectedCenter: { label: 'Harper Cancer Research Institute', value: 'HCRI' },
   selectedCenter: { label: 'Harper Cancer Research Institute', value: 'HCRI' },
+  selectedCenter2: { label: 'Harper Cancer Research Institute', value: 'HCRI' },
   centerOptions: [],
   selectedInstitutions: [],
   institutionOptions: [],

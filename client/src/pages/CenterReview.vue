@@ -20,6 +20,17 @@
               style="width: 250px"
             />
           </q-item>
+          <q-item>
+            <q-select
+              v-model="selectedCenter2"
+              :options="centerOptions"
+              class="white"
+              label="Combine With:"
+              v-if="isLoggedIn"
+              map-options
+              style="width: 250px"
+            />
+          </q-item>
           <!-- <q-item>
             <CenterSelect v-if="isLoggedIn" />
           </q-item> -->
@@ -569,11 +580,14 @@ export default {
     firstModel: 360,
     secondModel: 540,
     people: [],
+    personIds: [],
+    people2: [],
     publications: [],
     personsLoaded: false,
     personsLoadedError: false,
     citationsByTitle: {},
     citationsMLAByTitle: {},
+    cslStringByTitle: {},
     // these are helper objects to connect personPubSets together
     // PersonPubId -> Person Pub Set ID Pointers
     personPubSetPointer: {},
@@ -690,6 +704,11 @@ export default {
       this.loadPublications()
       this.selectedCenterReviewer = _.includes(this.userOrgs, this.selectedCenter.value)
     },
+    selectedCenter2: function () {
+      this.selectedCenterAuthor = this.preferredSelectedCenterAuthor
+      this.loadPublications()
+      this.selectedCenterReviewer = _.includes(this.userOrgs, this.selectedCenter.value)
+    },
     changedPubYears: async function () {
       await this.loadPublications()
     },
@@ -734,6 +753,9 @@ export default {
     }
   },
   methods: {
+    isSecondCenterSelected () {
+      return (this.selectedCenter2 && this.selectedCenter2.value && this.selectedCenter2.value !== this.selectedCenter.value)
+    },
     getPersonPublicationsInSet (pubSet) {
       return _.map(pubSet.personPublicationIds, (pubId) => {
         return this.getPersonPublicationById(pubId)
@@ -1248,11 +1270,21 @@ export default {
     },
     async loadPersonsWithFilter () {
       this.people = []
+      this.personIds = []
+      this.people2 = []
       this.personsLoaded = false
       this.personsLoadedError = false
       this.startPersonProgressBar()
       const personResult = await this.$apollo.query(readPersonsByInstitutionByYearByOrganization(this.selectedCenter.value, this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, 0.0))
       this.people = personResult.data.persons
+      _.each(this.people, (person) => {
+        this.personIds.push(person.id)
+      })
+      if (this.isSecondCenterSelected()) {
+        const personResult2 = await this.$apollo.query(readPersonsByInstitutionByYearByOrganization(this.selectedCenter2.value, this.selectedInstitutions, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max, 0.0))
+        this.people2 = personResult2.data.person
+      }
+
       await this.loadCenterAuthorOptions()
     },
     async loadCenterAuthorOptions () {
@@ -1463,6 +1495,11 @@ export default {
         this.selectedCenter = undefined
       }
 
+      if (this.selectedCenter2 && this.selectedCenter2.value && !_.includes(centerValues, this.selectedCenter2.value)) {
+        // if a value not in list change to preferred
+        this.selectedCenter2 = undefined
+      }
+
       if (!this.selectedCenter || !this.selectedCenter.value) {
         if (this.userOrgs.length > 0) {
           const curOrgs = this.userOrgs
@@ -1485,9 +1522,12 @@ export default {
     async clearPublications () {
       this.publications = []
       this.publicationsByIds = {}
+      this.cslStringByTitle = {}
       this.citationsByTitle = {}
       this.citationsMLAByTitle = {}
       this.people = []
+      this.personIds = []
+      this.people2 = []
       await this.loadCenterAuthorOptions()
       this.personPubSetsById = {}
       this.personPubSetPointer = {}
@@ -1544,7 +1584,21 @@ export default {
       })
       // console.log(`pub arrays are: ${JSON.stringify(pubArrays, null, 2)}`)
       console.log('Flattening publication download row array...')
-      return _.flatten(pubArrays)
+      const flattened = _.flatten(pubArrays)
+      console.log('Getting uniq rows...')
+      let dedupedMap = {}
+      _.each(flattened, (row) => {
+        let key = `${row['title']}`
+        if (row['authors']) {
+          key = `${key}_${row['authors']}`
+        }
+        if (row['trainee']) {
+          key = `${key}_${row['trainee']}`
+        }
+        dedupedMap[key] = row
+      })
+      console.log('Done getting uniq rows.')
+      return _.values(dedupedMap)
     },
     getCenterMembersCSVResult (centerMembers) {
       return _.map(centerMembers, (member) => {
@@ -1611,28 +1665,94 @@ export default {
     },
     getPubCSVResultObject (personPublication, oneRowPerAuthor) {
       const titleKey = this.getPublicationTitleKey(personPublication.publication.title)
+      const csl = JSON.parse(this.cslStringByTitle[titleKey])
       const authors = this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][titleKey]
       if (oneRowPerAuthor) {
+        let rows = []
         console.log(`Getting publication per one row for authors: ${JSON.stringify(authors, null, 2)}`)
         const authorsArray = _.split(authors, ';')
-        return _.map(authorsArray, (author) => {
-          console.log(`Get pub row for author: ${author}`)
-          const obj = new Map()
-          obj['title'] = personPublication.publication.title.replace(/\n/g, ' ')
-          obj['authors'] = author
-          const citationAPA = (this.citationsByTitle[titleKey] ? this.citationsByTitle[titleKey] : undefined)
-          const citationMLA = (this.citationsMLAByTitle[titleKey] ? this.citationsMLAByTitle[titleKey] : undefined)
-          obj['doi'] = this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi))
-          obj['journal'] = (personPublication.publication.journal_title) ? personPublication.publication.journal_title : ''
-          obj['year'] = personPublication.publication.year
-          obj['source_names'] = JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications), (pub) => { return pub.publication.source_name }))
-          obj['sources'] = this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications))
-          obj['abstract'] = personPublication.publication.abstract
-          obj['citation_apa'] = citationAPA
-          obj['citation_mla'] = citationMLA
-          console.log(`Row is ${JSON.stringify(obj, null, 2)}`)
-          return obj
-        })
+        if (this.isSecondCenterSelected()) {
+          const authorPersons = this.getPublicationAcceptedAuthors(personPublication.publication.title)
+          console.log(`Authors persons found are: ${JSON.stringify(authorPersons)}`)
+          let firstCenterAuthors = {}
+          let secondCenterAuthors = {}
+          _.each(authorPersons, (person) => {
+            console.log('here1')
+            const authorString = this.getAuthorString(person)
+            if (_.includes(this.personIds, person.id)) {
+              firstCenterAuthors[authorString] = person
+            } else {
+              secondCenterAuthors[authorString] = person
+            }
+            console.log(`First authors are: ${JSON.stringify(firstCenterAuthors)}`)
+            _.each(_.keys(firstCenterAuthors), (firstAuthor) => {
+              console.log('here2')
+              const firstAuthorString = firstAuthor
+              // if (secondCenterAuthors.length <= 0) {
+              //  console.log(`Get pub row for author: ${firstAuthorString} without trainee`)
+              //  const obj = new Map()
+              //  obj['title'] = personPublication.publication.title.replace(/\n/g, ' ')
+              //  obj['authors'] = firstAuthorString
+              //  obj['trainee'] = ' '
+              //  const citationAPA = (this.citationsByTitle[titleKey] ? this.citationsByTitle[titleKey] : undefined)
+              //  const citationMLA = (this.citationsMLAByTitle[titleKey] ? this.citationsMLAByTitle[titleKey] : undefined)
+              //  obj['doi'] = this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi))
+              //  obj['journal'] = (personPublication.publication.journal_title) ? personPublication.publication.journal_title : ''
+              //  obj['year'] = personPublication.publication.year
+              //  obj['source_names'] = JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications), (pub) => { return pub.publication.source_name }))
+              //  obj['sources'] = this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications))
+              //  obj['abstract'] = personPublication.publication.abstract
+              //  obj['citation_apa'] = citationAPA
+              //  obj['citation_mla'] = citationMLA
+              //  console.log(`Row is ${JSON.stringify(obj, null, 2)}`)
+              //  rows.push(obj)
+              // } else {
+              _.each(_.keys(secondCenterAuthors), (secondAuthor) => {
+                console.log('here2a')
+                const secondAuthorString = secondAuthor
+                console.log(`Get pub row for author: ${firstAuthorString} and trainee: ${secondAuthorString}`)
+                const obj = new Map()
+                csl['title'] = csl['title'].replace(/\n/g, '').replace(/\s+/g, ' ').replaceAll('<i>', '').replaceAll('</i>', '').trim()
+                obj['title'] = csl['title']
+                obj['authors'] = firstAuthorString
+                obj['trainee'] = secondAuthorString
+                const citationAPA = this.getCitationApa(JSON.stringify(csl))
+                // const citationAPA = (this.citationsByTitle[titleKey] ? this.citationsByTitle[titleKey] : undefined)
+                obj['doi'] = this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi))
+                obj['journal'] = (personPublication.publication.journal_title) ? personPublication.publication.journal_title : ''
+                obj['year'] = personPublication.publication.year
+                obj['source_names'] = JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications), (pub) => { return pub.publication.source_name }))
+                obj['sources'] = this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications))
+                obj['abstract'] = personPublication.publication.abstract
+                obj['citation_apa'] = citationAPA
+                console.log(`Row is ${JSON.stringify(obj, null, 2)}`)
+                rows.push(obj)
+              })
+              // }
+            })
+          })
+          return rows
+        } else {
+          return _.map(authorsArray, (author) => {
+            console.log(`Get pub row for author: ${author}`)
+            const obj = new Map()
+            csl['title'] = csl['title'].replace(/\n/g, '').replace(/\s+/g, ' ').trim()
+            obj['title'] = csl['title']
+            obj['authors'] = author
+            const citationAPA = (this.citationsByTitle[titleKey] ? this.citationsByTitle[titleKey] : undefined)
+            const citationMLA = (this.citationsMLAByTitle[titleKey] ? this.citationsMLAByTitle[titleKey] : undefined)
+            obj['doi'] = this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi))
+            obj['journal'] = (personPublication.publication.journal_title) ? personPublication.publication.journal_title : ''
+            obj['year'] = personPublication.publication.year
+            obj['source_names'] = JSON.stringify(_.map(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications), (pub) => { return pub.publication.source_name }))
+            obj['sources'] = this.getSourceUriString(this.getSortedPersonPublicationsBySourceName(this.getPersonPubSet(this.getPersonPubSetId(personPublication.id)).personPublications))
+            obj['abstract'] = personPublication.publication.abstract
+            obj['citation_apa'] = citationAPA
+            obj['citation_mla'] = citationMLA
+            console.log(`Row is ${JSON.stringify(obj, null, 2)}`)
+            return obj
+          })
+        }
       } else {
         const citationAPA = (this.citationsByTitle[titleKey] ? this.citationsByTitle[titleKey] : undefined)
         const citationMLA = (this.citationsMLAByTitle[titleKey] ? this.citationsMLAByTitle[titleKey] : undefined)
@@ -1643,8 +1763,9 @@ export default {
           })
         }
         obj['authors'] = authors
-        obj['authors'] = this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][titleKey]
-        obj['title'] = personPublication.publication.title.replace(/\n/g, ' ')
+        // obj['authors'] = this.sortAuthorsByTitle[this.selectedInstitutionReviewState.toLowerCase()][titleKey]
+        csl['title'] = csl['title'].replace(/\n/g, '').replace(/\s+/g, ' ').trim()
+        obj['title'] = csl['title']
         obj['doi'] = this.getCSVHyperLinkString(personPublication.publication.doi, this.getDoiUrl(personPublication.publication.doi))
         obj['journal'] = (personPublication.publication.journal_title) ? personPublication.publication.journal_title : ''
         obj['year'] = personPublication.publication.year
@@ -2009,9 +2130,31 @@ export default {
           fetchPolicy: 'network-only'
         })
 
-        const personPubByIds = _.mapKeys(pubsWithReviewResult.data.persons_publications, (personPub) => {
+        let firstCenterPublicationIds = []
+        let personPubByIds = _.mapKeys(pubsWithReviewResult.data.persons_publications, (personPub) => {
+          firstCenterPublicationIds.push(personPub.publication_id)
           return personPub.id
         })
+
+        console.log(`Found '${firstCenterPublicationIds.length}' total publication ids`)
+
+        let notFound = 0
+        if (this.isSecondCenterSelected()) {
+          const pubs2WithReviewResult = await this.$apollo.query({
+            query: readPersonPublicationsAll(this.selectedInstitutions, this.selectedCenter2.value, this.selectedPubYears.min, this.selectedPubYears.max, this.selectedMemberYears.min, this.selectedMemberYears.max),
+            fetchPolicy: 'network-only'
+          })
+          _.each(pubs2WithReviewResult.data.persons_publications, (personPub) => {
+            // only add if this publication also in the first center's list
+            if (_.includes(firstCenterPublicationIds, personPub.publication_id)) {
+              personPubByIds[personPub.id] = personPub
+            } else {
+              notFound += 1
+            }
+          })
+
+          console.log(`Second center pubs not found: ${notFound}`)
+        }
         // // for now assume only one review, needs to be fixed later
         const pubsWithNDReviewsResult = await this.$apollo.query({
           query: readPersonPublicationsReviews(_.keys(personPubByIds), 'ND'),
@@ -2106,6 +2249,7 @@ export default {
     async loadPublicationsCSLData (publicationIds) {
       this.citationsByTitle = {}
       this.citationsMLAByTitle = {}
+      this.cslStringByTitle = {}
       // break publicationIds into chunks of 50
       const batches = _.chunk(publicationIds, 2000)
       let batchesPubsCSLByTitle = []
@@ -2125,6 +2269,7 @@ export default {
       // generate the citations themselves
       await pMap(batchesPubsCSLByTitle, async (pubsCSLByTitle) => {
         await pMap(_.keys(pubsCSLByTitle), async (titleKey) => {
+          this.cslStringByTitle[titleKey] = pubsCSLByTitle[titleKey][0].csl_string
           if (!this.citationsMLAByTitle[titleKey]) {
             this.citationsMLAByTitle[titleKey] = this.getCitationMLA(pubsCSLByTitle[titleKey][0].csl_string)
           }
@@ -2434,6 +2579,7 @@ export default {
     userOrgs: sync('auth/orgs'),
     isCenterReviewer: sync('auth/isCenterReviewer'),
     selectedCenter: sync('filter/selectedCenter'),
+    selectedCenter2: sync('filter/selectedCenter2'),
     preferredSelectedCenter: sync('filter/preferredSelectedCenter'),
     preferredPersonSort: get('filter/preferredPersonSort'),
     preferredPersonPubSort: get('filter/preferredPersonPubSort'),
