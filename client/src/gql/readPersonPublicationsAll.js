@@ -67,6 +67,11 @@ export default function readPersonPublicationsAllJS (institutionNames, organizat
             given_name
             start_date
             end_date
+            persons_namevariances {
+              family_name
+              given_name
+              id
+            }
           }
           confidence
         }

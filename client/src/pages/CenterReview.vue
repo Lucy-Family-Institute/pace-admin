@@ -1447,6 +1447,14 @@ export default {
         return matchFound
       })
     },
+    checkIfAuthorMatches (author1, checkPropertyName1, author2, checkPropertyName2) {
+      console.log('here9')
+      if (author1[checkPropertyName1] && author2[checkPropertyName2] && author1[checkPropertyName1].toLowerCase() === author2[checkPropertyName2].toLowerCase()) {
+        return true
+      } else {
+        return false
+      }
+    },
     getMatchedAuthorPositions (titleKey, findAuthor) {
       // find matched authors
       // pick one with highest confidence
@@ -1456,6 +1464,12 @@ export default {
       console.log(`Pub authors are: ${JSON.stringify(pubAuthors)}`)
       const matchedAuthors = _.filter(pubAuthors, function (author) {
         let matchFound = false
+        _.each(findAuthor['persons_namevariances'], (nameVariance) => {
+          console.log(`Name variance is: ${JSON.stringify(nameVariance)}`)
+          if (author['family'] && nameVariance['family_name'] && author['family'].toLowerCase() === nameVariance['family_name'].toLowerCase()) {
+            matchFound = true
+          }
+        })
         if (author['family'] && findAuthor['family_name'] && author['family'].toLowerCase() === findAuthor['family_name'].toLowerCase()) {
           matchFound = true
         }
@@ -1473,6 +1487,12 @@ export default {
             if (pubAuthor['given'] && findAuthor['given_name'] && findAuthor['given_name'].toLowerCase()[0] === pubAuthor['given'].toLowerCase()[0]) {
               matchFound = true
             }
+            _.each(findAuthor['persons_namevariances'], (nameVariance) => {
+              console.log(`Name variance is: ${JSON.stringify(nameVariance)}`)
+              if (pubAuthor['given'] && nameVariance['given_name'] && nameVariance['given_name'].toLowerCase()[0] === pubAuthor['given'].toLowerCase()[0]) {
+                matchFound = true
+              }
+            })
             return matchFound
           })
           if (secondFilter.length === 1) {
@@ -1485,6 +1505,12 @@ export default {
             const thirdFilter = _.filter(secondFilter, function (pubAuthor) {
               // test full given name
               let matchFound = false
+              _.each(findAuthor['persons_namevariances'], (nameVariance) => {
+                console.log(`Name variance is: ${JSON.stringify(nameVariance)}`)
+                if (pubAuthor['given'] && nameVariance['given_name'] && nameVariance['given_name'].toLowerCase() === pubAuthor['given'].toLowerCase()) {
+                  matchFound = true
+                }
+              })
               if (pubAuthor['given'] && findAuthor['given_name'] && findAuthor['given_name'].toLowerCase() === pubAuthor['given'].toLowerCase()) {
                 matchFound = true
               }
@@ -2354,6 +2380,7 @@ export default {
       }, { concurrency: 1 })
     },
     getReviewedAuthor (personPublication) {
+      console.log(`Before get reviewed author personPub person is: '${JSON.stringify(personPublication.person)}'`)
       const obj = _.clone(personPublication.person)
       const confidenceset = (personPublication.confidencesets && personPublication.confidencesets[0] ? personPublication.confidencesets[0] : undefined)
       if (confidenceset) {
