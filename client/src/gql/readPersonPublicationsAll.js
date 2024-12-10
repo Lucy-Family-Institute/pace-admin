@@ -44,7 +44,7 @@ export default function readPersonPublicationsAllJS (institutionNames, organizat
               year: {_gte: "${pubYearMin}", _lte: "${pubYearMax}"}
             }
           },
-          order_by: {confidence: desc, publication: {title: asc}}
+          order_by: {confidence: desc, publication: {title: asc, source_name: asc}}
         ) {
           id
           person_id
