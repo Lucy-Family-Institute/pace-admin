@@ -64,6 +64,19 @@ export interface NormedCSVRow {
 
 
 function normalizeGoogleScholarRecord (gScholarRecord) {
+  // omit last one with year added
+  const citationParts = _.split(gScholarRecord['article_publication'], ',')
+  let citationString = ''
+  const partsNum = citationParts.length
+  let counter = 1
+  _.each(citationParts, (part) => {
+    if (counter == 1){
+      citationString = `${part}`
+    } else if (counter < partsNum){
+      citationString = `${citationString},${part}`
+    }
+    counter = counter + 1
+  })
   const row: NormedCSVPub = {
     authors: [gScholarRecord['authors']],
     title: gScholarRecord['title'],
@@ -73,7 +86,7 @@ function normalizeGoogleScholarRecord (gScholarRecord) {
     doi: '',
     authorList: getNormedAuthorListGScholar(gScholarRecord['article_authors']),
     journal: '',
-    journalVolumeCitationString: gScholarRecord['article_publication'],
+    journalVolumeCitationString: citationString,
     overWritten: false
   }
   return row
@@ -369,7 +382,10 @@ async function main () {
         const authorParts = _.split(author, ',')
         useAuthorList = `${useAuthorList}, ${_.trim(authorParts[0])}, ${_.trim(authorParts[1])[0]}.`
       }
-      const citation = `${useAuthorList} (${pub['year']}). ${pub['journalVolumeCitationString']}`
+      // finally replace any undefined's that make its way into the author string
+      useAuthorList = _.replace(useAuthorList, 'undefined, ', '')
+      useAuthorList = _.replace(useAuthorList, ', undefined', '')      
+      const citation = `${useAuthorList} (${pub['year']}). ${pub['title']}. ${pub['journalVolumeCitationString']}`
       const row: NormedCSVRow = {
         authors: author,
         title: pub['title'],
