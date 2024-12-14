@@ -4,7 +4,15 @@ const pify = require('pify');
 
 async function writeCsv(path, data) {
   const csv = Papa.unparse(data);
-  await pify(fs.writeFile)(path, csv);
+  // console.log(`Second prep of data: ${csv}`)
+  await fs.writeFile(path, csv, 'utf-8', (err) => {
+    if (err) {
+      console.error('Error writing file:', err);
+    } else {
+      console.log('File written successfully.');
+    }
+  });
+  // await pify(fs.writeFile)(path, csv, 'utf8');
 }
 
 module.exports = {

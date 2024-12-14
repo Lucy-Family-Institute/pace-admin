@@ -107,5 +107,18 @@ dashboard-ingest: dashboard-search/node_modules
 dashboard-keys: dashboard-search/node_modules
 	cd dashboard-search && ts-node src/initialize.ts && cd ..
 
+.PHONY: detect_duplicate_author_attributes
 detect_duplicate_author_attributes: ingest/node_modules
 	cd ingest && ts-node detectDuplicateAuthorAttributes.ts
+
+.PHONY: wos_journals_data_fetch
+wos_journals_data_fetch:
+	cd ingest && ts-node fetchWosJournalsData.ts
+
+.PHONY: wos_journals_doi_data_fetch
+wos_journals_doi_data_fetch:
+	cd ingest && ts-node fetchCrossRefByDOI.ts
+
+.PHONY: merge_imsd_pubs
+merge_imsd_pubs:
+	cd ingest && ts-node mergePublicationLists.ts

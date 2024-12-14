@@ -41,7 +41,7 @@ async function loadCsv(filePath, lowerCaseColumns=false, columnNameMap={}, inclu
     return key.toLowerCase()
   })
 
-  const data = await parseCsv(fs.createReadStream(filePath));
+  const data = await parseCsv(fs.createReadStream(filePath, { encoding: 'utf-8' }));
   if (!includeData) {
     // return an array with empty values
     let emptyData = []
