@@ -38,6 +38,7 @@ process.env.NODE_ENV = 'development';
 
 export interface NormedCSVPub {
   authors: [string],
+  trainee?: [string],
   title: string,
   year: number,
   source_names: [string],
@@ -51,6 +52,7 @@ export interface NormedCSVPub {
 
 export interface NormedCSVRow {
   authors: string,
+  trainee?: string,
   title: string,
   year: number,
   source_names: [string],
@@ -78,8 +80,8 @@ function normalizeGoogleScholarRecord (gScholarRecord) {
     counter = counter + 1
   })
   const row: NormedCSVPub = {
-    authors: [gScholarRecord['authors']],
     title: gScholarRecord['title'],
+    authors: [gScholarRecord['authors']],
     year: _.toInteger(gScholarRecord['year']),
     source_names: ['GoogleScholar'],
     google_scholar_id: gScholarRecord['google_Scholar_id'],
@@ -103,7 +105,9 @@ function getNormedAuthorListGScholar(gScholarAuthorList) {
     if (initials.length > 1) {
       newAuthor = `${newAuthor}, `
       _.each(initials, (initial) => {
-        newAuthor = `${newAuthor}${initial}.`
+        if (initial === initial.toUpperCase()){
+          newAuthor = `${newAuthor}${initial}.`
+        }
       })
     }
     newAuthorList.push(newAuthor)
@@ -182,6 +186,21 @@ function normalizePACERecords (paceRecord) {
   }
   let journalVolumeCitationString = ''
   let counter = 0
+  // now strip off the title
+  const publicationsParts2 = _.split(publicationParts[1], ".")
+  let reconstructedPart1 = ''
+  _.each(publicationsParts2, (part2) => {
+    if (counter == 1){
+      reconstructedPart1 = `${part2}`
+    }
+    if (counter > 1){
+      reconstructedPart1 = `.${part2}`
+    }
+    counter = counter + 1
+  })
+
+  counter = 0
+  publicationParts[1] = reconstructedPart1
   _.each(publicationParts, (part) => {
     if (counter == 1){
       journalVolumeCitationString = `${part}`
@@ -210,6 +229,7 @@ function normalizePACERecords (paceRecord) {
   const row: NormedCSVPub = {
     authors: authors,
     title: title,
+    trainee: (paceRecord['trainee']) ? [paceRecord['trainee']] : undefined,
     year: _.toInteger(paceRecord['year']),
     source_names: paceRecord['source_names'],
     google_scholar_id: (googleScholarId) ? googleScholarId : '',
@@ -251,56 +271,380 @@ function normalizePACERecords (paceRecord) {
 //   return newAuthorListString
 // }
 
-async function main () {
+function prepPubCSVRows(mergedPubList) {
+  let pubCSVRows = []
 
-    const gScholarPubFile = process.env.IMSD_GOOGLE_SCHOLAR_PUB_FILE
-    const pacePubFile = process.env.IMSD_PACE_PUB_FILE
-    const newPacePubFile = process.env.IMSD_PACE_PUB_NEW_FILE
-    const mergedPubFileDir = process.env.IMSD_MERGED_PUB_FILE_DIR
+  _.each(_.values(mergedPubList), (pub) => {
+    const authors = pub['authors']
+    let authorList = pub['authorList']
+    if (authorList.length > 1000){
+      authorList = _.truncate(authorList, { 'length': 1000 })
+      authorList = `${authorList}...`
+    }
+    _.each(authors, (author) => {
+      if (pub['trainee'] && pub['trainee'].length > 0){
+        _.each(pub['trainee'], (trainee) => {
+          const row = prepPubCSVRow(pub, authorList, author, trainee)
+          pubCSVRows.push(row)
+        })
+      } else {
+        const row = prepPubCSVRow(pub, authorList, author, undefined)
+        pubCSVRows.push(row)
+      }
+      // let useAuthorList = authorList
+      // const authorPosition = findCaseInsensitive(useAuthorList, _.split(author, ',')[0])
+      // if (!authorPosition || authorPosition < 0){
+      //   const authorParts = _.split(author, ',')
+      //   useAuthorList = `${useAuthorList}, ${_.trim(authorParts[0])}, ${_.trim(authorParts[1])[0]}.`
+      // }
 
-//   const crossRefDOIFilePath = process.env.CROSSREF_DOI_FILE
-//   const crossRefUpdatedDOIFileDir = process.env.CROSSREF_UPDATED_DOI_FILE_DIR
-//   const waitTime = process.env.CROSSREF_REQUEST_INTERVAL
-  
-  // load publication list
-  const google_scholar_pubs = await loadCsv({
-    path: gScholarPubFile,
+      // // finally replace any undefined's that make its way into the author string
+      // useAuthorList = _.replace(useAuthorList, 'undefined, ', '')
+      // useAuthorList = _.replace(useAuthorList, ', undefined', '')      
+      // const citation = `${useAuthorList} (${pub['year']}). ${pub['title']}. ${pub['journalVolumeCitationString']}`
+      // const row: NormedCSVRow = {
+      //   authors: author,
+      //   title: pub['title'],
+      //   year: _.toInteger(pub['year']),
+      //   source_names: pub['source_names'],
+      //   google_scholar_id: pub['google_scholar_id'],
+      //   doi: pub['doi'],
+      //   journal: pub['journal'],
+      //   citation: `${citation}`,
+      //   // journalVolumeCitationString: gScholarRecord['article_publication'],
+      //   overWritten: pub['overWritten']
+      // }
+    })
+  })
+  return pubCSVRows
+}
+
+function prepPubCSVRow(pub, authorList, author, trainee) {
+  let useAuthorList = authorList
+  const authorPosition = findCaseInsensitive(useAuthorList, _.split(author, ',')[0])
+  if (!authorPosition || authorPosition < 0){
+    const authorParts = _.split(author, ',')
+    useAuthorList = `${useAuthorList}, ${_.trim(authorParts[0])}, ${_.trim(authorParts[1])[0]}.`
+  }
+
+  if (trainee) {
+    const authorPosition = findCaseInsensitive(useAuthorList, _.split(trainee, ',')[0])
+    if (!authorPosition || authorPosition < 0){
+      const authorParts = _.split(trainee, ',')
+      useAuthorList = `${useAuthorList}, ${_.trim(authorParts[0])}, ${_.trim(authorParts[1])[0]}.`
+    }
+  }
+  // finally replace any undefined's that make its way into the author string
+  useAuthorList = _.replace(useAuthorList, 'undefined, ', '')
+  useAuthorList = _.replace(useAuthorList, ', undefined', '')      
+  let citation = `${useAuthorList} (${pub['year']}).`
+  const titlePosition = findCaseInsensitive(pub['journalVolumeCitationString'], pub['title'])
+  if (!titlePosition || titlePosition < 0) {
+    citation = `${citation}. ${pub['title']}.`
+  }
+  citation = `${citation}. ${pub['journalVolumeCitationString']}`
+  const row: NormedCSVRow = {
+    authors: author,
+    title: pub['title'],
+    trainee: trainee,
+    year: _.toInteger(pub['year']),
+    source_names: pub['source_names'],
+    google_scholar_id: pub['google_scholar_id'],
+    doi: pub['doi'],
+    journal: pub['journal'],
+    citation: `${citation}`,
+    // journalVolumeCitationString: gScholarRecord['article_publication'],
+    overWritten: pub['overWritten']
+  }
+  return row
+}
+
+function mergeNameLists(nameList1, nameList2) {
+  // let mergedAuthors = mergedPub['authors']
+  //   _.each(newPacePub['authors'], (newAuthor) => {
+  //     let found = false
+  //     _.each(mergedPub['authors'], (mergedAuthor) => {
+  //       const newAuthorFamilyName = _.split(newAuthor, ',')[0]
+  //       const mergedPubListFamilyName = _.split(mergedAuthor, ',')[0]
+  //       if (_.toLower(newAuthorFamilyName) === _.toLower(mergedPubListFamilyName)){
+  //         found = true
+  //       }
+  //     })
+  //     if (!found && !_.includes(mergedAuthors, newAuthor)) {
+  //       mergedAuthors.push(newAuthor)
+  //     }
+  //   })
+  let newList = nameList1
+  if (!nameList1 || nameList1.length <= 0){
+    newList = nameList2
+  } else {
+    _.each(nameList2, (name2) => {
+      _.each(nameList1 => (name1) => {
+        const familyName2 = _.trim(_.split(name2, ',')[0])
+        const familyName1 = _.trim(_.split(name1, ',')[0])
+        if (_.toLower(familyName2) !== _.toLower(familyName1)){
+          if (!_.includes(newList, name2)) {
+            newList.push(name2)
+          }
+        }
+      })
+    })
+  }
+  return newList
+}
+
+function mergePubLists (sourceNormedPubs, mergeIntoNormedPubs, fullMerge=false) {
+  // merge records together, start with new pace records
+  // then overwrite google scholar ones
+  let sourceRecordsByGoogleScholarId = {}
+  let sourceRecordsByTitle = {}
+  _.each(sourceNormedPubs, (sourcePub) => {
+    let google_scholar_id = sourcePub['google_scholar_id']
+    let title_id = _.trim(_.toLower(sourcePub['title']))
+    // if (!id || _.trim(id).length <= 0) {
+    //   id = _.trim(_.toLower(sourcePub['title']))
+    // }
+    
+    if (google_scholar_id){
+      if (!sourceRecordsByGoogleScholarId[google_scholar_id]) {
+        sourceRecordsByGoogleScholarId[google_scholar_id] = sourcePub
+      } else {
+        let curPub = sourceRecordsByGoogleScholarId[google_scholar_id]
+        _.each(sourcePub['authors'], (author) => {
+          if (!_.includes(curPub['authors'], author)){
+            curPub['authors'].push(author)
+          }
+        })
+
+        // merge in trainees if present
+        if (sourcePub['trainee']) {
+          if (!curPub['trainee']) {
+            curPub['trainee'] = []
+          }
+          _.each(sourcePub['trainee'], (trainee) => {
+            if (!_.includes(curPub['trainee'], trainee)){
+              curPub['trainee'].push(trainee)
+            }
+          })
+        }
+        sourceRecordsByGoogleScholarId[google_scholar_id] = curPub
+      }
+    }
+    if (!sourceRecordsByTitle[title_id]) {
+      sourceRecordsByTitle[title_id] = sourcePub
+    } else {
+      let curPub = sourceRecordsByTitle[title_id]
+      _.each(sourcePub['authors'], (author) => {
+        if (!_.includes(curPub['authors'], author)){
+          curPub['authors'].push(author)
+        }
+      })
+
+      // merge in trainees if present
+      if (sourcePub['trainee']) {
+        if (!curPub['trainee']) {
+          curPub['trainee'] = []
+        }
+        _.each(sourcePub['trainee'], (trainee) => {
+          if (!_.includes(curPub['trainee'], trainee)){
+            curPub['trainee'].push(trainee)
+          }
+        })
+      }
+      sourceRecordsByTitle[title_id] = curPub
+    }
+    // } else {
+    //   // use index of title instead of id not there
+    //   if (sourceRecordsById[sourcePub['title']]) {
+    //     // check if author present already
+    //     let curPub = sourceRecordsById[sourcePub['title']]
+    //     let mergedAuthors = curPub['authors']
+    //     _.each(sourceRecordsById[sourcePub['title']], (mergedAuthor) => {
+    //       _.each(sourcePub['authors'], (paceAuthor) => {
+    //         const paceFamilyName = _.split(paceAuthor, ',')[0]
+    //         const mergedFamilyName = _.split(mergedAuthor, ',')[0]
+    //         if (_.toLower(paceFamilyName) !== _.toLower(mergedFamilyName)){
+    //           if (!_.includes(mergedAuthors, paceAuthor)) {
+    //             mergedAuthors.push(paceAuthor)
+    //           }
+    //         }
+    //       })
+    //     })
+    //     mergedPub['authors'] = mergedAuthors
+    //     let mergedTrainees = mergedPub['trainee']
+    //     _.each(sourceRecordsById['trainee'], (paceTrainee) => {
+    //       _.each(sourcePub['trainee'], (mergedTrainee) => {
+    //         const paceFamilyName = _.split(paceTrainee, ',')[0]
+    //         const mergedFamilyName = _.split(mergedTrainee, ',')[0]
+    //         if (_.toLower(paceFamilyName) !== _.toLower(mergedFamilyName)){
+    //           if (!_.includes(mergedTrainees, paceTrainee)) {
+    //             mergedTrainees.push(paceTrainee)
+    //           }
+    //         }
+    //       })
+    //     })
+        
+    //     mergedPub['trainee'] = mergedTrainees
+    //     sourceRecordsById[sourcePub['title']] = mergedPub
+    //   } else {
+    //     sourceRecordsById[sourcePub['title']] = sourcePub
+    //   }
+    // }
+    //skip it if no google scholar id
   })
 
-  // load publication list
-  const pace_pubs = await loadCsv({
-    path: pacePubFile,
-  })
+  // iterate through new pace and overwrite with old gscholar record if present
+  let overWrittenGScholarIds = []
+  let mergedPubList = {}
+  if (fullMerge) mergedPubList = sourceRecordsByTitle
+  _.each(mergeIntoNormedPubs, (newPacePub) => {
+    let id
+    let skipMerge = false
+    const normedTitle = _.trim(_.toLower(newPacePub['title']))
+    if (newPacePub['google_scholar_id'] && sourceRecordsByGoogleScholarId[newPacePub['google_scholar_id']]) {
+      id = newPacePub['google_scholar_id']
+      if (!mergedPubList[normedTitle]) {
+        mergedPubList[normedTitle] = sourceRecordsByGoogleScholarId[newPacePub['google_scholar_id']]
+      }
+    } else if (sourceRecordsByTitle[normedTitle]) {
+      id = normedTitle
+      if (!mergedPubList[normedTitle]) {
+        mergedPubList[normedTitle] = sourceRecordsByTitle[normedTitle]
+      }
+    } else {
+      id = normedTitle
+      if (!mergedPubList[normedTitle]) {
+        mergedPubList[normedTitle] = newPacePub
+        skipMerge = true
+      }
+    }
 
-  // load publication list
-  const new_pace_pubs = await loadCsv({
-    path: newPacePubFile,
-  })
+    // if (!skipMerge) {
+    //   let mergedPub = mergedPubList[id]
+    //   // const mergedAuthors = mergeNameLists(mergedPub['authors'], newPacePub['authors'])
+    //   // mergedPub['authors'] = mergedAuthors
+    //   if (newPacePub['trainee'] || mergedPub['trainee']) {
+    //     if (!mergedPub['trainee']) mergedPub['trainee'] = []
+    //     if (!newPacePub['trainee']) newPacePub['trainee'] = []
+    //     const mergedTrainees = mergeNameLists(mergedPub['trainee'], newPacePub['trainee'])
+    //     // mergedPub['trainee'] = mergedTrainees
+    //   }
+    //   mergedPubList[id] = mergedPub
+    // }
+    // // if (!mergedPubList[newPacePub['google_scholar_id']]) {
+    // //   mergedPubList[newPacePub['google_scholar_id']] = sourceRecordsById[newPacePub['google_scholar_id']]
+    // // }
+    if (!skipMerge) {
+      //overwrite prev record
+      let mergedPub = mergedPubList[normedTitle]
+      let mergedAuthors = mergedPub['authors']
+      _.each(newPacePub['authors'], (newAuthor) => {
+        let found = false
+        _.each(mergedPub['authors'], (mergedAuthor) => {
+          const newAuthorFamilyName = _.split(newAuthor, ',')[0]
+          const mergedPubListFamilyName = _.split(mergedAuthor, ',')[0]
+          if (_.toLower(newAuthorFamilyName) === _.toLower(mergedPubListFamilyName)){
+            found = true
+          }
+        })
+        if (!found && !_.includes(mergedAuthors, newAuthor)) {
+          mergedAuthors.push(newAuthor)
+        }
+      })
+      
+      mergedPub['authors'] = mergedAuthors
 
-  console.log(`Loaded Google Scholar Pubs: ${JSON.stringify(google_scholar_pubs, null, 2)}`)
-  let normedGScholarPubs = []
-  _.each(google_scholar_pubs, (gScholarPub) => {
-    normedGScholarPubs.push(normalizeGoogleScholarRecord(gScholarPub))
-  })
-  console.log(`Normed Google Scholar Pubs: ${JSON.stringify(normedGScholarPubs, null, 2)}`)
-  
-  console.log(`Loaded PACE Pubs: ${JSON.stringify(pace_pubs, null, 2)}`)
-  let normedPACEPubs = []
-  _.each(pace_pubs, (pacePub) => {
-    normedPACEPubs.push(normalizePACERecords(pacePub))
-  })
-  normedPACEPubs = _.flatten(normedPACEPubs)
-  console.log(`Normed PACE Pubs: ${JSON.stringify(normedPACEPubs, null, 2)}`)
+      let mergedTrainees = mergedPub['trainee']
+      if (!mergedTrainees) mergedTrainees = []
+      _.each(newPacePub['trainee'], (newAuthor) => {
+        let found = false
+        _.each(mergedPub['trainee'], (mergedAuthor) => {
+          const newAuthorFamilyName = _.split(newAuthor, ',')[0]
+          const mergedPubListFamilyName = _.split(mergedAuthor, ',')[0]
+          if (_.toLower(newAuthorFamilyName) === _.toLower(mergedPubListFamilyName)){
+            found = true
+          }
+        })
+        if (!found && !_.includes(mergedTrainees, newAuthor)) {
+          mergedTrainees.push(newAuthor)
+        }
+      })
+      
+      mergedPub['trainee'] = mergedTrainees
+      mergedPubList[normedTitle] = mergedPub
+    }
 
-  console.log(`Loaded New PACE Pubs: ${JSON.stringify(new_pace_pubs, null, 2)}`)
+    //   if (newPacePub['trainee']) {
+    //     if (!mergedPub['trainee']) {
+    //       mergedPub['trainee'] = []
+    //     }
+    //     let mergedTrainees = mergedPub['trainee']
+    //     _.each(newPacePub['trainee'], (newAuthorTrainee) => {
+    //       let found = false
+    //       // if (!mergedPub['trainee']) {
+    //       //   mergedPub['trainee'] = newPacePub['trainee']
+    //       // }
+    //       _.each(mergedPub['trainee'], (mergedTrainee) => {
+    //         const newAuthorFamilyName = _.split(newAuthorTrainee, ',')[0]
+    //         const mergedFamilyName = _.split(mergedTrainee, ',')[0]
+    //         if (_.toLower(newAuthorFamilyName) === _.toLower(mergedFamilyName)){
+    //           found = true
+    //         }
+    //       })
+    //       if (!found && !_.includes(mergedTrainees, newAuthorTrainee)) {
+    //         mergedTrainees.push(newAuthorTrainee)
+    //       }
+    //     })
+    //     mergedPub['trainee'] = mergedTrainees
+    //   }
+    //   mergedPub['overWritten'] = true
+    //   overWrittenGScholarIds.push(id)
+    //   mergedPubList[id] = mergedPub
+    // }
 
-  let normedNewPACEPubs = []
-  _.each(new_pace_pubs, (pacePub) => {
-    normedNewPACEPubs.push(normalizePACERecords(pacePub))
+    // } else {
+    //   // use index of title instead of id not there
+    //   if (!mergedPubList[newPacePub['title']] && sourceRecordsById[newPacePub['title']]) {
+    //     mergedPubList[newPacePub['title']] = sourceRecordsById[newPacePub['title']]
+    //   }
+    //   if (mergedPubList[newPacePub['title']]) {
+    //     // check if author present already
+    //     let mergedPub = mergedPubList[newPacePub['title']]
+    //     let mergedAuthors = mergedPub['authors']
+    //     _.each(mergedPubList[newPacePub['title']], (mergedAuthor) => {
+    //       _.each(newPacePub['authors'], (paceAuthor) => {
+    //         const paceFamilyName = _.split(paceAuthor, ',')[0]
+    //         const mergedFamilyName = _.split(mergedAuthor, ',')[0]
+    //         if (_.toLower(paceFamilyName) !== _.toLower(mergedFamilyName)){
+    //           if (!_.includes(mergedAuthors, paceAuthor)) {
+    //             mergedAuthors.push(paceAuthor)
+    //           }
+    //         }
+    //       })
+    //     })
+    //     mergedPub['authors'] = mergedAuthors
+    //     let mergedTrainees = mergedPub['trainee']
+    //     _.each(newPacePub['trainee'], (paceTrainee) => {
+    //       _.each(mergedPub['trainee'], (mergedTrainee) => {
+    //         const paceFamilyName = _.split(paceTrainee, ',')[0]
+    //         const mergedFamilyName = _.split(mergedTrainee, ',')[0]
+    //         if (_.toLower(paceFamilyName) !== _.toLower(mergedFamilyName)){
+    //           if (!_.includes(mergedTrainees, paceTrainee)) {
+    //             mergedTrainees.push(paceTrainee)
+    //           }
+    //         }
+    //       })
+    //     })
+        
+    //     mergedPub['trainee'] = mergedTrainees
+    //   } else {
+    //     mergedPubList[newPacePub['title']] = newPacePub
+    //   }
   })
-  normedNewPACEPubs = _.flatten(normedNewPACEPubs)
-  console.log(`Normed New PACE Pubs: ${JSON.stringify(normedNewPACEPubs, null, 2)}`)
+  return mergedPubList
+}
 
+function mergeGoogleScholarAndPACERecords(normedGScholarPubs, normedNewPACEPubs) {
   // merge records together, start with new pace records
   // then overwrite google scholar ones
   let oldGoogleScholarRecordsById = {}
@@ -363,46 +707,138 @@ async function main () {
       }
     }
   })
+  return mergedPubList
+}
 
-  console.log(`Merged Pubs: ${JSON.stringify(mergedPubList, null, 2)}`)
+async function main () {
+  mergeFacultyPubCSV()
+}
 
-  // write to new csv
-  let pubCSVRows = []
-  _.each(_.values(mergedPubList), (pub) => {
-    const authors = pub['authors']
-    let authorList = pub['authorList']
-    if (authorList.length > 1000){
-      authorList = _.truncate(authorList, { 'length': 1000 })
-      authorList = `${authorList}...`
-    }
-    _.each(authors, (author) => {
-      let useAuthorList = authorList
-      const authorPosition = findCaseInsensitive(useAuthorList, _.split(author, ',')[0])
-      if (!authorPosition || authorPosition < 0){
-        const authorParts = _.split(author, ',')
-        useAuthorList = `${useAuthorList}, ${_.trim(authorParts[0])}, ${_.trim(authorParts[1])[0]}.`
-      }
-      // finally replace any undefined's that make its way into the author string
-      useAuthorList = _.replace(useAuthorList, 'undefined, ', '')
-      useAuthorList = _.replace(useAuthorList, ', undefined', '')      
-      const citation = `${useAuthorList} (${pub['year']}). ${pub['title']}. ${pub['journalVolumeCitationString']}`
-      const row: NormedCSVRow = {
-        authors: author,
-        title: pub['title'],
-        year: _.toInteger(pub['year']),
-        source_names: pub['source_names'],
-        google_scholar_id: pub['google_scholar_id'],
-        doi: pub['doi'],
-        journal: pub['journal'],
-        citation: `${citation}`,
-        // journalVolumeCitationString: gScholarRecord['article_publication'],
-        overWritten: pub['overWritten']
-      }
-      pubCSVRows.push(row)
-    })
+async function mergeFacultyPubCSV () {
+
+    const gScholarPubFile = process.env.IMSD_GOOGLE_SCHOLAR_PUB_FILE
+    const pacePubFile = process.env.IMSD_PACE_PUB_FILE
+    const newPacePubFile = process.env.IMSD_PACE_PUB_NEW_FILE
+    const mergedPubFileDir = process.env.IMSD_MERGED_PUB_FILE_DIR
+    const paceStudentPubFile = process.env.IMSD_PACE_STUDENT_PUB_FILE
+  
+  // load publication list
+  const google_scholar_pubs = await loadCsv({
+    path: gScholarPubFile,
   })
 
+  // load publication list
+  const pace_pubs = await loadCsv({
+    path: pacePubFile,
+  })
+
+  // load publication list
+  const new_pace_pubs = await loadCsv({
+    path: newPacePubFile,
+  })
+
+  // load publication list
+  const student_pace_pubs = await loadCsv({
+    path: paceStudentPubFile,
+  })
+
+  console.log(`Loaded Google Scholar Pubs: ${JSON.stringify(google_scholar_pubs, null, 2)}`)
+  let normedGScholarPubs = []
+  _.each(google_scholar_pubs, (gScholarPub) => {
+    normedGScholarPubs.push(normalizeGoogleScholarRecord(gScholarPub))
+  })
+  console.log(`Normed Google Scholar Pubs: ${JSON.stringify(normedGScholarPubs, null, 2)}`)
+  
+  console.log(`Loaded PACE Pubs: ${JSON.stringify(pace_pubs, null, 2)}`)
+  let normedPACEPubs = []
+  _.each(pace_pubs, (pacePub) => {
+    normedPACEPubs.push(normalizePACERecords(pacePub))
+  })
+  normedPACEPubs = _.flatten(normedPACEPubs)
+  console.log(`Normed PACE Pubs: ${JSON.stringify(normedPACEPubs, null, 2)}`)
+
+  console.log(`Loaded New PACE Pubs: ${JSON.stringify(new_pace_pubs, null, 2)}`)
+
+  let normedNewPACEPubs = []
+  _.each(new_pace_pubs, (pacePub) => {
+    normedNewPACEPubs.push(normalizePACERecords(pacePub))
+  })
+  normedNewPACEPubs = _.flatten(normedNewPACEPubs)
+  console.log(`Normed New PACE Pubs: ${JSON.stringify(normedNewPACEPubs, null, 2)}`)
+
+  // const mergedFacultyPubList = mergeGoogleScholarAndPACERecords(normedGScholarPubs, normedNewPACEPubs)
+  const mergedFacultyPubList = mergePubLists(normedGScholarPubs, normedNewPACEPubs, true)
+
+  console.log(`Merged Faculty Pubs: ${JSON.stringify(mergedFacultyPubList, null, 2)}`)
+
+  // write to new csv
+  const pubCSVRows = prepPubCSVRows(mergedFacultyPubList)
+  // _.each(_.values(mergedPubList), (pub) => {
+  //   const authors = pub['authors']
+  //   let authorList = pub['authorList']
+  //   if (authorList.length > 1000){
+  //     authorList = _.truncate(authorList, { 'length': 1000 })
+  //     authorList = `${authorList}...`
+  //   }
+  //   _.each(authors, (author) => {
+  //     let useAuthorList = authorList
+  //     const authorPosition = findCaseInsensitive(useAuthorList, _.split(author, ',')[0])
+  //     if (!authorPosition || authorPosition < 0){
+  //       const authorParts = _.split(author, ',')
+  //       useAuthorList = `${useAuthorList}, ${_.trim(authorParts[0])}, ${_.trim(authorParts[1])[0]}.`
+  //     }
+  //     // finally replace any undefined's that make its way into the author string
+  //     useAuthorList = _.replace(useAuthorList, 'undefined, ', '')
+  //     useAuthorList = _.replace(useAuthorList, ', undefined', '')      
+  //     const citation = `${useAuthorList} (${pub['year']}). ${pub['title']}. ${pub['journalVolumeCitationString']}`
+  //     const row: NormedCSVRow = {
+  //       authors: author,
+  //       title: pub['title'],
+  //       year: _.toInteger(pub['year']),
+  //       source_names: pub['source_names'],
+  //       google_scholar_id: pub['google_scholar_id'],
+  //       doi: pub['doi'],
+  //       journal: pub['journal'],
+  //       citation: `${citation}`,
+  //       // journalVolumeCitationString: gScholarRecord['article_publication'],
+  //       overWritten: pub['overWritten']
+  //     }
+  //     pubCSVRows.push(row)
+  //   })
+  // })
+
   console.log(`Prepped csv rows are: ${JSON.stringify(pubCSVRows, null, 2)}`)
+
+  console.log(`Loaded Student Pubs: ${JSON.stringify(student_pace_pubs, null, 2)}`)
+
+  let normedStudentPACEPubs = []
+  _.each(student_pace_pubs, (pacePub) => {
+    normedStudentPACEPubs.push(normalizePACERecords(pacePub))
+  })
+  normedStudentPACEPubs = _.flatten(normedStudentPACEPubs)
+  console.log(`Normed Student PACE Pubs: ${JSON.stringify(normedStudentPACEPubs, null, 2)}`)
+
+  // merge student pubs with good pub list above and make the student subset primary
+  const mergedStudentPubList = mergePubLists(mergedFacultyPubList, normedStudentPACEPubs, false)
+
+  console.log(`Merged Student Pubs: ${JSON.stringify(mergedStudentPubList, null, 2)}`)
+  let uniquePairCount = 0
+  let noAuthorCount = 0
+  let noTraineeCount = 0
+  _.each(_.values(mergedStudentPubList), (mergedPub) => {
+    const authorCount = (mergedPub['authors']) ? mergedPub['authors'].length : 0
+    const traineeCount = (mergedPub['trainee']) ? mergedPub['trainee'].length : 0
+    uniquePairCount = uniquePairCount + (authorCount * traineeCount)
+    noAuthorCount = (!mergedPub['authors']) ? noAuthorCount + 1 : noAuthorCount
+    noTraineeCount = (!mergedPub['trainee'] || mergedPub['trainee'].length == 0) ? noTraineeCount + 1 : noTraineeCount
+  })
+  console.log(`Merged Student Total Pubs: '${_.keys(mergedStudentPubList).length}' Unique pairs: '${uniquePairCount}' No Author Count: '${noAuthorCount}' No Trainee Count: '${noTraineeCount}'`)
+
+  const pubCSVStudentRows = prepPubCSVRows(mergedStudentPubList)
+
+
+  // // write to new csv
+  // const pubStudentCSVRows = prepPubCSVRows(mergedFacultyPubList)
 
   // now output to new CSV file
   FsHelper.createDirIfNotExists(mergedPubFileDir, true)
@@ -417,6 +853,17 @@ async function main () {
     data: pubCSVRows
   });
   console.log(`Done writing data to csv: '${filePath}'`)
+
+  const baseFilePath2 = FsHelper.getFileName(paceStudentPubFile)
+  let filePath2 = `${mergedPubFileDir}/`
+  filePath2 = `${filePath2}MergePubs.${moment().format('YYYYMMDDHHmmss')}.${baseFilePath2}`
+  console.log(`Writing data to csv: '${filePath2}'...`)
+  //write data out to csv
+  await writeCsv({
+    path: filePath2,
+    data: pubCSVStudentRows
+  });
+  console.log(`Done writing data to csv: '${filePath2}'`)
 
   // {
   //   "authors": "Taylor, Richard",
@@ -462,60 +909,6 @@ async function main () {
   // journal volume issue page string
   // remove retrieved from
 
-
-  // console.log(`CSV loaded: ${JSON.stringify(pubs, null, 2)}`)
-
-//   // fetch csl records
-//   let tempPub = _.clone(pubs[0])
-//   tempPub['ISSN'] = 'XXXX'
-//   let updatedPubs = []
-//   updatedPubs.push(tempPub)
-//   let counter = 0
-//   let skippedCounter = 0
-//   let errorCounter = 0
-//   let foundCounter = 0
-
-//   console.log(`Getting ISSN for '${pubs.length}' pubs`)
-//   await pMap(pubs, async (pub) => {
-//   // const pub = pubs[0]
-//     counter += 1
-//     const doi = pub['Real DOI']
-//     if (doi && doi.length > 0) {
-//       const csl = await getCsl(doi)
-//       if (csl) {
-//         const issn = csl.valueOf()['ISSN']
-//         pub['ISSN'] = issn 
-//         console.log(`${counter}: Found DOI: '${doi}' and ISSN: '${csl.valueOf()['ISSN']}'`)
-//         foundCounter += 1
-//       } else {
-//         console.log(`${counter}: No ISSN for DOI: '${doi}'`)
-//         errorCounter += 1
-//       }
-//     } else {
-//       console.log(`${counter}: Skipping with no DOI set`)
-//       skippedCounter += 1
-//     }
-//     updatedPubs.push(pub)
-//     await wait(waitTime)
-//   }, { concurrency: 1 })
-
-//   console.log(`Getting ISSN Found: ${foundCounter}, Skipped: ${skippedCounter} Errors: ${errorCounter}`)
-
-//   FsHelper.createDirIfNotExists(crossRefUpdatedDOIFileDir, true)
-
-//   const baseFilePath = FsHelper.getFileName(crossRefDOIFilePath)
-//   let filePath = `${crossRefUpdatedDOIFileDir}/`
-//   filePath = `${filePath}Pubs_w_issn.${moment().format('YYYYMMDDHHmmss')}.${baseFilePath}`
-//   console.log(`Writing data to csv: '${filePath}'`)
-//   //write data out to csv
-//   await writeCsv({
-//     path: filePath,
-//     data: updatedPubs
-//   });
-//   console.log(`CSV updated: ${JSON.stringify(updatedPubs, null, 2)}`)
-//   // output csv with issn
-//   // let doi = '10.14359/51738457'
-//   // await getCsl(doi)
 }
 
 main()
