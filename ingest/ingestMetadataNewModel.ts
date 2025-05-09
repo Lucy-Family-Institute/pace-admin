@@ -49,7 +49,6 @@ const outputPassed = process.env.INGESTER_OUTPUT_PASSED
 const confirmedAuthorFileDir = process.env.INGESTER_CONFIRMED_AUTHOR_FILE_DIR
 const defaultToBibTex = process.env.INGESTER_DEFAULT_TO_BIBTEX
 const dedupByDoi = process.env.INGESTER_DEDUP_BY_DOI
-const stagedIngestDir = process.env.INGESTER_STAGED_DIR
 const outputIngestDir = process.env.INGESTER_OUTPUT_DIR
 const centerMemberYear = process.env.INGESTER_CENTER_MEMBER_YEAR
 const loggingBatchSize = process.env.INGESTER_LOGGING_BATCH_SIZE
@@ -60,6 +59,16 @@ const combinedFailedOutputDir = `${outputIngestDir}/combined_failed_${moment().f
 
 //returns status map of what was done
 async function main() {
+  let stagedIngestDir = process.env.INGESTER_STAGED_DIR
+  let dirIndex = 1
+
+  const args = process.argv;
+  if (args.length > 2) {
+    stagedIngestDir = args[2]
+  }
+
+  console.log(`Ingesting metadata from dir :${stagedIngestDir}`)
+
   const config: IngesterConfig = {
     minConfidence: Number.parseFloat(minConfidence),
     confidenceAlgorithmVersion: confidenceAlgorithmVersion,

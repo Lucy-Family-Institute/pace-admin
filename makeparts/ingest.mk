@@ -10,8 +10,13 @@ load_author_attributes: ingest/node_modules
 ingest_metadata: ingest/node_modules
 	cd ingest && ts-node ingestMetadataNewModel.ts && cd ..
 
+ingest_metadata_from_dir: ingest/node_modules
+	cd ingest && ts-node ingestMetadataNewModel.ts ${INGESTDIR} && cd ..
+
 ingest_metadata_new_model: ingest/node_modules
-	cd ingest && ts-node ingestMetadataNewModel.ts && cd ..
+	@for f in $(shell ls -d ${INGESTER_STAGED_DIR}/*); \
+		do cd ingest && ts-node ingestMetadataNewModel.ts $${f} && cd ..; \
+	done;
 
 check_publications_new_matches: ingest/node_modules
 	cd ingest && ts-node checkPersonPublicationsMatches.ts && cd ..
@@ -56,6 +61,9 @@ update_semantic_scholar_data: ingest/node_modules
 
 update_wos_data: ingest/node_modules
 	cd ingest && ts-node fetchWoSAuthorDataNewModel.ts && cd ..
+
+update_wos_topic_data: ingest/node_modules
+	cd ingest && ts-node fetchWoSTopicData.ts && cd ..
 
 update_google_scholar_data: ingest/node_modules
 	cd ingest && ts-node fetchGoogleScholarAuthorData.ts && cd ..

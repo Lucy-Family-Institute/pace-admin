@@ -124,13 +124,13 @@ export default class NormedPublication {
   // Creating this method to only load source metadata when it is needed since too many loaded at once
   // causing heap to get exhausted
   // always use this method instead of calling normedPub.sourceMetadata directly
-  public static getSourceMetadata(normedPub: NormedPublication, dataDirPath: string): Object {
+  public static getSourceMetadata(normedPub: NormedPublication, dataDirPath: string, absolutePath?: boolean): Object {
     let sourceFilePath
     try {
       if (normedPub.sourceMetadata) {
         return normedPub.sourceMetadata
       } else {
-        sourceFilePath = NormedPublication.getSourceMetadataFilePath(normedPub, dataDirPath)
+        sourceFilePath = NormedPublication.getSourceMetadataFilePath(normedPub, dataDirPath, absolutePath)
         return NormedPublication.loadNormedPublicationSourceMetadata(sourceFilePath)
       }
     } catch (error) {
@@ -139,7 +139,7 @@ export default class NormedPublication {
     }
   }
 
-  public static getSourceMetadataFilePath(normedPub: NormedPublication, dataDirPath?): string {
+  public static getSourceMetadataFilePath(normedPub: NormedPublication, dataDirPath?, absolutePath?): string {
     if (!dataDirPath) {
       if (normedPub.dataDirPath) {
         dataDirPath = normedPub.dataDirPath
@@ -148,7 +148,11 @@ export default class NormedPublication {
       }
     } 
     const sourceFileName = NormedPublication.getSourceMetadataFileName(normedPub)
-    return path.join(process.cwd(), NormedPublication.getSourceMetadataDirPath(dataDirPath), sourceFileName)  
+    if (absolutePath) {
+      return path.join(NormedPublication.getSourceMetadataDirPath(dataDirPath), sourceFileName)  
+    } else {
+      return path.join(process.cwd(), NormedPublication.getSourceMetadataDirPath(dataDirPath), sourceFileName)  
+    }
   }
 
   /**

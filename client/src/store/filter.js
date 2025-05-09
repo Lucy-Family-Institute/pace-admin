@@ -14,7 +14,7 @@ const state = {
   preferredCenterPubSort: 'Authors',
   preferredInstitutionReviewState: 'Accepted',
   preferredSelectedCenterAuthor: 'All',
-  preferredSelectedAuthorReview: { label: 'University of Notre Dame', value: 'ND' },
+  preferredSelectedAuthorReview: { label: 'Lucy Family Institute for Data & Society', value: 'LFIDS' },
   filterReviewStates: [],
   centerAuthorOptions: [
     'All'

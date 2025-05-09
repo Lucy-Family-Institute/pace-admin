@@ -451,7 +451,7 @@ import readReviewsPersonPublications from '../../../gql/readReviewsPersonPublica
 // import readPublicationsByReviewState from '../../../gql/readPublicationsByReviewState.gql'
 import readPublication from '../../../gql/readPublication.gql'
 // import * as service from '@porter/osf.io';
-import readOrganizations from '../../../gql/readOrganizations.gql'
+import readOrganizationsCenters from '../../../gql/readOrganizationsCenters.gql'
 import PublicationFilter from '../components/PublicationFilter.vue'
 import PeopleAuthorSortFilter from '../components/PeopleAuthorSortFilter.vue'
 import MainFilter from '../components/MainFilter.vue'
@@ -660,12 +660,34 @@ export default {
       }
     },
     getPublicationSourceId (personPublication) {
-      if (personPublication.publication.source_name.toLowerCase() === 'scopus' &&
-        personPublication.publication.scopus_eid) {
-        return personPublication.publication.scopus_eid
-      } else if (personPublication.publication.source_name.toLowerCase() === 'semanticscholar' &&
-        personPublication.publication.semantic_scholar_id) {
-        return personPublication.publication.semantic_scholar_id
+      let publication = personPublication.publication
+      if (publication.source_name.toLowerCase() === 'scopus' &&
+        publication.scopus_eid) {
+        return publication.scopus_eid
+      } else if (publication.source_name.toLowerCase() === 'semanticscholar' &&
+        publication.semantic_scholar_id) {
+        return publication.semantic_scholar_id
+      } else if (publication.source_name.toLowerCase() === 'webofscience') {
+        if (publication.wos_id && publication.wos_id['_text']) {
+          const curTxt = publication.wos_id['_text']
+          console.log(`Found Wos id: ${curTxt}`)
+          const idParts = curTxt.split(':')
+          console.log(`Parts after split is: ${JSON.stringify(idParts)}`)
+          var strSourceId = (idParts.length > 1 ? idParts[1] : idParts[0])
+          while (strSourceId.length < 15) {
+            strSourceId = `0${strSourceId}`
+          }
+          return `WOS:${strSourceId}`
+        } else if (publication.source_id) {
+          // pad zeroes if needed
+          var strSourceId2 = `${publication.source_id}`
+          while (strSourceId2.length < 15) {
+            strSourceId2 = `0${strSourceId2}`
+          }
+          return `WOS:${strSourceId2}`
+        } else {
+          return ''
+        }
       } else if (personPublication.publication.source_name.toLowerCase() === 'pubmed' &&
         personPublication.publication.pubmed_resource_identifiers &&
         _.isArray(personPublication.publication.pubmed_resource_identifiers)) {
@@ -677,21 +699,8 @@ export default {
         } else {
           return undefined
         }
-      } else if (personPublication.publication.source_name.toLowerCase() === 'crossref') {
-        return (personPublication.publication.doi ? personPublication.publication.doi : personPublication.publication.source_id)
-      } else if (personPublication.publication.source_name.toLowerCase() === 'webofscience') {
-        if (personPublication.publication.wos_id && personPublication.publication.wos_id['_text']) {
-          return personPublication.publication.wos_id['_text']
-        } else if (personPublication.publication.source_id) {
-          // pad zeroes if needed
-          var strSourceId = `${personPublication.publication.source_id}`
-          while (strSourceId.length < 15) {
-            strSourceId = `0${strSourceId}`
-          }
-          return `WOS:${personPublication.publication.source_id}`
-        } else {
-          return ''
-        }
+      } else if (publication.source_name.toLowerCase() === 'crossref') {
+        return (publication.doi ? publication.doi : publication.source_id)
       } else if (personPublication.publication.source_name.toLowerCase() === 'googlescholar') {
         return personPublication.publication.source_id
       } else {
@@ -1048,7 +1057,7 @@ export default {
     },
     async fetchData () {
       const results = await this.$apollo.query({
-        query: readOrganizations
+        query: readOrganizationsCenters
       })
 
       this.centerOptions = _.map(results.data.review_organization, (reviewOrg) => {

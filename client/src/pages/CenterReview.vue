@@ -918,14 +918,22 @@ export default {
         return publication.semantic_scholar_id
       } else if (publication.source_name.toLowerCase() === 'webofscience') {
         if (publication.wos_id && publication.wos_id['_text']) {
-          return publication.wos_id['_text']
-        } else if (publication.source_id) {
-          // pad zeroes if needed
-          var strSourceId = `${publication.source_id}`
+          const curTxt = publication.wos_id['_text']
+          console.log(`Found Wos id: ${curTxt}`)
+          const idParts = curTxt.split(':')
+          console.log(`Parts after split is: ${JSON.stringify(idParts)}`)
+          var strSourceId = (idParts.length > 1 ? idParts[1] : idParts[0])
           while (strSourceId.length < 15) {
             strSourceId = `0${strSourceId}`
           }
-          return `WOS:${publication.source_id}`
+          return `WOS:${strSourceId}`
+        } else if (publication.source_id) {
+          // pad zeroes if needed
+          var strSourceId2 = `${publication.source_id}`
+          while (strSourceId2.length < 15) {
+            strSourceId2 = `0${strSourceId2}`
+          }
+          return `WOS:${strSourceId2}`
         } else {
           return ''
         }

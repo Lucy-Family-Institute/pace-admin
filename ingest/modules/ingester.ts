@@ -115,23 +115,27 @@ export class Ingester {
       // const publicationYear = Csl.getPublicationYear(csl)
       const publicationDate: CslDate = Csl.getPublicationDate(csl)
       const publicationYear = (publicationDate ? publicationDate.year : undefined)
+      if (!publicationYear) {
+        throw(`Publication year undefined for title: ${title} and authors: ${JSON.stringify(authors)}`)
+      }
       if (minPublicationYear != undefined && publicationYear && publicationYear < minPublicationYear) {
         console.log(`Skipping adding publication from year: ${publicationYear}`)
         return
       }
   
+      console.log(`Source metadata is: ${JSON.stringify(sourceMetadata, null, 2)}`)
       const publication = {
         title: title,
         doi: doi,
         year: publicationYear,
-        month: publicationDate.month,
-        day: publicationDate.day,
-        csl: csl.valueOf(),  // put these in as JSONB
+        month: (publicationDate && 'month' in publicationDate ? publicationDate.month : undefined),
+        day: (publicationDate && 'day' in publicationDate ? publicationDate.day : undefined),
+        csl: (csl ? csl.valueOf(): undefined),  // put these in as JSONB
         source_name: sourceName,
         source_id: sourceId,
         abstract: abstract,
         source_metadata: sourceMetadata, // put these in as JSONB,
-        csl_string: JSON.stringify(csl.valueOf())
+        csl_string: (csl ? JSON.stringify(csl.valueOf()) : undefined)
       }
       // console.log(`Writing publication: ${JSON.stringify(publication, null, 2)}`)
       const mutatePubResult = await this.client.mutate(
@@ -194,13 +198,13 @@ export class Ingester {
   }
 
   // returns publication id if exists, otherwise undefined
-  async getPublicationIdIfAlreadyInDB (doi, sourceId, csl: Csl, sourceName) : Promise<number> {
+  async getPublicationIdIfAlreadyInDB (doi, sourceId, csl: Csl, title, sourceName) : Promise<number> {
     let foundPub = false
     let publicationId
-    if (!csl || !csl.valueOf()) {
-      throw('Csl undefined on check if publication in DB')
-    }
-    const title = csl.valueOf()['title']
+    // if (!csl || !csl.valueOf()) {
+    //   throw('Csl undefined on check if publication in DB')
+    // }
+    // const title = csl.valueOf()['title']
     const publicationYear = Csl.getPublicationYear(csl)
     if (doi !== null){
       const queryResult = await this.client.query(readPublicationsByDoi(doi))
@@ -231,7 +235,7 @@ export class Ingester {
       _.each(titleQueryResult.data.publications, (publication) => {
         // console.log(`Checking existing publication title: '${publication.title}' year: '${JSON.stringify(publication.year)}' against title: '${title}' year: '${JSON.stringify(publicationYear)}' foundPub before is: ${foundPub}`)
         // check for something with same title and publication year as well
-        if (publication.title === title && publication.year === publicationYear) { //} && authors.length === publication.publications_authors.length) {
+        if (publication.title === title) { // && publication.year === publicationYear) { //} && authors.length === publication.publications_authors.length) {
           foundPub = true
           publicationId = publication.id
         }
@@ -276,7 +280,7 @@ export class Ingester {
       dedupedPubs = this.dedupBySource(publications)
     }
     await pMap(dedupedPubs, async (publication: NormedPublication, index) => {
-      const sourceMetadata = NormedPublication.getSourceMetadata(publication, dataDirPath)
+      const sourceMetadata = NormedPublication.getSourceMetadata(publication, dataDirPath, true)
       try {
         console.log(`Ingesting publication batch: (${index+1} of ${dedupedPubs.length}) of ${totalRows} total publications`)
         await wait(this.config.defaultWaitInterval)
@@ -402,7 +406,7 @@ export class Ingester {
         
         try {
           await this.pubExistsMutex.dispatch( async () => {
-            publicationId = await this.getPublicationIdIfAlreadyInDB(checkDoi, sourceId, csl, normedPub.datasourceName)
+            publicationId = await this.getPublicationIdIfAlreadyInDB(checkDoi, sourceId, csl, normedPub.title, normedPub.datasourceName)
             if (!publicationId) {
               console.log(`Inserting Publication DOI: ${normedPub.doi} from source: ${normedPub.datasourceName}`)
               publicationId = await this.insertPublicationAndAuthors(normedPub.title, checkDoi, csl, authors, normedPub.datasourceName, sourceId, checkabstract, sourceMetadata)
@@ -604,39 +608,40 @@ export class Ingester {
   }
 
   async ingestStagedFiles(){
-    const stagedDirs = FsHelper.loadDirList(this.config.stagedIngestDir)
+    // const stagedDirs = FsHelper.loadDirList(this.config.stagedIngestDir)
+    const stagedPath = this.config.stagedIngestDir
 
     const threadCount = (this.config.threadCount ? this.config.threadCount : 5)
 
     const year = this.config.centerMemberYear
-    console.log(`Loading ${year} Publication Data for staged paths: ${JSON.stringify(stagedDirs, null, 2)}`)
+    console.log(`Loading ${year} Publication Data for staged paths: ${JSON.stringify(stagedPath, null, 2)}`)
     //load data
-    await pMap(stagedDirs, async (stagedPath, dirIndex) => {
-      // ignore subdirectories
-      // output results for this path
-      // set label to the base of the path (file or dir)
-      const normalizedLabel = Normalizer.normalizeString(path.basename(stagedPath))
-      const statusCSVFileBase = `${normalizedLabel}_${year}_${moment().format('YYYYMMDDHHmmss')}_combined_status`
-      let ingestStatusByPath: IngestStatus = new IngestStatus(statusCSVFileBase, statusCSVFileBase, this.config)
-      try {
-        const loadPaths = FsHelper.loadDirPaths(stagedPath, true)
-        await pMap(loadPaths, async (filePath, fileIndex) => {
-          // skip any subdirectories
-          console.log(`Ingesting publications dir (${(dirIndex + 1)} of ${stagedDirs.length}) from paths (${(fileIndex + 1)} of ${loadPaths.length}) of path: ${filePath}`)
-          const fileName = FsHelper.getFileName(filePath)
-          const dataDir = FsHelper.getParentDir(filePath)
-          const ingestStatus = await this.ingestFromFiles(dataDir, filePath, statusCSVFileBase, threadCount)
-          ingestStatusByPath = IngestStatus.merge(ingestStatusByPath, ingestStatus)
-        }, { concurrency: threadCount })
+    // await pMap(stagedDirs, async (stagedPath, dirIndex) => {
+    // ignore subdirectories
+    // output results for this path
+    // set label to the base of the path (file or dir)
+    const normalizedLabel = Normalizer.normalizeString(path.basename(stagedPath))
+    const statusCSVFileBase = `${normalizedLabel}_${year}_${moment().format('YYYYMMDDHHmmss')}_combined_status`
+    let ingestStatusByPath: IngestStatus = new IngestStatus(statusCSVFileBase, statusCSVFileBase, this.config)
+    try {
+      const loadPaths = FsHelper.loadDirPaths(stagedPath, true)
+      await pMap(loadPaths, async (filePath, fileIndex) => {
+        // skip any subdirectories
+        console.log(`Ingesting publications dir '${stagedPath}' with paths (${(fileIndex + 1)} of ${loadPaths.length}) of path: ${filePath}`)
+        const fileName = FsHelper.getFileName(filePath)
+        const dataDir = FsHelper.getParentDir(filePath)
+        const ingestStatus = await this.ingestFromFiles(dataDir, filePath, statusCSVFileBase, threadCount)
+        ingestStatusByPath = IngestStatus.merge(ingestStatusByPath, ingestStatus)
+      }, { concurrency: threadCount })
 
-        // output remaining records
-        await ingestStatusByPath.writeLogsToCSV()
-      } catch (error) {
-        //attempt to write status to file
-        console.log(`Error on load staged path '${stagedPath}' files: ${error}, attempt to output logged status`)
-        await ingestStatusByPath.writeLogsToCSV()
-      }
-    }, { concurrency: 1}) // these all need to be 1 thread so no collisions on checking if pub already exists if present in multiple files
+      // output remaining records
+      await ingestStatusByPath.writeLogsToCSV()
+    } catch (error) {
+      //attempt to write status to file
+      console.log(`Error on load staged path '${stagedPath}' files: ${error}, attempt to output logged status`)
+      await ingestStatusByPath.writeLogsToCSV()
+    }
+    // }, { concurrency: 1}) // these all need to be 1 thread so no collisions on checking if pub already exists if present in multiple files
   }
 
   // will look at existing publications for a given year and then run through the ingester essentially finding new matches
